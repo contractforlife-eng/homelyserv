@@ -149,12 +149,6 @@ const WorkerProfile = () => {
     try {
       const completedJobs = 0;
       
-      const ratings = JSON.parse(localStorage.getItem('worker_ratings') || '[]');
-      const workerRatings = ratings.filter(r => r.workerId === userId || r.workerEmail === userEmail);
-      const avgRating = workerRatings.length > 0 
-        ? workerRatings.reduce((sum, r) => sum + r.rating, 0) / workerRatings.length 
-        : 0;
-      
       const memberSince = authUser?.createdAt || new Date().toISOString();
       
       setRealStats({
@@ -162,7 +156,7 @@ const WorkerProfile = () => {
           month: 'long',
           year: 'numeric'
         }),
-        rating: avgRating || 4.8,
+        rating: authUser?.workerProfile?.ratingAvg || authUser?.ratingAvg || 0,
         jobsCompleted: completedJobs || 0
       });
       
@@ -170,7 +164,7 @@ const WorkerProfile = () => {
       console.error('Error loading real stats:', error);
       setRealStats({
         memberSince: t('workerProfile.memberSinceValue'),
-        rating: 4.8,
+        rating: 0,
         jobsCompleted: 0
       });
     }

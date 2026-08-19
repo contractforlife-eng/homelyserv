@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { sendMessage, getConversationId } from '../utils/chatService';
 import { formatCompensationAmount } from '../utils/compensationDisplay';
+import RatingDialog from '../components/RatingDialog';
+import { getRatingStatus, submitRating } from '../services/hireService';
 
 // ============================================================
 // SINGLE SOURCE OF TRUTH — canonical hire statuses
@@ -86,6 +88,15 @@ const MyHires = () => {
   const [terminatingHire, setTerminatingHire] = useState(null);
   const [terminating, setTerminating] = useState(false);
   const [creatingConversation, setCreatingConversation] = useState(false);
+
+  // ============================================================
+  // RATING — Phase 2 frontend integration
+  // ============================================================
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [ratingHireId, setRatingHireId] = useState(null);
+  const [ratingStatus, setRatingStatus] = useState(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   // ============================================================
   // Work-period confirmation (Phase 2) state
@@ -353,6 +364,82 @@ const MyHires = () => {
       { state: { conversationId, workerId, workerName } }
     );
   };
+
+  // ============================================================
+  // RATING HANDLERS — Phase 2
+  // ============================================================
+  const openRatingDialog = async (hire) => {
+    const hireId = hire.id || hire.hireId;
+    if (!hireId) return;
+    setRatingHireId(hireId);
+    setRatingDialogOpen(true);
+    setRatingLoading(true);
+    setRatingStatus(null);
+    try {
+      const status = await getRatingStatus(hireId);
+      setRatingStatus(status);
+    } catch (error) {
+      console.error('Error loading rating status:', error);
+      setRatingStatus({ canRate: false, hasRated: false, reason: 'LOAD_FAILED' });
+    } finally {
+      setRatingLoading(false);
+    }
+  };
+
+  const closeRatingDialog = () => {
+    if (ratingSubmitting) return;
+    setRatingDialogOpen(false);
+    setRatingHireId(null);
+    setRatingStatus(null);
+  };
+
+  const handleSubmitRating = async (stars) => {
+    if (!ratingHireId || ratingSubmitting) return;
+    setRatingSubmitting(true);
+    try {
+      const result = await submitRating(ratingHireId, stars);
+      if (result?.success) {
+        setRatingStatus(prev => ({ ...prev, canRate: false, hasRated: true }));
+        alert(t('rating.ratingUpdated'));
+        setRatingDialogOpen(false);
+        setRatingHireId(null);
+      } else {
+        alert(t('rating.ratingError'));
+      }
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || t('rating.ratingError');
+      if (message === 'You have already rated this hire' || error?.response?.data?.code === 'REVIEW_EXISTS') {
+        setRatingStatus(prev => ({ ...prev, canRate: false, hasRated: true }));
+        alert(t('rating.alreadyRated'));
+        setRatingDialogOpen(false);
+        setRatingHireId(null);
+      } else {
+        alert(t('rating.ratingError'));
+      }
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  // Auto-load rating status when the selected hire changes in the modal.
+  useEffect(() => {
+    if (!selectedHire?.id) return;
+    const hireId = selectedHire.id || selectedHire.hireId;
+    if (!hireId) return;
+
+    if (ratingDialogOpen && ratingHireId !== hireId) {
+      closeRatingDialog();
+    }
+
+    setRatingHireId(hireId);
+    setRatingLoading(true);
+    setRatingStatus(null);
+
+    getRatingStatus(hireId)
+      .then(setRatingStatus)
+      .catch(() => setRatingStatus({ canRate: false, hasRated: false, reason: 'LOAD_FAILED' }))
+      .finally(() => setRatingLoading(false));
+  }, [selectedHire?.id]);
 
   // ============================================================
   // PRESENTATION HELPERS
@@ -901,6 +988,43 @@ const MyHires = () => {
                 </div>
               </div>
 
+              {/* Rating Section — Phase 2 */}
+              <div className="mt-6 p-4 border border-teal-100 dark:border-teal-900/40 bg-teal-50/40 dark:bg-teal-900/10 rounded-xl">
+                <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                  <StarIcon size={16} className="text-yellow-500" />
+                  {t('rating.title')}
+                </h4>
+
+                {ratingLoading && selectedHire.id === ratingHireId ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('myHiresPage.review.loading')}</p>
+                ) : ratingStatus && selectedHire.id === ratingHireId ? (
+                  <div className="mt-3">
+                    {ratingStatus.hasRated ? (
+                      <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
+                        <CheckCircle size={16} />
+                        {t('rating.rated')}
+                      </div>
+                    ) : ratingStatus.canRate ? (
+                      <button
+                        onClick={() => openRatingDialog(selectedHire)}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2"
+                      >
+                        <StarIcon size={16} />
+                        {t('rating.rateWorker')}
+                      </button>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {ratingStatus.reason === 'HIRE_NOT_ACTIVE' && t('rating.hireNotActive')}
+                        {ratingStatus.reason === 'PAYMENT_NOT_CONFIRMED' && t('rating.paymentNotConfirmed')}
+                        {ratingStatus.reason === 'WORK_PERIOD_NOT_CONFIRMED' && t('rating.offerNotCompleted')}
+                        {ratingStatus.reason === 'LOAD_FAILED' && t('rating.ratingError')}
+                        {!ratingStatus.reason && t('rating.noRating')}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
               {canMessageOrTerminate(selectedHire) && (
                 <div className="mt-6 p-4 border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/40 dark:bg-indigo-900/10 rounded-xl">
                   <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -1115,6 +1239,15 @@ const MyHires = () => {
           </div>
         </div>
       )}
+
+      {/* Rating Dialog — Phase 2 */}
+      <RatingDialog
+        open={ratingDialogOpen}
+        onClose={closeRatingDialog}
+        title={t('rating.rateWorker')}
+        onSubmit={handleSubmitRating}
+        loading={ratingSubmitting}
+      />
     </DashboardLayout>
   );
 };

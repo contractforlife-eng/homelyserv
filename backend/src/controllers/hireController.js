@@ -420,7 +420,7 @@ export const getMyHires = async (req, res) => {
         workerEmail: offer?.workerEmail || workerUser?.email || null,
         workerPhone: offer?.workerPhone || workerUser?.phone || null,
         workerLocation: offer?.workerLocation || workerUser?.city || null,
-        workerRating: offer?.workerRating || workerProfile?.ratingAvg || null,
+        workerRating: workerProfile?.ratingAvg ?? offer?.workerRating ?? null,
         workerImage: offer?.workerImage || workerUser?.image || workerProfile?.profilePhotoUrl || null,
         workerSkills: offer?.workerSkills || workerProfile?.skills || [],
         jobTitle: offer?.jobTitle || null,
@@ -486,7 +486,28 @@ export const getMyOffers = async (req, res) => {
       workerProfileId: offer.workerId
     }));
 
-    res.json(transformedOffers);
+    const employerIds = [...new Set(transformedOffers.map(o => o.employerId).filter(Boolean))];
+    let employerProfilesMap = {};
+    if (employerIds.length > 0) {
+      const profiles = await prisma.employerProfile.findMany({
+        where: { userId: { in: employerIds } },
+        select: { userId: true, ratingAvg: true, ratingCount: true },
+      });
+      profiles.forEach(p => {
+        employerProfilesMap[p.userId] = { ratingAvg: p.ratingAvg, ratingCount: p.ratingCount };
+      });
+    }
+
+    const enrichedOffers = transformedOffers.map(offer => {
+      const ep = employerProfilesMap[offer.employerId] || {};
+      return {
+        ...offer,
+        employerRating: ep.ratingAvg ?? null,
+        employerRatingCount: ep.ratingCount ?? 0,
+      };
+    });
+
+    res.json(enrichedOffers);
   } catch (error) {
     console.error('Get offers error:', error);
     res.status(500).json({ message: 'Server error' });

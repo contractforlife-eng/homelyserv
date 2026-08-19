@@ -130,7 +130,7 @@ const EmployerCreateOffer = () => {
         workerEmail: worker.email,
         workerPhone: worker.phone || '',
         workerLocation: worker.location || 'Not specified',
-        workerRating: worker.rating || 4.5,
+        workerRating: worker.rating || worker.ratingAvg || null,
         workerSkills: worker.skills || [],
         workerImage: worker.profileImage || '',
         employerName: authUser.fullName || 'Employer',

@@ -303,7 +303,7 @@ router.get('/stats/:userId', authenticate, async (req, res) => {
         _sum: { amount: true }
       }),
       prisma.review.aggregate({
-        where: { workerId: profile.id },
+        where: { revieweeUserId: profile.userId, direction: 'EMPLOYER_TO_WORKER' },
         _avg: { rating: true }
       })
     ]);

@@ -37,6 +37,8 @@ import {
   getUserConversations,
 } from '../utils/chatService';
 import { UserAvatar } from '../components/users';
+import RatingDialog from '../components/RatingDialog';
+import { getRatingStatus, submitRating, getMyHires } from '../services/hireService';
 
 // ============================================================
 // MAIN WORKER OFFERS COMPONENT - FIXED PAYMENT STATUS
@@ -55,6 +57,17 @@ const WorkerOffers = () => {
   const [expandedOffer, setExpandedOffer] = useState(null);
   const [processingOffer, setProcessingOffer] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // ============================================================
+  // RATING — Phase 2 frontend integration
+  // ============================================================
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [ratingHireId, setRatingHireId] = useState(null);
+  const [ratingStatus, setRatingStatus] = useState(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [hireIdMap, setHireIdMap] = useState({});
+  const [offerRatingStatus, setOfferRatingStatus] = useState({});
 
   const toggleExpand = (offerId) => {
     setExpandedOffer(expandedOffer === offerId ? null : offerId);
@@ -98,6 +111,84 @@ const WorkerOffers = () => {
   };
 
   // ============================================================
+  // RATING HANDLERS — Phase 2
+  // ============================================================
+  const loadHireIdMap = async () => {
+    try {
+      const hiresData = await getMyHires();
+      const myHires = Array.isArray(hiresData) ? hiresData : [];
+      const map = {};
+      myHires.forEach(h => {
+        if (h.offerId) {
+          map[h.offerId] = h.id || h.hireId;
+        }
+      });
+      setHireIdMap(map);
+      return map;
+    } catch (error) {
+      console.error('Error loading hire map:', error);
+      return {};
+    }
+  };
+
+  const openRatingDialog = async (offer) => {
+    let hireId = hireIdMap[offer.id];
+    if (!hireId) {
+      const fresh = await loadHireIdMap();
+      hireId = fresh[offer.id];
+      if (!hireId) return;
+    }
+    setRatingHireId(hireId);
+    setRatingDialogOpen(true);
+    setRatingLoading(true);
+    setRatingStatus(null);
+    try {
+      const status = await getRatingStatus(hireId);
+      setRatingStatus(status);
+    } catch (error) {
+      console.error('Error loading rating status:', error);
+      setRatingStatus({ canRate: false, hasRated: false, reason: 'LOAD_FAILED' });
+    } finally {
+      setRatingLoading(false);
+    }
+  };
+
+  const closeRatingDialog = () => {
+    if (ratingSubmitting) return;
+    setRatingDialogOpen(false);
+    setRatingHireId(null);
+    setRatingStatus(null);
+  };
+
+  const handleSubmitRating = async (stars) => {
+    if (!ratingHireId || ratingSubmitting) return;
+    setRatingSubmitting(true);
+    try {
+      const result = await submitRating(ratingHireId, stars);
+      if (result?.success) {
+        setRatingStatus(prev => ({ ...prev, canRate: false, hasRated: true }));
+        alert(t('rating.ratingUpdated'));
+        setRatingDialogOpen(false);
+        setRatingHireId(null);
+      } else {
+        alert(t('rating.ratingError'));
+      }
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || t('rating.ratingError');
+      if (message === 'You have already rated this hire' || error?.response?.data?.code === 'REVIEW_EXISTS') {
+        setRatingStatus(prev => ({ ...prev, canRate: false, hasRated: true }));
+        alert(t('rating.alreadyRated'));
+        setRatingDialogOpen(false);
+        setRatingHireId(null);
+      } else {
+        alert(t('rating.ratingError'));
+      }
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  // ============================================================
   // USE EFFECTS
   // ============================================================
   useEffect(() => {
@@ -121,6 +212,33 @@ const WorkerOffers = () => {
       loadOffers(authUser);
     }
   }, [authUser?.id, refreshKey]);
+
+  useEffect(() => {
+    if (authUser) {
+      loadHireIdMap();
+    }
+  }, [authUser?.id]);
+
+  useEffect(() => {
+    const uniqueHireIds = [...new Set(Object.values(hireIdMap))];
+    if (uniqueHireIds.length === 0) return;
+
+    let cancelled = false;
+    uniqueHireIds.forEach(async (hireId) => {
+      try {
+        const status = await getRatingStatus(hireId);
+        if (!cancelled) {
+          setOfferRatingStatus(prev => ({ ...prev, [hireId]: status }));
+        }
+      } catch (e) {
+        // Leave as undefined; inline button will not render.
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hireIdMap]);
 
   useEffect(() => {
     if (!authUser) {
@@ -435,8 +553,12 @@ const WorkerOffers = () => {
                   <span>{formatDate(offer.createdAt || offer.updatedAt)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                  <span>{offer.workerRating || 4.5}</span>
+                  <Star size={14} className="text-gray-400 dark:text-gray-500" />
+                  {offer.employerRatingCount > 0 ? (
+                    <span>{offer.employerRating}</span>
+                  ) : (
+                    <span className="text-gray-400 dark:text-gray-500">{t('rating.new')}</span>
+                  )}
                 </div>
               </div>
 
@@ -517,12 +639,35 @@ const WorkerOffers = () => {
     </>
   )}
 
-                {offer.status === 'completed' && (
-                  <span className="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1.5">
-                    <CheckCheck size={14} />
-                    {t('workerOffers.workCompleted')}
-                  </span>
-                )}
+                {(() => {
+                  const hireId = hireIdMap[offer.id];
+                  const rating = hireId ? offerRatingStatus[hireId] : null;
+                  return (
+                    <>
+                      {offer.status === 'completed' && (
+  <span className="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1.5">
+    <CheckCheck size={14} />
+    {t('workerOffers.workCompleted')}
+  </span>
+)}
+                      {rating?.hasRated && (
+                        <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
+                          <CheckCircle size={14} />
+                          {t('rating.rated')}
+                        </span>
+                      )}
+                      {rating?.canRate && (
+                        <button
+                          onClick={() => openRatingDialog(offer)}
+                          className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
+                        >
+                          <Star size={14} />
+                          {t('rating.rateEmployer')}
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {offer.status === 'rejected' && (
                   <span className="px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1.5">
@@ -790,6 +935,16 @@ const WorkerOffers = () => {
           </div>
         )}
       </div>
+
+      {/* Rating Dialog — Phase 2 */}
+      <RatingDialog
+        open={ratingDialogOpen}
+        onClose={closeRatingDialog}
+        title={t('rating.rateEmployer')}
+        hireId={ratingHireId}
+        onSubmit={handleSubmitRating}
+        loading={ratingSubmitting}
+      />
     </DashboardLayout>
   );
 };

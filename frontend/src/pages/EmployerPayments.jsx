@@ -107,7 +107,7 @@ const EmployerPayments = () => {
         workerPhone: hire.workerPhone || '',
         workerLocation: hire.workerLocation || 'Not specified',
         workerLocationIsFallback: !hire.workerLocation,
-        workerRating: hire.workerRating || 4.5,
+        workerRating: hire.workerRating || hire.ratingAvg || null,
         workerImage: hire.workerImage || '',
         employerId: employerId,
         employerEmail: employerEmail,
@@ -268,7 +268,7 @@ const EmployerPayments = () => {
       desiredJobIsFallback: paymentData.jobTitleIsFallback || !paymentData.jobTitle,
       fullSalary: paymentData.fullSalary || 0,
       workerSkills: paymentData.workerSkills || [],
-      rating: paymentData.workerRating || 4.5,
+      rating: paymentData.workerRating || paymentData.ratingAvg || null,
       profileImage: paymentData.workerImage || '',
       offerId: paymentData.offerId
     };

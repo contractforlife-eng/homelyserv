@@ -331,7 +331,7 @@ const WorkerProfileView = () => {
                   </span>
                   <span className="flex items-center gap-1">
                     <Star size={16} className="text-yellow-400" />
-                    {worker.rating || '4.5'} ★
+                    {worker.ratingAvg || worker.rating || '-'} ★
                   </span>
                   <span className="flex items-center gap-1">
                     <CheckCircle size={16} />

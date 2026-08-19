@@ -74,6 +74,21 @@ export const rejectOffer = async (offerId) => {
   return respondToOffer(offerId, 'rejected');
 };
 
+// ============================================================
+// RATING — Phase 2 frontend integration (uses Phase 1 backend)
+// The backend derives direction/identity server-side; the client
+// only sends a numeric rating and reads the backend-derived status.
+// ============================================================
+export const getRatingStatus = async (hireId) => {
+  const response = await api.get(`/api/hires/${hireId}/rating-status`);
+  return response.data;
+};
+
+export const submitRating = async (hireId, rating) => {
+  const response = await api.post(`/api/hires/${hireId}/ratings`, { rating });
+  return response.data;
+};
+
 const hireService = {
   getOffers,
   getMyHires,
@@ -89,7 +104,9 @@ const hireService = {
   getHireStats,
   completeWork,
   acceptOffer,
-  rejectOffer
+  rejectOffer,
+  getRatingStatus,
+  submitRating
 };
 
 export default hireService;

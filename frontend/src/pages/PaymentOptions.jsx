@@ -172,7 +172,7 @@ const PaymentOptions = () => {
         workerPhone: worker?.workerPhone || '',
         workerLocation: worker?.workerLocation || 'Not specified',
         workerImage: worker?.profileImage || '',
-        workerRating: worker?.rating || 4.5,
+        workerRating: worker?.ratingAvg || worker?.rating || null,
         employerId: employer?.id || employer?.email,
         employerEmail: employer?.email,
         employerName: employer?.fullName || 'Employer',
@@ -949,7 +949,7 @@ const PaymentOptions = () => {
                     </span>
                     <span className="flex items-center gap-1">
                       <Star size={14} className="text-yellow-500" />
-                      {workerData?.rating || '4.5'}
+                       {workerData?.ratingAvg || workerData?.rating || '-'}
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign size={14} className="text-green-500" />

@@ -32,6 +32,11 @@ model EmployerProfile {
   description    String?
   address        String?
   isVerified     Boolean  @default(false)
+
+  // Rating aggregates (cached, Review records are the source of truth).
+  ratingAvg      Float    @default(0)
+  ratingCount    Int      @default(0)
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   User           User     @relation(fields: [userId], references: [id])
@@ -261,17 +266,43 @@ model PaymentRefund {
   @@map("payment_refunds")
 }
 
+// ============================================================
+// REVIEW — generic directional two-way rating.
+// A qualifying Hire may produce exactly one Employer→Worker review and
+// one Worker→Employer review. Identities are canonical User.id values.
+// WorkerProfile.id is NEVER stored as the reviewee identity; it is only
+// resolved server-side to derive the Worker's canonical User.id.
+// Review records are the authoritative source of truth; the cached
+// ratingAvg/ratingCount on WorkerProfile/EmployerProfile are display-only.
+// ============================================================
+enum ReviewDirection {
+  EMPLOYER_TO_WORKER
+  WORKER_TO_EMPLOYER
+}
+
 model Review {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  hireId        String        @db.ObjectId
-  workerId      String        @db.ObjectId
-  employerId    String        @db.ObjectId
-  rating        Int
-  comment       String?
-  createdAt     DateTime      @default(now())
-  User          User          @relation(fields: [employerId], references: [id])
-  Hire          Hire          @relation(fields: [hireId], references: [id])
-  WorkerProfile WorkerProfile @relation(fields: [workerId], references: [id])
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  hireId         String          @db.ObjectId
+  reviewerUserId String          @db.ObjectId
+  revieweeUserId String          @db.ObjectId
+  direction      ReviewDirection
+  rating         Int
+  comment        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  Hire     Hire @relation(fields: [hireId], references: [id])
+  Reviewer User @relation("ReviewReviewer", fields: [reviewerUserId], references: [id])
+  Reviewee User @relation("ReviewReviewee", fields: [revieweeUserId], references: [id])
+
+  @@index([hireId])
+  @@index([reviewerUserId])
+  @@index([revieweeUserId])
+  @@index([direction])
+
+  // DB-authoritative uniqueness: one review per (hire, reviewer, direction).
+  // Allows Employer→Worker and Worker→Employer to coexist on the same Hire.
+  @@unique([hireId, reviewerUserId, direction])
 }
 
 model User {
@@ -335,7 +366,8 @@ model User {
   Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")
   Message_Message_senderIdToUser   Message[]        @relation("Message_senderIdToUser")
   Notification                     Notification[]
-  Review                           Review[]
+  ReviewReviewer                   Review[]         @relation("ReviewReviewer")
+  ReviewReviewee                   Review[]         @relation("ReviewReviewee")
   WorkerProfile                    WorkerProfile?
   Payment                          Payment[]
   OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
@@ -376,7 +408,6 @@ model WorkerProfile {
   Document        Document[]
   Experience      Experience[]
   Hire            Hire[]
-  Review          Review[]
   Offer           Offer[]      @relation("WorkerOffers")
   User            User         @relation(fields: [userId], references: [id])
 }

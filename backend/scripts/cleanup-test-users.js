@@ -54,11 +54,12 @@ const cleanupTestUsers = async () => {
     });
     console.log(`   Deleted ${counts.messages.count} Message(s)`);
 
-    // --- Reviews (reference hireId → Hire, workerId → WorkerProfile, employerId → User) ---
+    // --- Reviews (directional: reviewerUserId/revieweeUserId are canonical User.id) ---
     counts.reviews = await prisma.review.deleteMany({
       where: {
         OR: [
-          { employerId: { in: userIds } },
+          { reviewerUserId: { in: userIds } },
+          { revieweeUserId: { in: userIds } },
         ],
       },
     });

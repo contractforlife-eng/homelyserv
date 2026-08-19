@@ -293,7 +293,7 @@ const EmployerSearch = () => {
           hourlyRateCurrency: profile.hourlyRateCurrency ?? worker.hourlyRateCurrency ?? null,
           desiredJob: profile.desiredJob || worker.desiredJob || '',
           profileImage: isBase64Image(rawProfileImage) ? '' : rawProfileImage,
-          rating: profile.rating || worker.rating || 4.5,
+          rating: profile.rating || worker.rating || worker.ratingAvg || 0,
           jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
           available: profile.available !== undefined ? profile.available : true,
           role: 'WORKER',
@@ -987,9 +987,9 @@ const EmployerSearch = () => {
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                 <StarIcon size={14} className="text-yellow-500" />
-                                <span>{worker.rating || 4.5} ★</span>
+                                 <span>{worker.ratingAvg || worker.rating || '-'} ★</span>
                                 <span className="text-gray-400 dark:text-gray-500">•</span>
-                                <span>{t('employerSearch.experienceYears', { count: worker.experience || 0 })}</span>
+                                <span>{t('employerSearch.experienceYears', { count: (String(worker.experience || '').match(/^\d+(?:\.\d+)?/) || [0])[0] })}</span>
                               </div>
                             </>
                           )}
