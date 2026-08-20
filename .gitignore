@@ -121,6 +121,9 @@ coverage/
 *.cert
 *.p12
 *.pfx
+*.jks
+*.keystore
+keystore.properties
 secrets/
 secrets.*
 .env.secrets

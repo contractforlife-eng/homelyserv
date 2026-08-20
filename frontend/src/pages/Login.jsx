@@ -116,7 +116,7 @@ function Login() {
       user.role = user.role?.toUpperCase();
 
       const authResult = useAuthStore.getState().setAuth(user, token, {
-        remember: isAndroidCapacitor || rememberMe
+        remember: rememberMe
       });
       if (!authResult.success) {
         setError(authResult.error || t('loginFailed'));

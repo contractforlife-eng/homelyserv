@@ -2,6 +2,9 @@ import axios from 'axios';
 import { API_BASE } from '../config/api';
 import { getStoredAuthToken, removeStoredAuthTokens } from './storageMaintenance';
 import { getRuntimeAuthToken } from './runtimeAuthToken';
+import { Capacitor } from '@capacitor/core';
+
+const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
 
 const api = axios.create({
   baseURL: API_BASE
@@ -9,7 +12,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = getRuntimeAuthToken() || getStoredAuthToken();
+    const token = getRuntimeAuthToken() || (isAndroidCapacitor ? null : getStoredAuthToken());
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

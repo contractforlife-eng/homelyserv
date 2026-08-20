@@ -1,8 +1,38 @@
 apply plugin: 'com.android.application'
 
+def signingPropertiesFile = rootProject.file('keystore.properties')
+if (!signingPropertiesFile.exists()) {
+    throw new GradleException('Missing frontend/android/keystore.properties; release signing cannot continue.')
+}
+
+def signingProperties = new Properties()
+signingPropertiesFile.withInputStream { signingProperties.load(it) }
+
+def requiredSigningProperties = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']
+def missingSigningProperties = requiredSigningProperties.findAll { key ->
+    !signingProperties.getProperty(key)?.trim()
+}
+if (!missingSigningProperties.isEmpty()) {
+    throw new GradleException("Missing release signing properties: ${missingSigningProperties.join(', ')}")
+}
+
+def releaseKeystoreFile = file(signingProperties.getProperty('storeFile'))
+if (!releaseKeystoreFile.exists()) {
+    throw new GradleException('Release keystore file was not found at the configured local path.')
+}
+
 android {
     namespace "com.homelyserv.app"
     compileSdk 36
+
+    signingConfigs {
+        release {
+            storeFile releaseKeystoreFile
+            storePassword signingProperties.getProperty('storePassword')
+            keyAlias signingProperties.getProperty('keyAlias')
+            keyPassword signingProperties.getProperty('keyPassword')
+        }
+    }
 
     defaultConfig {
         applicationId "com.homelyserv.app"
@@ -18,6 +48,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
