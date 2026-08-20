@@ -29,6 +29,10 @@ function Login() {
   const [changePasswordError, setChangePasswordError] = useState('');
   const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [rememberMe, setRememberMe] = useState(true);
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -37,6 +41,7 @@ function Login() {
   }, []);
 
   const isNative = Capacitor.isNativePlatform();
+  const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
   const nativeMobileMode = isNative || isMobile;
 
 // Check if user is already logged in — redirect based on Zustand auth state
@@ -63,7 +68,7 @@ function Login() {
     };
   }, []);
 
-const redirectUser = (user) => {
+  const redirectUser = (user) => {
      const role = user?.role?.toUpperCase();
 
      if (role === 'ADMIN') {
@@ -78,6 +83,14 @@ const redirectUser = (user) => {
        navigate('/login');
      }
    };
+
+  // A new tab can render Login before AuthProvider finishes validating the
+  // persistent token. React to the restored auth state instead of relying
+  // only on the one-time mount check above.
+  useEffect(() => {
+    if (loading || mustChangePassword || authLoading || !isAuthenticated || !authUser) return;
+    redirectUser(authUser);
+  }, [authUser, authLoading, isAuthenticated, loading, mustChangePassword]);
 
   const loginUser = async (email, password) => {
     setError('');
@@ -102,7 +115,9 @@ const redirectUser = (user) => {
 
       user.role = user.role?.toUpperCase();
 
-      const authResult = useAuthStore.getState().setAuth(user, token);
+      const authResult = useAuthStore.getState().setAuth(user, token, {
+        remember: isAndroidCapacitor || rememberMe
+      });
       if (!authResult.success) {
         setError(authResult.error || t('loginFailed'));
         setLoading(false);
@@ -371,10 +386,18 @@ const redirectUser = (user) => {
           showPasswordField ? 'lg:max-h-20 lg:opacity-100' : 'lg:max-h-0 lg:opacity-0 lg:mb-0'
         }`}>
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 text-red-600 border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-red-400" />
-              {t('rememberMe')}
-            </label>
+            {!isAndroidCapacitor && (
+              <label htmlFor="remember-me" className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="w-4 h-4 text-red-600 border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-red-400"
+                />
+                {t('rememberMe')}
+              </label>
+            )}
             <Link to="/forgot-password" className="text-xs sm:text-sm text-red-600 hover:text-red-700 font-semibold transition-colors hover:underline">
               {t('forgotPassword')}
             </Link>

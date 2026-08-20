@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE } from '../config/api';
+import { getStoredAuthToken, removeStoredAuthTokens } from './storageMaintenance';
 import { getRuntimeAuthToken } from './runtimeAuthToken';
 
 const api = axios.create({
@@ -8,7 +9,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = getRuntimeAuthToken() || localStorage.getItem('homelyserv_token');
+    const token = getRuntimeAuthToken() || getStoredAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,7 +30,7 @@ api.interceptors.response.use(
       
       if (!isPublicPath) {
         localStorage.removeItem('auth-storage');
-        localStorage.removeItem('homelyserv_token');
+        removeStoredAuthTokens();
         if (
           window.location.pathname !== '/login' &&
           window.location.pathname !== '/register'

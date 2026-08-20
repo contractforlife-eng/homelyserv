@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import api from '../utils/api';
 import { disconnectSocket } from '../utils/socket';
 import { changeLanguageGlobal } from '../i18n';
-import { persistAuthToken } from '../utils/storageMaintenance';
+import { getStoredAuthToken, persistAuthToken, removeStoredAuthTokens } from '../utils/storageMaintenance';
 import { revokeCurrentDeviceToken } from '../utils/pushNotifications';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -15,7 +15,7 @@ import {
 } from '../native/biometricUnlock';
 import { clearRuntimeAuthToken, getRuntimeAuthToken, setRuntimeAuthToken } from '../utils/runtimeAuthToken';
 
-const storedAuthToken = localStorage.getItem('homelyserv_token');
+const storedAuthToken = getStoredAuthToken();
 const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
 let activeAuthCheck = null;
 
@@ -115,7 +115,7 @@ const useAuthStore = create(
       logout: async () => {
         disconnectSocket();
 
-        const token = get().token || localStorage.getItem('homelyserv_token') || getRuntimeAuthToken();
+        const token = get().token || getStoredAuthToken() || getRuntimeAuthToken();
         if (token) {
           revokeCurrentDeviceToken().catch((err) =>
             console.warn('[Push] Logout revocation failed:', err)
@@ -140,21 +140,21 @@ const useAuthStore = create(
           biometricEnabled: false
         });
 
-        localStorage.removeItem('homelyserv_token');
+        removeStoredAuthTokens();
         localStorage.removeItem('auth-storage');
         clearRuntimeAuthToken();
 
         return { success: true };
       },
 
-      setAuth: (user, token) => {
-        return get().restoreAuth(user, token, { persist: true });
+      setAuth: (user, token, { remember = true } = {}) => {
+        return get().restoreAuth(user, token, { persist: true, remember });
       },
 
-      restoreAuth: (user, token, { persist = true } = {}) => {
+      restoreAuth: (user, token, { persist = true, remember = true } = {}) => {
         const normalizedUser = normalizeUser(user);
         if (persist) {
-          const persisted = persistAuthToken(token);
+          const persisted = persistAuthToken(token, { remember });
           if (!persisted.success) {
             set({ user:null, token:null, isAuthenticated:false, isLoading:false, error:persisted.error });
             return { success:false, error:persisted.error };
@@ -178,7 +178,7 @@ const useAuthStore = create(
         activeAuthCheck = (async () => {
           set({ isLoading: true });
 
-          let token = get().token || localStorage.getItem('homelyserv_token') || getRuntimeAuthToken();
+          let token = get().token || getStoredAuthToken() || getRuntimeAuthToken();
           let persistSession = true;
 
           if (isAndroidCapacitor) {
@@ -201,7 +201,7 @@ const useAuthStore = create(
               } else {
                 if (enabledState?.reason === 'KEY_INVALIDATED') {
                   await disableNativeBiometric().catch(() => {});
-                  localStorage.removeItem('homelyserv_token');
+                  removeStoredAuthTokens();
                   set({
                     user: null,
                     token: null,
@@ -235,7 +235,7 @@ const useAuthStore = create(
               } catch (disableError) {
                 console.warn('[Biometric] Invalid enrollment cleanup failed:', disableError?.code || 'DISABLE_FAILED');
               }
-              localStorage.removeItem('homelyserv_token');
+              removeStoredAuthTokens();
               set({
                 user: null,
                 token: null,
@@ -264,11 +264,11 @@ const useAuthStore = create(
             const response = await api.get('/api/auth/verify');
 
             if (response.data?.success && response.data?.user) {
-              const restored = get().restoreAuth(response.data.user, token, { persist: persistSession });
+              const restored = get().restoreAuth(response.data.user, token, { persist: false });
               if (!restored.success) throw new Error(restored.error);
 
               if (isAndroidCapacitor && !persistSession) {
-                localStorage.removeItem('homelyserv_token');
+                removeStoredAuthTokens();
               }
               return { success: true, biometric: !persistSession };
             }
@@ -283,7 +283,7 @@ const useAuthStore = create(
                 console.warn('[Biometric] Rejected-token cleanup failed:', disableError?.code || 'DISABLE_FAILED');
               }
             }
-            localStorage.removeItem('homelyserv_token');
+            removeStoredAuthTokens();
             localStorage.removeItem('auth-storage');
             set({
               user: null,
@@ -307,7 +307,7 @@ const useAuthStore = create(
       enableBiometricUnlock: async () => {
         if (!isAndroidCapacitor) return { success: false, error: 'ANDROID_ONLY' };
 
-        const token = get().token || getRuntimeAuthToken() || localStorage.getItem('homelyserv_token');
+        const token = get().token || getRuntimeAuthToken() || getStoredAuthToken();
         if (!token) return { success: false, error: 'SECURE_TOKEN_MISSING' };
 
         try {
@@ -317,7 +317,7 @@ const useAuthStore = create(
           }
 
           await enableNativeBiometric(token);
-          localStorage.removeItem('homelyserv_token');
+          removeStoredAuthTokens();
           setRuntimeAuthToken(token);
           set({ token, biometricEnabled: true });
           return { success: true };
@@ -353,7 +353,7 @@ const useAuthStore = create(
           }
         }
         clearRuntimeAuthToken();
-        localStorage.removeItem('homelyserv_token');
+        removeStoredAuthTokens();
         localStorage.removeItem('auth-storage');
         set({
           user: null,
@@ -631,7 +631,7 @@ const useAuthStore = create(
           error: null,
           language: 'en'
         });
-        localStorage.removeItem('homelyserv_token');
+        removeStoredAuthTokens();
         localStorage.removeItem('auth-storage');
         clearRuntimeAuthToken();
       },
@@ -646,7 +646,7 @@ const useAuthStore = create(
         language: state.language
       }),
       merge: (persistedState, currentState) => {
-        const token = localStorage.getItem('homelyserv_token');
+        const token = getStoredAuthToken();
         return {
           ...currentState,
           language: persistedState?.language || currentState.language,

@@ -23,6 +23,7 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -172,6 +173,7 @@ public class HomelyServBiometricUnlockPlugin extends Plugin {
 
     private void authenticate(PluginCall call, Cipher cipher, boolean encrypt, String token) {
         call.setKeepAlive(true);
+        AtomicBoolean completed = new AtomicBoolean(false);
 
         BiometricPrompt.AuthenticationCallback callback = new BiometricPrompt.AuthenticationCallback() {
             @Override
@@ -181,7 +183,7 @@ public class HomelyServBiometricUnlockPlugin extends Plugin {
                         ? null
                         : result.getCryptoObject().getCipher();
                     if (authenticatedCipher == null) {
-                        finishReject(call, "CRYPTOGRAPHIC_FAILURE", "Biometric cipher was not available.");
+                        finishReject(call, completed, "CRYPTOGRAPHIC_FAILURE", "Biometric cipher was not available.");
                         return;
                     }
 
@@ -195,7 +197,7 @@ public class HomelyServBiometricUnlockPlugin extends Plugin {
 
                         JSObject response = new JSObject();
                         response.put("enabled", true);
-                        finishResolve(call, response);
+                        finishResolve(call, completed, response);
                     } else {
                         byte[] ciphertext = Base64.decode(
                             preferences().getString(PREF_CIPHERTEXT, ""),
@@ -204,16 +206,16 @@ public class HomelyServBiometricUnlockPlugin extends Plugin {
                         String decryptedToken = new String(authenticatedCipher.doFinal(ciphertext), StandardCharsets.UTF_8);
                         JSObject response = new JSObject();
                         response.put("token", decryptedToken);
-                        finishResolve(call, response);
+                        finishResolve(call, completed, response);
                     }
                 } catch (GeneralSecurityException | IllegalArgumentException exception) {
-                    finishReject(call, "CRYPTOGRAPHIC_FAILURE", "Biometric secure storage could not be used.");
+                    finishReject(call, completed, "CRYPTOGRAPHIC_FAILURE", "Biometric secure storage could not be used.");
                 }
             }
 
             @Override
             public void onAuthenticationError(int errorCode, CharSequence errString) {
-                finishReject(call, biometricErrorCode(errorCode), "Biometric authentication was not completed.");
+                finishReject(call, completed, biometricErrorCode(errorCode), "Biometric authentication was not completed.");
             }
 
             @Override
@@ -222,14 +224,35 @@ public class HomelyServBiometricUnlockPlugin extends Plugin {
             }
         };
 
-        BiometricPrompt prompt = new BiometricPrompt(getActivity(), biometricExecutor, callback);
-        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-            .setTitle("HomelyServ biometric unlock")
-            .setSubtitle(encrypt ? "Confirm to enable biometric unlock" : "Confirm to unlock HomelyServ")
-            .setNegativeButtonText("Use normal login")
-            .build();
+        try {
+            if (getActivity() == null || getActivity().isFinishing() || getActivity().isDestroyed()) {
+                finishReject(call, completed, "BIOMETRIC_PROMPT_UNAVAILABLE", "Biometric prompt is unavailable.");
+                return;
+            }
 
-        prompt.authenticate(promptInfo, new BiometricPrompt.CryptoObject(cipher));
+            getActivity().runOnUiThread(() -> {
+                try {
+                    BiometricPrompt prompt = new BiometricPrompt(getActivity(), biometricExecutor, callback);
+                    BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                        .setTitle("HomelyServ biometric unlock")
+                        .setSubtitle(encrypt ? "Confirm to enable biometric unlock" : "Confirm to unlock HomelyServ")
+                        .setNegativeButtonText("Use normal login")
+                        .build();
+
+                    // Keep this exact cipher instance bound to the prompt. The
+                    // authenticated CryptoObject performs the token operation.
+                    prompt.authenticate(promptInfo, new BiometricPrompt.CryptoObject(cipher));
+                } catch (IllegalStateException exception) {
+                    finishReject(call, completed, "BIOMETRIC_PROMPT_UNAVAILABLE", "Biometric prompt is unavailable.");
+                } catch (IllegalArgumentException exception) {
+                    finishReject(call, completed, "BIOMETRIC_PROMPT_INVALID", "Biometric prompt could not be started.");
+                }
+            });
+        } catch (IllegalStateException exception) {
+            finishReject(call, completed, "BIOMETRIC_PROMPT_UNAVAILABLE", "Biometric prompt is unavailable.");
+        } catch (IllegalArgumentException exception) {
+            finishReject(call, completed, "BIOMETRIC_PROMPT_INVALID", "Biometric prompt could not be started.");
+        }
     }
 
     private SecretKey getOrCreateKey() throws GeneralSecurityException {
@@ -309,14 +332,18 @@ public class HomelyServBiometricUnlockPlugin extends Plugin {
         call.reject(message, code);
     }
 
-    private void finishResolve(PluginCall call, JSObject response) {
-        call.setKeepAlive(false);
-        call.resolve(response);
+    private void finishResolve(PluginCall call, AtomicBoolean completed, JSObject response) {
+        if (completed.compareAndSet(false, true)) {
+            call.setKeepAlive(false);
+            call.resolve(response);
+        }
     }
 
-    private void finishReject(PluginCall call, String code, String message) {
-        call.setKeepAlive(false);
-        call.reject(message, code);
+    private void finishReject(PluginCall call, AtomicBoolean completed, String code, String message) {
+        if (completed.compareAndSet(false, true)) {
+            call.setKeepAlive(false);
+            call.reject(message, code);
+        }
     }
 
     private String availabilityCode(int result) {

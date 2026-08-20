@@ -9,8 +9,18 @@ const LEGACY_CACHE_KEYS = [
 
 const JSON_KEYS = new Set([...LEGACY_CACHE_KEYS, 'homelyserv_public_support_session']);
 const BOUNDED_KEYS = { 'auth-storage':65_536, 'homelyserv_public_support_session':1_024 };
+const AUTH_TOKEN_KEY = 'homelyserv_token';
 
 export const isQuotaExceededError = (error) => error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014;
+
+export function getStoredAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY) || null;
+}
+
+export function removeStoredAuthTokens() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+}
 
 export function cleanupObsoleteHomelyServStorage() {
   const removed = [];
@@ -57,18 +67,22 @@ export function getStorageAudit() {
   return keys.sort((a, b) => b.bytes - a.bytes);
 }
 
-export function persistAuthToken(token) {
+export function persistAuthToken(token, { remember = true } = {}) {
   if (typeof token !== 'string' || token.length < 20 || token.length > 16_384 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
     return { success:false, error:'Invalid authentication token format.' };
   }
+  const targetStorage = remember ? localStorage : sessionStorage;
+  const otherStorage = remember ? sessionStorage : localStorage;
   try {
-    localStorage.setItem('homelyserv_token', token);
+    targetStorage.setItem(AUTH_TOKEN_KEY, token);
+    otherStorage.removeItem(AUTH_TOKEN_KEY);
     return { success:true };
   } catch (error) {
     if (!isQuotaExceededError(error)) return { success:false, error:'Authentication storage is unavailable.' };
     cleanupObsoleteHomelyServStorage();
     try {
-      localStorage.setItem('homelyserv_token', token);
+      targetStorage.setItem(AUTH_TOKEN_KEY, token);
+      otherStorage.removeItem(AUTH_TOKEN_KEY);
       return { success:true, recovered:true };
     } catch (retryError) {
       if (import.meta.env?.DEV) console.error('[AuthStorage] Token persistence failed after scoped cleanup', { name:retryError?.name, tokenBytes:new Blob([token]).size });
