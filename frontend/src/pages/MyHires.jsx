@@ -316,9 +316,9 @@ const MyHires = () => {
 
   const formatEarnedStatus = (status) => {
     const labels = {
-      PENDING: t('myHiresPage.review.awaiting'),
-      AWAITING_CONFIRMATION: t('myHiresPage.review.awaiting'),
-      EARNED: t('myHiresPage.review.approved'),
+      PENDING: t('myHiresPage.review.awaitingWorker'),
+      AWAITING_CONFIRMATION: t('myHiresPage.review.awaitingEmployer'),
+      EARNED: t('myHiresPage.review.confirmedBoth'),
       DISPUTED: t('myHiresPage.review.disputed'),
       CANCELLED: t('myHiresPage.review.cancelled'),
       ON_HOLD: t('myHiresPage.review.onHold')

@@ -8,6 +8,7 @@ import { formatCompensationAmount } from '../utils/compensationDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
+import workerEarningService from '../services/workerEarningService';
 import {
   Bell,
   X,
@@ -68,6 +69,7 @@ const WorkerOffers = () => {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [hireIdMap, setHireIdMap] = useState({});
   const [offerRatingStatus, setOfferRatingStatus] = useState({});
+  const [earnings, setEarnings] = useState([]);
 
   const toggleExpand = (offerId) => {
     setExpandedOffer(expandedOffer === offerId ? null : offerId);
@@ -220,6 +222,13 @@ const WorkerOffers = () => {
   }, [authUser?.id]);
 
   useEffect(() => {
+    if (!authUser?.id) return;
+    workerEarningService.getWorkerEarnings()
+      .then((data) => setEarnings(Array.isArray(data?.records) ? data.records : []))
+      .catch(() => setEarnings([]));
+  }, [authUser?.id, refreshKey]);
+
+  useEffect(() => {
     const uniqueHireIds = [...new Set(Object.values(hireIdMap))];
     if (uniqueHireIds.length === 0) return;
 
@@ -326,11 +335,20 @@ const WorkerOffers = () => {
   };
 
   // ============================================================
-  // Complete Work Handler
+  // Work Period Completion — uses the existing WorkerEarning flow.
+  // Worker submits a PENDING earning; Employer then confirms it.
   // ============================================================
+  const getEarningForOffer = (offer) => {
+    const hireId = hireIdMap[offer.id];
+    if (!hireId) return null;
+    return earnings.find((e) => String(e.hireId) === String(hireId)) || null;
+  };
+
   const handleCompleteWork = async (offer) => {
+    const earning = getEarningForOffer(offer);
+    if (!earning || earning.status !== 'PENDING') return;
     if (processingOffer) return;
-    
+
     if (!confirm(t('workerOffers.completeWorkConfirm'))) {
       return;
     }
@@ -338,17 +356,14 @@ const WorkerOffers = () => {
     setProcessingOffer(offer.id);
 
     try {
-      const data = await hireService.completeWork(offer.id);
-      const updatedOffer = data.offer || {
-        ...offer,
-        status: 'completed',
-        updatedAt: new Date().toISOString()
-      };
-
-      setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
-      alert(t('workerOffers.completeWorkSuccess'));
-      setRefreshKey(prev => prev + 1);
-
+      const data = await workerEarningService.submitWorkerEarning(earning.id);
+      if (data && data.success) {
+        const refreshed = await workerEarningService.getWorkerEarnings();
+        setEarnings(Array.isArray(refreshed?.records) ? refreshed.records : []);
+        alert(t('workerOffers.completeWorkSuccess'));
+      } else {
+        alert(data?.message || t('workerOffers.completeWorkError'));
+      }
     } catch (error) {
       console.error('Error submitting work period:', error);
       alert(t('workerOffers.completeWorkError'));
@@ -638,6 +653,52 @@ const WorkerOffers = () => {
       </button>
     </>
   )}
+
+                {(() => {
+                  const earning = getEarningForOffer(offer);
+                  if (!earning) return null;
+                  if (earning.status === 'PENDING') {
+                    return (
+                      <button
+                        onClick={() => handleCompleteWork(offer)}
+                        disabled={processingOffer === offer.id}
+                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {processingOffer === offer.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <CheckCircle size={14} />
+                        )}
+                        {t('workerOffers.confirmWorkPeriod')}
+                      </button>
+                    );
+                  }
+                  if (earning.status === 'AWAITING_CONFIRMATION') {
+                    return (
+                      <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm rounded-lg flex items-center gap-1.5">
+                        <Clock size={14} />
+                        {t('workerOffers.workPeriodAwaitingEmployer')}
+                      </span>
+                    );
+                  }
+                  if (earning.status === 'EARNED') {
+                    return (
+                      <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
+                        <CheckCircle size={14} />
+                        {t('workerOffers.workPeriodConfirmed')}
+                      </span>
+                    );
+                  }
+                  if (earning.status === 'DISPUTED') {
+                    return (
+                      <span className="px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1.5">
+                        <AlertCircle size={14} />
+                        {t('myHiresPage.review.disputed')}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {(() => {
                   const hireId = hireIdMap[offer.id];
