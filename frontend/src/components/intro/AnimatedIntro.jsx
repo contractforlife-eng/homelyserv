@@ -22,10 +22,10 @@ const AnimatedIntro = () => {
            animation: introOverlayOut 3.5s ease-in-out forwards;
         }
         .intro-logo {
-           animation: introLogoIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+           animation: introLogoIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
         }
         .intro-brand {
-           animation: introBrandIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+           animation: introBrandIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
         }
       `}</style>
       <div className="intro-overlay fixed inset-0 z-[9999] flex items-center justify-center bg-white">
