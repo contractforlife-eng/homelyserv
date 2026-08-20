@@ -658,9 +658,9 @@ function Register() {
           }} />
 
           {/* Login Link */}
-          <p className="text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
+          <p className="flex flex-wrap items-center justify-center text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
             {t('auth.alreadyHaveAccount')}{' '}
-            <Link to="/login" className="text-red-600 font-semibold inline-flex items-center px-2 py-1 hover:text-red-700 transition-colors hover:underline">
+            <Link to="/login" className="inline-flex min-h-11 items-center px-3 text-red-600 font-semibold cursor-pointer touch-manipulation hover:text-red-700 transition-colors hover:underline">
               {t('auth.signInLink')}
             </Link>
           </p>
