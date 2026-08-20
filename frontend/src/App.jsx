@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import AnimatedIntro from './components/intro/AnimatedIntro';
+import BiometricLockGate from './components/security/BiometricLockGate';
 
 // Public Pages
 import Login from './pages/Login';
@@ -182,7 +183,7 @@ if (!isAuthenticated) {
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading, user, markStartupReady } = useAuth();
   const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
   const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
 
@@ -193,6 +194,10 @@ function App() {
     const timer = setTimeout(() => setShowIntro(false), 3500);
     return () => clearTimeout(timer);
   }, [showIntro]);
+
+  useEffect(() => {
+    if (!showIntro) markStartupReady();
+  }, [markStartupReady, showIntro]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -266,6 +271,7 @@ function App() {
   return (
     <>
       {showIntro && <AnimatedIntro />}
+      <BiometricLockGate />
       <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
       <Route path="/" element={<Navigate to="/login" replace />} />

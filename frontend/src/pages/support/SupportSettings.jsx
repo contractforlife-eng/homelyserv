@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import useThemeStore from '../../store/themeStore';
 import SupportLayout from '../../layouts/SupportLayout';
+import BiometricUnlockSettings from '../../components/security/BiometricUnlockSettings';
 import ActionMenuPortal from '../../components/common/ActionMenuPortal';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../../i18n';
@@ -253,6 +254,7 @@ const SupportSettings = () => {
                 <Lock size={16} />
                 {t.changePassword}
               </button>
+              <BiometricUnlockSettings />
             </div>
           </div>
         </div>

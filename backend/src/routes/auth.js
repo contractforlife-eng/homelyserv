@@ -42,7 +42,7 @@ router.get('/users/:id', requireAdmin, authController.getUserById);
 // ============================================================
 // Verify Token - Delegates to controller
 // ============================================================
-router.get('/verify', authController.verifyToken);
+router.get('/verify', authenticate, authController.verifyToken);
 
 // ============================================================
 // Verify Email - Delegates to controller

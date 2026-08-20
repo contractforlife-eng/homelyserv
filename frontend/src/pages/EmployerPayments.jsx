@@ -72,7 +72,11 @@ const EmployerPayments = () => {
   };
 
   const loadData = async () => {
-    if (isLoadingRef.current || !authUser?.email) {
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    if (!authUser?.email) {
       setPayments([]);
       setFilteredPayments([]);
       setLoading(false);
@@ -200,10 +204,10 @@ const EmployerPayments = () => {
   }, [authUser, authLoading, navigate]);
 
   useEffect(() => {
-    if (authUser) {
+    if (authUser?.id) {
       loadData();
     }
-  }, [authUser, refreshKey]);
+  }, [authUser?.id, authUser?.email, refreshKey]);
 
   useEffect(() => {
     let filtered = [...payments];

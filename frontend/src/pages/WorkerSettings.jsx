@@ -6,6 +6,7 @@ import useThemeStore from '../store/themeStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import BiometricUnlockSettings from '../components/security/BiometricUnlockSettings';
 import api from '../utils/api';
 import hireService from '../services/hireService';
 import { getNotifications } from '../utils/notificationService';
@@ -770,6 +771,8 @@ useEffect(() => {
                 </div>
                 <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
               </button>
+
+              <BiometricUnlockSettings />
 
                <div className="flex items-center justify-between">
                   <div>

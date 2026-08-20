@@ -665,16 +665,16 @@ export const getUserById = async (req, res) => {
 // ============================================================
 export const verifyToken = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
+    if (!req.userId) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided'
+        message: 'Session invalid. Please log in again.'
       });
     }
 
-    const decoded = jwt.verify(token, getJwtSecret());
-    const user = await User.findById(decoded.userId).select('-password');
+    // The authenticate middleware has already verified the JWT, checked the
+    // user exists, and enforced the canonical tokenVersion policy.
+    const user = await User.findById(req.userId).select('-password');
 
     if (!user) {
       return res.status(401).json({

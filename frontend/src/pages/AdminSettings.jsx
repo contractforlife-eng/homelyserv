@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import BiometricUnlockSettings from '../components/security/BiometricUnlockSettings';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
@@ -660,6 +661,7 @@ const AdminSettings = () => {
                     {t.actions.changePassword}
                   </button>
                 </div>
+                <BiometricUnlockSettings />
               </div>
             </div>
           )}

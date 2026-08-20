@@ -5,8 +5,19 @@ import { disconnectSocket } from '../utils/socket';
 import { changeLanguageGlobal } from '../i18n';
 import { persistAuthToken } from '../utils/storageMaintenance';
 import { revokeCurrentDeviceToken } from '../utils/pushNotifications';
+import { Capacitor } from '@capacitor/core';
+import {
+  isAvailable as getBiometricAvailability,
+  isEnabled as getBiometricEnabled,
+  enable as enableNativeBiometric,
+  unlock as unlockNativeBiometric,
+  disable as disableNativeBiometric
+} from '../native/biometricUnlock';
+import { clearRuntimeAuthToken, getRuntimeAuthToken, setRuntimeAuthToken } from '../utils/runtimeAuthToken';
 
 const storedAuthToken = localStorage.getItem('homelyserv_token');
+const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
+let activeAuthCheck = null;
 
 const normalizeUser = (userData) => {
   if (!userData) return null;
@@ -25,9 +36,11 @@ const useAuthStore = create(
     (set, get) => ({
       user: null,
       token: storedAuthToken,
-      isAuthenticated: Boolean(storedAuthToken),
+      isAuthenticated: isAndroidCapacitor ? false : Boolean(storedAuthToken),
       isLoading: true,
       error: null,
+      biometricLocked: false,
+      biometricEnabled: false,
       language: localStorage.getItem('homelyserv_language') || 'en',
 
       register: async (userData, userType) => {
@@ -43,6 +56,7 @@ const useAuthStore = create(
 
           const persisted = persistAuthToken(token);
           if (!persisted.success) throw new Error(persisted.error);
+          setRuntimeAuthToken(token);
 
           set({
             user: normalizedUser,
@@ -77,6 +91,7 @@ const useAuthStore = create(
 
           const persisted = persistAuthToken(token);
           if (!persisted.success) throw new Error(persisted.error);
+          setRuntimeAuthToken(token);
 
           set({
             user: normalizedUser,
@@ -100,11 +115,19 @@ const useAuthStore = create(
       logout: async () => {
         disconnectSocket();
 
-        const token = localStorage.getItem('homelyserv_token');
+        const token = get().token || localStorage.getItem('homelyserv_token') || getRuntimeAuthToken();
         if (token) {
           revokeCurrentDeviceToken().catch((err) =>
             console.warn('[Push] Logout revocation failed:', err)
           );
+        }
+
+        if (isAndroidCapacitor) {
+          try {
+            await disableNativeBiometric();
+          } catch (error) {
+            console.warn('[Biometric] Logout cleanup failed:', error?.code || 'DISABLE_FAILED');
+          }
         }
 
         set({
@@ -112,80 +135,236 @@ const useAuthStore = create(
           token: null,
           isAuthenticated: false,
           isLoading: false,
-          error: null
+          error: null,
+          biometricLocked: false,
+          biometricEnabled: false
         });
 
         localStorage.removeItem('homelyserv_token');
         localStorage.removeItem('auth-storage');
+        clearRuntimeAuthToken();
 
         return { success: true };
       },
 
       setAuth: (user, token) => {
+        return get().restoreAuth(user, token, { persist: true });
+      },
+
+      restoreAuth: (user, token, { persist = true } = {}) => {
         const normalizedUser = normalizeUser(user);
-        const persisted = persistAuthToken(token);
-        if (!persisted.success) {
-          set({ user:null, token:null, isAuthenticated:false, isLoading:false, error:persisted.error });
-          return { success:false, error:persisted.error };
+        if (persist) {
+          const persisted = persistAuthToken(token);
+          if (!persisted.success) {
+            set({ user:null, token:null, isAuthenticated:false, isLoading:false, error:persisted.error });
+            return { success:false, error:persisted.error };
+          }
         }
+        setRuntimeAuthToken(token);
         set({
           user: normalizedUser,
           token,
           isAuthenticated: true,
           isLoading: false,
-          error: null
+          error: null,
+          biometricLocked: false
         });
         return { success: true, user: normalizedUser };
       },
 
       checkAuth: async () => {
-        set({ isLoading: true });
+        if (activeAuthCheck) return activeAuthCheck;
 
-        const { token } = get();
+        activeAuthCheck = (async () => {
+          set({ isLoading: true });
 
-        if (!token) {
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false
-          });
-          return { success: false };
+          let token = get().token || localStorage.getItem('homelyserv_token') || getRuntimeAuthToken();
+          let persistSession = true;
+
+          if (isAndroidCapacitor) {
+            try {
+              const enabledState = await getBiometricEnabled();
+              if (enabledState?.enabled) {
+                set({
+                  user: null,
+                  token: null,
+                  isAuthenticated: false,
+                  isLoading: true,
+                  biometricLocked: true,
+                  biometricEnabled: true
+                });
+
+                const unlocked = await unlockNativeBiometric();
+                token = unlocked?.token;
+                persistSession = false;
+                if (!token) throw { code: 'SECURE_TOKEN_MISSING' };
+              } else {
+                if (enabledState?.reason === 'KEY_INVALIDATED') {
+                  await disableNativeBiometric().catch(() => {});
+                  localStorage.removeItem('homelyserv_token');
+                  set({
+                    user: null,
+                    token: null,
+                    isAuthenticated: false,
+                    isLoading: false,
+                    biometricLocked: false,
+                    biometricEnabled: false,
+                    error: null
+                  });
+                  return { success: false, biometricInvalidated: true };
+                }
+                set({ biometricEnabled: false });
+              }
+            } catch (error) {
+              clearRuntimeAuthToken();
+              if (error?.code === 'USER_CANCELLED' || error?.code === 'BIOMETRIC_AUTHENTICATION_FAILED' || error?.code === 'BIOMETRIC_LOCKOUT') {
+                set({
+                  user: null,
+                  token: null,
+                  isAuthenticated: false,
+                  isLoading: false,
+                  biometricLocked: true,
+                  biometricEnabled: true,
+                  error: null
+                });
+                return { success: false, biometricCancelled: true };
+              }
+
+              try {
+                await disableNativeBiometric();
+              } catch (disableError) {
+                console.warn('[Biometric] Invalid enrollment cleanup failed:', disableError?.code || 'DISABLE_FAILED');
+              }
+              localStorage.removeItem('homelyserv_token');
+              set({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                isLoading: false,
+                biometricLocked: false,
+                biometricEnabled: false,
+                error: null
+              });
+              return { success: false, biometricUnavailable: true };
+            }
+          }
+
+          if (!token) {
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              biometricLocked: false
+            });
+            return { success: false };
+          }
+
+          try {
+            setRuntimeAuthToken(token);
+            const response = await api.get('/api/auth/verify');
+
+            if (response.data?.success && response.data?.user) {
+              const restored = get().restoreAuth(response.data.user, token, { persist: persistSession });
+              if (!restored.success) throw new Error(restored.error);
+
+              if (isAndroidCapacitor && !persistSession) {
+                localStorage.removeItem('homelyserv_token');
+              }
+              return { success: true, biometric: !persistSession };
+            }
+
+            throw new Error('Session verification failed');
+          } catch (error) {
+            clearRuntimeAuthToken();
+            if (isAndroidCapacitor && !persistSession) {
+              try {
+                await disableNativeBiometric();
+              } catch (disableError) {
+                console.warn('[Biometric] Rejected-token cleanup failed:', disableError?.code || 'DISABLE_FAILED');
+              }
+            }
+            localStorage.removeItem('homelyserv_token');
+            localStorage.removeItem('auth-storage');
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              isLoading: false,
+              biometricLocked: false,
+              biometricEnabled: false
+            });
+            return { success: false };
+          }
+        })();
+
+        try {
+          return await activeAuthCheck;
+        } finally {
+          activeAuthCheck = null;
+        }
+      },
+
+      enableBiometricUnlock: async () => {
+        if (!isAndroidCapacitor) return { success: false, error: 'ANDROID_ONLY' };
+
+        const token = get().token || getRuntimeAuthToken() || localStorage.getItem('homelyserv_token');
+        if (!token) return { success: false, error: 'SECURE_TOKEN_MISSING' };
+
+        try {
+          const availability = await getBiometricAvailability();
+          if (!availability?.available) {
+            return { success: false, error: availability?.code || 'BIOMETRIC_UNAVAILABLE' };
+          }
+
+          await enableNativeBiometric(token);
+          localStorage.removeItem('homelyserv_token');
+          setRuntimeAuthToken(token);
+          set({ token, biometricEnabled: true });
+          return { success: true };
+        } catch (error) {
+          return { success: false, error: error?.code || 'BIOMETRIC_ENABLE_FAILED' };
+        }
+      },
+
+      disableBiometricUnlock: async () => {
+        if (!isAndroidCapacitor) return { success: false, error: 'ANDROID_ONLY' };
+
+        const token = get().token || getRuntimeAuthToken();
+        if (token) {
+          const persisted = persistAuthToken(token);
+          if (!persisted.success) return { success: false, error: persisted.error };
         }
 
         try {
-          const response = await api.get('/api/auth/verify');
-
-          if (response.data?.success && response.data?.user) {
-            const normalizedUser = normalizeUser(response.data.user);
-            set({
-              user: normalizedUser,
-              token,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null
-            });
-
-            return { success: true };
-          }
-
-          get().logout();
-
-          set({
-            isLoading: false
-          });
-
-          return { success: false };
-
+          await disableNativeBiometric();
+          set({ biometricEnabled: false });
+          return { success: true };
         } catch (error) {
-
-          get().logout();
-
-          set({
-            isLoading: false
-          });
-
-          return { success: false };
+          return { success: false, error: error?.code || 'BIOMETRIC_DISABLE_FAILED' };
         }
+      },
+
+      useNormalLogin: async () => {
+        if (isAndroidCapacitor) {
+          try {
+            await disableNativeBiometric();
+          } catch (error) {
+            console.warn('[Biometric] Normal-login cleanup failed:', error?.code || 'DISABLE_FAILED');
+          }
+        }
+        clearRuntimeAuthToken();
+        localStorage.removeItem('homelyserv_token');
+        localStorage.removeItem('auth-storage');
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+          biometricLocked: false,
+          biometricEnabled: false,
+          error: null
+        });
+        return { success: true };
       },
 
       updateProfile: async (userData) => {
@@ -454,6 +633,7 @@ const useAuthStore = create(
         });
         localStorage.removeItem('homelyserv_token');
         localStorage.removeItem('auth-storage');
+        clearRuntimeAuthToken();
       },
 
       setLoading: (loading) => {

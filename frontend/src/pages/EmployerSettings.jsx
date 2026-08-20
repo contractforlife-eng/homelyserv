@@ -7,6 +7,7 @@ import useThemeStore from '../store/themeStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import BiometricUnlockSettings from '../components/security/BiometricUnlockSettings';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import api from '../utils/api';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
@@ -703,6 +704,8 @@ const EmployerSettings = () => {
                   </div>
                   <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
                 </button>
+
+                <BiometricUnlockSettings />
 
                 <div className="flex items-center justify-between">
                   <div>

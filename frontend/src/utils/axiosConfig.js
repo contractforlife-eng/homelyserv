@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE } from '../config/api';
+import { getRuntimeAuthToken } from './runtimeAuthToken';
 
 const api = axios.create({
   baseURL: API_BASE
@@ -7,7 +8,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('homelyserv_token');
+    const token = getRuntimeAuthToken() || localStorage.getItem('homelyserv_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
