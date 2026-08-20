@@ -1,5 +1,5 @@
 // Support Users Page - View users, suspend/reactivate, reset passwords
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
@@ -30,39 +30,55 @@ const SupportUsers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [actionLoading, setActionLoading] = useState(null);
   const [notification, setNotification] = useState(null);
   const [showResetModal, setShowResetModal] = useState(null);
   const [resetReason, setResetReason] = useState('');
+  const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = async (page, requestId) => {
     try {
       const params = new URLSearchParams();
+      params.append('page', String(page));
+      params.append('limit', String(pageSize));
       if (searchTerm) params.append('search', searchTerm);
       if (roleFilter) params.append('role', roleFilter);
 
       const response = await api.get(`/api/support/users?${params.toString()}`);
 
+      if (requestId !== requestIdRef.current) return;
+
       if (response.data?.success) {
         setUsers(response.data.users);
+        setTotalUsers(Number(response.data.total) || 0);
+        const responsePage = Number(response.data.page) || 1;
+        const responseLimit = Number(response.data.limit) || pageSize;
+        const responseTotal = Number(response.data.total) || 0;
+        const responseTotalPages = responseTotal > 0
+          ? Math.ceil(responseTotal / responseLimit)
+          : 1;
+        setCurrentPage(Math.min(Math.max(responsePage, 1), responseTotalPages));
       }
     } catch (error) {
       console.error('❌ Error fetching users:', error);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   };
 
   useEffect(() => {
+    const requestId = ++requestIdRef.current;
     const debounceTimer = setTimeout(() => {
-      fetchUsers();
+      setLoading(true);
+      fetchUsers(currentPage, requestId);
     }, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchTerm, roleFilter]);
+  }, [searchTerm, roleFilter, currentPage]);
+
+  const totalPages = totalUsers > 0 ? Math.ceil(totalUsers / pageSize) : 0;
 
   const handleSuspend = async (userId, suspend) => {
     setActionLoading(userId);
@@ -201,7 +217,10 @@ const SupportUsers = () => {
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
               />
             </div>
@@ -211,7 +230,10 @@ const SupportUsers = () => {
               <Filter size={18} className="absolute left-3 top-3 text-gray-400" />
               <select
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white appearance-none"
               >
                 <option value="">{t.allRoles}</option>
@@ -227,7 +249,7 @@ const SupportUsers = () => {
         {/* Users Count */}
         <div className="mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {t.totalUsers}: <span className="font-semibold">{users.length}</span>
+            {t.totalUsers}: <span className="font-semibold">{totalUsers}</span>
           </p>
         </div>
 
@@ -356,6 +378,28 @@ const SupportUsers = () => {
             </div>
           )}
         </div>
+
+        {totalPages > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={loading || currentPage <= 1}
+              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span>Page {currentPage} of {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={loading || currentPage >= totalPages}
+              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Password Reset Modal */}
