@@ -51,6 +51,10 @@ import {
   verifyPayPalApprovalEvidence,
   verifyPayPalCaptureEvidence,
 } from '../utils/paypalCaptureEvidence.js';
+import {
+  isTurkeySubscriptionPayment,
+  resolvePersistedTrySubscriptionEvidence,
+} from '../services/trySubscriptionProviderEvidenceService.js';
 
 const router = express.Router();
 
@@ -310,6 +314,16 @@ export const resolveExpectedProviderEvidence = (payment) => {
   const hasAmount = payment?.providerAmount != null;
   const hasCurrency = payment?.providerCurrency != null;
   if (hasAmount !== hasCurrency) throw new Error('Incomplete persisted provider evidence');
+
+  if (isTurkeySubscriptionPayment(payment)) {
+    if (!hasAmount) throw new Error('Turkey subscription provider evidence is not persisted');
+    const expected = resolvePersistedTrySubscriptionEvidence(payment);
+    const persistedAmount = formatMoneyDecimal(payment.providerAmount, 'USD');
+    if (persistedAmount !== String(payment.providerAmount) || persistedAmount !== expected.providerAmount) {
+      throw new Error('Persisted Turkey subscription provider evidence is invalid');
+    }
+    return { amount: persistedAmount, currency: 'USD', persisted: true };
+  }
 
   if (hasAmount) {
     const currency = String(payment.providerCurrency).trim().toUpperCase();

@@ -1,6 +1,11 @@
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { formatMoneyDecimal, getCurrencyMinorUnit, toMinorUnits } from '../utils/money.js';
 import { reconcileSubscriptionRefund } from './subscriptionRefundReconciliationService.js';
+import {
+  isTurkeySubscriptionPayment,
+  resolvePersistedTrySubscriptionEvidence,
+  TRY_TO_USD_CONVERTED_MODE,
+} from './trySubscriptionProviderEvidenceService.js';
 
 export const RECONCILIATION_STATES = Object.freeze({
   MATCHED: 'MATCHED',
@@ -112,9 +117,26 @@ export const reconcilePayment = (payment, duplicateEvidence = {}, context = {}) 
     if (!providerAmount) addReason(reasons, 'INVALID_PROVIDER_AMOUNT', 'MISMATCH');
   }
 
-  const storedMode = getStoredMode(payment, paymentCurrency, providerCurrency);
+  let tryEvidence = null;
+  let tryEvidenceError = null;
+  if (isTurkeySubscriptionPayment(payment)) {
+    try {
+      tryEvidence = resolvePersistedTrySubscriptionEvidence(payment);
+    } catch (error) {
+      tryEvidenceError = error;
+    }
+  }
+  const storedMode = tryEvidence ? TRY_TO_USD_CONVERTED_MODE : getStoredMode(payment, paymentCurrency, providerCurrency);
+  if (isTurkeySubscriptionPayment(payment) && tryEvidenceError) {
+    addReason(reasons, 'INVALID_TRY_SUBSCRIPTION_FX_SNAPSHOT', 'MISMATCH');
+  }
   if (payment?.providerAmount != null && payment?.providerCurrency != null) {
-    if (storedMode === 'DIRECT') {
+    if (storedMode === TRY_TO_USD_CONVERTED_MODE) {
+      if (providerCurrency !== 'USD') addReason(reasons, 'TRY_PROVIDER_CURRENCY_MISMATCH', 'MISMATCH');
+      if (tryEvidence && providerAmount && providerAmount.canonical !== tryEvidence.providerAmount) {
+        addReason(reasons, 'TRY_PROVIDER_AMOUNT_MISMATCH', 'MISMATCH');
+      }
+    } else if (storedMode === 'DIRECT') {
       if (providerCurrency !== paymentCurrency) addReason(reasons, 'DIRECT_PROVIDER_CURRENCY_MISMATCH', 'MISMATCH');
       if (paymentAmount && providerAmount && paymentAmount.minor !== providerAmount.minor) {
         addReason(reasons, 'DIRECT_PROVIDER_AMOUNT_MISMATCH', 'MISMATCH');
