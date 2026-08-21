@@ -55,8 +55,13 @@ export const getActiveSubscription = async (userId) => {
 };
 
 export const normalizePlanProjection = (plan) => {
-  if (plan === 'weekly' || plan === 'monthly' || plan === 'annual' || plan === 'legacy_monthly') return plan;
+  if (plan === 'weekly' || plan === 'monthly' || plan === 'annual' || plan === 'legacy_monthly' || plan === 'manual') return plan;
   return plan ? 'legacy_unknown' : null;
+};
+
+export const isManualPremiumTargetRole = (role) => {
+  const normalizedRole = String(role || '').trim().toUpperCase();
+  return normalizedRole === 'EMPLOYER' || normalizedRole === 'WORKER';
 };
 
 export const isActiveSubscriptionRow = (subscription, now = new Date()) => (

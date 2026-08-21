@@ -8,7 +8,7 @@ import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
-import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries, activateManualPremium, deactivateManualPremium, getManualPremiumState } from '../services/premiumService.js';
+import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries, activateManualPremium, deactivateManualPremium, getManualPremiumState, isManualPremiumTargetRole } from '../services/premiumService.js';
 import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
@@ -1684,8 +1684,8 @@ router.patch('/users/:userId/premium', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    if (targetUser.role === 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Cannot modify premium for admin accounts' });
+    if (!isManualPremiumTargetRole(targetUser.role)) {
+      return res.status(403).json({ success: false, message: 'Manual Premium is available only for Employer and Worker accounts' });
     }
 
     if (action === 'activate') {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveSubscriptionGrantSnapshot } from './subscriptionGrantService.js';
 import { reconcileSubscriptionRefund } from './subscriptionRefundReconciliationService.js';
-import { normalizePlanProjection } from './premiumService.js';
+import { isManualPremiumTargetRole, normalizePlanProjection } from './premiumService.js';
 import { getSubscriptionPlan } from '../config/subscription.js';
 import { getProviderCapability } from '../config/providerCapabilities.js';
 
@@ -66,8 +66,17 @@ test('annual projection is distinct while manual and legacy plans remain unchang
   assert.equal(normalizePlanProjection('annual'), 'annual');
   assert.equal(normalizePlanProjection('weekly'), 'weekly');
   assert.equal(normalizePlanProjection('monthly'), 'monthly');
-  assert.equal(normalizePlanProjection('manual'), 'legacy_unknown');
+  assert.equal(normalizePlanProjection('manual'), 'manual');
   assert.equal(normalizePlanProjection('legacy_monthly'), 'legacy_monthly');
+  assert.equal(normalizePlanProjection('historical_plan'), 'legacy_unknown');
+});
+
+test('manual Premium target roles are limited to Employer and Worker', () => {
+  assert.equal(isManualPremiumTargetRole('EMPLOYER'), true);
+  assert.equal(isManualPremiumTargetRole('worker'), true);
+  assert.equal(isManualPremiumTargetRole('ADMIN'), false);
+  assert.equal(isManualPremiumTargetRole('SUPPORT'), false);
+  assert.equal(isManualPremiumTargetRole(''), false);
 });
 
 test('the current automated/manual purchase authority and PayPal capability reject annual', () => {

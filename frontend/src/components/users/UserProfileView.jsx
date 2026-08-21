@@ -205,7 +205,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   // ADMIN MANUAL PREMIUM
   // ============================================================
   const handleActivatePremium = async () => {
-    if (!profileUser || !isAdmin) return;
+    if (!profileUser || !isAdmin || premiumActionLoading) return;
     setPremiumActionLoading(true);
     try {
       const payload = { action: 'activate' };
@@ -214,7 +214,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       }
       const response = await api.patch(`${apiBase}/users/${userId}/premium`, payload);
       if (response.data?.success) {
-        setNotification({ type: 'success', text: t.feedback?.premiumActivated || 'Premium activated successfully' });
+        setNotification({ type: 'success', text: t.feedback?.premiumActivated || 'Manual Premium activated successfully' });
         setPremiumEndDate('');
         loadUser();
       } else {
@@ -228,7 +228,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   };
 
   const handleDeactivatePremium = async () => {
-    if (!profileUser || !isAdmin) return;
+    if (!profileUser || !isAdmin || premiumActionLoading) return;
     setPremiumActionLoading(true);
     try {
       const response = await api.patch(`${apiBase}/users/${userId}/premium`, { action: 'deactivate' });
@@ -625,7 +625,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                       className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50"
                     >
                       {premiumActionLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
-                      {t.subscription.activatePremium || 'Activate Premium'}
+                      {t.subscription.activatePremium || 'Activate Manual Premium'}
                     </button>
                     {profileUser.subscription?.hasActiveManualPremium && (
                       <button
