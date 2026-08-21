@@ -377,6 +377,7 @@ model User {
   Payment                          Payment[]
   OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
   Subscription                     Subscription[]
+  ManualPremiumGrant               ManualPremiumGrant?
   SubscriptionGrant                SubscriptionGrant[]
   Complaint                        Complaint[]
   AssignedComplaints               Complaint[]      @relation("ComplaintAssignedSupport")
@@ -687,6 +688,23 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   User User @relation(fields: [userId], references: [id])
+}
+
+// Current manual Premium state. This is intentionally separate from paid
+// Subscription rows; service migration is deferred to a later phase.
+model ManualPremiumGrant {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  status    String   @default("inactive")
+  startDate DateTime
+  endDate   DateTime
+  adminId   String?  @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User User @relation(fields: [userId], references: [id])
+
+  @@map("manual_premium_grants")
 }
 
 model SubscriptionGrant {
