@@ -6,6 +6,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
+import { isIntentionalWorkerSearch } from '../services/employerSearchPolicy.js';
 
 const router = express.Router();
 
@@ -32,21 +33,31 @@ const escapeRegExp = (string) => {
 router.get('/search', requireEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
-    const employerRole = req.userRole;
+    const { query, category, location, minRating, minExperience, availability, maxHourlyRateActive, language } = req.query;
+    const intentionalSearch = isIntentionalWorkerSearch({
+      query,
+      category,
+      location,
+      minRating,
+      minExperience,
+      availability,
+      maxHourlyRateActive,
+      language,
+    });
 
-    const searchResult = await recordSearch(employerId);
-    if (!searchResult.allowed) {
-      return res.status(403).json({
-        success: false,
-        message: 'Daily search limit reached. Upgrade to Premium for unlimited searches.',
-        searchCount: searchResult.remaining === 0 ? 3 : 0,
-        searchLimit: 3,
-        remaining: 0,
-        isPremium: false
-      });
+    if (intentionalSearch) {
+      const searchResult = await recordSearch(employerId);
+      if (!searchResult.allowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'Daily search limit reached. Upgrade to Premium for unlimited searches.',
+          searchCount: searchResult.remaining === 0 ? 3 : 0,
+          searchLimit: 3,
+          remaining: 0,
+          isPremium: false
+        });
+      }
     }
-
-    const { query, category, location, minRating } = req.query;
     
     let filter = { role: 'WORKER' };
     

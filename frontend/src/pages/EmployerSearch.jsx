@@ -36,6 +36,11 @@ import {
   formatWorkerRate,
   getComparableWorkerRate
 } from '../utils/workerRateDisplay';
+import {
+  getSearchLimitState,
+  isSearchLimitResponse,
+  shouldShowWorkerDiscovery,
+} from '../utils/employerSearchQuota';
 
 const SEARCH_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
 
@@ -43,6 +48,23 @@ const getInitialSearchCurrency = (user) => {
   if (SEARCH_CURRENCIES.includes(user?.preferredCurrency)) return user.preferredCurrency;
   if (SEARCH_CURRENCIES.includes(user?.effectiveCurrency)) return user.effectiveCurrency;
   return 'EGP';
+};
+
+// Share equivalent in-flight discovery requests across quick remounts,
+// including React StrictMode's development remount.
+const inFlightDiscoveryRequests = new Map();
+
+const fetchDiscoveryWorkers = (userKey) => {
+  const existing = inFlightDiscoveryRequests.get(userKey);
+  if (existing) return existing;
+
+  const request = employerService.searchWorkers();
+  inFlightDiscoveryRequests.set(userKey, request);
+  request.then(
+    () => { if (inFlightDiscoveryRequests.get(userKey) === request) inFlightDiscoveryRequests.delete(userKey); },
+    () => { if (inFlightDiscoveryRequests.get(userKey) === request) inFlightDiscoveryRequests.delete(userKey); }
+  );
+  return request;
 };
 
 const EmployerSearch = () => {
@@ -65,6 +87,7 @@ const EmployerSearch = () => {
   const [savedWorkers, setSavedWorkers] = useState([]);
   const [searchCurrency, setSearchCurrency] = useState(() => getInitialSearchCurrency(authUser));
   const searchCurrencyInitializedRef = useRef(Boolean(authUser));
+  const discoveryUserKeyRef = useRef(null);
 
   const [advancedFilters, setAdvancedFilters] = useState({
     minRating: 0,
@@ -203,7 +226,10 @@ const EmployerSearch = () => {
       searchCurrencyInitializedRef.current = true;
     }
 
-    loadWorkersFromBackend();
+    const discoveryUserKey = String(authUser.id || authUser.email || '');
+    if (discoveryUserKeyRef.current === discoveryUserKey) return;
+    discoveryUserKeyRef.current = discoveryUserKey;
+    loadWorkersFromBackend({}, { discovery: true, discoveryUserKey });
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   // Keep an inactive max filter at the selected currency's current ceiling.
@@ -220,40 +246,58 @@ const EmployerSearch = () => {
   // ============================================================
   // 4. LOAD WORKERS FROM BACKEND
   // ============================================================
-  const loadWorkersFromBackend = async () => {
+  const loadWorkersFromBackend = async (filters = {}, { discovery = false, discoveryUserKey = null } = {}) => {
     setLoading(true);
     try {
-      const data = await employerService.searchWorkers();
+      const data = await (discovery
+        ? fetchDiscoveryWorkers(discoveryUserKey)
+        : employerService.searchWorkers(filters));
       if (data.success) {
         const workers = (data.workers || []).map(w => ({
           ...w,
           id: w.id || w._id,
           profileImage: isBase64Image(w.profileImage) ? '' : (w.profileImage || w.image || '')
         }));
+        const remaining = data.remaining ?? 3;
+        const isPremium = data.isPremium || false;
         setAllWorkers(workers);
         setSearchLimitStatus({
           count: data.searchCount || 0,
           limit: data.searchLimit || 3,
-          remaining: data.remaining ?? 3,
-          isPremium: data.isPremium || false,
-          limitReached: false
+          remaining,
+          isPremium,
+          limitReached: !isPremium && remaining <= 0
         });
         console.log(`✅ Loaded ${workers.length} workers from backend`);
+        return { workers };
       } else if (data.message && data.message.includes('Daily search limit reached')) {
+        setAllWorkers([]);
+        setSearchResults([]);
+        setShowResults(false);
         setSearchLimitStatus({
-          count: data.searchCount || 3,
+          count: data.searchCount ?? 3,
           limit: data.searchLimit || 3,
           remaining: 0,
-          isPremium: false,
+          isPremium: data.isPremium || false,
           limitReached: true
         });
-        setAllWorkers([]);
+        return { quotaReached: true };
       } else {
         throw new Error(data.message || 'Failed to load workers');
       }
     } catch (error) {
       console.error('Error loading workers from backend:', error);
-      loadWorkersFromStorage();
+      const response = error.response?.data;
+      if (isSearchLimitResponse(error)) {
+        setAllWorkers([]);
+        setSearchResults([]);
+        setShowResults(false);
+        setSearchLimitStatus(prev => getSearchLimitState(response, prev));
+        return { quotaReached: true };
+      }
+
+      if (discovery) loadWorkersFromStorage();
+      return { workers: allWorkers };
     } finally {
       setLoading(false);
     }
@@ -396,7 +440,7 @@ const EmployerSearch = () => {
   // ============================================================
   // 7. SEARCH FUNCTION
   // ============================================================
-  const handleSearch = () => {
+  const handleSearch = async () => {
     console.log('🔍 Starting search...');
     console.log('📌 Selected Job:', selectedJob);
     console.log('📌 Search Query:', searchQuery);
@@ -405,8 +449,34 @@ const EmployerSearch = () => {
     setLoading(true);
     setShowResults(false);
 
+    const searchFilters = {
+      ...(searchQuery.trim() ? { query: searchQuery.trim() } : {}),
+      ...(selectedJob && selectedJob !== 'All Jobs' ? { category: selectedJob } : {}),
+      ...(selectedLocation && selectedLocation !== 'All Locations' ? { location: selectedLocation } : {}),
+      ...(advancedFilters.minRating > 0 ? { minRating: advancedFilters.minRating } : {}),
+      ...(advancedFilters.minExperience > 0 ? { minExperience: advancedFilters.minExperience } : {}),
+      ...(advancedFilters.availability !== 'all' ? { availability: advancedFilters.availability } : {}),
+      ...(advancedFilters.maxHourlyRateActive ? {
+        maxHourlyRate: advancedFilters.maxHourlyRate,
+        maxHourlyRateActive: true
+      } : {}),
+      ...(advancedFilters.language !== 'all' ? { language: advancedFilters.language } : {})
+    };
+    const isIntentionalSearch = Object.keys(searchFilters).length > 0;
+    let sourceWorkers = allWorkers;
+
+    if (isIntentionalSearch) {
+      const loadResult = await loadWorkersFromBackend(searchFilters);
+      if (loadResult?.quotaReached) {
+        setSearchResults([]);
+        setShowResults(false);
+        return;
+      }
+      sourceWorkers = loadResult?.workers || allWorkers;
+    }
+
     setTimeout(() => {
-      let results = [...allWorkers];
+      let results = [...sourceWorkers];
 
       // AVAILABILITY HARD FILTER (defense-in-depth): the backend already
       // excludes Not Available workers from search results. This unconditional
@@ -541,6 +611,7 @@ const EmployerSearch = () => {
   };
 
   const featuredWorkers = getFeaturedWorkers();
+  const showWorkerDiscovery = shouldShowWorkerDiscovery(searchLimitStatus);
 
   // ============================================================
   // 8. RENDER
@@ -603,7 +674,7 @@ const EmployerSearch = () => {
             </div>
 
             {/* Results Count */}
-            {showResults && (
+            {showResults && showWorkerDiscovery && (
               <div className="text-sm text-teal-100">
                 {t('employerSearch.workersAvailable', { count: searchResults.length })}
               </div>
@@ -794,7 +865,7 @@ const EmployerSearch = () => {
         </div>
 
         {/* Available Workers Mini Cards Section */}
-        {featuredWorkers.length > 0 && !searchLimitStatus.limitReached && (
+        {featuredWorkers.length > 0 && showWorkerDiscovery && (
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">{t('employerSearch.availableWorkers')}</h2>
             <div className="relative">
@@ -872,22 +943,19 @@ const EmployerSearch = () => {
         )}
 
         {/* Search Limit Warning */}
-        {searchLimitStatus.limitReached && (
+        {searchLimitStatus.limitReached && !searchLimitStatus.isPremium && (
           <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-lg">
             <div className="flex items-center gap-3">
               <LockIcon size={24} className="text-amber-600" />
               <div>
                 <p className="font-semibold text-amber-800 dark:text-amber-300">{t('employerSearch.dailyLimitReached')}</p>
-                <Link to="/subscription" className="text-sm text-teal-600 hover:underline mt-1 inline-block">
-                  {t('employerSearch.upgradePremium')}
-                </Link>
               </div>
             </div>
           </div>
         )}
 
         {/* Main Results */}
-        {showResults && (
+        {showResults && showWorkerDiscovery && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('employerSearch.results')}</h3>
