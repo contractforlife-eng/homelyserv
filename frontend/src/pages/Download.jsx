@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Download as DownloadIcon, Facebook, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import appIcon from '../assets/homelyserv-app-icon.png';
+import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
 
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.0-1/release.json';
@@ -168,7 +169,7 @@ const Download = () => {
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
             <div className="mb-7 flex items-center gap-3">
-              <img src="/favicon.png" alt="HomelyServ" className="h-11 w-11 object-contain brightness-0 invert" />
+              <img src={markLight} alt="HomelyServ" className="h-11 w-auto shrink-0 object-contain" />
               <span className="text-lg font-bold tracking-tight">HomelyServ</span>
             </div>
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-red-100">{t('downloadPage.officialRelease')}</p>
