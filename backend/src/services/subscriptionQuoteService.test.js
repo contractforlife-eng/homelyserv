@@ -24,13 +24,12 @@ test('Egypt Worker quote preserves current weekly/monthly purchasing', () => {
   assert.equal(quote.plans.annual.purchaseEnabled, false);
 });
 
-test('international markets expose book prices but no purchase-enabled plans', () => {
+test('approved direct PayPal markets expose purchase-enabled weekly/monthly plans', () => {
   for (const [countryCode, currency, weekly, annual] of [
     ['US', 'USD', 5.99, 149.99],
     ['DE', 'EUR', 4.99, 129.99],
     ['FR', 'EUR', 4.99, 129.99],
     ['GB', 'GBP', 4.99, 129.99],
-    ['TR', 'TRY', 99, 1999],
     ['CA', 'USD', 5.99, 149.99],
     ['AE', 'USD', 5.99, 149.99],
   ]) {
@@ -38,12 +37,21 @@ test('international markets expose book prices but no purchase-enabled plans', (
     assert.equal(quote.currency, currency);
     assert.equal(quote.plans.weekly.amount, weekly);
     assert.equal(quote.plans.annual.amount, annual);
+    assert.equal(quote.plans.weekly.purchaseEnabled, true);
+    assert.equal(quote.plans.monthly.purchaseEnabled, true);
+    assert.equal(quote.plans.annual.purchaseEnabled, false);
     for (const plan of Object.values(quote.plans)) {
-      assert.equal(plan.purchaseEnabled, false);
       assert.equal(Object.hasOwn(plan, 'providerAmount'), false);
       assert.equal(Object.hasOwn(plan, 'providerCurrency'), false);
     }
   }
+});
+
+test('Turkey remains display-only', () => {
+  const quote = buildSubscriptionQuote(user('TR', 'WORKER'));
+  assert.equal(quote.plans.weekly.purchaseEnabled, false);
+  assert.equal(quote.plans.monthly.purchaseEnabled, false);
+  assert.equal(quote.plans.annual.purchaseEnabled, false);
 });
 
 test('missing country preserves legacy EGP behavior with disabled annual quote', () => {

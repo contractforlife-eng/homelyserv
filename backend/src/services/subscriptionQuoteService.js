@@ -4,8 +4,12 @@ import {
 } from '../config/subscriptionPriceBooks.js';
 
 const LEGACY_MARKET = 'LEGACY_EGP';
-const PURCHASE_ENABLED_MARKETS = new Set(['EGYPT', LEGACY_MARKET]);
+const PURCHASE_ENABLED_MARKETS = new Set(['EGYPT', LEGACY_MARKET, 'USA', 'EU', 'UK', 'GLOBAL']);
 const PLANS = ['weekly', 'monthly', 'annual'];
+
+export const isSubscriptionPurchaseMarketEnabled = (market) => (
+  PURCHASE_ENABLED_MARKETS.has(market)
+);
 
 const resolvePlanQuote = (user, plan) => {
   try {
@@ -31,7 +35,7 @@ export const buildSubscriptionQuote = (user) => {
           amount: resolved.amount,
           currency: resolved.currency,
           durationDays: resolved.durationDays,
-          purchaseEnabled: plan !== 'annual' && PURCHASE_ENABLED_MARKETS.has(resolved.market),
+          purchaseEnabled: plan !== 'annual' && isSubscriptionPurchaseMarketEnabled(resolved.market),
         }
       : null,
   ]));

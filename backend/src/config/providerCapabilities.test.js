@@ -48,6 +48,40 @@ test('configured PayPal keeps EGP subscription capability unchanged', () => {
   assert.equal(capability.mode, PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED);
 });
 
+test('configured production PayPal supports direct USD/EUR/GBP subscriptions', () => {
+  withPayPalConfigured();
+  const previousMode = process.env.PAYPAL_MODE;
+  process.env.PAYPAL_MODE = 'production';
+
+  for (const currency of ['USD', 'EUR', 'GBP']) {
+    const capability = getProviderCapability({
+      provider: 'paypal',
+      purpose: 'SUBSCRIPTION',
+      transactionCurrency: currency,
+    });
+    assert.equal(capability.enabled, true);
+    assert.equal(capability.providerCurrency, currency);
+    assert.equal(capability.mode, PROVIDER_CAPABILITY_MODES.DIRECT);
+  }
+
+  if (previousMode === undefined) delete process.env.PAYPAL_MODE;
+  else process.env.PAYPAL_MODE = previousMode;
+});
+
+test('PayPal subscription capability does not include TRY or sandbox direct currencies', () => {
+  withPayPalConfigured();
+  const previousMode = process.env.PAYPAL_MODE;
+  process.env.PAYPAL_MODE = 'production';
+
+  assert.equal(getProviderCapability({ provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'TRY' }).supported, false);
+
+  process.env.PAYPAL_MODE = 'sandbox';
+  assert.equal(getProviderCapability({ provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'USD' }).supported, false);
+
+  if (previousMode === undefined) delete process.env.PAYPAL_MODE;
+  else process.env.PAYPAL_MODE = previousMode;
+});
+
 test('unconfigured PayPal remains unavailable instead of advertising a guaranteed-broken checkout', () => {
   delete process.env.PAYPAL_CLIENT_ID;
   delete process.env.PAYPAL_SECRET;

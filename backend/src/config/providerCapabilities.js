@@ -116,8 +116,14 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     configuration.environment === 'production' &&
     ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
   );
+  const isLivePayPalDirectSubscription = (
+    normalizedProvider === PROVIDERS.PAYPAL &&
+    normalizedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION &&
+    configuration.environment === 'production' &&
+    ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
+  );
 
-  if (!isPaymobEgp && !isLegacyPayPalEgp && !isLivePayPalDirectCommission) {
+  if (!isPaymobEgp && !isLegacyPayPalEgp && !isLivePayPalDirectCommission && !isLivePayPalDirectSubscription) {
     return unsupportedCapability({
       provider: normalizedProvider,
       purpose: normalizedPurpose,

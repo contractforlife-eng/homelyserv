@@ -12,10 +12,9 @@ import { sendPushToUser } from '../services/fcmService.js';
 import User from '../models/User.js';
 import {
   PAYMENT_PURPOSES,
-  SUBSCRIPTION_CURRENCY,
   getSubscriptionPlan,
-  getSubscriptionPrice,
 } from '../config/subscription.js';
+import { resolveSubscriptionMarket, resolveSubscriptionPriceBook } from '../config/subscriptionPriceBooks.js';
 import {
   PROVIDER_CAPABILITY_MODES,
   getAvailableProviders,
@@ -32,7 +31,7 @@ import {
   MANUAL_REVIEW_STATES,
   getManualPaymentConfig,
 } from '../config/manualPayments.js';
-import { buildSubscriptionQuote } from '../services/subscriptionQuoteService.js';
+import { buildSubscriptionQuote, isSubscriptionPurchaseMarketEnabled } from '../services/subscriptionQuoteService.js';
 import {
   proofUpload,
   uploadProof,
@@ -921,33 +920,51 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
       }
 
-      let role = req.userRole;
-      try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: String(req.userId) },
-          select: { role: true }
-        });
-        if (dbUser?.role) role = dbUser.role;
-      } catch (roleErr) {
-        console.warn('⚠️ Could not resolve role for subscription pricing:', roleErr.message);
-      }
-
-      if (!['EMPLOYER', 'WORKER'].includes(role)) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: String(req.userId) },
+        select: { role: true, countryCode: true }
+      });
+      if (!dbUser || !['EMPLOYER', 'WORKER'].includes(dbUser.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
 
-      amount = getSubscriptionPrice(selectedPlan.id, role);
-      transactionCurrency = SUBSCRIPTION_CURRENCY;
+      let resolvedSubscription;
+      try {
+        resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
+      } catch (priceBookError) {
+        return res.status(400).json({ success: false, error: priceBookError.message });
+      }
+      if (!isSubscriptionPurchaseMarketEnabled(resolvedSubscription.market)) {
+        return res.status(422).json({ success: false, error: 'Subscription payment is not currently available for this market' });
+      }
+
+      amount = resolvedSubscription.amount;
+      transactionCurrency = resolvedSubscription.currency;
       subscriptionSnapshot = {
         plan: selectedPlan.id,
-        purchaserRole: role,
-        durationDays: selectedPlan.durationDays,
+        purchaserRole: resolvedSubscription.role,
+        durationDays: resolvedSubscription.durationDays,
+        market: resolvedSubscription.market,
+        countryCode: resolvedSubscription.countryCode,
+        priceBookVersion: resolvedSubscription.priceBookVersion,
       };
 
       if (!amount || amount <= 0) {
         return res.status(400).json({
           success: false,
           error: 'Invalid amount'
+        });
+      }
+
+      const subscriptionCapability = getProviderCapability({
+        provider: selectedPaymentMethod,
+        purpose,
+        transactionCurrency,
+      });
+      if (!subscriptionCapability.enabled) {
+        return res.status(422).json({
+          success: false,
+          error: 'Subscription payment is not currently available for this provider and currency'
         });
       }
     } else {
@@ -2305,33 +2322,35 @@ const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId
       return { error: 'Unsupported subscription plan', status: 400 };
     }
 
-    let role = req.userRole;
-    try {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: String(req.userId) },
-        select: { role: true },
-      });
-      if (dbUser?.role) role = dbUser.role;
-    } catch (roleError) {
-      console.warn('⚠️ Could not resolve role for manual subscription pricing:', roleError.message);
-    }
-
-    if (!['EMPLOYER', 'WORKER'].includes(role)) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: String(req.userId) },
+      select: { role: true, countryCode: true },
+    });
+    if (!dbUser || !['EMPLOYER', 'WORKER'].includes(dbUser.role)) {
       return { error: 'Role is not eligible for Premium', status: 403 };
     }
+
+    const resolvedMarket = resolveSubscriptionMarket(dbUser.countryCode).market;
+    if (!['EGYPT', 'LEGACY_EGP'].includes(resolvedMarket)) {
+      return { error: 'Manual subscription payments are available only in Egypt', status: 400 };
+    }
+    const resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
 
     return {
       manualConfig,
       selectedPaymentMethod,
-      amount: getSubscriptionPrice(selectedPlan.id, role),
-      transactionCurrency: SUBSCRIPTION_CURRENCY,
+      amount: resolvedSubscription.amount,
+      transactionCurrency: resolvedSubscription.currency,
       hireId: null,
       workerId: null,
       offerId: null,
       subscriptionSnapshot: {
         plan: selectedPlan.id,
-        purchaserRole: role,
-        durationDays: selectedPlan.durationDays,
+        purchaserRole: resolvedSubscription.role,
+        durationDays: resolvedSubscription.durationDays,
+        market: resolvedSubscription.market,
+        countryCode: resolvedSubscription.countryCode,
+        priceBookVersion: resolvedSubscription.priceBookVersion,
       },
     };
   }
@@ -2592,27 +2611,29 @@ router.post('/manual', authenticate, async (req, res) => {
         return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
       }
 
-      let role = req.userRole;
-      try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: String(req.userId) },
-          select: { role: true },
-        });
-        if (dbUser?.role) role = dbUser.role;
-      } catch (roleErr) {
-        console.warn('⚠️ Could not resolve role for manual subscription pricing:', roleErr.message);
-      }
-
-      if (!['EMPLOYER', 'WORKER'].includes(role)) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: String(req.userId) },
+        select: { role: true, countryCode: true },
+      });
+      if (!dbUser || !['EMPLOYER', 'WORKER'].includes(dbUser.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
 
-      amount = getSubscriptionPrice(selectedPlan.id, role);
-      transactionCurrency = SUBSCRIPTION_CURRENCY;
+      const resolvedMarket = resolveSubscriptionMarket(dbUser.countryCode).market;
+      if (!['EGYPT', 'LEGACY_EGP'].includes(resolvedMarket)) {
+        return res.status(400).json({ success: false, error: 'Manual subscription payments are available only in Egypt' });
+      }
+      const resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
+
+      amount = resolvedSubscription.amount;
+      transactionCurrency = resolvedSubscription.currency;
       subscriptionSnapshot = {
         plan: selectedPlan.id,
-        purchaserRole: role,
-        durationDays: selectedPlan.durationDays,
+        purchaserRole: resolvedSubscription.role,
+        durationDays: resolvedSubscription.durationDays,
+        market: resolvedSubscription.market,
+        countryCode: resolvedSubscription.countryCode,
+        priceBookVersion: resolvedSubscription.priceBookVersion,
       };
 
       if (!amount || amount <= 0) {
