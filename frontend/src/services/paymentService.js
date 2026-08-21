@@ -6,6 +6,11 @@ export const createPaymentIntent = async (paymentData) => {
   return response.data;
 };
 
+export const getSubscriptionQuote = async () => {
+  const response = await api.get('/api/payments/subscription-quote');
+  return response.data;
+};
+
 export const fetchCommissionProviders = async (hireId) => {
   const response = await api.get('/api/payments/providers', {
     params: { purpose: 'COMMISSION', hireId },

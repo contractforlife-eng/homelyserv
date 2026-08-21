@@ -46,12 +46,17 @@ test('international markets expose book prices but no purchase-enabled plans', (
   }
 });
 
-test('missing country preserves legacy EGP behavior without fabricating annual', () => {
+test('missing country preserves legacy EGP behavior with disabled annual quote', () => {
   const quote = buildSubscriptionQuote(user('', 'WORKER'));
   assert.equal(quote.market, 'LEGACY_EGP');
   assert.equal(quote.plans.weekly.purchaseEnabled, true);
   assert.equal(quote.plans.monthly.purchaseEnabled, true);
-  assert.equal(quote.plans.annual, null);
+  assert.deepEqual(quote.plans.annual, {
+    amount: 1800,
+    currency: 'EGP',
+    durationDays: 365,
+    purchaseEnabled: false,
+  });
 });
 
 test('database role and country are authoritative over caller-shaped extras', () => {

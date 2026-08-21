@@ -49,10 +49,11 @@ export const SUBSCRIPTION_PRICE_BOOKS = Object.freeze({
     annual: { durationDays: 365, prices: { EMPLOYER: 149.99, WORKER: 99.99 } },
   }),
   // Legacy users without a country retain the current purchasable price book.
-  // Annual is deliberately absent until the purchase flow is reviewed.
+  // Annual is a future display-only quote until the purchase flow is reviewed.
   LEGACY_EGP: freezeBook('LEGACY_EGP', 'EGP', {
     weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75 } },
     monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200 } },
+    annual: { durationDays: 365, prices: { EMPLOYER: 2700, WORKER: 1800 } },
   }),
 });
 

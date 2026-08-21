@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { applyBackendSubscription } from '../utils/subscriptionService';
-import { capturePayPalOrder, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from "../services/paymentService";
+import { capturePayPalOrder, fetchSubscriptionStatus, getPaymentStatus, getSubscriptionQuote, isTerminalPayPalCaptureResult } from "../services/paymentService";
 import {
   Sparkles,
   AlertCircle,
@@ -24,12 +24,18 @@ import {
   getSubscriptionStatus
 } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
-import { PAYMENT_METHODS, PAYMOB_ENABLED, SUBSCRIPTION_PLANS } from '../config/paymentConfig';
+import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import { canShowEgyptianManualPaymentMethods } from '../utils/egyptianPaymentVisibility';
+import {
+  formatSubscriptionAmount,
+  getRenderableSubscriptionPlans,
+  getPreferredSubscriptionPlan,
+  isSubscriptionPlanPurchaseEnabled
+} from '../utils/subscriptionQuotePresentation';
 
 // ============================================================
 // MAIN SUBSCRIPTION COMPONENT - WITH WORKING NOTIFICATIONS
@@ -54,6 +60,9 @@ const Subscription = () => {
   const [paymobIframe, setPaymobIframe] = useState(null);
   const [retryableStatus, setRetryableStatus] = useState(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
+  const [subscriptionQuote, setSubscriptionQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(true);
+  const [quoteError, setQuoteError] = useState(null);
 
   // Guard against duplicate PayPal capture responses triggering duplicate
   // UI refresh/purchase cycles (polling + popup-return can both fire).
@@ -61,8 +70,27 @@ const Subscription = () => {
   const paypalPollingRef = useRef(null);
 
   const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
-  const selectedPlanConfig = SUBSCRIPTION_PLANS[selectedPlan];
-  const price = selectedPlanConfig.prices[userRole];
+  const selectedPlanQuote = subscriptionQuote?.plans?.[selectedPlan] || null;
+  const price = selectedPlanQuote?.amount ?? null;
+  const selectedPlanPurchasable = isSubscriptionPlanPurchaseEnabled(subscriptionQuote, selectedPlan);
+  const quotePlans = getRenderableSubscriptionPlans(subscriptionQuote);
+
+  const loadSubscriptionQuote = async () => {
+    setQuoteLoading(true);
+    setQuoteError(null);
+    try {
+      const response = await getSubscriptionQuote();
+      if (!response?.success || !response.quote) throw new Error('Invalid subscription quote');
+      setSubscriptionQuote(response.quote);
+      setSelectedPlan((currentPlan) => getPreferredSubscriptionPlan(response.quote, currentPlan) || currentPlan);
+    } catch (error) {
+      console.warn('Could not load subscription quote:', error);
+      setSubscriptionQuote(null);
+      setQuoteError(t('subscriptionPlanOptions.quoteLoadFailed'));
+    } finally {
+      setQuoteLoading(false);
+    }
+  };
 
 
   // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
@@ -125,10 +153,9 @@ const Subscription = () => {
 
     (async () => {
       try {
-        const res = await fetchSubscriptionStatus();
-        if (res && res.success) {
-          applyBackendSubscriptionState(res);
-        }
+        await Promise.all([loadSubscriptionQuote(), fetchSubscriptionStatus().then((res) => {
+          if (res && res.success) applyBackendSubscriptionState(res);
+        })]);
       } catch (statusError) {
         console.warn('Could not refresh subscription status on mount:', statusError);
       } finally {
@@ -154,6 +181,7 @@ const Subscription = () => {
 
   const processSuccessfulSubscription = (paymentData) => {
     try {
+      if (!selectedPlanQuote) throw new Error('Subscription quote unavailable');
       const userId = authUser.id || authUser.email;
       const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
       
@@ -195,8 +223,8 @@ const Subscription = () => {
           userId: userId,
           userEmail: authUser.email,
           userRole: userRole,
-          amount: price,
-          currency: 'EGP',
+          amount: selectedPlanQuote.amount,
+          currency: selectedPlanQuote.currency,
           paymentMethod: selectedMethod,
           transactionId: paymentData.transactionId || subscription.transactionId,
           date: new Date().toISOString(),
@@ -212,7 +240,7 @@ const Subscription = () => {
           active: true,
           status: 'active',
           message: 'Active',
-          daysLeft: selectedPlanConfig.durationDays,
+          daysLeft: selectedPlanQuote.durationDays,
           expiresAt: subscription.expiresAt
         });
       }
@@ -292,6 +320,11 @@ const Subscription = () => {
 
     if (!authUser) {
       setPaymentError(t('subscriptionPage.payment.userNotFound'));
+      return;
+    }
+
+    if (!selectedPlanQuote || !selectedPlanPurchasable) {
+      setPaymentError(t('subscriptionPlanOptions.purchaseComingSoon'));
       return;
     }
 
@@ -571,7 +604,7 @@ const Subscription = () => {
             </div>
           ) : (
             // Subscription Form
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               {/* Header */}
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full text-yellow-700 dark:text-yellow-400 text-sm font-semibold mb-4">
@@ -586,34 +619,50 @@ const Subscription = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Pricing Card - Takes 2/5 of the space */}
-                <div className="lg:col-span-2">
-                  <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 sticky top-24">
+              <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 xl:gap-8">
+                {/* Pricing Card - Takes 3/7 of the space */}
+                <div className="lg:col-span-3 min-w-0">
+                  <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700 sticky top-24">
                     <div className="text-center mb-6">
                       <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Crown size={36} className="text-white" />
                       </div>
                       <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('subscriptionPlanOptions.choosePlan')}</h3>
                       <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('subscriptionPage.pricing.description')}</p>
-                      <div className="grid grid-cols-2 gap-3 mt-5" dir="ltr">
-                        {Object.values(SUBSCRIPTION_PLANS).map((plan) => (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 items-stretch" dir="ltr">
+                        {quoteLoading ? (
+                          <div className="col-span-full py-6 text-center text-gray-500">{t('subscriptionPage.loading')}</div>
+                        ) : quoteError ? (
+                          <div className="col-span-full py-4 text-center">
+                            <p className="text-red-600 mb-3">{quoteError}</p>
+                            <button type="button" onClick={loadSubscriptionQuote} className="px-4 py-2 rounded-lg bg-purple-600 text-white">
+                              {t('subscriptionPlanOptions.retry')}
+                            </button>
+                          </div>
+                        ) : quotePlans.map((plan) => (
                           <button
                             type="button"
                             key={plan.id}
                             disabled={processing}
-                            onClick={() => setSelectedPlan(plan.id)}
-                            className={`rounded-xl border-2 p-3 text-center transition-all ${selectedPlan === plan.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30' : 'border-gray-200 dark:border-gray-700'}`}
+                            onClick={() => {
+                              setSelectedPlan(plan.id);
+                              if (plan.purchaseEnabled !== true) setSelectedMethod(null);
+                            }}
+                            className={`relative h-full min-h-[142px] min-w-0 rounded-xl border-2 p-2 sm:p-3 text-center transition-all flex flex-col items-center justify-start ${plan.id === 'annual' ? 'border-violet-400 bg-violet-50/80 dark:border-violet-500 dark:bg-violet-900/30' : 'border-gray-200 dark:border-gray-700'} ${selectedPlan === plan.id ? 'ring-2 ring-purple-400 ring-offset-1' : ''}`}
                           >
-                            <span className="block font-semibold text-gray-800 dark:text-white">{t(`subscriptionPlanOptions.plans.${plan.id}`)}</span>
-                            <span className="block text-xl font-bold text-purple-600">{plan.prices[userRole]} EGP</span>
-                            <span className="block text-sm text-gray-500">{t('subscriptionPlanOptions.durationDays', { days: plan.durationDays })}</span>
+                            {plan.id === 'annual' && <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">{t('subscriptionPlanOptions.bestValue')}</span>}
+                            <span className="flex min-h-[48px] items-center justify-center font-semibold text-gray-800 dark:text-white">{t(`subscriptionPlanOptions.plans.${plan.id}`)}</span>
+                            <span className="flex min-h-[28px] items-center justify-center whitespace-nowrap text-lg sm:text-xl font-bold text-purple-600">{formatSubscriptionAmount(plan.amount, plan.currency)}</span>
+                            <span className="block min-h-[20px] text-sm text-gray-500">{t('subscriptionPlanOptions.durationDays', { days: plan.durationDays })}</span>
+                            <span className="block min-h-[16px] text-xs text-amber-600 mt-1">{plan.purchaseEnabled !== true ? t('subscriptionPlanOptions.purchaseComingSoon') : ' '}</span>
                           </button>
                         ))}
                       </div>
-                      <div className="mt-5">
-                        <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">{price} EGP</span>
-                      </div>
+                      {!quoteLoading && !quoteError && selectedPlanQuote && (
+                        <div className="mt-5">
+                          <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">{formatSubscriptionAmount(selectedPlanQuote.amount, selectedPlanQuote.currency)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-4">
@@ -647,7 +696,7 @@ const Subscription = () => {
                 </div>
 
                 {/* Payment Form - Takes 3/5 of the space */}
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-4 min-w-0">
                   <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
                     <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{t('subscriptionPage.payment.title')}</h3>
                     
@@ -714,7 +763,7 @@ const Subscription = () => {
                       })}
                     </div>
 
-                    {selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
+                    {selectedPlanPurchasable && (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) ? (
                       <ManualPaymentFlow
                         paymentMethod={selectedMethod}
                         purpose="SUBSCRIPTION"
@@ -725,9 +774,9 @@ const Subscription = () => {
                     ) : (
                       <button
                         onClick={handleSubscribe}
-                        disabled={processing || !selectedMethod}
+                        disabled={processing || !selectedMethod || quoteLoading || !!quoteError || !selectedPlanPurchasable}
                         className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${(
-                          processing || !selectedMethod
+                          processing || !selectedMethod || quoteLoading || !!quoteError || !selectedPlanPurchasable
                             ? 'bg-gray-300 cursor-not-allowed'
                             : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
                         )}`}
@@ -740,7 +789,7 @@ const Subscription = () => {
                         ) : (
                           <>
                             <Crown size={22} />
-                            {t('subscriptionPage.payNow')}
+                            {selectedPlanPurchasable ? t('subscriptionPage.payNow') : t('subscriptionPlanOptions.purchaseComingSoon')}
                           </>
                         )}
                       </button>

@@ -38,10 +38,12 @@ test('returns exact approved prices for both roles and all future plans', () => 
   assert.equal(quote('CA', 'WORKER', 'weekly').amount, 3.99);
 });
 
-test('legacy missing-country users retain weekly/monthly EGP and cannot purchase annual yet', () => {
+test('legacy missing-country users retain weekly/monthly EGP and receive a disabled annual quote', () => {
   assert.equal(quote('', 'EMPLOYER', 'monthly').amount, 300);
   assert.equal(quote(null, 'WORKER', 'weekly').currency, 'EGP');
-  assert.throws(() => quote('', 'WORKER', 'annual'), /Unsupported subscription plan/);
+  assert.deepEqual(quote('', 'WORKER', 'annual'), {
+    market: 'LEGACY_EGP', countryCode: null, role: 'WORKER', plan: 'annual', amount: 1800, currency: 'EGP', durationDays: 365, priceBookVersion: SUBSCRIPTION_PRICE_BOOK_VERSION,
+  });
 });
 
 test('only weekly and monthly remain currently purchasable', () => {

@@ -11,10 +11,6 @@ const resolvePlanQuote = (user, plan) => {
   try {
     return resolveSubscriptionPriceBook({ user, plan });
   } catch (error) {
-    // The legacy book intentionally has no annual entry in this phase.
-    if (plan === 'annual' && error.message === 'Unsupported subscription plan for market') {
-      return null;
-    }
     throw error;
   }
 };
