@@ -198,7 +198,7 @@ export const getFinancialCenterData = async (query = {}) => {
   const subscriptionPaymentIds = new Set(subscriptionPayments.map((payment) => payment.id));
   const filteredGrants = grants.filter((grant) => inRange(grant.createdAt, dates) && subscriptionPaymentIds.has(grant.paymentId));
   const grantCounts = countBy(filteredGrants, (grant) => {
-    if (!['weekly', 'monthly'].includes(grant.plan)) return 'legacy';
+    if (!['weekly', 'monthly', 'annual'].includes(grant.plan)) return 'legacy';
     return `${lower(grant.purchaserRole)}_${grant.plan}`;
   });
 

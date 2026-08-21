@@ -151,7 +151,7 @@ export const getAnalytics = async (req, res) => {
       }),
       prisma.subscriptionGrant.groupBy({ by: ['plan'], _count: { _all: true } }),
       prisma.subscription.count({
-        where: { plan: { notIn: ['weekly', 'monthly', 'legacy_monthly'] } },
+        where: { plan: { notIn: ['weekly', 'monthly', 'annual', 'legacy_monthly'] } },
       }),
 
       prisma.workerProfile.findMany({
@@ -220,10 +220,10 @@ export const getAnalytics = async (req, res) => {
     // ============================================================
     // SUBSCRIPTION STATISTICS
     // ============================================================
-    const grantsByPlan = { weekly: 0, monthly: 0, legacy: 0 };
+    const grantsByPlan = { weekly: 0, monthly: 0, annual: 0, legacy: 0 };
     subscriptionGrants.forEach((grant) => {
       const count = grant._count._all;
-      if (grant.plan === 'weekly' || grant.plan === 'monthly') grantsByPlan[grant.plan] += count;
+      if (grant.plan === 'weekly' || grant.plan === 'monthly' || grant.plan === 'annual') grantsByPlan[grant.plan] += count;
       else grantsByPlan.legacy += count;
     });
 

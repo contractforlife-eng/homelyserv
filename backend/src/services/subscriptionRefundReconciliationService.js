@@ -2,7 +2,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MATCHED = 'MATCHED';
 const MISMATCH = 'MISMATCH';
 const REVIEW_REQUIRED = 'REVIEW_REQUIRED';
-const PLAN_DURATIONS = Object.freeze({ weekly: 7, monthly: 30 });
+const PLAN_DURATIONS = Object.freeze({ weekly: 7, monthly: 30, annual: 365 });
 const KNOWN_GRANT_STATUSES = new Set(['active', 'reversed', 'review_required']);
 
 export const SUBSCRIPTION_ENTITLEMENT_IMPACTS = Object.freeze({

@@ -54,8 +54,8 @@ export const getActiveSubscription = async (userId) => {
   });
 };
 
-const normalizePlanProjection = (plan) => {
-  if (plan === 'weekly' || plan === 'monthly' || plan === 'legacy_monthly') return plan;
+export const normalizePlanProjection = (plan) => {
+  if (plan === 'weekly' || plan === 'monthly' || plan === 'annual' || plan === 'legacy_monthly') return plan;
   return plan ? 'legacy_unknown' : null;
 };
 
@@ -119,9 +119,9 @@ export const getSubscriptionStaffDetail = async (userId, grantLimit = 20) => {
       take: grantLimit,
     }),
   ]);
-  const grantCounts = { weekly: 0, monthly: 0, legacy: 0 };
+  const grantCounts = { weekly: 0, monthly: 0, annual: 0, legacy: 0 };
   for (const grant of grants) {
-    if (grant.plan === 'weekly' || grant.plan === 'monthly') grantCounts[grant.plan] += 1;
+    if (grant.plan === 'weekly' || grant.plan === 'monthly' || grant.plan === 'annual') grantCounts[grant.plan] += 1;
     else grantCounts.legacy += 1;
   }
   return { ...summaries.get(id), grantCounts, grants, historyAvailable: grants.length > 0 };

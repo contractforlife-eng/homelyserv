@@ -3,7 +3,7 @@ import prisma from '../lib/prisma.js';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LEGACY_PLAN = 'legacy_monthly';
 const ALLOWED_ROLES = new Set(['EMPLOYER', 'WORKER']);
-const PLAN_DURATIONS = Object.freeze({ weekly: 7, monthly: 30 });
+const PLAN_DURATIONS = Object.freeze({ weekly: 7, monthly: 30, annual: 365 });
 
 export const resolveSubscriptionGrantSnapshot = (metadata, legacyRole) => {
   const snapshot = metadata && typeof metadata === 'object' && !Array.isArray(metadata)
