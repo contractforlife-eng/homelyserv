@@ -28,3 +28,14 @@ test('a Paymob-only capability response does not fabricate an unavailable PayPal
 test('manual methods remain visible while automated capabilities load', () => {
   assert.deepEqual(ids([]), ['vodafone_cash', 'instapay']);
 });
+
+test('manual methods can be hidden without changing PayPal capability filtering', () => {
+  assert.deepEqual(
+    getVisiblePaymentMethods(methods, ['paypal', 'paymob'], { showEgyptianManualMethods: false }).map(({ id }) => id),
+    ['paypal']
+  );
+  assert.deepEqual(
+    getVisiblePaymentMethods(methods, ['paymob'], { showEgyptianManualMethods: false }).map(({ id }) => id),
+    []
+  );
+});

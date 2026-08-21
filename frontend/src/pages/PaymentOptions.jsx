@@ -14,6 +14,7 @@ import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
 import { getVisiblePaymentMethods } from '../utils/paymentMethodVisibility';
+import { canShowEgyptianManualPaymentMethods } from '../utils/egyptianPaymentVisibility';
 import {
   ArrowLeft,
   CreditCard,
@@ -122,7 +123,9 @@ const PaymentOptions = () => {
       badgeColor: 'bg-amber-100 text-amber-700'
     }
   ];
-  const paymentMethods = getVisiblePaymentMethods(allPaymentMethods, availableProviderIds);
+  const paymentMethods = getVisiblePaymentMethods(allPaymentMethods, availableProviderIds, {
+    showEgyptianManualMethods: canShowEgyptianManualPaymentMethods(authUser)
+  });
 
 
   // ============================================================

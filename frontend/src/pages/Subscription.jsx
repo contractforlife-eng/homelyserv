@@ -29,6 +29,7 @@ import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
+import { canShowEgyptianManualPaymentMethods } from '../utils/egyptianPaymentVisibility';
 
 // ============================================================
 // MAIN SUBSCRIPTION COMPONENT - WITH WORKING NOTIFICATIONS
@@ -94,6 +95,11 @@ const Subscription = () => {
       badgeColor: 'bg-amber-100 text-amber-700'
     }
   ];
+  const visiblePaymentMethods = canShowEgyptianManualPaymentMethods(authUser)
+    ? paymentMethods
+    : paymentMethods.filter(({ id }) => (
+      id !== PAYMENT_METHODS.VODAFONE_CASH && id !== PAYMENT_METHODS.INSTAPAY
+    ));
 
   useEffect(() => {
     if (authLoading) return;
@@ -666,7 +672,7 @@ const Subscription = () => {
 
                     <div className="space-y-4 mb-8">
                       <p className="font-medium text-gray-700 dark:text-gray-300">{t('subscriptionPage.payment.chooseMethod')}</p>
-                      {paymentMethods.map((method) => {
+                      {visiblePaymentMethods.map((method) => {
                         const isSelected = selectedMethod === method.id;
                         const Icon = method.icon;
                         const isManual = method.id === PAYMENT_METHODS.VODAFONE_CASH || method.id === PAYMENT_METHODS.INSTAPAY;
