@@ -1,7 +1,7 @@
 // src/pages/Login.jsx - BRIGHT RED, WHITE, AND BLACK THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle, Download as DownloadIcon } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
 import LoginMarketing from '../components/LoginMarketing';
@@ -522,6 +522,17 @@ function Login() {
           console.log('Social login success:', user);
         }} />
       </div>
+
+      {!isNative && (
+        <Link
+          to="/download"
+          onClick={() => navigate('/download')}
+          className="relative z-10 mt-4 flex min-h-11 w-full cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 transition-colors hover:border-red-300 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          <DownloadIcon size={17} aria-hidden="true" />
+          {t('downloadNow')}
+        </Link>
+      )}
 
       {/* Register Link */}
       <p className="flex flex-wrap items-center justify-center text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">

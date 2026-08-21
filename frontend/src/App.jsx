@@ -16,6 +16,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
+import Download from './pages/Download';
 
 // Common Protected Pages
 import MyHires from './pages/MyHires';
@@ -285,6 +286,7 @@ function App() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/refund-policy" element={<RefundPolicy />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/download" element={<Download />} />
 
       {/* ========== COMMON PROTECTED ROUTES ========== */}
       
