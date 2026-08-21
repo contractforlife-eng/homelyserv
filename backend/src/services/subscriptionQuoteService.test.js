@@ -54,6 +54,69 @@ test('Turkey remains display-only', () => {
   assert.equal(quote.plans.annual.purchaseEnabled, false);
 });
 
+test('Turkey becomes purchase-enabled only with a valid TRY/USD configuration', () => {
+  const previous = {
+    rate: process.env.TRY_USD_RATE,
+    version: process.env.TRY_USD_RATE_VERSION,
+    effectiveAt: process.env.TRY_USD_RATE_EFFECTIVE_AT,
+    source: process.env.TRY_USD_RATE_SOURCE,
+  };
+  process.env.TRY_USD_RATE = '0.0208';
+  process.env.TRY_USD_RATE_VERSION = '2026-08-21-v1';
+  process.env.TRY_USD_RATE_EFFECTIVE_AT = new Date(Date.now() - 60_000).toISOString();
+  process.env.TRY_USD_RATE_SOURCE = 'reviewed-mid-market';
+  try {
+    const quote = buildSubscriptionQuote(user('TR', 'WORKER'));
+    assert.equal(quote.plans.weekly.purchaseEnabled, true);
+    assert.equal(quote.plans.monthly.purchaseEnabled, true);
+    assert.equal(quote.plans.annual.purchaseEnabled, true);
+    for (const plan of Object.values(quote.plans)) {
+      assert.equal(Object.hasOwn(plan, 'providerAmount'), false);
+      assert.equal(Object.hasOwn(plan, 'providerCurrency'), false);
+      assert.equal(Object.hasOwn(plan, 'exchangeRate'), false);
+    }
+  } finally {
+    for (const [key, value] of Object.entries({
+      TRY_USD_RATE: previous.rate,
+      TRY_USD_RATE_VERSION: previous.version,
+      TRY_USD_RATE_EFFECTIVE_AT: previous.effectiveAt,
+      TRY_USD_RATE_SOURCE: previous.source,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('Turkey remains disabled when the FX rate is missing or invalid', () => {
+  const previous = {
+    rate: process.env.TRY_USD_RATE,
+    version: process.env.TRY_USD_RATE_VERSION,
+    effectiveAt: process.env.TRY_USD_RATE_EFFECTIVE_AT,
+    source: process.env.TRY_USD_RATE_SOURCE,
+  };
+  try {
+    delete process.env.TRY_USD_RATE;
+    process.env.TRY_USD_RATE_VERSION = '2026-08-21-v1';
+    process.env.TRY_USD_RATE_EFFECTIVE_AT = new Date(Date.now() - 60_000).toISOString();
+    process.env.TRY_USD_RATE_SOURCE = 'reviewed-mid-market';
+    const quote = buildSubscriptionQuote(user('TR', 'EMPLOYER'));
+    assert.equal(quote.plans.weekly.purchaseEnabled, false);
+    assert.equal(quote.plans.monthly.purchaseEnabled, false);
+    assert.equal(quote.plans.annual.purchaseEnabled, false);
+  } finally {
+    for (const [key, value] of Object.entries({
+      TRY_USD_RATE: previous.rate,
+      TRY_USD_RATE_VERSION: previous.version,
+      TRY_USD_RATE_EFFECTIVE_AT: previous.effectiveAt,
+      TRY_USD_RATE_SOURCE: previous.source,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test('missing country preserves legacy EGP behavior with enabled PayPal annual quote', () => {
   const quote = buildSubscriptionQuote(user('', 'WORKER'));
   assert.equal(quote.market, 'LEGACY_EGP');

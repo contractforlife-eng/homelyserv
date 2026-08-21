@@ -54,7 +54,9 @@ import {
 import {
   isTurkeySubscriptionPayment,
   resolvePersistedTrySubscriptionEvidence,
+  resolveTrySubscriptionProviderEvidenceForUser,
 } from '../services/trySubscriptionProviderEvidenceService.js';
+import { getTryUsdRateConfig } from '../config/fxRates.js';
 
 const router = express.Router();
 
@@ -926,6 +928,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     }
     let transactionCurrency = 'EGP';
     let subscriptionSnapshot = null;
+    let subscriptionUser = null;
 
     if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       // SERVER-SIDE PLAN AUTHORITY: the client selects only a stable plan id.
@@ -944,6 +947,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       if (!dbUser || !['EMPLOYER', 'WORKER'].includes(dbUser.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
+      subscriptionUser = dbUser;
 
       let resolvedSubscription;
       try {
@@ -951,8 +955,12 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       } catch (priceBookError) {
         return res.status(400).json({ success: false, error: priceBookError.message });
       }
-      if (!isSubscriptionPurchaseMarketEnabled(resolvedSubscription.market)) {
+      const isTurkeySubscription = resolvedSubscription.market === 'TURKEY';
+      if (!isSubscriptionPurchaseMarketEnabled(resolvedSubscription.market, { user: dbUser, plan: normalizedRequestedPlan })) {
         return res.status(422).json({ success: false, error: 'Subscription payment is not currently available for this market' });
+      }
+      if (isTurkeySubscription && selectedPaymentMethod !== 'paypal') {
+        return res.status(422).json({ success: false, error: 'Turkey subscriptions are available through PayPal only' });
       }
 
       amount = resolvedSubscription.amount;
@@ -978,7 +986,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         purpose,
         transactionCurrency,
       });
-      if (!subscriptionCapability.enabled) {
+      if (!isTurkeySubscription && !subscriptionCapability.enabled) {
         return res.status(422).json({
           success: false,
           error: 'Subscription payment is not currently available for this provider and currency'
@@ -1048,12 +1056,37 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid canonical payment amount' });
     }
 
-    const providerEvidence = getExpectedProviderCharge(
-      selectedPaymentMethod,
-      amount,
-      transactionCurrency,
-      purpose
-    );
+    let providerEvidence;
+    if (
+      purpose === PAYMENT_PURPOSES.SUBSCRIPTION
+      && transactionCurrency === 'TRY'
+      && subscriptionSnapshot?.market === 'TURKEY'
+    ) {
+      try {
+        const tryEvidence = resolveTrySubscriptionProviderEvidenceForUser({
+          user: subscriptionUser,
+          plan: subscriptionSnapshot.plan,
+          fxConfig: getTryUsdRateConfig(),
+        });
+        providerEvidence = {
+          amount: tryEvidence.providerAmount,
+          currency: tryEvidence.providerCurrency,
+        };
+        subscriptionSnapshot = {
+          ...subscriptionSnapshot,
+          ...tryEvidence.fxMetadata,
+        };
+      } catch (error) {
+        return res.status(422).json({ success: false, error: 'Turkey subscription FX configuration is not currently available' });
+      }
+    } else {
+      providerEvidence = getExpectedProviderCharge(
+        selectedPaymentMethod,
+        amount,
+        transactionCurrency,
+        purpose
+      );
+    }
 
     console.log('📤 Creating payment intent:', {
       amount,

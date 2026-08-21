@@ -91,6 +91,37 @@ test('server-authoritative user entry point ignores client-shaped pricing fields
   assert.equal(result.providerAmount, '4.23');
 });
 
+test('approved production-like rate produces the exact reviewed provider amounts', () => {
+  const productionLikeFx = {
+    baseCurrency: 'TRY',
+    quoteCurrency: 'USD',
+    rate: '0.0208',
+    rateDirection: 'TRY_TO_USD',
+    rateVersion: '2026-08-21-v1',
+    effectiveAt: '2026-08-21T19:04:00Z',
+    source: 'reviewed-mid-market',
+  };
+  const cases = [
+    [69, 'WORKER', 'weekly', 7, '1.44'],
+    [169, 'WORKER', 'monthly', 30, '3.52'],
+    [1399, 'WORKER', 'annual', 365, '29.10'],
+    [99, 'EMPLOYER', 'weekly', 7, '2.06'],
+    [249, 'EMPLOYER', 'monthly', 30, '5.18'],
+    [1999, 'EMPLOYER', 'annual', 365, '41.58'],
+  ];
+  for (const [bookAmount, role, plan, durationDays, providerAmount] of cases) {
+    const result = resolveTrySubscriptionProviderEvidence({
+      bookAmount,
+      subscriptionSnapshot: snapshot(plan, role, durationDays),
+      fxConfig: productionLikeFx,
+      now: Date.parse('2026-08-22T00:00:00Z'),
+    });
+    assert.equal(result.providerAmount, providerAmount);
+    assert.equal(result.fxMetadata.exchangeRateVersion, '2026-08-21-v1');
+    assert.equal(result.fxMetadata.exchangeRateSource, 'reviewed-mid-market');
+  }
+});
+
 test('persisted Turkey evidence validates against the stored FX snapshot', () => {
   const result = resolvePersistedTrySubscriptionEvidence(payment());
   assert.equal(result.mode, TRY_TO_USD_CONVERTED_MODE);

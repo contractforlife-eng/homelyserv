@@ -81,6 +81,11 @@ const validateRateConfig = (config, now) => {
   return { rateVersion, source, effectiveAt, maxAgeSeconds };
 };
 
+export const validateTryUsdRateConfig = ({ config = getTryUsdRateConfig(), now = Date.now() } = {}) => {
+  validateRateConfig(config, now);
+  return true;
+};
+
 const validateBookAmount = (bookAmount) => {
   if (typeof bookAmount === 'number' && !Number.isFinite(bookAmount)) {
     throw new FxConversionError(FX_ERROR_CODES.INVALID_BOOK_AMOUNT, 'bookAmount must be finite');
@@ -127,4 +132,5 @@ export default {
   FxConversionError,
   TRY_USD_MINIMUM_PROVIDER_AMOUNT,
   convertTryToUsd,
+  validateTryUsdRateConfig,
 };

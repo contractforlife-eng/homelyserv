@@ -2,14 +2,18 @@ import {
   SUBSCRIPTION_PRICE_BOOK_VERSION,
   resolveSubscriptionPriceBook,
 } from '../config/subscriptionPriceBooks.js';
+import { canResolveTrySubscriptionProviderEvidence } from './trySubscriptionProviderEvidenceService.js';
 
 const LEGACY_MARKET = 'LEGACY_EGP';
 const PURCHASE_ENABLED_MARKETS = new Set(['EGYPT', LEGACY_MARKET, 'USA', 'EU', 'UK', 'GLOBAL']);
 const PLANS = ['weekly', 'monthly', 'annual'];
 
-export const isSubscriptionPurchaseMarketEnabled = (market) => (
-  PURCHASE_ENABLED_MARKETS.has(market)
-);
+export const isSubscriptionPurchaseMarketEnabled = (market, { user, plan } = {}) => {
+  if (market === 'TURKEY') {
+    return canResolveTrySubscriptionProviderEvidence({ user, plan });
+  }
+  return PURCHASE_ENABLED_MARKETS.has(market);
+};
 
 const resolvePlanQuote = (user, plan) => {
   try {
@@ -35,7 +39,7 @@ export const buildSubscriptionQuote = (user) => {
           amount: resolved.amount,
           currency: resolved.currency,
           durationDays: resolved.durationDays,
-          purchaseEnabled: isSubscriptionPurchaseMarketEnabled(resolved.market),
+          purchaseEnabled: isSubscriptionPurchaseMarketEnabled(resolved.market, { user, plan }),
         }
       : null,
   ]));

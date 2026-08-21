@@ -1,4 +1,5 @@
 import { convertTryToUsd, FxConversionError } from './fxConversionService.js';
+import { getTryUsdRateConfig } from '../config/fxRates.js';
 import { resolveSubscriptionPriceBook } from '../config/subscriptionPriceBooks.js';
 
 export const TRY_TO_USD_CONVERTED_MODE = 'TRY_TO_USD_CONVERTED';
@@ -95,6 +96,15 @@ export const resolveTrySubscriptionProviderEvidenceForUser = ({ user, plan, fxCo
   });
 };
 
+export const canResolveTrySubscriptionProviderEvidence = ({ user, plan, fxConfig = getTryUsdRateConfig(), now = Date.now() } = {}) => {
+  try {
+    resolveTrySubscriptionProviderEvidenceForUser({ user, plan, fxConfig, now });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Validate a persisted Turkey Payment without consulting current FX config.
  * The stored FX snapshot is the historical authority for reconciliation.
@@ -140,6 +150,7 @@ export default {
   validateTrySubscriptionSnapshot,
   resolveTrySubscriptionProviderEvidence,
   resolveTrySubscriptionProviderEvidenceForUser,
+  canResolveTrySubscriptionProviderEvidence,
   resolvePersistedTrySubscriptionEvidence,
   isTurkeySubscriptionPayment,
 };
