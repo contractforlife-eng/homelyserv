@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import appIcon from '../assets/homelyserv-app-icon.png';
 import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
+import { classifyDevice } from '../utils/deviceType';
 
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.1-2/release.json';
 const FALLBACK_DOWNLOAD_URL = '/downloads/android/HomelyServ-1.0.1-2.apk';
@@ -65,6 +66,11 @@ const Download = () => {
   const [releaseError, setReleaseError] = useState(false);
   const [copied, setCopied] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
+  const [deviceType, setDeviceType] = useState('unknown');
+
+  useEffect(() => {
+    setDeviceType(classifyDevice(navigator.userAgent, navigator.platform, navigator.maxTouchPoints));
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -124,6 +130,10 @@ const Download = () => {
       new Date(`${release.releaseDate}T00:00:00`)
     );
   }, [i18n.language, release?.releaseDate]);
+
+  const isAndroidVisitor = deviceType === 'android';
+  const isIosVisitor = deviceType === 'ios';
+  const showQrSection = deviceType !== 'android' && deviceType !== 'ios';
 
   const copyHash = async (type, value) => {
     if (!value) return;
@@ -201,15 +211,25 @@ const Download = () => {
               <span className="text-lg font-bold tracking-tight">HomelyServ</span>
             </div>
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-red-100">{t('downloadPage.officialRelease')}</p>
-            <h1 className="max-w-2xl text-4xl font-black tracking-tight sm:text-6xl">{t('downloadPage.title')}</h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-red-50 sm:text-lg">{t('downloadPage.heroDescription')}</p>
+            <h1 className="max-w-2xl text-4xl font-black tracking-tight sm:text-6xl">
+              {isIosVisitor ? t('downloadPage.iosTitle') : isAndroidVisitor ? t('downloadPage.androidVisitorTitle') : t('downloadPage.title')}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-red-50 sm:text-lg">
+              {isIosVisitor ? t('downloadPage.iosDescription') : isAndroidVisitor ? t('downloadPage.androidVisitorDescription') : t('downloadPage.heroDescription')}
+            </p>
+            {isIosVisitor && (
+              <div className="mt-5 max-w-xl rounded-2xl border border-white/25 bg-white/10 p-4 text-sm leading-6 text-red-50">
+                <strong className="block text-base text-white">{t('downloadPage.iosTitle')}</strong>
+                <span>{t('downloadPage.iosAndroidNote')}</span>
+              </div>
+            )}
             <a
               href={downloadUrl}
               download
-              className="mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white px-6 py-4 text-base font-extrabold text-red-700 shadow-xl transition hover:bg-red-50 focus-visible:outline-white sm:w-auto"
+              className={`mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-extrabold shadow-xl transition focus-visible:outline-white sm:w-auto ${isIosVisitor ? 'border border-white/40 bg-white/15 text-white hover:bg-white/25' : 'bg-white text-red-700 hover:bg-red-50'}`}
             >
               <DownloadIcon size={21} aria-hidden="true" />
-              {t('downloadPage.downloadApk')}
+              {t('downloadPage.androidDownloadApk')}
             </a>
             <div className="mt-6 grid max-w-xl grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <HeroStat label={t('downloadPage.version')} value={release?.versionName || '—'} />
@@ -239,6 +259,7 @@ const Download = () => {
           <TrustCard icon={<Check />} title={t('downloadPage.trustChecksumTitle')} text={t('downloadPage.trustChecksumText')} />
         </section>
 
+        {showQrSection && (
         <section className="grid gap-6 rounded-3xl border border-red-100 bg-red-50/60 p-5 shadow-sm sm:p-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left lg:flex-col lg:text-center">
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -264,6 +285,7 @@ const Download = () => {
             </div>
           </div>
         </section>
+        )}
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <SectionHeading title={t('downloadPage.technicalTitle')} description={t('downloadPage.technicalDescription')} />
