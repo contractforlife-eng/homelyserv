@@ -7,7 +7,7 @@ import { createQrMatrix } from '../utils/qrCode';
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.0-1/release.json';
 const FALLBACK_DOWNLOAD_URL = '/downloads/android/HomelyServ-1.0.0-1.apk';
 const DOWNLOAD_PAGE_URL = 'https://homelyserv.com/download';
-const SOCIAL_IMAGE_URL = 'https://homelyserv.com/downloads/android/homelyserv-android-share.png';
+const SOCIAL_IMAGE_URL = 'https://www.homelyserv.com/downloads/android/homelyserv-android-share.jpg';
 const SOCIAL_DESCRIPTION = 'Download the official HomelyServ Android app directly from homelyserv.com. View version, signing, checksum, and installation information.';
 
 const formatBytes = (bytes) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -70,7 +70,7 @@ const Download = () => {
     setMeta('property', 'og:site_name', 'HomelyServ');
     setMeta('property', 'og:image', SOCIAL_IMAGE_URL);
     setMeta('property', 'og:image:secure_url', SOCIAL_IMAGE_URL);
-    setMeta('property', 'og:image:type', 'image/png');
+    setMeta('property', 'og:image:type', 'image/jpeg');
     setMeta('property', 'og:image:width', '1200');
     setMeta('property', 'og:image:height', '630');
     setMeta('property', 'og:image:alt', 'HomelyServ official Android app');
