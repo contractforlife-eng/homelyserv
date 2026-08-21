@@ -128,6 +128,9 @@ const Subscription = () => {
     : paymentMethods.filter(({ id }) => (
       id !== PAYMENT_METHODS.VODAFONE_CASH && id !== PAYMENT_METHODS.INSTAPAY
     ));
+  const planVisiblePaymentMethods = selectedPlan === 'annual'
+    ? visiblePaymentMethods.filter(({ id }) => id === PAYMENT_METHODS.PAYPAL)
+    : visiblePaymentMethods;
 
   useEffect(() => {
     if (authLoading) return;
@@ -646,7 +649,11 @@ const Subscription = () => {
                             disabled={processing}
                             onClick={() => {
                               setSelectedPlan(plan.id);
-                              if (plan.purchaseEnabled !== true) setSelectedMethod(null);
+                              if (plan.id === 'annual' && plan.purchaseEnabled === true) {
+                                setSelectedMethod(PAYMENT_METHODS.PAYPAL);
+                              } else if (plan.purchaseEnabled !== true) {
+                                setSelectedMethod(null);
+                              }
                             }}
                             className={`relative h-full min-h-[142px] min-w-0 rounded-xl border-2 p-2 sm:p-3 text-center transition-all flex flex-col items-center justify-start ${plan.id === 'annual' ? 'border-violet-400 bg-violet-50/80 dark:border-violet-500 dark:bg-violet-900/30' : 'border-gray-200 dark:border-gray-700'} ${selectedPlan === plan.id ? 'ring-2 ring-purple-400 ring-offset-1' : ''}`}
                           >
@@ -721,7 +728,7 @@ const Subscription = () => {
 
                     <div className="space-y-4 mb-8">
                       <p className="font-medium text-gray-700 dark:text-gray-300">{t('subscriptionPage.payment.chooseMethod')}</p>
-                      {visiblePaymentMethods.map((method) => {
+                      {planVisiblePaymentMethods.map((method) => {
                         const isSelected = selectedMethod === method.id;
                         const Icon = method.icon;
                         const isManual = method.id === PAYMENT_METHODS.VODAFONE_CASH || method.id === PAYMENT_METHODS.INSTAPAY;

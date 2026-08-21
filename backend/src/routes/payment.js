@@ -13,6 +13,7 @@ import User from '../models/User.js';
 import {
   PAYMENT_PURPOSES,
   getSubscriptionPlan,
+  normalizeSubscriptionPlanId,
 } from '../config/subscription.js';
 import { resolveSubscriptionMarket, resolveSubscriptionPriceBook } from '../config/subscriptionPriceBooks.js';
 import {
@@ -915,8 +916,10 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       // SERVER-SIDE PLAN AUTHORITY: the client selects only a stable plan id.
       // Price, duration, currency and purchaser role are derived here.
-      const selectedPlan = getSubscriptionPlan(requestedPlan);
-      if (!selectedPlan) {
+      const normalizedRequestedPlan = normalizeSubscriptionPlanId(requestedPlan);
+      const annualPayPalRequest = normalizedRequestedPlan === 'annual' && selectedPaymentMethod === 'paypal';
+      const selectedPlan = getSubscriptionPlan(normalizedRequestedPlan);
+      if (!selectedPlan && !annualPayPalRequest) {
         return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
       }
 
@@ -930,7 +933,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
 
       let resolvedSubscription;
       try {
-        resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
+        resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: normalizedRequestedPlan });
       } catch (priceBookError) {
         return res.status(400).json({ success: false, error: priceBookError.message });
       }
@@ -941,7 +944,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       amount = resolvedSubscription.amount;
       transactionCurrency = resolvedSubscription.currency;
       subscriptionSnapshot = {
-        plan: selectedPlan.id,
+        plan: normalizedRequestedPlan,
         purchaserRole: resolvedSubscription.role,
         durationDays: resolvedSubscription.durationDays,
         market: resolvedSubscription.market,

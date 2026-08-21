@@ -4,7 +4,7 @@ import { buildSubscriptionQuote } from './subscriptionQuoteService.js';
 
 const user = (countryCode, role) => ({ countryCode, role });
 
-test('Egypt Employer quote preserves current weekly/monthly purchasing and exposes disabled annual', () => {
+test('Egypt Employer quote preserves current weekly/monthly purchasing and enables PayPal annual', () => {
   const quote = buildSubscriptionQuote(user('EG', 'EMPLOYER'));
   assert.equal(quote.market, 'EGYPT');
   assert.equal(quote.currency, 'EGP');
@@ -12,7 +12,7 @@ test('Egypt Employer quote preserves current weekly/monthly purchasing and expos
   assert.deepEqual(quote.plans, {
     weekly: { amount: 100, currency: 'EGP', durationDays: 7, purchaseEnabled: true },
     monthly: { amount: 300, currency: 'EGP', durationDays: 30, purchaseEnabled: true },
-    annual: { amount: 2700, currency: 'EGP', durationDays: 365, purchaseEnabled: false },
+    annual: { amount: 2700, currency: 'EGP', durationDays: 365, purchaseEnabled: true },
   });
 });
 
@@ -21,10 +21,10 @@ test('Egypt Worker quote preserves current weekly/monthly purchasing', () => {
   assert.equal(quote.plans.weekly.amount, 75);
   assert.equal(quote.plans.monthly.amount, 200);
   assert.equal(quote.plans.annual.amount, 1800);
-  assert.equal(quote.plans.annual.purchaseEnabled, false);
+  assert.equal(quote.plans.annual.purchaseEnabled, true);
 });
 
-test('approved direct PayPal markets expose purchase-enabled weekly/monthly plans', () => {
+test('approved PayPal markets expose purchase-enabled weekly/monthly/annual plans', () => {
   for (const [countryCode, currency, weekly, annual] of [
     ['US', 'USD', 5.99, 149.99],
     ['DE', 'EUR', 4.99, 129.99],
@@ -39,7 +39,7 @@ test('approved direct PayPal markets expose purchase-enabled weekly/monthly plan
     assert.equal(quote.plans.annual.amount, annual);
     assert.equal(quote.plans.weekly.purchaseEnabled, true);
     assert.equal(quote.plans.monthly.purchaseEnabled, true);
-    assert.equal(quote.plans.annual.purchaseEnabled, false);
+    assert.equal(quote.plans.annual.purchaseEnabled, true);
     for (const plan of Object.values(quote.plans)) {
       assert.equal(Object.hasOwn(plan, 'providerAmount'), false);
       assert.equal(Object.hasOwn(plan, 'providerCurrency'), false);
@@ -54,7 +54,7 @@ test('Turkey remains display-only', () => {
   assert.equal(quote.plans.annual.purchaseEnabled, false);
 });
 
-test('missing country preserves legacy EGP behavior with disabled annual quote', () => {
+test('missing country preserves legacy EGP behavior with enabled PayPal annual quote', () => {
   const quote = buildSubscriptionQuote(user('', 'WORKER'));
   assert.equal(quote.market, 'LEGACY_EGP');
   assert.equal(quote.plans.weekly.purchaseEnabled, true);
@@ -63,7 +63,7 @@ test('missing country preserves legacy EGP behavior with disabled annual quote',
     amount: 1800,
     currency: 'EGP',
     durationDays: 365,
-    purchaseEnabled: false,
+    purchaseEnabled: true,
   });
 });
 

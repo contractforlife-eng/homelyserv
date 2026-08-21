@@ -35,7 +35,7 @@ export const buildSubscriptionQuote = (user) => {
           amount: resolved.amount,
           currency: resolved.currency,
           durationDays: resolved.durationDays,
-          purchaseEnabled: plan !== 'annual' && isSubscriptionPurchaseMarketEnabled(resolved.market),
+          purchaseEnabled: isSubscriptionPurchaseMarketEnabled(resolved.market),
         }
       : null,
   ]));
