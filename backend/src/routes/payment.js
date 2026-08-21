@@ -32,6 +32,7 @@ import {
   MANUAL_REVIEW_STATES,
   getManualPaymentConfig,
 } from '../config/manualPayments.js';
+import { buildSubscriptionQuote } from '../services/subscriptionQuoteService.js';
 import {
   proofUpload,
   uploadProof,
@@ -2245,6 +2246,41 @@ const serializeManualPayment = (payment) => ({
   purpose: payment.purpose,
   amount: payment.amount,
   currency: payment.currency,
+});
+
+/**
+ * Read-only server-authoritative subscription book quote.
+ * GET /api/payments/subscription-quote
+ */
+router.get('/subscription-quote', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: String(req.userId) },
+      select: { role: true, countryCode: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    let quote;
+    try {
+      quote = buildSubscriptionQuote(user);
+    } catch (error) {
+      if (error.message === 'Invalid subscription role') {
+        return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
+      }
+      if (error.message === 'Invalid countryCode') {
+        return res.status(400).json({ success: false, error: 'User countryCode is invalid' });
+      }
+      throw error;
+    }
+
+    return res.json({ success: true, quote });
+  } catch (error) {
+    console.error('Subscription quote lookup failed:', error.message);
+    return res.status(500).json({ success: false, error: 'Unable to load subscription quote' });
+  }
 });
 
 const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId }) => {
