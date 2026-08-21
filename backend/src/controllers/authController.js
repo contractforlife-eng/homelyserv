@@ -9,6 +9,10 @@ import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import { withRegistrationGeography } from '../services/registrationGeographyService.js';
 import {
+  createOrReuseAccountDeletionRequest,
+  serializeAccountDeletionRequest
+} from '../services/accountDeletionRequestService.js';
+import {
   isSupportedCurrency,
   normalizeCurrencyCode,
   resolveAccountDefaultCurrency
@@ -1094,11 +1098,14 @@ export const deleteAccount = async (req, res) => {
       });
     }
 
-    await User.findByIdAndDelete(req.userId);
+    const { request, reused } = await createOrReuseAccountDeletionRequest(req.userId);
 
-    res.json({
+    res.status(reused ? 200 : 202).json({
       success: true,
-      message: 'Account deleted successfully'
+      requestAccepted: true,
+      reused,
+      message: 'Account deletion request accepted. You will be signed out.',
+      deletionRequest: serializeAccountDeletionRequest(request)
     });
   } catch (error) {
     console.error('Delete account error:', error);

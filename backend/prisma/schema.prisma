@@ -88,6 +88,11 @@ model Hire {
   Message          Message[]
   Review           Review[]
   Payment          Payment[]
+
+  @@index([workerId, status])
+  @@index([employerId, paymentStatus])
+  @@index([workerId, createdAt(sort: Desc)])
+  @@index([employerId, createdAt(sort: Desc)])
 }
 
 model Message {
@@ -379,8 +384,37 @@ model User {
   ComplaintNote                    ComplaintNote[]
   ComplaintTimeline                ComplaintTimeline[]
   ComplaintReply                   ComplaintReply[]
+  AccountDeletionRequest           AccountDeletionRequest?
 
   @@map("users")
+}
+
+enum AccountDeletionRequestStatus {
+  pending
+  processing
+  blocked
+  completed
+  cancelled
+}
+
+model AccountDeletionRequest {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  status        AccountDeletionRequestStatus @default(pending)
+  requestedAt   DateTime @default(now())
+  processedAt   DateTime?
+  blockedReason String?
+  legalHold     Boolean  @default(false)
+  lastError     String?
+  retryCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  User User @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([status, requestedAt])
+  @@map("account_deletion_requests")
 }
 
 model WorkerProfile {
@@ -547,6 +581,9 @@ model Offer {
 
   @@index([jobPostId])
   @@index([applicationId])
+  @@index([workerId, status])
+  @@index([workerId, createdAt(sort: Desc)])
+  @@index([employerId, createdAt(sort: Desc)])
 }
 
 // ============================================================
