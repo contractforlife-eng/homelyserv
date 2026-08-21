@@ -1,0 +1,14 @@
+{
+  "appName": "HomelyServ",
+  "versionName": "1.0.1",
+  "versionCode": 2,
+  "releaseDate": "2026-08-21",
+  "sizeBytes": 12284583,
+  "minAndroid": "Android 7.0",
+  "minSdk": 24,
+  "targetSdk": 36,
+  "packageName": "com.homelyserv.app",
+  "sha256": "10d6e6e11a04ece1ac16ca75ed911660950e0b81bafb0b2a6a88b48b472094ec",
+  "signingCertificateSha256": "b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50",
+  "downloadUrl": "/downloads/android/HomelyServ-1.0.1-2.apk"
+}

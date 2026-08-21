@@ -5,11 +5,33 @@ import appIcon from '../assets/homelyserv-app-icon.png';
 import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
 
-const RELEASE_MANIFEST_URL = '/downloads/android/1.0.0-1/release.json';
-const FALLBACK_DOWNLOAD_URL = '/downloads/android/HomelyServ-1.0.0-1.apk';
+const RELEASE_MANIFEST_URL = '/downloads/android/1.0.1-2/release.json';
+const FALLBACK_DOWNLOAD_URL = '/downloads/android/HomelyServ-1.0.1-2.apk';
+const FALLBACK_RELEASE = {
+  appName: 'HomelyServ',
+  versionName: '1.0.1',
+  versionCode: 2,
+  releaseDate: '2026-08-21',
+  sizeBytes: 12284583,
+  minAndroid: 'Android 7.0',
+  minSdk: 24,
+  targetSdk: 36,
+  packageName: 'com.homelyserv.app',
+  sha256: '10d6e6e11a04ece1ac16ca75ed911660950e0b81bafb0b2a6a88b48b472094ec',
+  signingCertificateSha256: 'b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50',
+  downloadUrl: FALLBACK_DOWNLOAD_URL
+};
 const DOWNLOAD_PAGE_URL = 'https://homelyserv.com/download';
 const SOCIAL_IMAGE_URL = 'https://www.homelyserv.com/downloads/android/homelyserv-android-share.jpg';
 const SOCIAL_DESCRIPTION = 'Download the official HomelyServ Android app directly from homelyserv.com. View version, signing, checksum, and installation information.';
+const UPDATE_NOTE_TRANSLATIONS = {
+  en: 'Already have HomelyServ installed? Installing this version will update the existing app.',
+  ar: 'هل لديك HomelyServ مثبتاً بالفعل؟ سيؤدي تثبيت هذا الإصدار إلى تحديث التطبيق الحالي.',
+  fr: 'HomelyServ est déjà installé ? L’installation de cette version mettra à jour l’application existante.',
+  ru: 'HomelyServ уже установлен? Установка этой версии обновит существующее приложение.',
+  tr: 'HomelyServ zaten yüklü mü? Bu sürümün yüklenmesi mevcut uygulamayı güncelleyecektir.',
+  de: 'HomelyServ bereits installiert? Die Installation dieser Version aktualisiert die vorhandene App.'
+};
 
 const formatBytes = (bytes) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 
@@ -39,7 +61,7 @@ const setCanonical = (href) => {
 
 const Download = () => {
   const { t, i18n } = useTranslation();
-  const [release, setRelease] = useState(null);
+  const [release, setRelease] = useState(FALLBACK_RELEASE);
   const [releaseError, setReleaseError] = useState(false);
   const [copied, setCopied] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -90,6 +112,12 @@ const Download = () => {
   }, [i18n.language, t]);
 
   const downloadUrl = release?.downloadUrl || FALLBACK_DOWNLOAD_URL;
+  const minimumAndroid = release?.minAndroid?.endsWith('+')
+    ? release.minAndroid
+    : String(release?.minAndroid || 'Android 7.0') + '+';
+  const updateNote = t('downloadPage.updateNote', {
+    defaultValue: UPDATE_NOTE_TRANSLATIONS[i18n.language] || UPDATE_NOTE_TRANSLATIONS.en
+  });
   const releaseDate = useMemo(() => {
     if (!release?.releaseDate) return '—';
     return new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(
@@ -186,9 +214,10 @@ const Download = () => {
             <div className="mt-6 grid max-w-xl grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <HeroStat label={t('downloadPage.version')} value={release?.versionName || '—'} />
               <HeroStat label={t('downloadPage.apkSize')} value={release ? formatBytes(release.sizeBytes) : '—'} />
-              <HeroStat label={t('downloadPage.minimumAndroid')} value={release?.minAndroid || '—'} />
+              <HeroStat label={t('downloadPage.minimumAndroid')} value={minimumAndroid} />
               <HeroStat label={t('downloadPage.releaseDate')} value={releaseDate} />
             </div>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-red-100">{updateNote}</p>
           </div>
           <div className="mx-auto w-full max-w-sm rounded-[2rem] border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-sm">
             <div className="rounded-[1.5rem] bg-white p-8 text-center text-slate-900">
