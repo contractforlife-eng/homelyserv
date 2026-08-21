@@ -4656,6 +4656,19 @@ for (const [code, copy] of Object.entries(ACCOUNT_DELETION_COPY)) {
   };
 }
 
+const TRACKING_CONSENT_COPY = {
+  en: { title: 'Optional privacy preferences', description: 'HomelyServ uses optional analytics and advertising technologies. Choose whether to allow them.', accept: 'Accept', reject: 'Reject', preferenceTitle: 'Optional analytics and advertising', preferenceDescription: 'Change whether optional tracking technologies may load.', enable: 'Enable', disable: 'Disable', status: { unknown: 'Not set', accepted: 'Enabled', rejected: 'Disabled' } },
+  ar: { title: 'تفضيلات الخصوصية الاختيارية', description: 'تستخدم HomelyServ تقنيات اختيارية للتحليلات والإعلانات. اختر ما إذا كنت تريد السماح بها.', accept: 'قبول', reject: 'رفض', preferenceTitle: 'التحليلات والإعلانات الاختيارية', preferenceDescription: 'غيّر ما إذا كان يمكن تحميل تقنيات التتبع الاختيارية.', enable: 'تفعيل', disable: 'تعطيل', status: { unknown: 'غير محدد', accepted: 'مفعّل', rejected: 'معطّل' } },
+  fr: { title: 'Préférences de confidentialité facultatives', description: 'HomelyServ utilise des technologies facultatives d’analyse et de publicité. Choisissez de les autoriser ou non.', accept: 'Accepter', reject: 'Refuser', preferenceTitle: 'Analyse et publicité facultatives', preferenceDescription: 'Choisissez si les technologies de suivi facultatives peuvent se charger.', enable: 'Activer', disable: 'Désactiver', status: { unknown: 'Non défini', accepted: 'Activé', rejected: 'Désactivé' } },
+  ru: { title: 'Необязательные настройки конфиденциальности', description: 'HomelyServ использует необязательные технологии аналитики и рекламы. Выберите, разрешить ли их.', accept: 'Принять', reject: 'Отклонить', preferenceTitle: 'Необязательная аналитика и реклама', preferenceDescription: 'Выберите, могут ли загружаться необязательные технологии отслеживания.', enable: 'Включить', disable: 'Отключить', status: { unknown: 'Не задано', accepted: 'Включено', rejected: 'Отключено' } },
+  tr: { title: 'İsteğe bağlı gizlilik tercihleri', description: 'HomelyServ isteğe bağlı analiz ve reklam teknolojileri kullanır. Bunlara izin verip vermeyeceğinizi seçin.', accept: 'Kabul Et', reject: 'Reddet', preferenceTitle: 'İsteğe bağlı analiz ve reklam', preferenceDescription: 'İsteğe bağlı izleme teknolojilerinin yüklenip yüklenemeyeceğini değiştirin.', enable: 'Etkinleştir', disable: 'Devre dışı bırak', status: { unknown: 'Belirlenmedi', accepted: 'Etkin', rejected: 'Devre dışı' } },
+  de: { title: 'Optionale Datenschutzeinstellungen', description: 'HomelyServ verwendet optionale Analyse- und Werbetechnologien. Wählen Sie, ob Sie diese zulassen möchten.', accept: 'Akzeptieren', reject: 'Ablehnen', preferenceTitle: 'Optionale Analyse und Werbung', preferenceDescription: 'Legen Sie fest, ob optionale Tracking-Technologien geladen werden dürfen.', enable: 'Aktivieren', disable: 'Deaktivieren', status: { unknown: 'Nicht festgelegt', accepted: 'Aktiviert', rejected: 'Deaktiviert' } }
+};
+
+for (const [code, copy] of Object.entries(TRACKING_CONSENT_COPY)) {
+  ({ en, ar, fr, ru, tr, de }[code]).translation.trackingConsent = copy;
+}
+
 const resources = {
   en,
   ar,

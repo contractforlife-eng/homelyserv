@@ -8,6 +8,7 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import BiometricUnlockSettings from '../components/security/BiometricUnlockSettings';
+import TrackingConsentSettings from '../components/TrackingConsentSettings';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import api from '../utils/api';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
@@ -733,6 +734,7 @@ const EmployerSettings = () => {
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.data')}</h3>
               <div className="space-y-4">
+                <TrackingConsentSettings />
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.saveSearchHistory')}</p>

@@ -6,6 +6,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import MetaPixelTracker from './components/MetaPixelTracker';
+import TrackingConsentBanner from './components/TrackingConsentBanner';
 import { AuthProvider } from './context/AuthContext';
 import useThemeStore from './store/themeStore';
 // Initialize i18n (single source of truth for all languages + RTL)
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <MetaPixelTracker />
+      <TrackingConsentBanner />
       <AuthProvider>
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
           <App />

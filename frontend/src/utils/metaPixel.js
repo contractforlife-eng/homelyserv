@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { hasTrackingConsent } from './trackingConsent';
+
 export const META_PIXEL_ID = '3837231463084823';
 
 const INITIALIZED_KEY = '__homelyServMetaPixelInitialized';
@@ -5,6 +8,7 @@ const LAST_PAGE_VIEW_KEY = '__homelyServMetaPixelLastPageView';
 
 const loadMetaPixel = () => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+  if (Capacitor.isNativePlatform() || !hasTrackingConsent()) return false;
 
   if (!window.fbq) {
     const fbq = function (...args) {

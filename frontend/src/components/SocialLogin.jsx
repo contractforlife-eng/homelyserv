@@ -19,6 +19,7 @@ export default function SocialLogin({ onLoginSuccess }) {
 
   // Initialize Facebook SDK
   useEffect(() => {
+    if (!FACEBOOK_LOGIN_ENABLED) return undefined;
     if (window.FB) {
       setFbLoaded(true);
       return;
