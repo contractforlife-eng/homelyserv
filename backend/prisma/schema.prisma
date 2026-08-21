@@ -321,6 +321,7 @@ model User {
   phone                            String           @default("")
   city                             String?
   countryCode                      String?
+  registrationCountryCode          String?
   countryName                      String?
   preferredCurrency                String?
   // TODO: isVerified is retained for backward compatibility.
@@ -387,6 +388,7 @@ model User {
   ComplaintReply                   ComplaintReply[]
   AccountDeletionRequest           AccountDeletionRequest?
 
+  @@index([registrationCountryCode], map: "registrationCountryCode_1")
   @@map("users")
 }
 
