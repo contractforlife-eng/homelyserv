@@ -1,16 +1,28 @@
+import { resolveCanonicalJobLabel } from './jobLabelResolver.js';
+
 const hasMeaningfulValue = (value) => String(value || '').trim().length > 0;
 const escapeRegExp = (value) => String(value).replace(/[\^$.*+?()[\]{}|]/g, '\\$&');
 
 export const buildWorkerTextSearchFilter = (query) => {
   const escapedQuery = escapeRegExp(query);
-  return {
-    $or: [
-      { fullName: { $regex: escapedQuery, $options: 'i' } },
-      { bio: { $regex: escapedQuery, $options: 'i' } },
-      { skills: { $in: [new RegExp(escapedQuery, 'i')] } },
-      { desiredJob: { $regex: escapedQuery, $options: 'i' } }
-    ]
-  };
+  const clauses = [
+    { fullName: { $regex: escapedQuery, $options: 'i' } },
+    { bio: { $regex: escapedQuery, $options: 'i' } },
+    { skills: { $in: [new RegExp(escapedQuery, 'i')] } },
+    { desiredJob: { $regex: escapedQuery, $options: 'i' } }
+  ];
+
+  const canonicalJob = resolveCanonicalJobLabel(query);
+  if (canonicalJob) {
+    clauses.push({
+      desiredJob: {
+        $regex: '^' + escapeRegExp(canonicalJob) + '$',
+        $options: 'i'
+      }
+    });
+  }
+
+  return { $or: clauses };
 };
 
 export const buildCanonicalJobFilter = (category) => {

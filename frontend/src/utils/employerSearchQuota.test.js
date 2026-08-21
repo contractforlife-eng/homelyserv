@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   getSearchLimitState,
   hasEmployerSearchAccountChanged,
+  hasMeaningfulEmployerSearchFilters,
   isSearchLimitResponse,
   shouldShowWorkerDiscovery,
 } from './employerSearchQuota.js';
@@ -43,4 +44,11 @@ test('account changes are detected without treating the initial account as a swi
   assert.equal(hasEmployerSearchAccountChanged(null, 'employer-a'), false);
   assert.equal(hasEmployerSearchAccountChanged('employer-a', 'employer-a'), false);
   assert.equal(hasEmployerSearchAccountChanged('employer-a', 'employer-b'), true);
+});
+
+test('removing the job filter can restore discovery only when no other filter is active', () => {
+  assert.equal(hasMeaningfulEmployerSearchFilters({}), false);
+  assert.equal(hasMeaningfulEmployerSearchFilters({ query: 'cook' }), true);
+  assert.equal(hasMeaningfulEmployerSearchFilters({ location: 'Cairo' }), true);
+  assert.equal(hasMeaningfulEmployerSearchFilters({ availability: 'all', language: 'all' }), false);
 });

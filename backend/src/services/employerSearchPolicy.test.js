@@ -5,6 +5,7 @@ import {
   buildWorkerTextSearchFilter,
   isIntentionalWorkerSearch
 } from './employerSearchPolicy.js';
+import { resolveCanonicalJobLabel } from './jobLabelResolver.js';
 
 test('empty worker discovery request is not an intentional search', () => {
   assert.equal(isIntentionalWorkerSearch({}), false);
@@ -71,4 +72,20 @@ test('free-text search matches canonical desiredJob and preserves skills matchin
     matchesWorkerTextSearch({ desiredJob: 'nurse', skills: ['cookware safety'] }, 'cook'),
     true
   );
+});
+
+test('free-text job labels resolve exactly across all supported languages', () => {
+  const labels = [
+    'driver',
+    'Driver',
+    'سائق',
+    'Chauffeur',
+    'Водитель',
+    'Şoför',
+    'Fahrer'
+  ];
+
+  labels.forEach(label => assert.equal(resolveCanonicalJobLabel(label), 'driver'));
+  assert.equal(resolveCanonicalJobLabel(' محمد '), null);
+  assert.equal(resolveCanonicalJobLabel('محمد سائق ممتاز'), null);
 });

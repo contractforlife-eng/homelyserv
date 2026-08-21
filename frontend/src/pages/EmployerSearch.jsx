@@ -39,6 +39,7 @@ import {
 import {
   getSearchLimitState,
   hasEmployerSearchAccountChanged,
+  hasMeaningfulEmployerSearchFilters,
   isSearchLimitResponse,
   shouldShowWorkerDiscovery,
 } from '../utils/employerSearchQuota';
@@ -385,6 +386,33 @@ const EmployerSearch = () => {
   // ============================================================
   // 5. HANDLERS
   // ============================================================
+  const handleJobChange = (nextJob) => {
+    setSelectedJob(nextJob === 'All Jobs' ? '' : nextJob);
+
+    if (nextJob !== 'All Jobs') return;
+
+    // Removing a job filter must never leave the previous job results or
+    // featured workers visible. Re-run unfiltered discovery only when no
+    // other meaningful criterion remains; discovery does not consume quota.
+    setSearchResults([]);
+    setShowResults(false);
+    setAllWorkers([]);
+
+    const hasOtherCriteria = hasMeaningfulEmployerSearchFilters({
+      query: searchQuery,
+      location: selectedLocation,
+      ...advancedFilters
+    });
+
+    if (!hasOtherCriteria) {
+      discoveryUserKeyRef.current = null;
+      loadWorkersFromBackend({}, {
+        discovery: true,
+        discoveryUserKey: accountUserKey
+      });
+    }
+  };
+
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedJob('');
@@ -717,7 +745,7 @@ const EmployerSearch = () => {
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">{t('employerSearch.jobType')}</label>
               <select
                 value={selectedJob}
-                onChange={(e) => setSelectedJob(e.target.value)}
+                onChange={(e) => handleJobChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
               >
                 {jobOptions.map((job) => (

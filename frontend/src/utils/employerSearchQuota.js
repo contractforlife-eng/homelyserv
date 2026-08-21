@@ -19,3 +19,21 @@ export const shouldShowWorkerDiscovery = (searchLimitState = {}) => (
 export const hasEmployerSearchAccountChanged = (previousUserKey, currentUserKey) => (
   Boolean(previousUserKey && currentUserKey && previousUserKey !== currentUserKey)
 );
+
+export const hasMeaningfulEmployerSearchFilters = ({
+  query,
+  location,
+  minRating,
+  minExperience,
+  availability,
+  maxHourlyRateActive,
+  language,
+} = {}) => (
+  Boolean(String(query || '').trim())
+  || Boolean(location && location !== 'All Locations' && location !== 'all')
+  || Number(minRating) > 0
+  || Number(minExperience) > 0
+  || (availability && availability !== 'all')
+  || maxHourlyRateActive === true
+  || String(language || '').toLowerCase() !== 'all' && Boolean(language)
+);
