@@ -5,6 +5,11 @@ import { enrichUserResponse } from '../utils/userResponse.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
+import {
+  authorizeEmployerProfileView,
+  EMPLOYER_PROFILE_PUBLIC_FIELDS,
+  EMPLOYER_PROFILE_CONTACT_FIELDS,
+} from '../services/employerProfileAuthorization.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import {
   buildCanonicalJobFilter,
@@ -244,20 +249,58 @@ router.get('/workers/:id', authenticate, async (req, res) => {
 // ============================================================
 // Get Employer Profile
 // ============================================================
-router.get('/profile/:userId', async (req, res) => {
+router.get('/profile/:userId', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select('-password');
+    const targetUserId = String(req.params.userId || '');
+    if (!/^[0-9a-fA-F]{24}$/.test(targetUserId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user id'
+      });
+    }
+
+    const targetIdentity = await User.findById(targetUserId).select('role');
+    if (!targetIdentity) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const authorization = await authorizeEmployerProfileView({
+      requesterId: req.userId,
+      requesterRole: req.userRole,
+      targetUserId,
+      targetRole: targetIdentity.role,
+      db: prisma,
+    });
+
+    if (!authorization.allowed) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to view this employer profile'
+      });
+    }
+
+    const publicFields = [...EMPLOYER_PROFILE_PUBLIC_FIELDS];
+    if (authorization.exposeContact) {
+      publicFields.push(...EMPLOYER_PROFILE_CONTACT_FIELDS);
+    }
+
+    const user = await User.findById(targetUserId).select(publicFields.join(' '));
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+
     const userObj = user.toObject ? user.toObject() : { ...user };
-    userObj.id = userObj._id;
+    userObj.id = String(userObj._id);
     res.json({
       success: true,
-      user: userObj
+      user: userObj,
+      contactUnlocked: authorization.exposeContact
     });
   } catch (error) {
     console.error('Get profile error:', error);
