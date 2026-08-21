@@ -15,3 +15,7 @@ export const getSearchLimitState = (response, previous = {}) => ({
 export const shouldShowWorkerDiscovery = (searchLimitState = {}) => (
   searchLimitState.isPremium === true || searchLimitState.limitReached !== true
 );
+
+export const hasEmployerSearchAccountChanged = (previousUserKey, currentUserKey) => (
+  Boolean(previousUserKey && currentUserKey && previousUserKey !== currentUserKey)
+);

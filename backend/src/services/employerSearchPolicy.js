@@ -1,4 +1,36 @@
 const hasMeaningfulValue = (value) => String(value || '').trim().length > 0;
+const escapeRegExp = (value) => String(value).replace(/[\^$.*+?()[\]{}|]/g, '\\$&');
+
+export const buildWorkerTextSearchFilter = (query) => {
+  const escapedQuery = escapeRegExp(query);
+  return {
+    $or: [
+      { fullName: { $regex: escapedQuery, $options: 'i' } },
+      { bio: { $regex: escapedQuery, $options: 'i' } },
+      { skills: { $in: [new RegExp(escapedQuery, 'i')] } },
+      { desiredJob: { $regex: escapedQuery, $options: 'i' } }
+    ]
+  };
+};
+
+export const buildCanonicalJobFilter = (category) => {
+  const rawCategory = String(category || '').trim();
+  if (!rawCategory || rawCategory.toLowerCase() === 'all') return null;
+
+  const canonicalCategory = rawCategory.toLowerCase().replace(/\s+/g, '_');
+  const pattern = canonicalCategory
+    .split('_')
+    .filter(Boolean)
+    .map(escapeRegExp)
+    .join('[_ ]+');
+
+  return {
+    desiredJob: {
+      $regex: '^' + pattern + '$',
+      $options: 'i'
+    }
+  };
+};
 
 export const isIntentionalWorkerSearch = ({
   query,

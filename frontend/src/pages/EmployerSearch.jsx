@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { JOB_OPTIONS } from '../constants/jobOptions';
+import { JOB_OPTIONS, getJobValue } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import { UserDisplayName } from '../components/users';
@@ -38,6 +38,7 @@ import {
 } from '../utils/workerRateDisplay';
 import {
   getSearchLimitState,
+  hasEmployerSearchAccountChanged,
   isSearchLimitResponse,
   shouldShowWorkerDiscovery,
 } from '../utils/employerSearchQuota';
@@ -49,6 +50,23 @@ const getInitialSearchCurrency = (user) => {
   if (SEARCH_CURRENCIES.includes(user?.effectiveCurrency)) return user.effectiveCurrency;
   return 'EGP';
 };
+
+const createInitialAdvancedFilters = () => ({
+  minRating: 0,
+  minExperience: 0,
+  availability: 'all',
+  maxHourlyRate: 100,
+  maxHourlyRateActive: false,
+  language: 'all'
+});
+
+const createInitialSearchLimitStatus = () => ({
+  count: 0,
+  limit: 3,
+  remaining: 3,
+  isPremium: false,
+  limitReached: false
+});
 
 // Share equivalent in-flight discovery requests across quick remounts,
 // including React StrictMode's development remount.
@@ -89,25 +107,15 @@ const EmployerSearch = () => {
   const searchCurrencyInitializedRef = useRef(Boolean(authUser));
   const discoveryUserKeyRef = useRef(null);
 
-  const [advancedFilters, setAdvancedFilters] = useState({
-    minRating: 0,
-    minExperience: 0,
-    availability: 'all',
-    maxHourlyRate: 100,
-    maxHourlyRateActive: false,
-    language: 'all'
-  });
+  const [advancedFilters, setAdvancedFilters] = useState(createInitialAdvancedFilters);
 
-  const [searchLimitStatus, setSearchLimitStatus] = useState({
-    count: 0,
-    limit: 3,
-    remaining: 3,
-    isPremium: false,
-    limitReached: false
-  });
+  const [searchLimitStatus, setSearchLimitStatus] = useState(createInitialSearchLimitStatus);
 
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState('grid');
+  const accountUserKey = String(authUser?.id || authUser?.email || '');
+  const previousAccountUserKeyRef = useRef(null);
+  const accountChangedRef = useRef(false);
 
   // Dynamic hourly rate maximum based on real worker data
   const getDynamicHourlyMax = (currency = searchCurrency) => {
@@ -174,6 +182,27 @@ const EmployerSearch = () => {
   }, []);
 
   useEffect(() => {
+    if (!accountUserKey) return;
+    const previousKey = previousAccountUserKeyRef.current;
+    accountChangedRef.current = hasEmployerSearchAccountChanged(previousKey, accountUserKey);
+    previousAccountUserKeyRef.current = accountUserKey;
+    if (!previousKey || previousKey === accountUserKey) return;
+
+    setSearchResults([]);
+    setShowResults(false);
+    setAllWorkers([]);
+    setSearchQuery('');
+    setSelectedJob('');
+    setSelectedLocation('');
+    setAdvancedFilters(createInitialAdvancedFilters());
+    setSearchLimitStatus(createInitialSearchLimitStatus());
+    setSearchCurrency(getInitialSearchCurrency(authUser));
+    searchCurrencyInitializedRef.current = true;
+    setSortBy('relevance');
+    discoveryUserKeyRef.current = null;
+  }, [accountUserKey, authUser]);
+
+  useEffect(() => {
     if (authLoading) return;
 
     if (!isAuthenticated || !authUser) {
@@ -190,8 +219,10 @@ const EmployerSearch = () => {
     // profile page (the search state was carried via route state — the same
     // state pattern already used for offer creation). This avoids showing an
     // empty results list after the profile page unmounted this component.
+    const accountChanged = accountChangedRef.current;
+    accountChangedRef.current = false;
     const restored = location.state?.search;
-    if (restored && Array.isArray(restored.searchResults)) {
+    if (!accountChanged && restored && Array.isArray(restored.searchResults)) {
       setSearchQuery(restored.searchQuery || '');
       setSelectedJob(restored.selectedJob || '');
       setSelectedLocation(restored.selectedLocation || '');
@@ -203,14 +234,7 @@ const EmployerSearch = () => {
       setAdvancedFilters(restored.advancedFilters ? {
         ...restored.advancedFilters,
         maxHourlyRateActive: restored.advancedFilters.maxHourlyRateActive === true
-      } : {
-        minRating: 0,
-        minExperience: 0,
-        availability: 'all',
-        maxHourlyRate: 100,
-        maxHourlyRateActive: false,
-        language: 'all'
-      });
+      } : createInitialAdvancedFilters());
       setSortBy(restored.sortBy || 'relevance');
       setAllWorkers(restored.allWorkers || []);
       setSearchResults(restored.searchResults || []);
@@ -449,9 +473,12 @@ const EmployerSearch = () => {
     setLoading(true);
     setShowResults(false);
 
+    const selectedJobValue = selectedJob && selectedJob !== 'All Jobs'
+      ? getJobValue(selectedJob)
+      : '';
     const searchFilters = {
       ...(searchQuery.trim() ? { query: searchQuery.trim() } : {}),
-      ...(selectedJob && selectedJob !== 'All Jobs' ? { category: selectedJob } : {}),
+      ...(selectedJobValue ? { category: selectedJobValue } : {}),
       ...(selectedLocation && selectedLocation !== 'All Locations' ? { location: selectedLocation } : {}),
       ...(advancedFilters.minRating > 0 ? { minRating: advancedFilters.minRating } : {}),
       ...(advancedFilters.minExperience > 0 ? { minExperience: advancedFilters.minExperience } : {}),

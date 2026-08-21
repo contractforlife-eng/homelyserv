@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getSearchLimitState,
+  hasEmployerSearchAccountChanged,
   isSearchLimitResponse,
   shouldShowWorkerDiscovery,
 } from './employerSearchQuota.js';
@@ -36,4 +37,10 @@ test('worker discovery is hidden only for a non-Premium employer after quota exh
   assert.equal(shouldShowWorkerDiscovery({ limitReached: false, isPremium: false }), true);
   assert.equal(shouldShowWorkerDiscovery({ limitReached: true, isPremium: false }), false);
   assert.equal(shouldShowWorkerDiscovery({ limitReached: true, isPremium: true }), true);
+});
+
+test('account changes are detected without treating the initial account as a switch', () => {
+  assert.equal(hasEmployerSearchAccountChanged(null, 'employer-a'), false);
+  assert.equal(hasEmployerSearchAccountChanged('employer-a', 'employer-a'), false);
+  assert.equal(hasEmployerSearchAccountChanged('employer-a', 'employer-b'), true);
 });

@@ -6,7 +6,11 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
-import { isIntentionalWorkerSearch } from '../services/employerSearchPolicy.js';
+import {
+  buildCanonicalJobFilter,
+  buildWorkerTextSearchFilter,
+  isIntentionalWorkerSearch
+} from '../services/employerSearchPolicy.js';
 
 const router = express.Router();
 
@@ -62,17 +66,12 @@ router.get('/search', requireEmployer, async (req, res) => {
     let filter = { role: 'WORKER' };
     
     if (query) {
-      const escapedQuery = escapeRegExp(query);
-      filter.$or = [
-        { fullName: { $regex: escapedQuery, $options: 'i' } },
-        { bio: { $regex: escapedQuery, $options: 'i' } },
-        { skills: { $in: [new RegExp(escapedQuery, 'i')] } }
-      ];
+      Object.assign(filter, buildWorkerTextSearchFilter(query));
     }
     
-    if (category && category !== 'all') {
-      const escapedCategory = escapeRegExp(category);
-      filter.skills = { $in: [new RegExp(escapedCategory, 'i')] };
+    const jobFilter = buildCanonicalJobFilter(category);
+    if (jobFilter) {
+      filter.desiredJob = jobFilter.desiredJob;
     }
     
     if (location && location !== 'all') {
