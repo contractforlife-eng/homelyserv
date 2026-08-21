@@ -306,8 +306,20 @@ export const verifyPayment = async (transactionId, orderId) => {
   return response.data;
 };
 
-export const createManualPayment = async (paymentData) => {
-  const response = await api.post('/api/payments/manual', paymentData);
+export const fetchManualPaymentInstructions = async (paymentData) => {
+  const response = await api.get('/api/payments/manual/instructions', {
+    params: paymentData,
+  });
+  return response.data;
+};
+
+export const submitManualPayment = async (formData, submissionId) => {
+  formData.append('submissionId', submissionId);
+  const response = await api.post('/api/payments/manual/submit', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
 
@@ -344,7 +356,6 @@ const paymentService = {
   createPayPalOrder,
   capturePayPalOrder,
   processPayPalWebhook,
-  createManualPayment,
   submitManualPaymentProof,
   getManualPaymentProof,
   confirmManualPayment,

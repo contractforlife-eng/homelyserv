@@ -13,7 +13,7 @@ import {
   Smartphone,
   Building2
 } from 'lucide-react';
-import { createManualPayment, submitManualPaymentProof } from '../../services/paymentService';
+import { fetchManualPaymentInstructions, submitManualPayment } from '../../services/paymentService';
 
 const MANUAL_PROOF_MAX_SIZE_MB = 5;
 const MANUAL_PROOF_MAX_SIZE_BYTES = MANUAL_PROOF_MAX_SIZE_MB * 1024 * 1024;
@@ -27,13 +27,13 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
-  const [isReturningPending, setIsReturningPending] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   const [proofFile, setProofFile] = useState(null);
   const [proofPreview, setProofPreview] = useState(null);
   const [externalRef, setExternalRef] = useState('');
   const fileInputRef = useRef(null);
   const createInFlightRef = useRef(false);
+  const submissionIdRef = useRef(null);
 
   const isVodafone = paymentMethod === 'vodafone_cash';
   const isInstapay = paymentMethod === 'instapay';
@@ -51,13 +51,9 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
         ...(plan ? { plan } : {}),
         ...(hireId ? { hireId } : {}),
       };
-      const result = await createManualPayment(payload);
+      const result = await fetchManualPaymentInstructions(payload);
       if (result.success && result.payment) {
         setManualPayment(result);
-        if (result.payment.manualReviewState === 'pending_verification') {
-          setIsReturningPending(true);
-          setSubmitted(true);
-        }
       } else {
         setCreationError(result.error || t('manualPayment.errors.creationFailed'));
       }
@@ -118,17 +114,21 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
 
     try {
       const formData = new FormData();
+      formData.append('paymentMethod', paymentMethod);
+      formData.append('purpose', purpose);
+      if (plan) formData.append('plan', plan);
+      if (hireId) formData.append('hireId', hireId);
+      formData.append('manualPaymentReference', manualPayment.payment.manualPaymentReference);
       formData.append('externalTransactionReference', trimmedRef);
       formData.append('proof', proofFile);
 
-      const result = await submitManualPaymentProof(manualPayment.payment.id, formData);
+      const result = await submitManualPayment(formData, submissionIdRef.current);
       if (result.success) {
         setManualPayment(prev => ({
           ...prev,
           payment: { ...prev.payment, ...result.payment }
         }));
         setSubmitted(true);
-        setIsReturningPending(false);
         if (onSubmitted) onSubmitted(result);
       } else {
         setSubmitError(result.error || t('manualPayment.errors.submitFailed'));
@@ -143,15 +143,16 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
   const handleBack = () => {
     setManualPayment(null);
     setSubmitted(false);
-    setIsReturningPending(false);
     setCreationError(null);
     setSubmitError(null);
     setProofFile(null);
     setProofPreview(null);
     setExternalRef('');
+    submissionIdRef.current = null;
   };
 
   useEffect(() => {
+    submissionIdRef.current = `manual-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
     if (paymentMethod && !manualPayment && !submitted && !creating) {
       handleCreate();
     }
@@ -180,12 +181,8 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
     }
 
     if (reviewState === 'pending_verification' && submitted) {
-      const description = isReturningPending
-        ? t('manualPayment.pendingVerification.returningDescription')
-        : t('manualPayment.pendingVerification.description');
-      const warningText = isReturningPending
-        ? t('manualPayment.pendingVerification.returningWarning')
-        : t('manualPayment.pendingVerification.warning');
+      const description = t('manualPayment.pendingVerification.description');
+      const warningText = t('manualPayment.pendingVerification.warning');
 
       return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
@@ -231,7 +228,7 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
       );
     }
 
-    if (reviewState === 'awaiting_transfer' || reviewState === 'proof_submitted') {
+    if (reviewState === 'draft' || reviewState === 'awaiting_transfer' || reviewState === 'proof_submitted') {
       const instructions = manualPayment.transferInstructions || {};
       return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">

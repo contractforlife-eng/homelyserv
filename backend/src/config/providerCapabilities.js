@@ -106,9 +106,8 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
 
   const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
   const isPaymobEgp = isPaymob && normalizedCurrency === 'EGP';
-  const isLegacyPayPalSubscription = (
+  const isLegacyPayPalEgp = (
     normalizedProvider === PROVIDERS.PAYPAL &&
-    normalizedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION &&
     normalizedCurrency === 'EGP'
   );
   const isLivePayPalDirectCommission = (
@@ -118,7 +117,7 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
   );
 
-  if (!isPaymobEgp && !isLegacyPayPalSubscription && !isLivePayPalDirectCommission) {
+  if (!isPaymobEgp && !isLegacyPayPalEgp && !isLivePayPalDirectCommission) {
     return unsupportedCapability({
       provider: normalizedProvider,
       purpose: normalizedPurpose,
@@ -132,10 +131,10 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     provider: normalizedProvider,
     purpose: normalizedPurpose,
     transactionCurrency: normalizedCurrency,
-    providerCurrency: isPaymobEgp ? 'EGP' : isLegacyPayPalSubscription ? 'USD' : normalizedCurrency,
+    providerCurrency: isPaymobEgp ? 'EGP' : isLegacyPayPalEgp ? 'USD' : normalizedCurrency,
     supported: true,
     enabled: configuration.configured,
-    mode: isLegacyPayPalSubscription
+    mode: isLegacyPayPalEgp
       ? PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED
       : PROVIDER_CAPABILITY_MODES.DIRECT,
     verificationStatus: PROVIDER_VERIFICATION_STATUSES.CURRENTLY_IMPLEMENTED,

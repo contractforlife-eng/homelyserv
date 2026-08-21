@@ -40,6 +40,12 @@ import {
 } from '../utils/manualPaymentProofUpload.js';
 import { classifyPayPalCaptureError } from '../utils/paypalCaptureError.js';
 import {
+  MANUAL_REFERENCE_PATTERN,
+  MANUAL_SUBMISSION_ID_PATTERN,
+  MANUAL_SUBMISSION_REVIEW_STATE,
+  getManualSubmissionOrderId,
+} from '../services/manualPaymentLifecycle.js';
+import {
   PayPalEvidenceError,
   verifyPayPalApprovalEvidence,
   verifyPayPalCaptureEvidence,
@@ -311,10 +317,9 @@ export const resolveExpectedProviderEvidence = (payment) => {
       purpose: payment.purpose,
       transactionCurrency: payment.currency,
     });
-    // New PayPal EGP commission checkout is no longer supported, but an
-    // already-created provider order must retain its verified completion path.
-    // This exception validates immutable historical evidence only; creation
-    // still fails capability enforcement before a Payment/provider call.
+    // Historical EGP PayPal attempts retain their immutable provider evidence.
+    // Current EGP PayPal attempts use the same server-side legacy conversion
+    // mode exposed by providerCapabilities.
     const allowedCurrency = isHistoricalPayPalEgpCommissionAttempt(payment)
       ? PAYPAL_PROVIDER_CURRENCY
       : capability.enabled ? capability.providerCurrency : null;
@@ -2242,7 +2247,272 @@ const serializeManualPayment = (payment) => ({
   currency: payment.currency,
 });
 
+const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId }) => {
+  const manualConfig = getManualPaymentConfig();
+  const selectedPaymentMethod = String(req.body.paymentMethod || '').trim().toLowerCase();
+
+  if (!Object.values(MANUAL_PROVIDERS).includes(selectedPaymentMethod)) {
+    return { error: 'Unsupported manual payment method', status: 400 };
+  }
+
+  const isVodafone = selectedPaymentMethod === MANUAL_PROVIDERS.VODAFONE_CASH;
+  const providerConfigured = isVodafone
+    ? manualConfig.vodafoneCash.configured
+    : manualConfig.instapay.configured;
+  if (!providerConfigured) {
+    return { error: 'Manual payment method is not currently configured', status: 503 };
+  }
+
+  if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+    const selectedPlan = getSubscriptionPlan(requestedPlan);
+    if (!selectedPlan) {
+      return { error: 'Unsupported subscription plan', status: 400 };
+    }
+
+    let role = req.userRole;
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: String(req.userId) },
+        select: { role: true },
+      });
+      if (dbUser?.role) role = dbUser.role;
+    } catch (roleError) {
+      console.warn('⚠️ Could not resolve role for manual subscription pricing:', roleError.message);
+    }
+
+    if (!['EMPLOYER', 'WORKER'].includes(role)) {
+      return { error: 'Role is not eligible for Premium', status: 403 };
+    }
+
+    return {
+      manualConfig,
+      selectedPaymentMethod,
+      amount: getSubscriptionPrice(selectedPlan.id, role),
+      transactionCurrency: SUBSCRIPTION_CURRENCY,
+      hireId: null,
+      workerId: null,
+      offerId: null,
+      subscriptionSnapshot: {
+        plan: selectedPlan.id,
+        purchaserRole: role,
+        durationDays: selectedPlan.durationDays,
+      },
+    };
+  }
+
+  if (!hireId) {
+    return { error: 'hireId is required for commission payments', status: 400 };
+  }
+
+  const commissionHire = await prisma.hire.findUnique({
+    where: { id: String(hireId) },
+    select: {
+      id: true,
+      totalDue: true,
+      employerId: true,
+      workerId: true,
+      offerId: true,
+      compensationCurrency: true,
+    },
+  });
+  if (!commissionHire) {
+    return { error: 'Hire not found for commission payment', status: 400 };
+  }
+  if (!req.userId || String(commissionHire.employerId) !== String(req.userId)) {
+    return { error: 'You are not authorized to pay for this hire', status: 403 };
+  }
+
+  const transactionCurrency = commissionHire.compensationCurrency
+    ? String(commissionHire.compensationCurrency).trim().toUpperCase()
+    : 'EGP';
+  if (transactionCurrency !== 'EGP') {
+    return { error: 'Manual payments are EGP-only', status: 400 };
+  }
+
+  const amount = Number(commissionHire.totalDue);
+  if (!amount || amount <= 0) {
+    return { error: 'Invalid amount', status: 400 };
+  }
+
+  return {
+    manualConfig,
+    selectedPaymentMethod,
+    amount: roundMoney(amount, transactionCurrency),
+    transactionCurrency,
+    hireId: String(commissionHire.id),
+    workerId: commissionHire.workerId,
+    offerId: commissionHire.offerId,
+    subscriptionSnapshot: null,
+  };
+};
+
+// Read-only preparation: transfer instructions are available before final
+// submission, but no Payment record or admin-visible state is created.
+router.get('/manual/instructions', authenticate, async (req, res) => {
+  try {
+    const purpose = String(req.query.purpose || '').trim().toUpperCase() === PAYMENT_PURPOSES.SUBSCRIPTION
+      ? PAYMENT_PURPOSES.SUBSCRIPTION
+      : PAYMENT_PURPOSES.COMMISSION;
+    const details = await resolveManualPaymentDetails({
+      req: {
+        userId: req.userId,
+        userRole: req.userRole,
+        body: { ...req.query, paymentMethod: req.query.paymentMethod },
+      },
+      purpose,
+      requestedPlan: req.query.plan,
+      hireId: req.query.hireId,
+    });
+    if (details.error) return res.status(details.status).json({ success: false, error: details.error });
+
+    const manualPaymentReference = await generateManualPaymentReference(prisma);
+    return res.json({
+      success: true,
+      payment: {
+        paymentMethod: details.selectedPaymentMethod,
+        amount: details.amount,
+        currency: details.transactionCurrency,
+        purpose,
+        manualPaymentReference,
+        manualReviewState: 'draft',
+      },
+      transferInstructions: buildManualTransferInstructions(
+        details.selectedPaymentMethod,
+        details.amount,
+        manualPaymentReference,
+        details.manualConfig,
+      ),
+    });
+  } catch (error) {
+    console.error('❌ Manual payment instruction error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to load manual payment instructions' });
+  }
+});
+
+// Final submission: the Payment is created only after proof and reference
+// validation. The unique orderId derived from Idempotency-Key protects a
+// double-click/retry from creating two actionable Payment records.
+router.post('/manual/submit', authenticate, proofUpload.single('proof'), async (req, res) => {
+  let uploaded = null;
+  let paymentCreated = false;
+  try {
+    const purpose = String(req.body.purpose || '').trim().toUpperCase() === PAYMENT_PURPOSES.SUBSCRIPTION
+      ? PAYMENT_PURPOSES.SUBSCRIPTION
+      : PAYMENT_PURPOSES.COMMISSION;
+    const submissionId = String(req.get('Idempotency-Key') || req.body.submissionId || '').trim();
+    if (!MANUAL_SUBMISSION_ID_PATTERN.test(submissionId)) {
+      return res.status(400).json({ success: false, error: 'A valid submission id is required' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Proof file is required' });
+    }
+
+    const trimmedReference = String(req.body.externalTransactionReference || '').trim();
+    if (!trimmedReference || trimmedReference.length < 3 || trimmedReference.length > 100) {
+      return res.status(400).json({ success: false, error: 'External transaction reference is required (3-100 characters)' });
+    }
+
+    const details = await resolveManualPaymentDetails({
+      req,
+      purpose,
+      requestedPlan: req.body.plan,
+      hireId: req.body.hireId,
+    });
+    if (details.error) return res.status(details.status).json({ success: false, error: details.error });
+
+    const orderId = getManualSubmissionOrderId(submissionId);
+    const existingBySubmission = await prisma.payment.findUnique({ where: { orderId } });
+    if (existingBySubmission) {
+      return res.json({
+        success: true,
+        payment: serializeManualPayment(existingBySubmission),
+        message: 'Manual payment submission already recorded',
+      });
+    }
+
+    let manualPaymentReference = String(req.body.manualPaymentReference || '').trim();
+    if (!manualPaymentReference) manualPaymentReference = await generateManualPaymentReference(prisma);
+    if (!MANUAL_REFERENCE_PATTERN.test(manualPaymentReference)) {
+      return res.status(400).json({ success: false, error: 'Invalid manual payment reference' });
+    }
+
+    const existingReference = await prisma.payment.findFirst({
+      where: { manualPaymentReference },
+      select: { id: true },
+    });
+    if (existingReference) {
+      return res.status(409).json({ success: false, error: 'Manual payment reference is already in use' });
+    }
+
+    uploaded = await uploadProof(req.file.buffer);
+    const now = new Date();
+    const payment = await prisma.payment.create({
+      data: {
+        orderId,
+        transactionId: generateId(),
+        amount: Number(details.amount),
+        currency: details.transactionCurrency,
+        paymentMethod: details.selectedPaymentMethod,
+        purpose,
+        status: 'pending',
+        fulfillmentStatus: 'pending',
+        manualReviewState: MANUAL_SUBMISSION_REVIEW_STATE,
+        manualPaymentReference,
+        externalTransactionReference: trimmedReference,
+        proofStorageKey: uploaded.public_id,
+        submittedAt: now,
+        userEmail: req.user?.email || null,
+        userId: String(req.userId),
+        workerId: details.workerId || null,
+        workerName: req.body.workerName || null,
+        jobTitle: req.body.jobTitle || null,
+        employerId: String(req.userId),
+        employerName: req.body.employerName || null,
+        hireId: details.hireId,
+        offerId: details.offerId || null,
+        phone: req.body.phone || null,
+        metadata: {
+          createdFrom: 'manual-payment-submit',
+          source: 'backend',
+          originalAmount: details.amount,
+          originalCurrency: details.transactionCurrency,
+          submissionId,
+          ...details.subscriptionSnapshot,
+        },
+      },
+    });
+    paymentCreated = true;
+
+    return res.json({
+      success: true,
+      message: 'Manual payment submitted for review',
+      payment: serializeManualPayment(payment),
+    });
+  } catch (error) {
+    if (uploaded && !paymentCreated) await deleteProof(uploaded.public_id);
+
+    if (error?.code === 'P2002') {
+      const submissionId = String(req.get('Idempotency-Key') || req.body.submissionId || '').trim();
+      const existing = await prisma.payment.findUnique({ where: { orderId: getManualSubmissionOrderId(submissionId) } });
+      if (existing) {
+        return res.json({
+          success: true,
+          payment: serializeManualPayment(existing),
+          message: 'Manual payment submission already recorded',
+        });
+      }
+    }
+
+    console.error('❌ Manual payment submission error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to submit manual payment' });
+  }
+});
+
 router.post('/manual', authenticate, async (req, res) => {
+  return res.status(410).json({
+    success: false,
+    error: 'Manual payment creation now occurs only on final proof submission',
+  });
   try {
     const {
       paymentMethod,
