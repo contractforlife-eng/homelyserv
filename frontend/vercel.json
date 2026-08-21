@@ -6,6 +6,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/download",
+      "destination": "/download.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

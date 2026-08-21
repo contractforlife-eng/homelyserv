@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Download as DownloadIcon, Facebook, ShieldCheck, Smartphone } from 'lucide-react';
+import { Check, Copy, Download as DownloadIcon, Facebook, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import appIcon from '../assets/homelyserv-app-icon.png';
+import { createQrMatrix } from '../utils/qrCode';
 
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.0-1/release.json';
 const FALLBACK_DOWNLOAD_URL = '/downloads/android/HomelyServ-1.0.0-1.apk';
+const DOWNLOAD_PAGE_URL = 'https://homelyserv.com/download';
+const SOCIAL_IMAGE_URL = 'https://homelyserv.com/downloads/android/homelyserv-android-share.png';
+const SOCIAL_DESCRIPTION = 'Download the official HomelyServ Android app directly from homelyserv.com. View version, signing, checksum, and installation information.';
 
 const formatBytes = (bytes) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 
@@ -16,6 +20,7 @@ const setMeta = (attribute, value, content) => {
     element.dataset.downloadPage = 'true';
     document.head.appendChild(element);
   }
+  element.dataset.downloadPage = 'true';
   element.setAttribute('content', content);
 };
 
@@ -27,6 +32,7 @@ const setCanonical = (href) => {
     element.dataset.downloadPage = 'true';
     document.head.appendChild(element);
   }
+  element.dataset.downloadPage = 'true';
   element.href = href;
 };
 
@@ -35,6 +41,7 @@ const Download = () => {
   const [release, setRelease] = useState(null);
   const [releaseError, setReleaseError] = useState(false);
   const [copied, setCopied] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,16 +62,24 @@ const Download = () => {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = t('downloadPage.seoTitle');
-    setMeta('name', 'description', t('downloadPage.seoDescription'));
+    setMeta('name', 'description', SOCIAL_DESCRIPTION);
     setMeta('property', 'og:title', t('downloadPage.seoTitle'));
-    setMeta('property', 'og:description', t('downloadPage.seoDescription'));
-    setMeta('property', 'og:url', 'https://homelyserv.com/download');
+    setMeta('property', 'og:description', SOCIAL_DESCRIPTION);
+    setMeta('property', 'og:url', DOWNLOAD_PAGE_URL);
     setMeta('property', 'og:type', 'website');
-    setMeta('property', 'og:image', `${window.location.origin}/favicon.png`);
-    setMeta('name', 'twitter:card', 'summary');
+    setMeta('property', 'og:site_name', 'HomelyServ');
+    setMeta('property', 'og:image', SOCIAL_IMAGE_URL);
+    setMeta('property', 'og:image:secure_url', SOCIAL_IMAGE_URL);
+    setMeta('property', 'og:image:type', 'image/png');
+    setMeta('property', 'og:image:width', '1200');
+    setMeta('property', 'og:image:height', '630');
+    setMeta('property', 'og:image:alt', 'HomelyServ official Android app');
+    setMeta('name', 'twitter:card', 'summary_large_image');
     setMeta('name', 'twitter:title', t('downloadPage.seoTitle'));
-    setMeta('name', 'twitter:description', t('downloadPage.seoDescription'));
-    setCanonical('https://homelyserv.com/download');
+    setMeta('name', 'twitter:description', SOCIAL_DESCRIPTION);
+    setMeta('name', 'twitter:image', SOCIAL_IMAGE_URL);
+    setMeta('name', 'twitter:image:alt', 'HomelyServ official Android app');
+    setCanonical(DOWNLOAD_PAGE_URL);
 
     return () => {
       document.title = previousTitle;
@@ -89,6 +104,42 @@ const Download = () => {
       window.setTimeout(() => setCopied(''), 1800);
     } catch {
       setCopied('');
+    }
+  };
+
+  const openShareWindow = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const shareOnWhatsApp = () => {
+    const message = `${t('downloadPage.shareMessage')}\n${DOWNLOAD_PAGE_URL}`;
+    openShareWindow(`https://wa.me/?text=${encodeURIComponent(message)}`);
+  };
+
+  const shareOnFacebook = () => {
+    openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(DOWNLOAD_PAGE_URL)}`);
+  };
+
+  const copyDownloadLink = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(DOWNLOAD_PAGE_URL);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = DOWNLOAD_PAGE_URL;
+        textArea.setAttribute('readonly', '');
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        const copiedWithFallback = document.execCommand('copy');
+        textArea.remove();
+        if (!copiedWithFallback) throw new Error('Clipboard fallback failed');
+      }
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      setLinkCopied(false);
     }
   };
 
@@ -156,6 +207,32 @@ const Download = () => {
           <TrustCard icon={<ShieldCheck />} title={t('downloadPage.trustOfficialTitle')} text={t('downloadPage.trustOfficialText')} />
           <TrustCard icon={<Smartphone />} title={t('downloadPage.trustHttpsTitle')} text={t('downloadPage.trustHttpsText')} />
           <TrustCard icon={<Check />} title={t('downloadPage.trustChecksumTitle')} text={t('downloadPage.trustChecksumText')} />
+        </section>
+
+        <section className="grid gap-6 rounded-3xl border border-red-100 bg-red-50/60 p-5 shadow-sm sm:p-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left lg:flex-col lg:text-center">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <QrCode />
+            </div>
+            <div className="mt-4 sm:ml-5 sm:mt-0 lg:ml-0 lg:mt-4">
+              <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{t('downloadPage.scanTitle')}</h2>
+              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">{t('downloadPage.scanDescription')}</p>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeading title={t('downloadPage.shareTitle')} description={t('downloadPage.shareDescription')} />
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <ShareButton icon={<MessageCircle />} label={t('downloadPage.whatsapp')} onClick={shareOnWhatsApp} />
+              <ShareButton icon={<Facebook />} label={t('downloadPage.facebook')} onClick={shareOnFacebook} />
+              <ShareButton
+                icon={linkCopied ? <Check /> : <Copy />}
+                label={linkCopied ? t('downloadPage.linkCopied') : t('downloadPage.copyLink')}
+                onClick={copyDownloadLink}
+                active={linkCopied}
+              />
+            </div>
+          </div>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
@@ -261,6 +338,43 @@ const HashRow = ({ label, value, copied, onCopy }) => (
       </button>
     </dd>
   </div>
+);
+
+const QrCode = () => {
+  const matrix = useMemo(() => createQrMatrix(DOWNLOAD_PAGE_URL), []);
+  const quietZone = 4;
+  const matrixSize = matrix.length;
+  const viewBoxSize = matrixSize + quietZone * 2;
+
+  return (
+    <svg
+      role="img"
+      aria-label="https://homelyserv.com/download"
+      className="h-40 w-40 sm:h-44 sm:w-44"
+      viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width={viewBoxSize} height={viewBoxSize} fill="white" />
+      <path
+        fill="#111827"
+        shapeRendering="crispEdges"
+        d={matrix.flatMap((row, rowIndex) => row.flatMap((dark, columnIndex) => (
+          dark ? [`M${columnIndex + quietZone} ${rowIndex + quietZone}h1v1h-1z`] : []
+        ))).join('')}
+      />
+    </svg>
+  );
+};
+
+const ShareButton = ({ icon, label, onClick, active = false }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-600'}`}
+  >
+    {icon}
+    {label}
+  </button>
 );
 
 export default Download;

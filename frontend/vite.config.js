@@ -1,6 +1,10 @@
 // vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
@@ -36,6 +40,12 @@ export default defineConfig({
   },
   // Add this to handle large dependencies
   build: {
+    rollupOptions: {
+      input: {
+        main: resolve(projectRoot, 'index.html'),
+        download: resolve(projectRoot, 'download.html')
+      }
+    },
     commonjsOptions: {
       include: [/node_modules/],
       extensions: ['.js', '.cjs', '.mjs']

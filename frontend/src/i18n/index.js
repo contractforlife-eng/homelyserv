@@ -4611,8 +4611,17 @@ const DOWNLOAD_LOGIN_COPY = {
   de: 'Jetzt herunterladen'
 };
 
+const DOWNLOAD_QR_SHARE_COPY = {
+  en: { scanTitle: 'Scan to download', scanDescription: 'Scan to open the official HomelyServ download page on your phone.', shareTitle: 'Share HomelyServ', shareDescription: 'Share the official download page with someone who needs the app.', whatsapp: 'WhatsApp', facebook: 'Facebook', copyLink: 'Copy Link', linkCopied: 'Link copied', shareMessage: 'Download the official HomelyServ Android app' },
+  ar: { scanTitle: 'امسح للتنزيل', scanDescription: 'امسح الرمز لفتح صفحة تنزيل HomelyServ الرسمية على هاتفك.', shareTitle: 'شارك HomelyServ', shareDescription: 'شارك صفحة التنزيل الرسمية مع من يحتاج إلى التطبيق.', whatsapp: 'واتساب', facebook: 'فيسبوك', copyLink: 'نسخ الرابط', linkCopied: 'تم نسخ الرابط', shareMessage: 'نزّل تطبيق HomelyServ الرسمي لنظام Android' },
+  fr: { scanTitle: 'Scannez pour télécharger', scanDescription: 'Scannez pour ouvrir la page officielle de téléchargement HomelyServ sur votre téléphone.', shareTitle: 'Partager HomelyServ', shareDescription: 'Partagez la page officielle de téléchargement avec quelqu’un qui a besoin de l’application.', whatsapp: 'WhatsApp', facebook: 'Facebook', copyLink: 'Copier le lien', linkCopied: 'Lien copié', shareMessage: 'Téléchargez l’application Android officielle HomelyServ' },
+  ru: { scanTitle: 'Сканируйте для скачивания', scanDescription: 'Отсканируйте код, чтобы открыть официальную страницу загрузки HomelyServ на телефоне.', shareTitle: 'Поделиться HomelyServ', shareDescription: 'Поделитесь официальной страницей загрузки с тем, кому нужно приложение.', whatsapp: 'WhatsApp', facebook: 'Facebook', copyLink: 'Копировать ссылку', linkCopied: 'Ссылка скопирована', shareMessage: 'Скачайте официальное Android-приложение HomelyServ' },
+  tr: { scanTitle: 'İndirmek için tarayın', scanDescription: 'Telefonunuzda resmi HomelyServ indirme sayfasını açmak için tarayın.', shareTitle: 'HomelyServ’i paylaş', shareDescription: 'Resmi indirme sayfasını uygulamaya ihtiyaç duyan biriyle paylaşın.', whatsapp: 'WhatsApp', facebook: 'Facebook', copyLink: 'Bağlantıyı Kopyala', linkCopied: 'Bağlantı kopyalandı', shareMessage: 'Resmi HomelyServ Android uygulamasını indirin' },
+  de: { scanTitle: 'Zum Download scannen', scanDescription: 'Scannen Sie den Code, um die offizielle HomelyServ-Downloadseite auf Ihrem Telefon zu öffnen.', shareTitle: 'HomelyServ teilen', shareDescription: 'Teilen Sie die offizielle Downloadseite mit jemandem, der die App benötigt.', whatsapp: 'WhatsApp', facebook: 'Facebook', copyLink: 'Link kopieren', linkCopied: 'Link kopiert', shareMessage: 'Laden Sie die offizielle HomelyServ-Android-App herunter' }
+};
+
 for (const [code, copy] of Object.entries(DOWNLOAD_PAGE_COPY)) {
-  ({ en, ar, fr, ru, tr, de }[code]).translation.downloadPage = { ...copy, followFacebook: DOWNLOAD_FOLLOW_COPY[code] };
+  ({ en, ar, fr, ru, tr, de }[code]).translation.downloadPage = { ...copy, followFacebook: DOWNLOAD_FOLLOW_COPY[code], ...DOWNLOAD_QR_SHARE_COPY[code] };
   ({ en, ar, fr, ru, tr, de }[code]).translation.downloadNow = DOWNLOAD_LOGIN_COPY[code];
 }
 
