@@ -9,6 +9,7 @@ import { createOffer } from '../services/offerService.js';
 import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { sendPushToUser } from '../services/fcmService.js';
+import { HIRE_USER_SELECT, projectHireUser } from '../utils/hireUserProjection.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -391,9 +392,10 @@ export const getMyHires = async (req, res) => {
       let usersMap = {};
       if (userIds.length > 0) {
         const users = await prisma.user.findMany({
-          where: { id: { in: userIds } }
+          where: { id: { in: userIds } },
+          select: HIRE_USER_SELECT
         });
-        users.forEach(u => { usersMap[u.id] = u; });
+        users.forEach((u) => { usersMap[u.id] = projectHireUser(u); });
       }
       profiles.forEach(p => {
         workerProfilesMap[p.id] = {
