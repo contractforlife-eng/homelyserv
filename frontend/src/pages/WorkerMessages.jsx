@@ -295,8 +295,32 @@ const WorkerMessages = () => {
     
     const userId = authUser?.id;
     if (userId) {
-      markMessagesAsRead(conversationId, userId)
-        .catch((error) => console.error('Error marking messages as read:', error));
+      try {
+        const marked = await markMessagesAsRead(conversationId, userId);
+        if (marked) {
+          setConversations(prevConversations => prevConversations.map(conversation =>
+            conversation.id === conversationId ? { ...conversation, unread: 0 } : conversation
+          ));
+        }
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    }
+  };
+
+  const handleMarkConversationAsRead = async () => {
+    setDropdownOpen(false);
+    if (!selectedConversationId || !authUser?.id) return;
+
+    try {
+      const marked = await markMessagesAsRead(selectedConversationId, authUser.id);
+      if (marked) {
+        setConversations(prevConversations => prevConversations.map(conversation =>
+          conversation.id === selectedConversationId ? { ...conversation, unread: 0 } : conversation
+        ));
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -663,11 +687,11 @@ const WorkerMessages = () => {
                               {t('workerMessages.deleteConversation')}
                             </button>
                             <button
-                              disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
+                              onClick={handleMarkConversationAsRead}
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                             >
                               <Mail size={16} />
-                              {t('workerMessages.markAsUnread')}
+                              {t('workerMessages.markAsRead')}
                             </button>
                             <button
                               disabled

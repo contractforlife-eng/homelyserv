@@ -4691,6 +4691,21 @@ for (const [code, copy] of Object.entries(TRACKING_CONSENT_COPY)) {
   ({ en, ar, fr, ru, tr, de }[code]).translation.trackingConsent = copy;
 }
 
+const MESSAGE_MARK_AS_READ_COPY = {
+  en: 'Mark as read',
+  ar: 'تحديد كمقروءة',
+  fr: 'Marquer comme lu',
+  ru: 'Отметить как прочитанное',
+  tr: 'Okundu olarak işaretle',
+  de: 'Als gelesen markieren'
+};
+
+for (const [code, label] of Object.entries(MESSAGE_MARK_AS_READ_COPY)) {
+  const translation = ({ en, ar, fr, ru, tr, de }[code]).translation;
+  translation.workerMessages.markAsRead = label;
+  translation.employerMessages.markAsRead = label;
+}
+
 const resources = {
   en,
   ar,
