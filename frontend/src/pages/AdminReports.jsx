@@ -119,11 +119,13 @@ const AdminReports = () => {
       <div className="overflow-x-auto">
         <div className="flex items-end justify-between gap-2 h-48 min-w-[480px]">
           {data.map((item, i) => (
-            <div key={i} className="flex flex-col items-center flex-1 min-w-0">
-              <div
-                className={`w-full ${colorPalette[i % colorPalette.length]} rounded-t transition-all duration-500`}
-                style={{ height: `${Math.max(((item[valueKey] || 0) / max) * 100, 2)}%` }}
-              ></div>
+            <div key={i} className="flex h-full flex-1 min-w-0 flex-col items-center">
+              <div className="flex min-h-0 w-full flex-1 items-end">
+                <div
+                  className={`w-full ${colorPalette[i % colorPalette.length]} rounded-t transition-all duration-500`}
+                  style={{ height: `${Math.max(((item[valueKey] || 0) / max) * 100, 2)}%` }}
+                ></div>
+              </div>
               <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate w-full text-center">
                 {String(item[labelKey] || '').replace('-', ' ')}
               </span>
