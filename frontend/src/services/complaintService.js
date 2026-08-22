@@ -66,6 +66,11 @@ export const reportMessage = async (data) => {
   return response.data;
 };
 
+export const reportProfile = async (data) => {
+  const response = await api.post('/api/complaints/report-profile', data);
+  return response.data;
+};
+
 /**
  * Get the authenticated user's own complaints.
  */
@@ -319,6 +324,7 @@ const complaintService = {
   createComplaint,
   reportUser,
   reportMessage,
+  reportProfile,
   getMyComplaints,
   getComplaintById,
   userReplyToComplaint,

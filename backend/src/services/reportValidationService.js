@@ -2,6 +2,7 @@ import prisma from '../lib/prisma.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import { canAccessConversation } from '../routes/chat.js';
+import { authorizeEmployerProfileView } from './employerProfileAuthorization.js';
 
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 const CUSTOMER_ROLES = new Set(['WORKER', 'EMPLOYER']);
@@ -91,6 +92,53 @@ export const validateMessageReport = async ({ reporterId, reporterRole, conversa
   }
 
   return { ...context, message, messageId: id, reportedUserId: senderId };
+};
+
+export const validateProfileReport = async ({
+  reporterId,
+  reporterRole,
+  reportedUserId,
+  prismaClient = prisma,
+  employerProfileAuthorizer = authorizeEmployerProfileView,
+}) => {
+  if (!CUSTOMER_ROLES.has(String(reporterRole).toUpperCase())) {
+    throw new ReportValidationError('Only workers and employers can report profiles', 403);
+  }
+
+  const reporterObjectId = requireObjectId(reporterId, 'reporterId');
+  const targetId = requireObjectId(reportedUserId, 'reportedUserId');
+  if (reporterObjectId === targetId) {
+    throw new ReportValidationError('You cannot report your own profile', 403);
+  }
+
+  const target = await prismaClient.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, role: true },
+  });
+  if (!target || !CUSTOMER_ROLES.has(String(target.role).toUpperCase())) {
+    throw new ReportValidationError('Profile is not reportable', 403);
+  }
+
+  const normalizedReporterRole = String(reporterRole).toUpperCase();
+  const expectedTargetRole = normalizedReporterRole === 'WORKER' ? 'EMPLOYER' : 'WORKER';
+  if (String(target.role).toUpperCase() !== expectedTargetRole) {
+    throw new ReportValidationError('Profile is not reportable', 403);
+  }
+
+  if (normalizedReporterRole === 'WORKER') {
+    const authorization = await employerProfileAuthorizer({
+      requesterId: reporterObjectId,
+      requesterRole: normalizedReporterRole,
+      targetUserId: targetId,
+      targetRole: target.role,
+      db: prismaClient,
+    });
+    if (!authorization.allowed) {
+      throw new ReportValidationError('You are not authorized to view this profile', 403);
+    }
+  }
+
+  return { reportedUserId: String(target.id), target };
 };
 
 export const validateReportText = ({ reason, description }) => ({

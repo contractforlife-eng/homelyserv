@@ -5,6 +5,8 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import api from '../utils/api';
+import ReportModal from '../components/messages/ReportModal';
+import complaintService from '../services/complaintService';
 
 const EmployerProfileView = () => {
   const { userId } = useParams();
@@ -19,6 +21,7 @@ const EmployerProfileView = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +86,13 @@ const EmployerProfileView = () => {
                 {profile.companyName && <p className="text-sm text-gray-500">{profile.companyName}</p>}
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="mb-5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              {t('messagesReporting.reportProfile')}
+            </button>
             <div className="grid gap-3 text-sm text-gray-700 dark:text-gray-200">
               {(profile.location || profile.countryName) && (
                 <p><span className="font-medium">{t('messagesProfile.location')}:</span> {profile.location || profile.countryName}</p>
@@ -96,6 +106,19 @@ const EmployerProfileView = () => {
           </section>
         )}
       </main>
+      {reportOpen && profile && (
+        <ReportModal
+          t={t}
+          title={t('messagesReporting.reportProfile')}
+          note={t('messagesReporting.safetyNote')}
+          onClose={() => setReportOpen(false)}
+          onSubmit={async (payload) => {
+            await complaintService.reportProfile({ ...payload, reportedUserId: userId });
+            setReportOpen(false);
+            window.alert(t('messagesReporting.submitted'));
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   ReportValidationError,
   validateMessageReport,
+  validateProfileReport,
   validateUserReport,
 } from './reportValidationService.js';
 
@@ -21,6 +22,15 @@ const makeDependencies = ({ participants = [reporterId, peerId], conversationTyp
   },
   accessChecker: async () => true,
   messageModel: { findById: () => ({ lean: async () => message }) },
+});
+
+const makeProfileDependencies = ({ targetRole = 'EMPLOYER', authorized = true } = {}) => ({
+  prismaClient: {
+    user: {
+      findUnique: async () => ({ id: peerId, role: targetRole }),
+    },
+  },
+  employerProfileAuthorizer: async () => ({ allowed: authorized }),
 });
 
 test('accepts a Worker report of the actual Employer peer', async () => {
@@ -87,6 +97,51 @@ test('rejects a cross-conversation or self-authored message', async () => {
       messageId,
       ...makeDependencies({ message: { _id: messageId, conversationId, senderId: reporterId, recipientId: peerId } }),
     }),
+    (error) => error instanceof ReportValidationError && error.statusCode === 403,
+  );
+});
+
+test('accepts an Employer report of an accessible Worker profile', async () => {
+  const result = await validateProfileReport({
+    reporterId,
+    reporterRole: 'EMPLOYER',
+    reportedUserId: peerId,
+    ...makeProfileDependencies({ targetRole: 'WORKER' }),
+  });
+  assert.equal(result.reportedUserId, peerId);
+});
+
+test('requires the existing employer-profile authorization for Worker reports', async () => {
+  await assert.rejects(
+    validateProfileReport({
+      reporterId,
+      reporterRole: 'WORKER',
+      reportedUserId: peerId,
+      ...makeProfileDependencies({ targetRole: 'EMPLOYER', authorized: false }),
+    }),
+    (error) => error instanceof ReportValidationError && error.statusCode === 403,
+  );
+
+  const result = await validateProfileReport({
+    reporterId,
+    reporterRole: 'WORKER',
+    reportedUserId: peerId,
+    ...makeProfileDependencies({ targetRole: 'EMPLOYER', authorized: true }),
+  });
+  assert.equal(result.reportedUserId, peerId);
+});
+
+test('rejects self, same-role, and staff profile report targets', async () => {
+  await assert.rejects(
+    validateProfileReport({ reporterId, reporterRole: 'EMPLOYER', reportedUserId: reporterId, ...makeProfileDependencies({ targetRole: 'EMPLOYER' }) }),
+    (error) => error instanceof ReportValidationError && error.statusCode === 403,
+  );
+  await assert.rejects(
+    validateProfileReport({ reporterId, reporterRole: 'EMPLOYER', reportedUserId: peerId, ...makeProfileDependencies({ targetRole: 'EMPLOYER' }) }),
+    (error) => error instanceof ReportValidationError && error.statusCode === 403,
+  );
+  await assert.rejects(
+    validateProfileReport({ reporterId, reporterRole: 'EMPLOYER', reportedUserId: peerId, ...makeProfileDependencies({ targetRole: 'SUPPORT' }) }),
     (error) => error instanceof ReportValidationError && error.statusCode === 403,
   );
 });

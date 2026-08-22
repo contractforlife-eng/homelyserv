@@ -35,7 +35,7 @@ import {
   supportDashboard,
   adminComplaintStats,
 } from '../controllers/complaintController.js';
-import { reportUser, reportMessage } from '../controllers/reportController.js';
+import { reportUser, reportMessage, reportProfile } from '../controllers/reportController.js';
 
 const router = express.Router();
 
@@ -85,6 +85,7 @@ router.post('/complaints', authenticate, createComplaint);
 // Structured messaging reports. These are additive to the generic complaint flow.
 router.post('/complaints/report-user', authenticate, reportUser);
 router.post('/complaints/report-message', authenticate, reportMessage);
+router.post('/complaints/report-profile', authenticate, reportProfile);
 
 // GET /api/complaints/my - Get my complaints
 router.get('/complaints/my', authenticate, getMyComplaints);

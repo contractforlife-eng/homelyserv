@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import employerService from '../services/employerService';
+import complaintService from '../services/complaintService';
+import ReportModal from '../components/messages/ReportModal';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import { UserDisplayName } from '../components/users';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -49,6 +51,7 @@ const WorkerProfileView = () => {
   const [showContactOptions, setShowContactOptions] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contactUnlocked, setContactUnlocked] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const fetchedRef = React.useRef(false);
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -354,6 +357,16 @@ const WorkerProfileView = () => {
                   <MessageCircle size={18} />
                   {t('workerProfile.contact')}
                 </button>
+                {authUser?.role === 'EMPLOYER' && worker?.id && (
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(true)}
+                    className="px-6 py-2 border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50 transition flex items-center gap-2"
+                  >
+                    <AlertTriangle size={18} />
+                    {t('messagesReporting.reportProfile')}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -535,6 +548,19 @@ const WorkerProfileView = () => {
             </button>
           </div>
         </div>
+      )}
+      {reportOpen && worker?.id && (
+        <ReportModal
+          t={t}
+          title={t('messagesReporting.reportProfile')}
+          note={t('messagesReporting.safetyNote')}
+          onClose={() => setReportOpen(false)}
+          onSubmit={async (payload) => {
+            await complaintService.reportProfile({ ...payload, reportedUserId: worker.id });
+            setReportOpen(false);
+            window.alert(t('messagesReporting.submitted'));
+          }}
+        />
       )}
     </DashboardLayout>
   );
