@@ -645,7 +645,9 @@ const WorkerOffers = () => {
       </span>
 
       <button
-        onClick={() => navigate('/worker-messages')}
+        onClick={() => navigate('/worker-messages', {
+          state: { employerId: offer.employerId }
+        })}
         className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
       >
         <MessageSquare size={14} />
@@ -826,7 +828,9 @@ const WorkerOffers = () => {
                   </div>
                   {(offer.status === 'accepted' || offer.status === 'completed') && (
                     <button
-                      onClick={() => navigate('/worker-messages')}
+                      onClick={() => navigate('/worker-messages', {
+                        state: { employerId: offer.employerId }
+                      })}
                       className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
                     >
                       <MessageSquare size={16} />

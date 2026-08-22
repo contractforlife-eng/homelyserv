@@ -221,7 +221,7 @@ const AdminPayments = () => {
 
   const getPayerName = (p) => p.User?.fullName || p.employerName || p.userEmail || i18nT('adminPayments.unknown');
 
-  const MANUAL_PROVIDERS = new Set(['vodafone_cash', 'instapay']);
+  const MANUAL_PROVIDERS = new Set(['vodafone_cash', 'instapay', 'bank_transfer']);
   const isManualPayment = (payment) => MANUAL_PROVIDERS.has(String(payment?.paymentMethod || '').toLowerCase());
 
   const getManualReviewStatusColor = (manualReviewState) => {
@@ -276,6 +276,7 @@ const AdminPayments = () => {
     const labels = {
       vodafone_cash: i18nT('manualPayment.vodafoneCash'),
       instapay: i18nT('manualPayment.instapay'),
+      bank_transfer: i18nT('bankTransfer.category'),
       paypal: 'PayPal',
       paymob: 'Paymob',
     };
@@ -285,6 +286,7 @@ const AdminPayments = () => {
   const getPaymentMethodIcon = (method) => {
     if (method === 'vodafone_cash') return Smartphone;
     if (method === 'instapay') return Building2;
+    if (method === 'bank_transfer') return Building2;
     return null;
   };
 
@@ -696,6 +698,26 @@ const AdminPayments = () => {
                     {i18nT('adminManualReview.title')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedPayment.paymentMethod === 'bank_transfer' && selectedPayment.metadata?.canonicalAmount && (
+                      <>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('bankTransfer.canonicalAmount')}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{selectedPayment.metadata.canonicalAmount} {selectedPayment.metadata.canonicalCurrency}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminFinancial.transactionAmount')}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{selectedPayment.amount} {selectedPayment.currency}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">FX rate / source</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{selectedPayment.metadata.exchangeRate} · {selectedPayment.metadata.exchangeRateSource}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">FX version / effective</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{selectedPayment.metadata.exchangeRateVersion} · {selectedPayment.metadata.exchangeRateTimestamp}</p>
+                        </div>
+                      </>
+                    )}
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminManualReview.paymentReference')}</p>
                       <p className="font-mono font-medium text-gray-900 dark:text-white">{selectedPayment.manualPaymentReference || '—'}</p>

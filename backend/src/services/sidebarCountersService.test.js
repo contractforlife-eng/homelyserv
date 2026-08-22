@@ -1,15 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildEmployerHiresCounterWhere } from './sidebarCountersService.js';
+import {
+  buildEmployerPaymentsCounterWhere,
+  buildWorkerPaymentsCounterWhere,
+} from './sidebarCountersService.js';
 
-test('Employer My Hires counter includes only visible non-terminated pending Hires', () => {
-  assert.deepEqual(buildEmployerHiresCounterWhere('employer-id'), {
-    employerId: 'employer-id',
-    paymentStatus: 'pending',
-    status: { not: 'terminated' },
+test('Worker payment badge counts only payer-owned awaiting-transfer items', () => {
+  assert.deepEqual(buildWorkerPaymentsCounterWhere('worker-1'), {
+    status: 'pending',
+    manualReviewState: 'awaiting_transfer',
+    userId: 'worker-1',
+  });
+});
+test('Employer payment badge counts only employer-owned awaiting-transfer items', () => {
+  assert.deepEqual(buildEmployerPaymentsCounterWhere('employer-1'), {
+    status: 'pending',
+    manualReviewState: 'awaiting_transfer',
     OR: [
-      { employerHiddenAt: null },
-      { employerHiddenAt: { isSet: false } },
+      { userId: 'employer-1' },
+      { employerId: 'employer-1' },
     ],
   });
 });

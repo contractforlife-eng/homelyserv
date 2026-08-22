@@ -26,6 +26,7 @@ import {
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
+import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -121,6 +122,15 @@ const Subscription = () => {
       color: 'from-blue-500 to-blue-600',
       badge: t('manualPayment.manualVerification'),
       badgeColor: 'bg-amber-100 text-amber-700'
+    },
+    {
+      id: PAYMENT_METHODS.BANK_TRANSFER,
+      name: t('bankTransfer.category'),
+      icon: Building2,
+      description: t('bankTransfer.description'),
+      color: 'from-teal-500 to-teal-600',
+      badge: t('bankTransfer.available'),
+      badgeColor: 'bg-green-100 text-green-700'
     }
   ];
   const visiblePaymentMethods = canShowEgyptianManualPaymentMethods(authUser)
@@ -129,7 +139,7 @@ const Subscription = () => {
       id !== PAYMENT_METHODS.VODAFONE_CASH && id !== PAYMENT_METHODS.INSTAPAY
     ));
   const planVisiblePaymentMethods = selectedPlan === 'annual'
-    ? visiblePaymentMethods.filter(({ id }) => id === PAYMENT_METHODS.PAYPAL)
+    ? visiblePaymentMethods.filter(({ id }) => id === PAYMENT_METHODS.PAYPAL || id === PAYMENT_METHODS.BANK_TRANSFER)
     : visiblePaymentMethods;
 
   useEffect(() => {
@@ -770,7 +780,13 @@ const Subscription = () => {
                       })}
                     </div>
 
-                    {selectedPlanPurchasable && (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) ? (
+                    {selectedPlanPurchasable && selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
+                      <BankTransferFlow
+                        purpose="SUBSCRIPTION"
+                        plan={selectedPlan}
+                        onCancel={() => setSelectedMethod(null)}
+                      />
+                    ) : selectedPlanPurchasable && (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) ? (
                       <ManualPaymentFlow
                         paymentMethod={selectedMethod}
                         purpose="SUBSCRIPTION"

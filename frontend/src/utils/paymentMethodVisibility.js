@@ -9,6 +9,7 @@ export const getVisiblePaymentMethods = (methods, availableProviderIds, { showEg
     if (id === 'paypal') {
       return availableProviderIds === null || availableProviderIds.includes('paypal');
     }
+    if (id === 'bank_transfer') return true;
     return false;
   })
 );

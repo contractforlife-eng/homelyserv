@@ -25,6 +25,7 @@ import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, getPaymentStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
+import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import useAuthStore from '../store/authStore';
 
 const PaymentCommission = () => {
@@ -70,6 +71,14 @@ const PaymentCommission = () => {
       description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
       color: 'from-blue-500 to-blue-600',
       badge: t('manualPayment.manualVerification')
+    },
+    {
+      id: PAYMENT_METHODS.BANK_TRANSFER,
+      name: t('bankTransfer.category'),
+      icon: Building2,
+      description: t('bankTransfer.description'),
+      color: 'from-teal-500 to-teal-600',
+      badge: t('bankTransfer.available')
     }
   ];
 
@@ -476,7 +485,13 @@ const PaymentCommission = () => {
             })}
           </div>
 
-          {selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
+          {selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
+            <BankTransferFlow
+              purpose="COMMISSION"
+              hireId={commissionData.hireId}
+              onCancel={() => setSelectedMethod(null)}
+            />
+          ) : selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
             <ManualPaymentFlow
               paymentMethod={selectedMethod}
               purpose="COMMISSION"

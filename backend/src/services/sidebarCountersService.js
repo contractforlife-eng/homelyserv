@@ -18,8 +18,9 @@
 //                             confirmed status update)
 //                   EMPLOYER: hires awaiting commission payment
 //                   ADMIN:    payment proofs awaiting verification
-//   payments      - pending / in-flight payment actions
-//                   (WORKER/EMPLOYER: own records, ADMIN: all)
+//   payments      - unfinished payment actions requiring the current
+//                   role's action (WORKER/EMPLOYER: payer-owned records,
+//                   ADMIN: all pending verification records)
 //   complaints    - WORKER/EMPLOYER: waiting for the user's reply
 //                   SUPPORT: new tickets + assigned tickets
 //                            waiting for a support response
@@ -43,7 +44,23 @@ export const SIDEBAR_COUNTER_KEYS = [
 ];
 
 // Mirrors the pending definition used by the admin command center.
-const PENDING_PAYMENT_STATUSES = ['pending', 'processing', 'pending_verification'];
+const ACTIONABLE_USER_PAYMENT_STATE = {
+  status: 'pending',
+  manualReviewState: 'awaiting_transfer',
+};
+
+export const buildWorkerPaymentsCounterWhere = (userId) => ({
+  ...ACTIONABLE_USER_PAYMENT_STATE,
+  userId: String(userId),
+});
+
+export const buildEmployerPaymentsCounterWhere = (userId) => ({
+  ...ACTIONABLE_USER_PAYMENT_STATE,
+  OR: [
+    { userId: String(userId) },
+    { employerId: String(userId) },
+  ],
+});
 
 // Guard: legacy tokens may carry non-ObjectId ids (e.g. emails or
 // "user_123" strings) which crash Prisma ObjectId filters (P2023).
@@ -131,14 +148,7 @@ export const getSidebarCounters = async (userId, role) => {
           }))
         : 0,
       safeCount('payments', prisma.payment.count({
-        where: {
-          status: { in: PENDING_PAYMENT_STATUSES },
-          OR: [
-            { userId: uid },
-            { workerId: uid },
-            ...(profileId ? [{ workerId: profileId }] : []),
-          ],
-        },
+        where: buildWorkerPaymentsCounterWhere(uid),
       })),
       safeCount('complaints', prisma.complaint.count({
         where: { userId: uid, status: 'WAITING_FOR_USER' },
@@ -164,10 +174,7 @@ export const getSidebarCounters = async (userId, role) => {
         where: buildEmployerHiresCounterWhere(uid),
       })),
       safeCount('payments', prisma.payment.count({
-        where: {
-          status: { in: PENDING_PAYMENT_STATUSES },
-          OR: [{ userId: uid }, { employerId: uid }],
-        },
+        where: buildEmployerPaymentsCounterWhere(uid),
       })),
       safeCount('complaints', prisma.complaint.count({
         where: { userId: uid, status: 'WAITING_FOR_USER' },
@@ -224,4 +231,10 @@ export const getSidebarCounters = async (userId, role) => {
   return counters;
 };
 
-export default { getSidebarCounters, SIDEBAR_COUNTER_KEYS, buildEmployerHiresCounterWhere };
+export default {
+  getSidebarCounters,
+  SIDEBAR_COUNTER_KEYS,
+  buildEmployerHiresCounterWhere,
+  buildWorkerPaymentsCounterWhere,
+  buildEmployerPaymentsCounterWhere,
+};

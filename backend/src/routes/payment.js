@@ -57,6 +57,19 @@ import {
   resolveTrySubscriptionProviderEvidenceForUser,
 } from '../services/trySubscriptionProviderEvidenceService.js';
 import { getTryUsdRateConfig } from '../config/fxRates.js';
+import {
+  BANK_TRANSFER_PROVIDER,
+  BANK_TRANSFER_CURRENCY,
+  buildBankTransferUsdInstructions,
+  getBankTransferUsdConfig,
+} from '../config/bankTransfers.js';
+import { resolveBankTransferUsdSettlement } from '../services/bankTransferFxService.js';
+import {
+  buildBankTransferOrderId,
+  isActionableBankTransfer,
+  isUniqueConstraintError,
+  normalizeBankTransferAttemptKey,
+} from '../services/bankTransferIdempotency.js';
 
 const router = express.Router();
 
@@ -2313,6 +2326,247 @@ const serializeManualPayment = (payment) => ({
   purpose: payment.purpose,
   amount: payment.amount,
   currency: payment.currency,
+});
+
+const serializeBankTransferPayment = (payment) => ({
+  ...serializeManualPayment(payment),
+  externalTransactionReference: payment.externalTransactionReference || null,
+  submittedAt: payment.submittedAt || null,
+  canonicalAmount: payment.metadata?.canonicalAmount ?? null,
+  canonicalCurrency: payment.metadata?.canonicalCurrency ?? null,
+});
+
+const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId }) => {
+  const bankConfig = getBankTransferUsdConfig();
+  if (!bankConfig.configured) {
+    return { error: 'USD bank transfer is not currently configured', status: 503 };
+  }
+
+  if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+    const selectedPlan = getSubscriptionPlan(requestedPlan);
+    if (!selectedPlan) return { error: 'Unsupported subscription plan', status: 400 };
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: String(req.userId) },
+      select: { role: true, countryCode: true },
+    });
+    if (!dbUser || !['EMPLOYER', 'WORKER'].includes(dbUser.role)) {
+      return { error: 'Role is not eligible for Premium', status: 403 };
+    }
+
+    const resolved = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
+    let fxEvidence;
+    try {
+      fxEvidence = resolveBankTransferUsdSettlement({ canonicalAmount: resolved.amount, canonicalCurrency: resolved.currency });
+    } catch (error) {
+      return { error: error.message || 'USD bank transfer FX is not currently configured', status: 503 };
+    }
+
+    return {
+      bankConfig,
+      amount: Number(fxEvidence.settlementAmount),
+      transactionCurrency: BANK_TRANSFER_CURRENCY,
+      canonicalAmount: fxEvidence.canonicalAmount,
+      canonicalCurrency: fxEvidence.canonicalCurrency,
+      fxEvidence,
+      hireId: null,
+      workerId: null,
+      offerId: null,
+      snapshot: {
+        plan: selectedPlan.id,
+        purchaserRole: resolved.role,
+        durationDays: resolved.durationDays,
+        market: resolved.market,
+        countryCode: resolved.countryCode,
+        priceBookVersion: resolved.priceBookVersion,
+      },
+    };
+  }
+
+  if (purpose !== PAYMENT_PURPOSES.COMMISSION || !hireId) {
+    return { error: 'hireId is required for commission payments', status: 400 };
+  }
+
+  const hire = await prisma.hire.findUnique({
+    where: { id: String(hireId) },
+    select: { id: true, totalDue: true, employerId: true, workerId: true, offerId: true, compensationCurrency: true },
+  });
+  if (!hire) return { error: 'Hire not found for commission payment', status: 400 };
+  if (String(hire.employerId) !== String(req.userId)) {
+    return { error: 'You are not authorized to pay for this hire', status: 403 };
+  }
+  let fxEvidence;
+  try {
+    fxEvidence = resolveBankTransferUsdSettlement({ canonicalAmount: hire.totalDue, canonicalCurrency: hire.compensationCurrency || 'EGP' });
+  } catch (error) {
+    return { error: error.message || 'USD bank transfer FX is not currently configured', status: 503 };
+  }
+
+  return {
+    bankConfig,
+    amount: Number(fxEvidence.settlementAmount),
+    transactionCurrency: BANK_TRANSFER_CURRENCY,
+    canonicalAmount: fxEvidence.canonicalAmount,
+    canonicalCurrency: fxEvidence.canonicalCurrency,
+    fxEvidence,
+    hireId: String(hire.id),
+    workerId: hire.workerId,
+    offerId: hire.offerId,
+    snapshot: null,
+  };
+};
+
+// Bank Transfer is intentionally separate from the legacy proof-upload flow:
+// creating the payment happens before the customer transfers funds, and only
+// the external reference is submitted for Admin review.
+router.post('/bank-transfer/create', authenticate, async (req, res) => {
+  try {
+    const purpose = String(req.body.purpose || '').trim().toUpperCase();
+    if (![PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COMMISSION].includes(purpose)) {
+      return res.status(400).json({ success: false, error: 'Unsupported payment purpose' });
+    }
+
+    const details = await resolveBankTransferDetails({
+      req,
+      purpose,
+      requestedPlan: req.body.plan,
+      hireId: req.body.hireId,
+    });
+    if (details.error) return res.status(details.status).json({ success: false, error: details.error });
+
+    const attemptKey = normalizeBankTransferAttemptKey(req.body.attemptKey)
+      || `server-${crypto.randomUUID()}`;
+    const planId = purpose === PAYMENT_PURPOSES.SUBSCRIPTION ? details.snapshot?.plan : '';
+    const deterministicOrderId = buildBankTransferOrderId({
+      userId: req.userId,
+      purpose,
+      planId,
+      hireId: details.hireId || '',
+      attemptKey,
+    });
+
+    const baseWhere = purpose === PAYMENT_PURPOSES.COMMISSION
+      ? { hireId: details.hireId }
+      : { userId: String(req.userId), paymentMethod: BANK_TRANSFER_PROVIDER, purpose };
+    const existingMatches = await prisma.payment.findMany({
+      where: {
+        ...baseWhere,
+        paymentMethod: BANK_TRANSFER_PROVIDER,
+        currency: BANK_TRANSFER_CURRENCY,
+        purpose,
+        status: { in: ['pending', 'processing'] },
+        manualReviewState: { in: ['awaiting_transfer', 'proof_submitted', 'pending_verification'] },
+      },
+    });
+    const existing = existingMatches
+      .filter((candidate) => purpose !== PAYMENT_PURPOSES.SUBSCRIPTION
+        || candidate.metadata?.plan === details.snapshot?.plan)
+      .sort((a, b) =>
+        (MANUAL_REVIEW_STATE_PRIORITY[b.manualReviewState] || 0) -
+        (MANUAL_REVIEW_STATE_PRIORITY[a.manualReviewState] || 0)
+      )[0] || null;
+    if (existing) {
+      return res.json({
+        success: true,
+        payment: serializeBankTransferPayment(existing),
+        transferInstructions: buildBankTransferUsdInstructions(details.bankConfig, existing.amount, existing.manualPaymentReference),
+      });
+    }
+
+    const reference = await generateManualPaymentReference(prisma);
+    let payment;
+    try {
+      payment = await prisma.payment.create({
+        data: {
+          orderId: deterministicOrderId,
+        transactionId: generateId(),
+        amount: details.amount,
+        currency: BANK_TRANSFER_CURRENCY,
+        paymentMethod: BANK_TRANSFER_PROVIDER,
+        purpose,
+        status: 'pending',
+        fulfillmentStatus: 'pending',
+        manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER,
+        manualPaymentReference: reference,
+        userEmail: req.user?.email || null,
+        userId: String(req.userId),
+        workerId: details.workerId || null,
+        employerId: purpose === PAYMENT_PURPOSES.COMMISSION ? String(req.userId) : null,
+        hireId: details.hireId || null,
+        offerId: details.offerId || null,
+        metadata: {
+          createdFrom: 'bank-transfer',
+          source: 'backend',
+          originalAmount: details.canonicalAmount,
+          originalCurrency: details.canonicalCurrency,
+          canonicalAmount: details.canonicalAmount,
+          canonicalCurrency: details.canonicalCurrency,
+          exchangeRate: details.fxEvidence.exchangeRate,
+          exchangeRateSource: details.fxEvidence.exchangeRateSource,
+          exchangeRateVersion: details.fxEvidence.exchangeRateVersion,
+          exchangeRateTimestamp: details.fxEvidence.exchangeRateTimestamp,
+          rateDirection: details.fxEvidence.rateDirection,
+          ...details.snapshot,
+        },
+        },
+      });
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) throw error;
+
+      const concurrent = await prisma.payment.findUnique({ where: { orderId: deterministicOrderId } });
+      if (!isActionableBankTransfer(concurrent)
+        || concurrent.purpose !== purpose
+        || (purpose === PAYMENT_PURPOSES.SUBSCRIPTION && concurrent.metadata?.plan !== details.snapshot?.plan)
+        || (purpose === PAYMENT_PURPOSES.COMMISSION && String(concurrent.hireId || '') !== String(details.hireId || ''))) {
+        throw error;
+      }
+      payment = concurrent;
+    }
+
+    return res.status(201).json({
+      success: true,
+      payment: serializeBankTransferPayment(payment),
+      transferInstructions: buildBankTransferUsdInstructions(details.bankConfig, payment.amount, payment.manualPaymentReference),
+    });
+  } catch (error) {
+    console.error('Bank transfer creation error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to create bank transfer payment' });
+  }
+});
+
+router.post('/bank-transfer/:paymentId/submit-reference', authenticate, async (req, res) => {
+  try {
+    const externalReference = String(req.body.externalTransactionReference || '').trim();
+    if (externalReference.length < 3 || externalReference.length > 100) {
+      return res.status(400).json({ success: false, error: 'External transaction reference is required (3-100 characters)' });
+    }
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: String(req.params.paymentId) },
+      select: { id: true, userId: true, paymentMethod: true, currency: true, purpose: true, status: true, fulfillmentStatus: true, manualReviewState: true },
+    });
+    if (!payment) return res.status(404).json({ success: false, error: 'Payment not found' });
+    if (!(await authenticatedUserOwnsPayment(req, payment))) return rejectPaymentAccess(res);
+    if (payment.paymentMethod !== BANK_TRANSFER_PROVIDER || payment.currency !== BANK_TRANSFER_CURRENCY) {
+      return res.status(400).json({ success: false, error: 'Payment is not a USD bank transfer' });
+    }
+    if (payment.status !== 'pending' || payment.fulfillmentStatus !== 'pending') {
+      return res.status(400).json({ success: false, error: 'Payment is no longer pending' });
+    }
+    if (payment.manualReviewState !== MANUAL_REVIEW_STATES.AWAITING_TRANSFER) {
+      return res.json({ success: true, payment: serializeBankTransferPayment(payment), message: 'Payment is already submitted for review' });
+    }
+
+    await prisma.payment.updateMany({
+      where: { id: payment.id, manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER, status: 'pending', fulfillmentStatus: 'pending' },
+      data: { externalTransactionReference: externalReference, submittedAt: new Date(), manualReviewState: MANUAL_REVIEW_STATES.PENDING_VERIFICATION },
+    });
+    const updated = await prisma.payment.findUnique({ where: { id: payment.id } });
+    return res.json({ success: true, message: 'Bank transfer submitted for verification', payment: serializeBankTransferPayment(updated) });
+  } catch (error) {
+    console.error('Bank transfer reference submission error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to submit bank transfer reference' });
+  }
 });
 
 /**

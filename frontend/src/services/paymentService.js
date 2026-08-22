@@ -11,6 +11,31 @@ export const getSubscriptionQuote = async () => {
   return response.data;
 };
 
+export const createBankTransferPayment = async ({ purpose, plan, hireId } = {}) => {
+  const scope = `${String(purpose || '').toUpperCase()}:${String(plan || '')}:${String(hireId || '')}`;
+  const storageKey = `homelyserv.bank-transfer.attempt.${scope}`;
+  let attemptKey = null;
+  try {
+    attemptKey = sessionStorage.getItem(storageKey);
+    if (!attemptKey) {
+      const randomPart = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      attemptKey = `client-${randomPart}`;
+      sessionStorage.setItem(storageKey, attemptKey);
+    }
+  } catch {
+    attemptKey = `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+  const response = await api.post('/api/payments/bank-transfer/create', { purpose, plan, hireId, attemptKey });
+  return response.data;
+};
+
+export const submitBankTransferReference = async (paymentId, externalTransactionReference) => {
+  const response = await api.post(`/api/payments/bank-transfer/${paymentId}/submit-reference`, {
+    externalTransactionReference,
+  });
+  return response.data;
+};
+
 export const fetchCommissionProviders = async (hireId) => {
   const response = await api.get('/api/payments/providers', {
     params: { purpose: 'COMMISSION', hireId },

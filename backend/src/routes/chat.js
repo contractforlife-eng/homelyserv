@@ -15,7 +15,7 @@ import express from 'express';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import { authenticate } from '../middleware/auth.js';
-import { authorizePaidChatRelationship } from '../services/paymentAuthService.js';
+import { authorizePaidChatRelationship, resolveUserParty } from '../services/paymentAuthService.js';
 import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { emitToUser } from '../lib/socket.js';
@@ -55,6 +55,26 @@ const checkPaidChatRelationship = async (req, res, next) => {
 
     if (!recipientId) {
       return res.status(400).json({ error: 'Missing recipient' });
+    }
+
+    // Some legacy/profile entry points can provide a customer's profile id.
+    // Resolve only an actual database-backed peer profile to its canonical User
+    // id before authorization and message/conversation identity are handled.
+    // This is normalization, not an authorization fallback: unresolved ids are
+    // still rejected by authorizePaidChatRelationship.
+    const recipientParty = await resolveUserParty(recipientId);
+    if (recipientParty && String(recipientParty.userId) !== String(recipientId)) {
+      const canonicalRecipientId = String(recipientParty.userId);
+      if (req.body?.recipientId != null && String(req.body.recipientId) === String(recipientId)) {
+        req.body.recipientId = canonicalRecipientId;
+      }
+      if (req.body?.user1Id != null && String(req.body.user1Id) === String(recipientId)) {
+        req.body.user1Id = canonicalRecipientId;
+      }
+      if (req.body?.user2Id != null && String(req.body.user2Id) === String(recipientId)) {
+        req.body.user2Id = canonicalRecipientId;
+      }
+      recipientId = canonicalRecipientId;
     }
 
     const authorization = await authorizePaidChatRelationship({

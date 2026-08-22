@@ -101,6 +101,7 @@ export const PAYMENT_METHODS = {
   PAYPAL: 'paypal',
   VODAFONE_CASH: 'vodafone_cash',
   INSTAPAY: 'instapay',
+  BANK_TRANSFER: 'bank_transfer',
   WALLET: 'wallet'  // For future use
 };
 

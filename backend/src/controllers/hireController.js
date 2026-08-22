@@ -313,6 +313,7 @@ export const respondToOffer = async (req, res) => {
           channelId: 'jobs_offers',
         }).catch(() => {});
       }
+      return;
     }
 
     const rejection = await prisma.offer.updateMany({
@@ -351,6 +352,7 @@ export const respondToOffer = async (req, res) => {
     }
   } catch (error) {
     console.error('Respond to offer error:', error);
+    if (res.headersSent) return;
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -77,6 +77,7 @@ const WorkerMessages = () => {
   const refreshEffectReadyRef = useRef(false);
   const selectedConversationIdRef = useRef(null);
   const conversationSelectionSeqRef = useRef(0);
+  const employerAutoOpenInFlightRef = useRef(null);
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
@@ -166,7 +167,8 @@ const WorkerMessages = () => {
      if (!authUser || !conversationsLoaded || autoOpenDoneRef.current) return;
 
      const stateConvId = location.state?.conversationId;
-     if (!stateConvId) return;
+     const stateEmployerId = location.state?.employerId;
+     if (!stateConvId && !stateEmployerId) return;
 
      autoOpenDoneRef.current = true;
 
@@ -175,7 +177,59 @@ const WorkerMessages = () => {
        console.log('✅ Auto-opening existing conversation:', target.id);
        selectConversation(target.id);
      }
-   }, [authUser, conversationsLoaded]);
+     if (!stateConvId) {
+       const employerId = String(stateEmployerId).trim();
+       if (!employerId || employerAutoOpenInFlightRef.current === employerId) return;
+       employerAutoOpenInFlightRef.current = employerId;
+
+       let active = true;
+       const openEmployerConversation = async () => {
+         const existing = conversations.find(
+           conversation => String(conversation.otherUserId) === employerId
+         );
+
+         if (existing) {
+           console.log('Auto-opening existing employer conversation:', existing.id);
+           if (active) selectConversation(existing.id);
+           return;
+         }
+
+         try {
+           const conversationId = await ensureConversationExists(
+             authUser.id,
+             authUser.fullName || authUser.name || 'Worker',
+             authUser.role,
+             employerId,
+             'Employer',
+             'EMPLOYER'
+           );
+
+           const updatedConversations = await getUserConversations(authUser.id);
+           if (!active) return;
+
+           setConversations(updatedConversations);
+           const ensured = updatedConversations.find(
+             conversation => String(conversation.id) === String(conversationId)
+           ) || updatedConversations.find(
+             conversation => String(conversation.otherUserId) === employerId
+           );
+
+           if (ensured) {
+             console.log('Auto-opening ensured employer conversation:', ensured.id);
+             selectConversation(ensured.id);
+           }
+         } catch (error) {
+           // The existing server authorization/error UX remains authoritative.
+           console.error('Error opening employer conversation from offer:', error);
+         }
+       };
+
+       openEmployerConversation();
+       return () => {
+         active = false;
+       };
+     }
+   }, [authUser, conversationsLoaded, location.state?.conversationId, location.state?.employerId]);
 
    // Refresh conversations when refreshKey changes
   useEffect(() => {

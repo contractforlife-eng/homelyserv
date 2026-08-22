@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { authorizePaidChatRelationship, canContactWorker } from './paymentAuthService.js';
+import { authorizePaidChatRelationship, canContactWorker, resolveUserParty } from './paymentAuthService.js';
 
 const ids = {
   employer: '111111111111111111111111',
@@ -184,6 +184,15 @@ test('paid Employer/Worker relationship is allowed bidirectionally', async () =>
   }, db);
   assert.deepEqual(employerSend, { required: true, allowed: true });
   assert.deepEqual(workerSend, { required: true, allowed: true });
+});
+
+test('profile identifiers resolve to canonical User identifiers for peer targeting', async () => {
+  const db = makeDb();
+  assert.deepEqual(await resolveUserParty(ids.workerProfile, db), {
+    userId: ids.worker,
+    role: 'WORKER',
+    profileId: ids.workerProfile,
+  });
 });
 
 test('a failed fulfillment can unlock after the same payment is retried successfully', async () => {

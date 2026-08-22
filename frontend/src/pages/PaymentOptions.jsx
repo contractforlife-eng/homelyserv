@@ -10,6 +10,7 @@ import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
+import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
@@ -121,6 +122,15 @@ const PaymentOptions = () => {
       color: 'blue',
       badge: t('manualPayment.manualVerification'),
       badgeColor: 'bg-amber-100 text-amber-700'
+    },
+    {
+      id: PAYMENT_METHODS.BANK_TRANSFER,
+      name: t('bankTransfer.category'),
+      icon: Building2,
+      description: t('bankTransfer.description'),
+      color: 'teal',
+      badge: t('bankTransfer.available'),
+      badgeColor: 'bg-green-100 text-green-700'
     }
   ];
   const paymentMethods = getVisiblePaymentMethods(allPaymentMethods, availableProviderIds, {
@@ -749,7 +759,11 @@ const PaymentOptions = () => {
         if (cancelled) return;
         console.error('Failed to load payment provider capabilities:', error);
         setAvailableProviderIds([]);
-        setPaymentError(t('paymentCapabilityMessages.unsupportedCurrency'));
+        // Bank Transfer is a separate manual rail and remains selectable even
+        // when automated provider capabilities are empty for this currency.
+        if (!allPaymentMethods.some(({ id }) => id === PAYMENT_METHODS.BANK_TRANSFER)) {
+          setPaymentError(t('paymentCapabilityMessages.unsupportedCurrency'));
+        }
       });
     return () => { cancelled = true; };
   }, [pendingPayment?.hireId, t]);
@@ -1025,7 +1039,8 @@ const PaymentOptions = () => {
                 );
               })}
             </div>
-            {availableProviderIds?.length === 0 && pendingPayment?.hireId && (
+            {availableProviderIds?.length === 0 && pendingPayment?.hireId
+              && !allPaymentMethods.some(({ id }) => id === PAYMENT_METHODS.BANK_TRANSFER) && (
               <p className="mt-4 text-sm text-amber-700 dark:text-amber-300">
                 {t('paymentCapabilityMessages.unsupportedCurrency')}
               </p>
@@ -1033,7 +1048,13 @@ const PaymentOptions = () => {
           </div>
 
           {/* Action Buttons */}
-          {selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
+          {selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
+            <BankTransferFlow
+              purpose="COMMISSION"
+              hireId={pendingPayment?.hireId}
+              onCancel={() => setSelectedMethod(null)}
+            />
+          ) : selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
             <ManualPaymentFlow
               paymentMethod={selectedMethod}
               purpose="COMMISSION"

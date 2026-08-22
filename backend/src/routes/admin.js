@@ -26,6 +26,7 @@ import {
 import { getFinancialCenterData } from '../services/financialCenterService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { completePaymentTransaction } from '../routes/payment.js';
+import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
 
 const router = express.Router();
 
@@ -1843,7 +1844,7 @@ router.post('/migrate/offer-worker-ids', async (req, res) => {
 // ============================================================
 // ADMIN MANUAL PAYMENT REVIEW
 // ============================================================
-const MANUAL_PROVIDERS = new Set(['vodafone_cash', 'instapay']);
+const MANUAL_PROVIDERS = new Set(['vodafone_cash', 'instapay', BANK_TRANSFER_PROVIDER]);
 
 router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, async (req, res) => {
   try {
@@ -1878,6 +1879,16 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
 
     if (payment.manualReviewState === 'rejected') {
       return res.status(400).json({ success: false, error: 'Rejected payment cannot be confirmed' });
+    }
+
+    const isBankTransfer = payment.paymentMethod === BANK_TRANSFER_PROVIDER;
+    if (isBankTransfer) {
+      if (payment.currency !== BANK_TRANSFER_CURRENCY || !['SUBSCRIPTION', 'COMMISSION'].includes(payment.purpose)) {
+        return res.status(400).json({ success: false, error: 'Only valid USD bank-transfer payments can be confirmed' });
+      }
+      if (!Number.isFinite(Number(payment.amount)) || Number(payment.amount) <= 0) {
+        return res.status(400).json({ success: false, error: 'Bank-transfer amount is invalid' });
+      }
     }
 
     const now = new Date();
@@ -1936,8 +1947,13 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
       return res.status(400).json({ success: false, error: 'Payment is not in a reviewable state' });
     }
 
-    if (!payment.externalTransactionReference || !payment.proofStorageKey) {
-      return res.status(400).json({ success: false, error: 'Proof and transaction reference are required before confirmation' });
+    if (!payment.externalTransactionReference || (!isBankTransfer && !payment.proofStorageKey)) {
+      return res.status(400).json({
+        success: false,
+        error: isBankTransfer
+          ? 'External transaction reference is required before confirmation'
+          : 'Proof and transaction reference are required before confirmation',
+      });
     }
 
     const claimed = await prisma.payment.updateMany({

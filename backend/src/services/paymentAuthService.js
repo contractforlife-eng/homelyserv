@@ -85,7 +85,7 @@ export const canContactWorker = async (employerId, workerProfileId, db = prisma)
   return qualifyingCandidates.some((payment) => hasLegacyCommissionEvidence(payment, employerId));
 };
 
-const resolveUserParty = async (identifier, db = prisma) => {
+export const resolveUserParty = async (identifier, db = prisma) => {
   const id = String(identifier || '');
   if (!isObjectId(id)) return null;
 
