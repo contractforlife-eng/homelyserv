@@ -76,6 +76,17 @@ export default function SocialLogin({ onLoginSuccess }) {
       const data = response.data;
       
       if (data.success) {
+        if (data.needsOnboarding) {
+          navigate('/social-onboarding', {
+            state: {
+              onboardingToken: data.onboardingToken,
+              providerUser: data.user,
+              suggestedCountryCode: data.suggestedCountryCode || null,
+            }
+          });
+          return;
+        }
+
         useAuthStore.getState().setAuth(data.user, data.token);
 
         toast.success(`${t('welcome')} ${data.user.fullName}!`);
@@ -115,6 +126,17 @@ export default function SocialLogin({ onLoginSuccess }) {
     const data = response.data;
 
     if (data.success) {
+      if (data.needsOnboarding) {
+        navigate('/social-onboarding', {
+          state: {
+            onboardingToken: data.onboardingToken,
+            providerUser: data.user,
+            suggestedCountryCode: data.suggestedCountryCode || null,
+          }
+        });
+        return;
+      }
+
       useAuthStore.getState().setAuth(data.user, data.token);
 
       toast.success(`${t('welcome')} ${data.user.fullName}!`);

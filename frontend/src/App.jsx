@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Download from './pages/Download';
 import DeleteAccount from './pages/DeleteAccount';
+import SocialOnboarding from './pages/SocialOnboarding';
 
 // Common Protected Pages
 import MyHires from './pages/MyHires';
@@ -289,6 +290,7 @@ function App() {
       <Route path="/refund-policy" element={<RefundPolicy />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/delete-account" element={<DeleteAccount />} />
+      <Route path="/social-onboarding" element={<SocialOnboarding />} />
       <Route path="/download" element={<Download />} />
 
       {/* ========== COMMON PROTECTED ROUTES ========== */}

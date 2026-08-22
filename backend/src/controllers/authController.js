@@ -95,7 +95,7 @@ const PHONE_REGEX = /^\+?[0-9\s\-().]{7,20}$/;
  * Validate that a phone number is non-empty, trimmed, and
  * international-friendly. Returns an error message or null.
  */
-const validatePhone = (phone) => {
+export const validatePhone = (phone) => {
   if (phone === undefined || phone === null) {
     return 'Phone number is required';
   }
