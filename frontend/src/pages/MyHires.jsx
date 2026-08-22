@@ -466,7 +466,7 @@ const MyHires = () => {
   const getPaymentBadge = (hire) => {
     const ps = (hire.paymentStatus || '').toLowerCase();
     if (ps === 'completed' || ps === 'confirmed' || ps === 'paid') {
-      return { className: 'bg-green-50 text-green-700 border-green-200', label: t('myHiresPage.payment.paid') };
+      return { className: 'bg-green-50 text-green-700 border-green-200', label: t('myHiresPage.payment.homelyServFeePaid') };
     }
     if (ps === 'pending' || ps === 'processing') {
       return { className: 'bg-amber-50 text-amber-700 border-amber-200', label: t('myHiresPage.payment.pending') };

@@ -240,7 +240,7 @@ const AdminHires = () => {
   const getPaymentBadge = (paymentStatus) => {
     const p = normalizePayment(paymentStatus);
     const map = {
-      paid: { cls: 'bg-green-500/15 text-green-400 border border-green-500/30', label: t.payment.paid },
+      paid: { cls: 'bg-green-500/15 text-green-400 border border-green-500/30', label: t.payment.homelyServFeePaid },
       unpaid: { cls: 'bg-gray-500/15 text-gray-400 border border-gray-500/30', label: t.payment.unpaid },
       processing: { cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30', label: t.payment.processing },
       refunded: { cls: 'bg-purple-500/15 text-purple-400 border border-purple-500/30', label: t.payment.refunded }

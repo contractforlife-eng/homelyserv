@@ -792,7 +792,7 @@ const WorkerOffers = () => {
   offer.paymentVerified === true && (
                       <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.paymentStatus')}</span>
-                        <span className="font-medium text-green-600">{t('workerOffers.paid')}</span>
+                        <span className="font-medium text-green-600">{t('workerOffers.homelyServFeePaid')}</span>
                       </div>
                     )}
                   </div>

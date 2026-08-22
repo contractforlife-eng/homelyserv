@@ -4005,6 +4005,22 @@ ru.translation.employerPayments.serviceProvider = 'Поставщик услуг
 tr.translation.employerPayments.serviceProvider = 'Hizmet sağlayıcı';
 de.translation.employerPayments.serviceProvider = 'Dienstleister';
 
+// Hire commission payment labels are intentionally separate from generic
+// "Paid" translations used by salary, subscription, and other payment UIs.
+en.translation.myHiresPage.payment.homelyServFeePaid = 'HomelyServ Fee Paid';
+ar.translation.myHiresPage.payment.homelyServFeePaid = 'تم دفع رسوم HomelyServ';
+fr.translation.myHiresPage.payment.homelyServFeePaid = 'Frais HomelyServ payés';
+ru.translation.myHiresPage.payment.homelyServFeePaid = 'Комиссия HomelyServ оплачена';
+tr.translation.myHiresPage.payment.homelyServFeePaid = 'HomelyServ ücreti ödendi';
+de.translation.myHiresPage.payment.homelyServFeePaid = 'HomelyServ-Gebühr bezahlt';
+
+en.translation.workerOffers.homelyServFeePaid = 'HomelyServ Fee Paid';
+ar.translation.workerOffers.homelyServFeePaid = 'تم دفع رسوم HomelyServ';
+fr.translation.workerOffers.homelyServFeePaid = 'Frais HomelyServ payés';
+ru.translation.workerOffers.homelyServFeePaid = 'Комиссия HomelyServ оплачена';
+tr.translation.workerOffers.homelyServFeePaid = 'HomelyServ ücreti ödendi';
+de.translation.workerOffers.homelyServFeePaid = 'HomelyServ-Gebühr bezahlt';
+
 fr.translation.myHiresPage.fallbacks = { unknownWorker: 'Travailleur inconnu', serviceProvider: 'Prestataire de services' };
 ru.translation.myHiresPage.fallbacks = { unknownWorker: 'Неизвестный работник', serviceProvider: 'Поставщик услуг' };
 tr.translation.myHiresPage.fallbacks = { unknownWorker: 'Bilinmeyen çalışan', serviceProvider: 'Hizmet sağlayıcı' };
@@ -4132,7 +4148,7 @@ const buildAdminHiresPage = (x, c) => ({
   stats:{total:x.myHiresPage.stats.total,active:x.myHiresPage.stats.active,awaiting:x.myHiresPage.stats.awaitingPayment,terminated:x.myHiresPage.stats.terminated,today:c.today},
   filters:{all:c.allStatuses,allPayments:c.allPayments,offer_sent:x.myHiresPage.filters.offer_sent,active:x.myHiresPage.filters.active,terminated:x.myHiresPage.filters.terminated,paid:x.employerPayments.status.completed,unpaid:x.myHiresPage.payment.unpaid,processing:x.employerPayments.status.processing,refunded:x.financialCenter.refunds,newest:c.newest,oldest:c.oldest,highestCommission:c.highest,lowestCommission:c.lowest},
   status:{offer_sent:x.myHiresPage.status.offer_sent,active:x.myHiresPage.status.active,terminated:x.myHiresPage.status.terminated,unknown:c.unknown},
-  payment:{paid:x.myHiresPage.payment.paid,unpaid:x.myHiresPage.payment.unpaid,processing:x.myHiresPage.payment.pending,refunded:x.financialCenter.refunds},
+  payment:{paid:x.myHiresPage.payment.paid,homelyServFeePaid:x.myHiresPage.payment.homelyServFeePaid,unpaid:x.myHiresPage.payment.unpaid,processing:x.myHiresPage.payment.pending,refunded:x.financialCenter.refunds},
   table:{employer:x.employerPayments.modal.worker ? x.workerOffers.employer : c.employerProfile,worker:x.employerPayments.table.worker,salary:x.myHiresPage.table.salary,commission:x.myHiresPage.table.commission,payment:x.myHiresPage.table.payment,status:c.hireStatus,hiredOn:x.myHiresPage.table.hiredOn,actions:x.myHiresPage.table.actions},
   actions:{view:x.myHiresPage.actions.view,employerProfile:c.employerProfile,workerProfile:c.workerProfile,messageEmployer:c.messageEmployer,messageWorker:c.messageWorker,terminate:x.myHiresPage.actions.terminate},
   modal:{title:x.myHiresPage.modal.title,financial:c.financial,timeline:c.timeline,notes:c.notes,currentStatus:c.currentStatus,salary:x.myHiresPage.modal.salary,commission:x.myHiresPage.modal.commission,vat:c.vat,totalDue:c.totalDue,paymentRef:c.paymentRef,paymentStatus:x.employerPayments.table.status,hireStatus:c.hireStatus,hireDate:c.hireDate,lastUpdated:c.lastUpdated,offerSent:c.offerSent,paymentCompleted:c.paymentCompleted,hireActivated:c.hireActivated,notProvided:x.myHiresPage.notProvided || x.workerOffers.notProvided}
