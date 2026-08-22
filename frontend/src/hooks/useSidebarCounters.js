@@ -8,7 +8,7 @@
 //   - fetches once on mount (deduped across components)
 //   - refetches on route changes (picks up decreases after the
 //     user visits a page, e.g. messages marked as read)
-//   - refetches in realtime on `notification:new` socket events
+//   - refetches in realtime on `notification:new` and `message:new` socket events
 //     (every message/offer/hire/payment/complaint action creates
 //     a notification through NotificationService)
 //   - refetches on the `sidebar-counters:refresh` window event
@@ -49,12 +49,17 @@ const useSidebarCounters = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  // Realtime: a new notification implies at least one counter changed
+  // Realtime: notification/message events imply at least one counter changed.
   useEffect(() => {
     if (!isAuthenticated || !userId) return undefined;
     const handleNewNotification = () => fetchCounters(true);
+    const handleNewMessage = () => fetchCounters(true);
     const unsubscribe = onSocketEvent(userId, 'notification:new', handleNewNotification);
-    return unsubscribe;
+    const unsubscribeMessage = onSocketEvent(userId, 'message:new', handleNewMessage);
+    return () => {
+      unsubscribe();
+      unsubscribeMessage();
+    };
   }, [isAuthenticated, userId, fetchCounters]);
 
   // Manual refresh: pages can dispatch `sidebar-counters:refresh`
