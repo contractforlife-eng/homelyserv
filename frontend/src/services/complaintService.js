@@ -56,6 +56,16 @@ export const createComplaint = async (data) => {
   return response.data;
 };
 
+export const reportUser = async (data) => {
+  const response = await api.post('/api/complaints/report-user', data);
+  return response.data;
+};
+
+export const reportMessage = async (data) => {
+  const response = await api.post('/api/complaints/report-message', data);
+  return response.data;
+};
+
 /**
  * Get the authenticated user's own complaints.
  */
@@ -307,6 +317,8 @@ export const formatComplaintDate = (dateString) => {
 const complaintService = {
   uploadComplaintAttachment,
   createComplaint,
+  reportUser,
+  reportMessage,
   getMyComplaints,
   getComplaintById,
   userReplyToComplaint,

@@ -263,7 +263,7 @@ const serializeAuthorRecord = (record) => {
  * Serialize a complaint for API responses.
  * Internal notes are only included for staff (SUPPORT/ADMIN).
  */
-const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
+export const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
   if (!complaint) return null;
 
   const base = {
@@ -275,6 +275,9 @@ const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
     status: complaint.status,
     priority: complaint.priority,
     category: complaint.category || 'Other',
+    reportedUserId: complaint.reportedUserId || null,
+    messageId: complaint.messageId || null,
+    conversationId: complaint.conversationId || null,
     assignedTo: complaint.assignedTo,
         assignedSupport: complaint.AssignedSupport
           ? {
@@ -435,6 +438,85 @@ export const createComplaint = async (req, res) => {
     console.error('❌ Error creating complaint:', error);
     return res.status(500).json({ success: false, message: 'Failed to create complaint' });
   }
+};
+
+/**
+ * Additive structured-report creator. The existing generic complaint endpoint
+ * intentionally remains unchanged; report controllers call this helper only
+ * after validating the conversation/message relationship server-side.
+ */
+export const createStructuredComplaint = async ({
+  reporterId,
+  reporterRole,
+  subject,
+  description,
+  category,
+  reportedUserId = null,
+  messageId = null,
+  conversationId = null,
+}) => {
+  const userId = String(reporterId);
+  const ticketNumber = await generateTicketNumber();
+  const complaint = await prisma.complaint.create({
+    data: {
+      ticketNumber,
+      userId,
+      subject: subject.trim(),
+      description: description.trim(),
+      category: COMPLAINT_CATEGORIES.includes(category) ? category : 'Abuse',
+      priority: 'High',
+      status: 'NEW',
+      attachments: [],
+      reportedUserId: reportedUserId ? String(reportedUserId) : null,
+      messageId: messageId ? String(messageId) : null,
+      conversationId: conversationId ? String(conversationId) : null,
+    },
+    include: {
+      User: {
+        select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+      },
+      AssignedSupport: {
+        select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+      },
+    },
+  });
+
+  await addTimeline(complaint.id, {
+    action: 'CREATED',
+    description: 'Structured report created',
+    authorId: userId,
+    authorName: complaint.User?.fullName || 'User',
+    authorRole: reporterRole,
+  });
+
+  const supportUsers = await prisma.user.findMany({
+    where: { role: 'SUPPORT' },
+    select: { id: true },
+  });
+
+  for (const support of supportUsers) {
+    await createUserNotification(support.id, {
+      type: NOTIFICATION_TYPES.NEW_COMPLAINT,
+      title: 'New Complaint',
+      message: `New complaint: ${complaint.subject}`,
+      entityType: 'COMPLAINT',
+      entityId: complaint.id,
+      priority: PRIORITIES.NORMAL,
+      link: '/support-complaints',
+    });
+  }
+
+  await createUserNotification(userId, {
+    type: NOTIFICATION_TYPES.NEW_COMPLAINT,
+    title: 'Report Submitted',
+    message: `Your report "${complaint.subject}" has been submitted successfully`,
+    entityType: 'COMPLAINT',
+    entityId: complaint.id,
+    priority: PRIORITIES.NORMAL,
+    link: reporterRole === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+  });
+
+  return complaint;
 };
 
 /**

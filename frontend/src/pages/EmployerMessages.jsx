@@ -7,7 +7,9 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { UserAvatar, UserDisplayName } from '../components/users';
+import ReportModal from '../components/messages/ReportModal';
 import employerService from '../services/employerService';
+import complaintService from '../services/complaintService';
 import {
   Home,
   User,
@@ -88,6 +90,7 @@ const EmployerMessages = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [supportUsers, setSupportUsers] = useState([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
   const intervalRef = useRef(null);
@@ -437,6 +440,31 @@ const EmployerMessages = () => {
           : t('messagesProfile.loadFailed');
       window.alert(message);
     }
+  };
+
+  const openReportUser = () => {
+    setDropdownOpen(false);
+    const conversation = conversations.find(c => c.id === selectedConversationId);
+    if (conversation?.role === 'WORKER' && conversation.otherUserId) {
+      setReportTarget({ type: 'user', reportedUserId: conversation.otherUserId });
+    }
+  };
+
+  const openReportMessage = (msg) => {
+    if (msg?.senderRole === 'WORKER' && msg.id && selectedConversationId) {
+      setReportTarget({ type: 'message', messageId: msg.id });
+    }
+  };
+
+  const submitReport = async (data) => {
+    const payload = { conversationId: selectedConversationId, ...data };
+    if (reportTarget?.type === 'user') {
+      await complaintService.reportUser({ ...payload, reportedUserId: reportTarget.reportedUserId });
+    } else if (reportTarget?.type === 'message') {
+      await complaintService.reportMessage({ ...payload, messageId: reportTarget.messageId });
+    }
+    setReportTarget(null);
+    window.alert(t('messagesReporting.submitted'));
   };
 
   // Close dropdown when selected conversation changes
@@ -858,6 +886,14 @@ const EmployerMessages = () => {
                               <UserIcon size={16} />
                               {t('employerMessages.viewWorkerProfile')}
                             </button>
+                            <button
+                              onClick={openReportUser}
+                              disabled={conversations.find(c => c.id === selectedConversationId)?.role !== 'WORKER'}
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:text-gray-400 disabled:hover:bg-transparent disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                              <AlertTriangle size={16} />
+                              {t('messagesReporting.reportUser')}
+                            </button>
                           </div>
                         )}
                       </div>
@@ -923,6 +959,15 @@ const EmployerMessages = () => {
                                     <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-teal-200'} />
                                   )}
                                 </p>
+                                {!isEmployer && msg.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openReportMessage(msg)}
+                                    className="mt-2 text-[11px] text-gray-400 hover:text-red-500"
+                                  >
+                                    {t('messagesReporting.reportMessage')}
+                                  </button>
+                                )}
                               </div>
                               {isEmployer && showAvatar && (
                                 <UserAvatar
@@ -979,6 +1024,17 @@ const EmployerMessages = () => {
           </div>
 
           {/* Support Modal */}
+          {reportTarget && (
+            <ReportModal
+              t={t}
+              title={reportTarget.type === 'user' ? t('messagesReporting.reportUser') : t('messagesReporting.reportMessage')}
+              note={t('messagesReporting.safetyNote')}
+              onClose={() => setReportTarget(null)}
+              onSubmit={submitReport}
+              accentClass="text-teal-600"
+              buttonClass="bg-teal-600 hover:bg-teal-700"
+            />
+          )}
           {showSupportModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">

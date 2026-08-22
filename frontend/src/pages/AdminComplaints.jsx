@@ -779,6 +779,17 @@ const AdminComplaints = () => {
                 </div>
               </div>
 
+              {(selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                  <h4 className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-200">{i18nT('messagesReporting.reportMessage')}</h4>
+                  <div className="space-y-1 text-xs text-amber-900 dark:text-amber-100">
+                    {selectedComplaint.reportedUserId && <p><span className="font-medium">{i18nT('messagesReporting.reportedUser')}:</span> {selectedComplaint.reportedUserId}</p>}
+                    {selectedComplaint.conversationId && <p><span className="font-medium">{i18nT('messagesReporting.conversationReference')}:</span> {selectedComplaint.conversationId}</p>}
+                    {selectedComplaint.messageId && <p><span className="font-medium">{i18nT('messagesReporting.messageReference')}:</span> {selectedComplaint.messageId}</p>}
+                  </div>
+                </div>
+              )}
+
               {/* User Info */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">

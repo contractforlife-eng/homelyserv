@@ -771,6 +771,11 @@ model Complaint {
   hireId          String?   @db.ObjectId
   workerEarningId String?   @db.ObjectId
 
+  // ---- Structured reporting context (additive; optional for legacy complaints) ----
+  reportedUserId  String? @db.ObjectId
+  messageId       String? @db.ObjectId
+  conversationId  String?
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
