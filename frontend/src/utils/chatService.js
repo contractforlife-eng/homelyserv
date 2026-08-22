@@ -159,6 +159,25 @@ export const deleteConversation = async (conversationId) => {
   return !!response.data?.success;
 };
 
+export const getBlockStatus = async (conversationId) => {
+  if (!conversationId) return { blockedByMe: false, blockedMe: false };
+  const response = await api.get(`/api/chat/block-user/status?conversationId=${encodeURIComponent(conversationId)}`);
+  return {
+    blockedByMe: Boolean(response.data?.blockedByMe),
+    blockedMe: Boolean(response.data?.blockedMe),
+  };
+};
+
+export const blockUser = async (conversationId) => {
+  const response = await api.post('/api/chat/block-user', { conversationId });
+  return response.data;
+};
+
+export const unblockUser = async (conversationId) => {
+  const response = await api.delete('/api/chat/block-user', { data: { conversationId } });
+  return response.data;
+};
+
 // POST /api/admin/conversations/:conversationId/close
 // Soft-close a SUPPORT or INTERNAL conversation (admin only).
 // Does NOT delete messages or conversation metadata.
@@ -307,6 +326,9 @@ export default {
   getOrCreateConversation,
   sendWelcomeMessage,
   deleteConversation,
+  getBlockStatus,
+  blockUser,
+  unblockUser,
   closeConversation,
   getSupportUsers,
   getEscalatedConversations,

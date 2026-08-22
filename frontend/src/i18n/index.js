@@ -4794,6 +4794,20 @@ for (const [code, copy] of Object.entries(MESSAGE_REPORTING_COPY)) {
   translation.messagesReporting = copy;
 }
 
+const MESSAGES_BLOCKING_COPY = {
+  en: { blockUser: 'Block User', unblockUser: 'Unblock User', confirmation: 'Create a reversible block for this user? Existing conversation history will remain. This does not cancel a Hire, payment, or financial obligation. Chat enforcement will be applied in a later safety phase; you can still contact Support or submit a report.', unblockConfirmation: 'Unblock this user?', blockSuccess: 'User block saved.', unblockSuccess: 'User unblocked.', failed: 'Unable to update the block status.' },
+  ar: { blockUser: 'حظر المستخدم', unblockUser: 'إلغاء حظر المستخدم', confirmation: 'هل تريد إنشاء حظر قابل للعكس لهذا المستخدم؟ ستبقى المحادثة وسجلها. لا يؤدي ذلك إلى إلغاء التوظيف أو الدفع أو أي التزام مالي. سيتم تطبيق منع المحادثة في مرحلة أمان لاحقة؛ ولا يزال بإمكانك التواصل مع الدعم أو إرسال بلاغ.', unblockConfirmation: 'هل تريد إلغاء حظر هذا المستخدم؟', blockSuccess: 'تم حفظ حظر المستخدم.', unblockSuccess: 'تم إلغاء حظر المستخدم.', failed: 'تعذر تحديث حالة الحظر.' },
+  fr: { blockUser: 'Bloquer l’utilisateur', unblockUser: 'Débloquer l’utilisateur', confirmation: 'Créer un blocage réversible pour cet utilisateur ? L’historique de la conversation sera conservé. Cela n’annule ni recrutement, ni paiement, ni obligation financière. Le blocage technique de la discussion sera appliqué lors d’une prochaine phase de sécurité ; vous pouvez toujours contacter le support ou envoyer un signalement.', unblockConfirmation: 'Débloquer cet utilisateur ?', blockSuccess: 'Blocage enregistré.', unblockSuccess: 'Utilisateur débloqué.', failed: 'Impossible de mettre à jour le blocage.' },
+  ru: { blockUser: 'Заблокировать пользователя', unblockUser: 'Разблокировать пользователя', confirmation: 'Создать обратимую блокировку этого пользователя? История беседы останется. Это не отменяет найм, платежи или финансовые обязательства. Ограничение сообщений будет включено на следующем этапе безопасности; вы по-прежнему можете обратиться в поддержку или отправить жалобу.', unblockConfirmation: 'Разблокировать пользователя?', blockSuccess: 'Блокировка сохранена.', unblockSuccess: 'Пользователь разблокирован.', failed: 'Не удалось обновить блокировку.' },
+  tr: { blockUser: 'Kullanıcıyı Engelle', unblockUser: 'Kullanıcının Engelini Kaldır', confirmation: 'Bu kullanıcı için geri alınabilir bir engel oluşturulsun mu? Mevcut konuşma geçmişi korunur. Bu işlem işe alımı, ödemeyi veya mali yükümlülükleri iptal etmez. Mesaj engelleme sonraki güvenlik aşamasında uygulanacaktır; yine de Destek ile iletişime geçebilir veya bildirim gönderebilirsiniz.', unblockConfirmation: 'Bu kullanıcının engeli kaldırılsın mı?', blockSuccess: 'Kullanıcı engeli kaydedildi.', unblockSuccess: 'Kullanıcının engeli kaldırıldı.', failed: 'Engel durumu güncellenemedi.' },
+  de: { blockUser: 'Benutzer blockieren', unblockUser: 'Benutzer entsperren', confirmation: 'Diesen Benutzer reversibel blockieren? Der Gesprächsverlauf bleibt erhalten. Dies beendet weder den Auftrag noch Zahlungen oder finanzielle Verpflichtungen. Die technische Nachrichtensperre wird in einer späteren Sicherheitsphase aktiviert; Sie können weiterhin den Support kontaktieren oder eine Meldung senden.', unblockConfirmation: 'Diesen Benutzer entsperren?', blockSuccess: 'Benutzerblockierung gespeichert.', unblockSuccess: 'Benutzer entsperrt.', failed: 'Blockierungsstatus konnte nicht aktualisiert werden.' },
+};
+
+for (const [code, copy] of Object.entries(MESSAGES_BLOCKING_COPY)) {
+  const translation = ({ en, ar, fr, ru, tr, de }[code]).translation;
+  translation.messagesBlocking = copy;
+}
+
 const resources = {
   en,
   ar,

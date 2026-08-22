@@ -60,6 +60,9 @@ import {
   getConversationId,
   ensureConversationExists,
   deleteConversation,
+  getBlockStatus,
+  blockUser,
+  unblockUser,
   formatDisplayName,
   getSupportUsers,
   createOptimisticMessage,
@@ -91,6 +94,7 @@ const EmployerMessages = () => {
   const [supportUsers, setSupportUsers] = useState([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [blockStatus, setBlockStatus] = useState({ blockedByMe: false, blockedMe: false });
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
   const intervalRef = useRef(null);
@@ -439,6 +443,39 @@ const EmployerMessages = () => {
           ? t('messagesProfile.accessDenied')
           : t('messagesProfile.loadFailed');
       window.alert(message);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    if (!selectedConversationId) {
+      setBlockStatus({ blockedByMe: false, blockedMe: false });
+      return undefined;
+    }
+    getBlockStatus(selectedConversationId)
+      .then((status) => { if (active) setBlockStatus(status); })
+      .catch((error) => {
+        console.error('Error loading block status:', error);
+        if (active) setBlockStatus({ blockedByMe: false, blockedMe: false });
+      });
+    return () => { active = false; };
+  }, [selectedConversationId]);
+
+  const handleToggleBlock = async () => {
+    setDropdownOpen(false);
+    if (!selectedConversationId) return;
+    const isBlockedByMe = blockStatus.blockedByMe;
+    const confirmed = window.confirm(t(isBlockedByMe ? 'messagesBlocking.unblockConfirmation' : 'messagesBlocking.confirmation'));
+    if (!confirmed) return;
+    try {
+      const result = isBlockedByMe
+        ? await unblockUser(selectedConversationId)
+        : await blockUser(selectedConversationId);
+      setBlockStatus({ blockedByMe: Boolean(result?.blockedByMe), blockedMe: Boolean(result?.blockedMe) });
+      window.alert(t(isBlockedByMe ? 'messagesBlocking.unblockSuccess' : 'messagesBlocking.blockSuccess'));
+    } catch (error) {
+      console.error('Error updating block status:', error);
+      window.alert(t('messagesBlocking.failed'));
     }
   };
 
@@ -893,6 +930,14 @@ const EmployerMessages = () => {
                             >
                               <AlertTriangle size={16} />
                               {t('messagesReporting.reportUser')}
+                            </button>
+                            <button
+                              onClick={handleToggleBlock}
+                              disabled={conversations.find(c => c.id === selectedConversationId)?.role !== 'WORKER'}
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:text-gray-400 disabled:hover:bg-transparent disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                              <Shield size={16} />
+                              {t(blockStatus.blockedByMe ? 'messagesBlocking.unblockUser' : 'messagesBlocking.blockUser')}
                             </button>
                           </div>
                         )}

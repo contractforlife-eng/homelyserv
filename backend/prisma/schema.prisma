@@ -710,6 +710,19 @@ model ManualPremiumGrant {
   @@map("manual_premium_grants")
 }
 
+// Directional, reversible customer-to-customer block state.
+// Chat enforcement is intentionally deferred to P0.3C.
+model UserBlock {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  blockerId     String   @db.ObjectId
+  blockedUserId String   @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([blockerId, blockedUserId], map: "user_blocks_blockerId_blockedUserId_key")
+  @@map("user_blocks")
+}
+
 model SubscriptionGrant {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
   userId          String    @db.ObjectId
