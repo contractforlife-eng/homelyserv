@@ -892,15 +892,7 @@ router.get('/providers', authenticate, async (req, res) => {
     const currency = hire.compensationCurrency
       ? String(hire.compensationCurrency).trim().toUpperCase()
       : 'EGP';
-    const payer = await prisma.user.findUnique({
-      where: { id: String(hire.employerId) },
-      select: { countryCode: true },
-    });
-    const providers = getAvailableProviders({
-      purpose,
-      transactionCurrency: currency,
-      countryCode: payer?.countryCode,
-    })
+    const providers = getAvailableProviders({ purpose, transactionCurrency: currency })
       .map(({ provider, mode, providerCurrency }) => ({ provider, mode, providerCurrency }));
     return res.json({ success: true, purpose, currency, providers });
   } catch (error) {
@@ -944,7 +936,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       ? PAYMENT_PURPOSES.SUBSCRIPTION
       : PAYMENT_PURPOSES.COMMISSION;
     const selectedPaymentMethod = paymentMethod || 'paymob';
-    if (!['paymob', 'paypal', 'nowpayments'].includes(selectedPaymentMethod)) {
+    if (!['paymob', 'paypal'].includes(selectedPaymentMethod)) {
       return res.status(400).json({ success: false, error: 'Unsupported payment method' });
     }
     let transactionCurrency = 'EGP';
@@ -1006,18 +998,11 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         provider: selectedPaymentMethod,
         purpose,
         transactionCurrency,
-        countryCode: subscriptionUser.countryCode,
       });
       if (!isTurkeySubscription && !subscriptionCapability.enabled) {
         return res.status(422).json({
           success: false,
           error: 'Subscription payment is not currently available for this provider and currency'
-        });
-      }
-      if (selectedPaymentMethod === 'nowpayments') {
-        return res.status(501).json({
-          success: false,
-          error: 'NOWPayments payment creation is not implemented in this phase',
         });
       }
     } else {
@@ -1059,22 +1044,11 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         provider: selectedPaymentMethod,
         purpose,
         transactionCurrency,
-        countryCode: (await prisma.user.findUnique({
-          where: { id: String(req.userId) },
-          select: { countryCode: true },
-        }))?.countryCode,
       });
       if (!capability.enabled) {
         return res.status(422).json({
           success: false,
           error: 'Commission payment is not currently available for this provider and currency'
-        });
-      }
-
-      if (selectedPaymentMethod === 'nowpayments') {
-        return res.status(501).json({
-          success: false,
-          error: 'NOWPayments payment creation is not implemented in this phase',
         });
       }
 

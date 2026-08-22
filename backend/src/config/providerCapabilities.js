@@ -1,16 +1,9 @@
 import { PAYMENT_PURPOSES } from './subscription.js';
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
-import {
-  getNowPaymentsConfig,
-  isNowPaymentsConfigured,
-  isNowPaymentsCountryAllowed,
-  NOWPAYMENTS_PROVIDER,
-} from './nowPayments.js';
 
 export const PROVIDERS = Object.freeze({
   PAYMOB: 'paymob',
   PAYPAL: 'paypal',
-  NOWPAYMENTS: NOWPAYMENTS_PROVIDER,
 });
 
 export const PROVIDER_CAPABILITY_MODES = Object.freeze({
@@ -45,21 +38,6 @@ const getConfigurationContext = (provider) => {
     };
   }
 
-  if (provider === PROVIDERS.NOWPAYMENTS) {
-    const config = getNowPaymentsConfig();
-    return {
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-      configured: isNowPaymentsConfigured(config),
-      required: {
-        enabled: config.enabled,
-        apiKey: Boolean(config.apiKey),
-        ipnSecret: Boolean(config.ipnSecret),
-        apiBaseUrl: Boolean(config.apiBaseUrl),
-        allowedCountries: config.allowedCountries.length > 0,
-      },
-    };
-  }
-
   const required = {
     clientId: hasValue(process.env.PAYPAL_CLIENT_ID),
     secret: hasValue(process.env.PAYPAL_SECRET),
@@ -91,7 +69,7 @@ const unsupportedCapability = ({ provider, purpose, transactionCurrency, reason,
  * requires the current process to have the non-secret configuration shape
  * needed by that path. Neither flag claims global provider/account support.
  */
-export const getProviderCapability = ({ provider, purpose, transactionCurrency, countryCode } = {}) => {
+export const getProviderCapability = ({ provider, purpose, transactionCurrency } = {}) => {
   const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : null;
   const normalizedPurpose = typeof purpose === 'string' ? purpose.trim().toUpperCase() : null;
   const normalizedCurrency = normalizeCurrencyCode(transactionCurrency);
@@ -124,41 +102,6 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency, 
       reason: 'UNSUPPORTED_CURRENCY',
       configuration,
     });
-  }
-
-  if (normalizedProvider === PROVIDERS.NOWPAYMENTS) {
-    const nowPaymentsConfig = getNowPaymentsConfig();
-    if (!isNowPaymentsCountryAllowed(countryCode, nowPaymentsConfig)) {
-      return unsupportedCapability({
-        provider: normalizedProvider,
-        purpose: normalizedPurpose,
-        transactionCurrency: normalizedCurrency,
-        reason: 'COUNTRY_NOT_ALLOWED',
-        configuration,
-      });
-    }
-    if (!configuration.configured) {
-      return unsupportedCapability({
-        provider: normalizedProvider,
-        purpose: normalizedPurpose,
-        transactionCurrency: normalizedCurrency,
-        reason: 'CONFIGURATION_REQUIRED',
-        configuration,
-      });
-    }
-    return {
-      provider: normalizedProvider,
-      purpose: normalizedPurpose,
-      transactionCurrency: normalizedCurrency,
-      providerCurrency: normalizedCurrency,
-      supported: true,
-      enabled: true,
-      mode: PROVIDER_CAPABILITY_MODES.DIRECT,
-      verificationStatus: PROVIDER_VERIFICATION_STATUSES.NOT_IMPLEMENTED,
-      externalAccountVerificationRequired: true,
-      reason: 'PAYMENT_CREATION_NOT_IMPLEMENTED',
-      configuration,
-    };
   }
 
   const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
@@ -209,9 +152,9 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency, 
 
 export const canProviderProcess = (query) => getProviderCapability(query).enabled;
 
-export const getAvailableProviders = ({ purpose, transactionCurrency, countryCode } = {}) => (
+export const getAvailableProviders = ({ purpose, transactionCurrency } = {}) => (
   Object.values(PROVIDERS)
-    .map((provider) => getProviderCapability({ provider, purpose, transactionCurrency, countryCode }))
+    .map((provider) => getProviderCapability({ provider, purpose, transactionCurrency }))
     .filter((capability) => capability.enabled)
 );
 
