@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js';
+import { isUserPremium } from './premiumService.js';
 
 const CUSTOMER_ROLES = new Set(['EMPLOYER', 'WORKER']);
 const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
@@ -162,16 +163,7 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
 
 export const hasActiveSubscription = async (userId) => {
   if (!userId) return false;
-
-  const subscription = await prisma.subscription.findFirst({
-    where: {
-      userId: String(userId),
-      status: 'active',
-      endDate: { gte: new Date() }
-    }
-  });
-
-  return !!subscription;
+  return isUserPremium(userId);
 };
 
 export const recordSearch = async (employerId) => {

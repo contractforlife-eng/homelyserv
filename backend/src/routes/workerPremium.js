@@ -13,7 +13,7 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { requireWorker } from '../middleware/auth.js';
-import { getActiveSubscription } from '../services/premiumService.js';
+import { getActivePremiumEntitlement } from '../services/premiumService.js';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ const readOwnProfile = async (userId) => {
 
 const buildStatusPayload = async (userId) => {
   const profile = await readOwnProfile(userId);
-  const subscription = await getActiveSubscription(userId);
+  const subscription = await getActivePremiumEntitlement(userId);
   const isPremium = !!subscription;
 
   return {
@@ -135,7 +135,7 @@ router.put('/actively-looking', requireWorker, async (req, res) => {
       });
     }
 
-    const subscription = await getActiveSubscription(req.userId);
+    const subscription = await getActivePremiumEntitlement(req.userId);
     if (!subscription) {
       return res.status(403).json({
         success: false,
