@@ -4706,6 +4706,19 @@ for (const [code, label] of Object.entries(MESSAGE_MARK_AS_READ_COPY)) {
   translation.employerMessages.markAsRead = label;
 }
 
+const MESSAGES_PROFILE_COPY = {
+  en: { employerTitle: 'Employer Profile', back: 'Back to Messages', loading: 'Loading profile...', accessDenied: 'You are not authorized to view this profile.', notFound: 'Profile not found.', loadFailed: 'Unable to load this profile. Please try again.', location: 'Location', language: 'Language', website: 'Website', about: 'About', email: 'Email', phone: 'Phone' },
+  ar: { employerTitle: 'ملف صاحب العمل', back: 'العودة إلى الرسائل', loading: 'جارٍ تحميل الملف...', accessDenied: 'غير مصرح لك بعرض هذا الملف.', notFound: 'الملف غير موجود.', loadFailed: 'تعذر تحميل الملف. يرجى المحاولة مرة أخرى.', location: 'الموقع', language: 'اللغة', website: 'الموقع الإلكتروني', about: 'نبذة', email: 'البريد الإلكتروني', phone: 'الهاتف' },
+  fr: { employerTitle: 'Profil de l’employeur', back: 'Retour aux messages', loading: 'Chargement du profil...', accessDenied: 'Vous n’êtes pas autorisé à consulter ce profil.', notFound: 'Profil introuvable.', loadFailed: 'Impossible de charger ce profil. Veuillez réessayer.', location: 'Lieu', language: 'Langue', website: 'Site web', about: 'À propos', email: 'E-mail', phone: 'Téléphone' },
+  ru: { employerTitle: 'Профиль работодателя', back: 'Назад к сообщениям', loading: 'Загрузка профиля...', accessDenied: 'У вас нет доступа к этому профилю.', notFound: 'Профиль не найден.', loadFailed: 'Не удалось загрузить профиль. Повторите попытку.', location: 'Местоположение', language: 'Язык', website: 'Сайт', about: 'О себе', email: 'Электронная почта', phone: 'Телефон' },
+  tr: { employerTitle: 'İşveren Profili', back: 'Mesajlara Dön', loading: 'Profil yükleniyor...', accessDenied: 'Bu profili görüntüleme yetkiniz yok.', notFound: 'Profil bulunamadı.', loadFailed: 'Profil yüklenemedi. Lütfen tekrar deneyin.', location: 'Konum', language: 'Dil', website: 'Web sitesi', about: 'Hakkında', email: 'E-posta', phone: 'Telefon' },
+  de: { employerTitle: 'Arbeitgeberprofil', back: 'Zurück zu Nachrichten', loading: 'Profil wird geladen...', accessDenied: 'Sie sind nicht berechtigt, dieses Profil anzuzeigen.', notFound: 'Profil nicht gefunden.', loadFailed: 'Profil konnte nicht geladen werden. Bitte versuchen Sie es erneut.', location: 'Ort', language: 'Sprache', website: 'Website', about: 'Über', email: 'E-Mail', phone: 'Telefon' }
+};
+
+for (const [code, copy] of Object.entries(MESSAGES_PROFILE_COPY)) {
+  ({ en, ar, fr, ru, tr, de }[code]).translation.messagesProfile = copy;
+}
+
 const resources = {
   en,
   ar,

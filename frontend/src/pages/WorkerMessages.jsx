@@ -1,7 +1,7 @@
 // src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -43,10 +43,12 @@ import {
   markOptimisticMessageFailed
 } from '../utils/chatService';
 import { onSocketEvent, getSocket } from '../utils/socket';
+import api from '../utils/api';
 
 // Main WorkerMessages Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerMessages = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -321,6 +323,29 @@ const WorkerMessages = () => {
       }
     } catch (error) {
       console.error('Error marking messages as read:', error);
+    }
+  };
+
+  const handleViewEmployerProfile = async () => {
+    setDropdownOpen(false);
+    const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+    const employerId = selectedConversation?.otherUserId;
+    if (!employerId || selectedConversation?.role !== 'EMPLOYER') return;
+
+    try {
+      const response = await api.get(`/api/employers/profile/${encodeURIComponent(employerId)}`);
+      navigate(`/employer-profile-view/${encodeURIComponent(employerId)}`, {
+        state: { employer: response.data?.user || null },
+      });
+    } catch (error) {
+      console.error('Error loading employer profile:', error);
+      const status = error?.response?.status;
+      const message = status === 403
+        ? t('messagesProfile.accessDenied')
+        : status === 404
+          ? t('messagesProfile.notFound')
+          : t('messagesProfile.loadFailed');
+      window.alert(message);
     }
   };
 
@@ -694,8 +719,9 @@ const WorkerMessages = () => {
                               {t('workerMessages.markAsRead')}
                             </button>
                             <button
-                              disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
+                              onClick={handleViewEmployerProfile}
+                              disabled={conversations.find(c => c.id === selectedConversationId)?.role !== 'EMPLOYER'}
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:text-gray-400 disabled:hover:bg-transparent disabled:cursor-not-allowed flex items-center gap-2"
                             >
                               <UserIcon size={16} />
                               {t('workerMessages.viewEmployerProfile')}

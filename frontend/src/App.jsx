@@ -50,6 +50,7 @@ import EmployerJobApplicants from './pages/EmployerJobApplicants';
 import EmployerPostJob from './pages/EmployerPostJob';
 import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
+import EmployerProfileView from './pages/EmployerProfileView';
 import EmployerCreateOffer from './pages/EmployerCreateOffer';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
@@ -496,6 +497,14 @@ function App() {
             <WorkerProfileView />
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/employer-profile-view/:userId"
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <EmployerProfileView />
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/employer-create-offer" 

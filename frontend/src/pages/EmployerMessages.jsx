@@ -7,6 +7,7 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { UserAvatar, UserDisplayName } from '../components/users';
+import employerService from '../services/employerService';
 import {
   Home,
   User,
@@ -413,6 +414,28 @@ const EmployerMessages = () => {
       }
     } catch (error) {
       console.error('Error marking messages as read:', error);
+    }
+  };
+
+  const handleViewWorkerProfile = async () => {
+    setDropdownOpen(false);
+    const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+    const workerId = selectedConversation?.otherUserId;
+    if (!workerId || selectedConversation?.role !== 'WORKER') return;
+
+    try {
+      const profileData = await employerService.getWorkerProfile(workerId);
+      if (!profileData?.user) throw new Error('Worker profile unavailable');
+      navigate('/worker-profile-view', { state: { worker: profileData.user } });
+    } catch (error) {
+      console.error('Error loading worker profile:', error);
+      const status = error?.response?.status;
+      const message = status === 404
+        ? t('messagesProfile.notFound')
+        : status === 403
+          ? t('messagesProfile.accessDenied')
+          : t('messagesProfile.loadFailed');
+      window.alert(message);
     }
   };
 
@@ -828,8 +851,9 @@ const EmployerMessages = () => {
                               {t('employerMessages.markAsRead')}
                             </button>
                             <button
-                              disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
+                              onClick={handleViewWorkerProfile}
+                              disabled={conversations.find(c => c.id === selectedConversationId)?.role !== 'WORKER'}
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:text-gray-400 disabled:hover:bg-transparent disabled:cursor-not-allowed flex items-center gap-2"
                             >
                               <UserIcon size={16} />
                               {t('employerMessages.viewWorkerProfile')}
