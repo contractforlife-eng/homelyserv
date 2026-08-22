@@ -63,6 +63,7 @@ const WorkerMessages = () => {
   const [message, setMessage] = useState('');
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -74,6 +75,12 @@ const WorkerMessages = () => {
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
   const refreshEffectReadyRef = useRef(false);
+  const selectedConversationIdRef = useRef(null);
+  const conversationSelectionSeqRef = useRef(0);
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
   const autoOpenDoneRef = useRef(false);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -166,8 +173,7 @@ const WorkerMessages = () => {
      const target = conversations.find(c => String(c.id) === String(stateConvId));
      if (target) {
        console.log('✅ Auto-opening existing conversation:', target.id);
-       setSelectedConversationId(target.id);
-       loadMessagesForConversation(target.id);
+       selectConversation(target.id);
      }
    }, [authUser, conversationsLoaded]);
 
@@ -202,6 +208,7 @@ const WorkerMessages = () => {
       intervalRef.current = null;
     }
 
+    const pollSelectionSeq = conversationSelectionSeqRef.current;
     intervalRef.current = setInterval(async () => {
       const updatedConversations = await getUserConversations(userId);
       setConversations(prevConversations => {
@@ -214,6 +221,10 @@ const WorkerMessages = () => {
 
       if (selectedConversationId) {
         const updatedMessages = await getConversationMessages(selectedConversationId);
+        if (
+          selectedConversationIdRef.current !== selectedConversationId
+          || pollSelectionSeq !== conversationSelectionSeqRef.current
+        ) return;
         setMessages(prevMessages => {
           if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
             console.log('🔄 Auto-refresh: Worker messages updated for conversation:', selectedConversationId);
@@ -316,11 +327,25 @@ const WorkerMessages = () => {
     };
   }, []);
 
-  const loadMessagesForConversation = async (conversationId) => {
+  const loadMessagesForConversation = async (conversationId, selectionSeq = conversationSelectionSeqRef.current) => {
+    const isCurrentSelection = () => (
+      selectedConversationIdRef.current === conversationId
+      && conversationSelectionSeqRef.current === selectionSeq
+    );
+
     console.log('📨 Loading messages for conversation:', conversationId);
-    const conversationMessages = await getConversationMessages(conversationId);
+    let conversationMessages;
+    try {
+      conversationMessages = await getConversationMessages(conversationId);
+    } catch (error) {
+      if (isCurrentSelection()) setMessagesLoading(false);
+      throw error;
+    }
     console.log('📋 Messages found:', conversationMessages);
-    setMessages(conversationMessages);
+    if (isCurrentSelection()) {
+      setMessages(conversationMessages);
+      setMessagesLoading(false);
+    }
     
     const userId = authUser?.id;
     if (userId) {
@@ -335,6 +360,19 @@ const WorkerMessages = () => {
         console.error('Error marking messages as read:', error);
       }
     }
+  };
+
+  const selectConversation = (conversationId) => {
+    const selectionSeq = conversationSelectionSeqRef.current + 1;
+    conversationSelectionSeqRef.current = selectionSeq;
+    selectedConversationIdRef.current = conversationId;
+    setSelectedConversationId(conversationId);
+    setMessages([]);
+    setMessagesLoading(true);
+    setOtherUserTyping(false);
+    if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
+    if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
+    loadMessagesForConversation(conversationId, selectionSeq);
   };
 
   const handleMarkConversationAsRead = async () => {
@@ -461,11 +499,7 @@ const WorkerMessages = () => {
 
   const handleSelectConversation = (conversationId) => {
     console.log('📨 Selecting conversation:', conversationId);
-    setSelectedConversationId(conversationId);
-    setOtherUserTyping(false);
-    if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
-    if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
-    loadMessagesForConversation(conversationId);
+    selectConversation(conversationId);
   };
 
   const getOtherUserId = () => {
@@ -847,7 +881,11 @@ const WorkerMessages = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/20">
-                      {messages.length === 0 ? (
+                      {messagesLoading && messages.length === 0 ? (
+                        <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
+                          <RefreshCw size={28} className="animate-spin" />
+                        </div>
+                      ) : messages.length === 0 ? (
                         <div className="text-center text-gray-400 dark:text-gray-500 py-8">
                           <p>{t('workerMessages.noMessages')}</p>
                           <p className="text-sm">{t('workerMessages.startConversation')}</p>
@@ -1010,8 +1048,7 @@ const WorkerMessages = () => {
                           user.fullName,
                           user.role
                         );
-                        setSelectedConversationId(conversationId);
-                        loadMessagesForConversation(conversationId);
+                        selectConversation(conversationId);
                       }}
                       className="w-full p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
                     >
