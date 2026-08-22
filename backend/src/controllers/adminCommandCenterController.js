@@ -218,7 +218,7 @@ export const getCommandCenter = async (req, res) => {
     if (validPaymentUserIds.length > 0) {
       paymentUsers = await prisma.user.findMany({
         where: { id: { in: validPaymentUserIds } },
-        select: { id: true, fullName: true, email: true, profileImage: true },
+        select: { id: true, fullName: true, email: true, role: true, profileImage: true },
       });
     }
     const paymentUserMap = new Map(paymentUsers.map(u => [u.id, u]));
@@ -235,7 +235,7 @@ export const getCommandCenter = async (req, res) => {
     if (validHireEmployerIds.length > 0) {
       hireEmployers = await prisma.user.findMany({
         where: { id: { in: validHireEmployerIds } },
-        select: { id: true, fullName: true, email: true, profileImage: true },
+        select: { id: true, fullName: true, email: true, role: true, profileImage: true },
       });
     }
     const hireEmployerMap = new Map(hireEmployers.map(u => [u.id, u]));
@@ -255,10 +255,20 @@ export const getCommandCenter = async (req, res) => {
     if (validHireWorkerUserIds.length > 0) {
       hireWorkerUsers = await prisma.user.findMany({
         where: { id: { in: validHireWorkerUserIds } },
-        select: { id: true, fullName: true, phone: true, city: true, profileImage: true },
+        select: { id: true, fullName: true, role: true, phone: true, city: true, profileImage: true },
       });
     }
     const hireWorkerUserMap = new Map(hireWorkerUsers.map(u => [u.id, u]));
+
+    const activeDisplayPremiumIds = await getActivePremiumUserIds([
+      ...recentUsers.map((user) => user.id),
+      ...paymentUsers.map((user) => user.id),
+      ...hireEmployers.map((user) => user.id),
+      ...hireWorkerUsers.map((user) => user.id),
+    ]);
+    paymentUsers.forEach((user) => { user.isPremium = activeDisplayPremiumIds.has(String(user.id)); });
+    hireEmployers.forEach((user) => { user.isPremium = activeDisplayPremiumIds.has(String(user.id)); });
+    hireWorkerUsers.forEach((user) => { user.isPremium = activeDisplayPremiumIds.has(String(user.id)); });
 
     const enrichedRecentHires = recentHires.map(hire => {
       const employer = hireEmployerMap.get(hire.employerId) || { fullName: 'Unknown Employer', email: null };

@@ -11,7 +11,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
-import { UserAvatar } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import {
   CreditCard,
   Search,
@@ -566,7 +566,13 @@ const AdminPayments = () => {
                             size="sm"
                             className="border border-yellow-500/30"
                           />
-                          <span className="text-sm text-gray-900 dark:text-white font-medium truncate">{getPayerName(payment)}</span>
+                          <UserDisplayName
+                            user={payment.User}
+                            name={getPayerName(payment)}
+                            role={payment.User?.role || 'USER'}
+                            size="sm"
+                            defaultNameClassName="font-medium text-gray-900 dark:text-white"
+                          />
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{formatCurrency(payment.amount, payment)}</td>
@@ -643,7 +649,12 @@ const AdminPayments = () => {
                     <UserCheck size={16} className="text-yellow-500" />
                     {i18nT('adminPayments.payer')}
                   </h3>
-                  <p className="font-medium text-gray-900 dark:text-white">{getPayerName(selectedPayment)}</p>
+                  <UserDisplayName
+                    user={selectedPayment.User}
+                    name={getPayerName(selectedPayment)}
+                    role={selectedPayment.User?.role || 'USER'}
+                    defaultNameClassName="font-medium text-gray-900 dark:text-white"
+                  />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedPayment.userEmail || 'N/A'}</p>
                 </div>
 
@@ -652,7 +663,12 @@ const AdminPayments = () => {
                     <UserIcon size={16} className="text-yellow-500" />
                     {i18nT('adminPayments.worker')}
                   </h3>
-                  <p className="font-medium text-gray-900 dark:text-white">{selectedPayment.workerName || 'N/A'}</p>
+                  <UserDisplayName
+                    name={selectedPayment.workerName || 'N/A'}
+                    role="WORKER"
+                    isPremium={selectedPayment.workerIsPremium}
+                    defaultNameClassName="font-medium text-gray-900 dark:text-white"
+                  />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedPayment.jobTitle || 'N/A'}</p>
                 </div>
 

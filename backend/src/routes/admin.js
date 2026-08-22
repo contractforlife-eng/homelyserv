@@ -640,6 +640,31 @@ router.get('/payments', async (req, res) => {
     }
     const userMap = new Map(users.map(u => [u.id, u]));
 
+    const paymentWorkerIds = [...new Set(payments.map((payment) => payment.workerId).filter(isValidObjectId))];
+    const paymentWorkerProfiles = paymentWorkerIds.length > 0
+      ? await prisma.workerProfile.findMany({
+        where: { id: { in: paymentWorkerIds } },
+        select: { id: true, userId: true },
+      })
+      : [];
+    const paymentWorkerUserIds = [...new Set([
+      ...paymentWorkerIds,
+      ...paymentWorkerProfiles.map((profile) => profile.userId),
+    ].filter(isValidObjectId))];
+    const paymentWorkerUsers = paymentWorkerUserIds.length > 0
+      ? await prisma.user.findMany({
+        where: { id: { in: paymentWorkerUserIds } },
+        select: { id: true, role: true },
+      })
+      : [];
+    const activePaymentPremiumIds = await getActivePremiumUserIds([
+      ...users.map((user) => user.id),
+      ...paymentWorkerUsers.map((user) => user.id),
+    ]);
+    users.forEach((user) => { user.isPremium = activePaymentPremiumIds.has(String(user.id)); });
+    const paymentWorkerProfileMap = new Map(paymentWorkerProfiles.map((profile) => [profile.id, profile]));
+    const paymentWorkerUserMap = new Map(paymentWorkerUsers.map((user) => [user.id, user]));
+
     // One batched query provides sibling grant context for read-only stacked
     // entitlement ambiguity checks. No Subscription projection is consulted.
     const subscriptionUserIds = [...new Set(payments
@@ -676,6 +701,12 @@ router.get('/payments', async (req, res) => {
       return {
         ...paymentFields,
         User: userMap.get(payment.userId) || null,
+        workerIsPremium: (() => {
+          const profile = paymentWorkerProfileMap.get(payment.workerId);
+          const workerUserId = profile?.userId || payment.workerId;
+          const workerUser = paymentWorkerUserMap.get(workerUserId);
+          return workerUser?.role === 'WORKER' && activePaymentPremiumIds.has(String(workerUserId));
+        })(),
         refunds: (payment.Refunds || []).map((refund) => ({
           id: refund.id,
           type: refund.type,
@@ -1051,7 +1082,7 @@ const formatMessage = (msg) => {
 // Never PRIVATE. Private user chats remain completely isolated.
 router.post('/start-conversation', async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId, scope } = req.body;
     const adminId = String(req.userId);
 
     if (!userId) {
@@ -1066,6 +1097,13 @@ router.post('/start-conversation', async (req, res) => {
 
     if (!targetUser) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (scope === 'STAFF' && targetUser.role !== 'SUPPORT') {
+      return res.status(403).json({ error: 'Target is not an approved staff participant' });
+    }
+    if (scope === 'USERS' && !['EMPLOYER', 'WORKER'].includes(targetUser.role)) {
+      return res.status(403).json({ error: 'Target is not an Employer or Worker' });
     }
 
     // Determine conversation type:
@@ -1264,7 +1302,7 @@ router.get('/escalated-conversations', async (req, res) => {
 // shows only real member conversations.
 router.get('/support-conversations', async (req, res) => {
   try {
-    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
+    const STAFF_ROLES = new Set(['SUPPORT']);
 
     const conversationsMeta = await Conversation.find({
       type: 'SUPPORT',
@@ -1382,6 +1420,78 @@ router.get('/support-conversations', async (req, res) => {
   }
 });
 
+// GET /api/admin/user-conversations
+// List direct Admin <-> Employer/Worker conversations only.
+// Support <-> User monitoring remains on /support-conversations and is not
+// included here because Admin is not necessarily a participant there.
+router.get('/user-conversations', async (req, res) => {
+  try {
+    const adminId = String(req.userId);
+    const conversationsMeta = await Conversation.find({
+      participantIds: adminId,
+      $or: [
+        { status: 'ACTIVE' },
+        { status: { $exists: false } }
+      ]
+    }).sort({ lastMessageAt: -1 });
+
+    if (!conversationsMeta.length) {
+      return res.json({ success: true, count: 0, conversations: [] });
+    }
+
+    const conversationIds = conversationsMeta.map((conversation) => conversation.conversationId);
+    const lastMessages = await Message.find({ conversationId: { $in: conversationIds } }).sort({ createdAt: -1 });
+    const lastMessageMap = new Map();
+    for (const message of lastMessages) {
+      if (!lastMessageMap.has(message.conversationId)) lastMessageMap.set(message.conversationId, message);
+    }
+
+    const unreadAgg = await Message.aggregate([
+      { $match: { conversationId: { $in: conversationIds }, recipientId: adminId, read: false } },
+      { $group: { _id: '$conversationId', count: { $sum: 1 } } }
+    ]);
+    const unreadMap = new Map(unreadAgg.map((item) => [item._id, item.count]));
+
+    const counterpartIds = [...new Set(conversationsMeta
+      .map((conversation) => conversation.participantIds.find((id) => id !== adminId))
+      .filter(isValidObjectId))];
+    const users = counterpartIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: counterpartIds, }, role: { in: ['EMPLOYER', 'WORKER'] } },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true }
+        })
+      : [];
+    const activePremiumIds = await getActivePremiumUserIds(users.map((user) => user.id));
+    users.forEach((user) => { user.isPremium = activePremiumIds.has(String(user.id)); });
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    const conversations = conversationsMeta.flatMap((conversation) => {
+      const counterpartId = conversation.participantIds.find((id) => id !== adminId);
+      const userInfo = counterpartId ? userMap.get(counterpartId) : null;
+      const lastMessage = lastMessageMap.get(conversation.conversationId);
+      if (!userInfo || !lastMessage) return [];
+
+      return [{
+        id: conversation.conversationId,
+        type: 'USERS',
+        participantIds: conversation.participantIds,
+        userId: counterpartId,
+        user: userInfo,
+        lastMessage: lastMessage.text,
+        lastMessageTime: lastMessage.createdAt,
+        time: new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread: unreadMap.get(conversation.conversationId) || 0,
+        updatedAt: conversation.lastMessageAt || lastMessage.createdAt
+      }];
+    });
+
+    return res.json({ success: true, count: conversations.length, conversations });
+  } catch (error) {
+    console.error('Error fetching direct admin user conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch direct user conversations' });
+  }
+});
+
 // GET /api/admin/internal-messages
 // List internal staff conversations (Support <-> Admin).
 // Includes:
@@ -1416,10 +1526,12 @@ router.get('/internal-messages', async (req, res) => {
       ]
     }).sort({ lastMessageAt: -1 });
 
-    // Determine if a legacy SUPPORT conversation is truly staff-to-staff by
-    // resolving participant roles. Only keep those where this admin is a
-    // participant and the OTHER participant is staff.
+    // Resolve current canonical roles for every possible counterpart. Stored
+    // conversation type/metadata is not an inbox classification authority.
     const allParticipantIds = new Set();
+    for (const conv of internalMeta) {
+      for (const id of conv.staffIds || []) allParticipantIds.add(id);
+    }
     for (const conv of legacySupportMeta) {
       for (const id of conv.participantIds || []) allParticipantIds.add(id);
     }
@@ -1433,21 +1545,25 @@ router.get('/internal-messages', async (req, res) => {
       for (const u of users) roleMap.set(u.id, u.role);
     }
 
-    const filteredLegacy = legacySupportMeta.filter((conv) => {
-      const participantIds = conv.participantIds || [];
-      if (participantIds.length < 2) return false;
-      const otherId = participantIds.find(id => id !== userId);
+    const getOtherStaffId = (conv) => {
+      const ids = conv.type === 'INTERNAL' ? (conv.staffIds || []) : (conv.participantIds || []);
+      return ids.find(id => id !== userId) || null;
+    };
+
+    const isDirectSupportConversation = (conv) => {
+      const otherId = getOtherStaffId(conv);
       if (!otherId) return false;
       const otherRole = roleMap.get(otherId);
-      // Only include when the OTHER participant is staff and this user
-      // is also known to be staff (admin requesting this endpoint).
       return STAFF_ROLES.has(otherRole);
-    });
+    };
+
+    const filteredInternal = internalMeta.filter(isDirectSupportConversation);
+    const filteredLegacy = legacySupportMeta.filter(isDirectSupportConversation);
 
     // Merge both sets, avoiding duplicates by conversationId.
     const seen = new Set();
     const mergedMeta = [];
-    for (const conv of [...internalMeta, ...filteredLegacy]) {
+    for (const conv of [...filteredInternal, ...filteredLegacy]) {
       if (seen.has(conv.conversationId)) continue;
       seen.add(conv.conversationId);
       mergedMeta.push(conv);

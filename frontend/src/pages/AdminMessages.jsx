@@ -31,8 +31,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import {
-  getAdminSupportConversations,
   getInternalMessages,
+  getAdminUserConversations,
   getAdminConversationMessages,
   sendMessage,
   markMessagesAsRead,
@@ -54,19 +54,24 @@ import PageLoader from '../components/common/PageLoader';
 // ============================================================
 const SECTIONS = {
   SUPPORT: 'support',
-  INTERNAL: 'internal'
+  USERS: 'users'
 };
+const STAFF_TARGET_ROLES = ['SUPPORT'];
+const USER_TARGET_ROLES = ['EMPLOYER', 'WORKER'];
 
 // ============================================================
 // START CONVERSATION MODAL
 // ============================================================
-const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
+const StartConversationModal = ({ isOpen, onClose, onSelectUser, allowedRoles = [] }) => {
   const { t } = useTranslation();
   const [allUsers, setAllUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
+  const getRoleLabel = (role) => t(`userProfileView.roles.${String(role || '').toUpperCase()}`, {
+    defaultValue: t('adminMessagesPage.user')
+  });
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -74,9 +79,9 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
       const response = await api.get('/api/admin/users');
       const users = response.data?.users || [];
       // Exclude admins from the list (admin cannot start conversation with self)
-      const nonAdminUsers = users.filter(u => u.role !== 'ADMIN');
-      setAllUsers(nonAdminUsers);
-      setFilteredUsers(nonAdminUsers);
+      const eligibleUsers = users.filter(u => allowedRoles.includes(String(u.role || '').toUpperCase()));
+      setAllUsers(eligibleUsers);
+      setFilteredUsers(eligibleUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       setAllUsers([]);
@@ -84,7 +89,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [allowedRoles]);
 
   useEffect(() => {
     if (isOpen) {
@@ -97,7 +102,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
   useEffect(() => {
     let filtered = allUsers;
     if (roleFilter !== 'ALL') {
-      filtered = filtered.filter(u => u.role === roleFilter);
+      filtered = filtered.filter(u => String(u.role || '').toUpperCase() === roleFilter);
     }
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
@@ -172,7 +177,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
 
           {/* Role Filters */}
           <div className="flex gap-2">
-            {['ALL', 'WORKER', 'EMPLOYER', 'SUPPORT'].map((role) => (
+            {['ALL', ...allowedRoles].map((role) => (
               <button
                 key={role}
                 onClick={() => setRoleFilter(role)}
@@ -183,7 +188,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                 }`}
               >
                 {role === 'ALL' ? <Users size={12} /> : getRoleIcon(role)}
-                {role === 'ALL' ? t('adminMessagesPage.all') : t(`userProfileView.roles.${role}`)}
+                {role === 'ALL' ? t('adminMessagesPage.all') : getRoleLabel(role)}
               </button>
             ))}
           </div>
@@ -225,7 +230,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                     <p className="text-sm text-gray-400 truncate">{user.email}</p>
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mt-1 ${getRoleColorClass(user.role)}`}>
                       {getRoleIcon(user.role)}
-                      {t(`userProfileView.roles.${user.role}`, { defaultValue: t('adminMessagesPage.user') })}
+                      {getRoleLabel(user.role)}
                     </span>
                   </div>
                   <ChevronRight size={16} className="text-gray-500 flex-shrink-0" />
@@ -250,6 +255,21 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
 // ============================================================
 // MAIN ADMIN MESSAGES COMPONENT
 // ============================================================
+const normalizeParticipant = (participant) => {
+  if (!participant) return participant;
+  return {
+    ...participant,
+    isPremium: participant.isPremium === true,
+  };
+};
+
+const normalizeConversation = (conversation) => ({
+  ...conversation,
+  inboxScope: conversation.inboxScope || (conversation.otherStaffId ? 'STAFF' : undefined),
+  user: normalizeParticipant(conversation.user),
+  otherStaff: normalizeParticipant(conversation.otherStaff),
+});
+
 const AdminMessages = () => {
   const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -260,7 +280,7 @@ const AdminMessages = () => {
 
   const [activeSection, setActiveSection] = useState(SECTIONS.SUPPORT);
   const [supportConversations, setSupportConversations] = useState([]);
-  const [internalConversations, setInternalConversations] = useState([]);
+  const [userConversations, setUserConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -299,17 +319,33 @@ const AdminMessages = () => {
     if (!authUser?.id) return;
 
     try {
-      const [support, internal] = await Promise.all([
-        getAdminSupportConversations(),
-        getInternalMessages()
+      const [internalResult, usersResult] = await Promise.allSettled([
+        getInternalMessages(),
+        getAdminUserConversations()
       ]);
 
-      setSupportConversations(support);
-      setInternalConversations(internal);
+      const internal = internalResult.status === 'fulfilled' ? internalResult.value : [];
+      const users = usersResult.status === 'fulfilled' ? usersResult.value : [];
+
+      if (internalResult.status === 'rejected') {
+        console.error('Error loading Admin Support conversations:', internalResult.reason);
+      }
+      if (usersResult.status === 'rejected') {
+        console.error('Error loading Admin Users conversations:', usersResult.reason);
+      }
+
+      const normalizedInternal = internal.map((conversation) => normalizeConversation({
+        ...conversation,
+        inboxScope: 'STAFF'
+      }));
+      const normalizedUsers = users.map(normalizeConversation);
+
+      setSupportConversations(normalizedInternal);
+      setUserConversations(normalizedUsers);
     } catch (error) {
       console.error('Error loading admin conversations:', error);
       setSupportConversations([]);
-      setInternalConversations([]);
+      setUserConversations([]);
     }
   }, [authUser]);
 
@@ -333,12 +369,12 @@ const AdminMessages = () => {
       if (authUser?.id) {
         markMessagesAsRead(conversation.id, authUser.id).then((marked) => {
           if (!marked) return;
-          if (conversation.type === 'SUPPORT') {
+          if (conversation.type === 'INTERNAL') {
             setSupportConversations(prev =>
               prev.map(c => c.id === conversation.id ? { ...c, unread: 0 } : c)
             );
-          } else if (conversation.type === 'INTERNAL') {
-            setInternalConversations(prev =>
+          } else if (conversation.type === 'USERS') {
+            setUserConversations(prev =>
               prev.map(c => c.id === conversation.id ? { ...c, unread: 0 } : c)
             );
           }
@@ -529,12 +565,12 @@ const AdminMessages = () => {
             const marked = await markMessagesAsRead(selectedConversation.id, authUser.id);
             if (marked) {
               // Immediately update local unread state without waiting for polling
-              if (selectedConversation.type === 'SUPPORT') {
+              if (selectedConversation.type === 'INTERNAL') {
                 setSupportConversations(prev =>
                   prev.map(c => c.id === selectedConversation.id ? { ...c, unread: 0 } : c)
                 );
-              } else if (selectedConversation.type === 'INTERNAL') {
-                setInternalConversations(prev =>
+              } else if (selectedConversation.type === 'USERS') {
+                setUserConversations(prev =>
                   prev.map(c => c.id === selectedConversation.id ? { ...c, unread: 0 } : c)
                 );
               }
@@ -552,11 +588,12 @@ const AdminMessages = () => {
   // ============================================================
   // START CONVERSATION
   // ============================================================
-  const handleStartConversation = async (userId) => {
+  const handleStartConversation = async (userId, requestedScope = null) => {
     if (!userId || !authUser) return;
 
     try {
-      const result = await startAdminConversation(userId);
+    const scope = requestedScope || (activeSection === SECTIONS.SUPPORT ? 'STAFF' : 'USERS');
+    const result = await startAdminConversation(userId, scope);
       if (!result?.conversationId) {
         alert(t.errors.start);
         return;
@@ -569,27 +606,39 @@ const AdminMessages = () => {
 
       const conversation = {
         id: result.conversationId,
-        type: conv.type || 'SUPPORT',
+        type: scope === 'USERS' ? 'USERS' : (conv.type || 'INTERNAL'),
+        inboxScope: scope === 'STAFF' ? 'STAFF' : 'USERS',
         participantIds: conv.participantIds || [],
         supportAgentId: conv.supportAgentId || null,
+        otherStaffId: scope === 'STAFF'
+          ? (conv.staffIds || []).find(id => id !== String(authUser.id)) || String(userId)
+          : null,
         user: targetUser ? {
           id: targetUser._id || targetUser.id,
           fullName: targetUser.fullName || t.user,
           role: targetUser.role || 'USER',
-          image: targetUser.profileImage || targetUser.image || null
+          image: targetUser.profileImage || targetUser.image || null,
+          isPremium: targetUser.isPremium === true
+        } : null,
+        otherStaff: targetUser && scope === 'STAFF' ? {
+          id: targetUser._id || targetUser.id,
+          fullName: targetUser.fullName || t.staff,
+          role: targetUser.role || 'SUPPORT',
+          image: targetUser.profileImage || targetUser.image || null,
+          isPremium: false
         } : null,
         lastMessage: result.existing ? t.existingConversation : t.officialConversation,
         lastMessageTime: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
-      if (conversation.type === 'SUPPORT') {
+      if (conversation.type === 'INTERNAL') {
         setSupportConversations(prev => {
           const exists = prev.some(c => c.id === conversation.id);
           return exists ? prev : [conversation, ...prev];
         });
-      } else if (conversation.type === 'INTERNAL') {
-        setInternalConversations(prev => {
+      } else if (conversation.type === 'USERS') {
+        setUserConversations(prev => {
           const exists = prev.some(c => c.id === conversation.id);
           return exists ? prev : [conversation, ...prev];
         });
@@ -613,11 +662,14 @@ const AdminMessages = () => {
 
     autoOpenDoneRef.current = true;
 
-    // Show the Support section so the opened conversation is visible in context
-    setActiveSection(SECTIONS.SUPPORT);
-
-    // Reuse the existing start/open flow (creates if missing, refreshes, opens)
-    handleStartConversation(targetUserId);
+    api.get(`/api/admin/users/${targetUserId}`).then((response) => {
+      const role = response.data?.user?.role;
+      const scope = USER_TARGET_ROLES.includes(role) ? 'USERS' : 'STAFF';
+      setActiveSection(scope === 'USERS' ? SECTIONS.USERS : SECTIONS.SUPPORT);
+      handleStartConversation(targetUserId, scope);
+    }).catch(() => {
+      handleStartConversation(targetUserId, 'USERS');
+    });
 
     // Clear the navigation state so it doesn't re-trigger on refresh/back
     navigate(location.pathname, { replace: true, state: {} });
@@ -635,10 +687,10 @@ const AdminMessages = () => {
       let recipientId = null;
       let recipientName = 'User';
 
-      if (selectedConversation.type === 'INTERNAL') {
-        recipientId = selectedConversation.otherStaffId;
+      if (selectedConversation.inboxScope === 'STAFF') {
+        recipientId = selectedConversation.otherStaffId || null;
         recipientName = selectedConversation.otherStaff?.fullName || 'Staff';
-      } else if (selectedConversation.type === 'SUPPORT') {
+      } else if (selectedConversation.type === 'USERS') {
         // For SUPPORT conversations, the recipient is the user participant
         // (not the support agent, which may be the admin themselves)
         const userParticipant = (selectedConversation.participantIds || [])
@@ -709,10 +761,10 @@ const AdminMessages = () => {
       const success = await closeConversation(selectedConversation.id);
       if (success) {
         // Remove from local list immediately (unread badge updates automatically)
-        if (selectedConversation.type === 'SUPPORT') {
+        if (selectedConversation.type === 'INTERNAL') {
           setSupportConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
-        } else if (selectedConversation.type === 'INTERNAL') {
-          setInternalConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+        } else if (selectedConversation.type === 'USERS') {
+          setUserConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
         }
         // Clear selected conversation and messages
         setSelectedConversation(null);
@@ -762,7 +814,7 @@ const AdminMessages = () => {
   };
 
   const filteredSupport = filterConversations(supportConversations);
-  const filteredInternal = filterConversations(internalConversations);
+  const filteredUsers = filterConversations(userConversations);
 
   // ============================================================
   // SECTION NAVIGATION
@@ -770,18 +822,18 @@ const AdminMessages = () => {
   const sections = [
     {
       id: SECTIONS.SUPPORT,
-      label: t.support,
-      desc: t.supportDesc,
+      label: i18nT('adminMessagesPage.support'),
+      desc: i18nT('adminMessagesPage.internalDesc'),
       icon: Shield,
       count: supportConversations.reduce((sum, c) => sum + (c.unread || 0), 0),
       color: 'green'
     },
     {
-      id: SECTIONS.INTERNAL,
-      label: t.internal,
-      desc: t.internalDesc,
+      id: SECTIONS.USERS,
+      label: i18nT('adminSidebar.users'),
+      desc: i18nT('adminMessagesPage.user'),
       icon: Users,
-      count: internalConversations.reduce((sum, c) => sum + (c.unread || 0), 0),
+      count: userConversations.reduce((sum, c) => sum + (c.unread || 0), 0),
       color: 'yellow'
     }
   ];
@@ -806,7 +858,7 @@ const AdminMessages = () => {
     let avatarRole = 'USER';
     let avatarImage = null;
 
-    if (type === 'SUPPORT') {
+    if (type === 'USERS') {
       title = conv.user?.fullName || t.user;
       subtitle = conv.lastMessage || '';
       avatarName = conv.user?.fullName || t.user;
@@ -843,9 +895,10 @@ const AdminMessages = () => {
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">
             <UserDisplayName
-              user={type === 'SUPPORT' ? conv.user : conv.otherStaff}
+              user={type === 'USERS' ? conv.user : conv.otherStaff}
               name={title}
               role={avatarRole}
+              isPremium={(type === 'USERS' ? conv.user : conv.otherStaff)?.isPremium === true}
               size="sm"
               defaultNameClassName="font-medium text-white"
             />
@@ -853,11 +906,6 @@ const AdminMessages = () => {
           </div>
           <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
           <div className="flex items-center gap-2 mt-1">
-            {type === 'SUPPORT' && conv.supportAgent && (
-              <span className="text-xs text-gray-500">
-                {conv.supportAgent.fullName}
-              </span>
-            )}
             {conv.unread > 0 && (
               <span className="px-1.5 py-0.5 bg-yellow-500 text-black text-xs rounded-full font-medium">
                 {conv.unread}
@@ -898,13 +946,13 @@ const AdminMessages = () => {
     switch (activeSection) {
       case SECTIONS.SUPPORT:
         return filteredSupport.length === 0
-          ? renderEmptyState(t.noSupport)
-          : filteredSupport.map(conv => renderConversationItem(conv, 'SUPPORT'));
-
-      case SECTIONS.INTERNAL:
-        return filteredInternal.length === 0
           ? renderEmptyState(t.noInternal)
-          : filteredInternal.map(conv => renderConversationItem(conv, 'INTERNAL'));
+          : filteredSupport.map(conv => renderConversationItem(conv, 'INTERNAL'));
+
+      case SECTIONS.USERS:
+        return filteredUsers.length === 0
+          ? renderEmptyState(t.noConversations)
+          : filteredUsers.map(conv => renderConversationItem(conv, 'USERS'));
 
       default:
         return null;
@@ -936,11 +984,9 @@ const AdminMessages = () => {
     let chatAvatarRole = 'USER';
     let chatAvatarImage = null;
 
-    if (selectedConversation.type === 'SUPPORT') {
+    if (selectedConversation.type === 'USERS') {
       chatTitle = selectedConversation.user?.fullName || t.user;
-      chatSubtitle = selectedConversation.supportAgent?.fullName
-        ? `${t.supportAgent}: ${selectedConversation.supportAgent.fullName}`
-        : t.support;
+      chatSubtitle = i18nT('adminSidebar.users');
       chatAvatarName = selectedConversation.user?.fullName || t.user;
       chatAvatarRole = selectedConversation.user?.role || 'USER';
       chatAvatarImage = getUserImage(selectedConversation.user);
@@ -966,9 +1012,12 @@ const AdminMessages = () => {
             />
             <div>
               <UserDisplayName
-                user={selectedConversation.type === 'SUPPORT' ? selectedConversation.user : selectedConversation.otherStaff}
+                user={selectedConversation.type === 'USERS' ? selectedConversation.user : selectedConversation.otherStaff}
                 name={chatTitle}
                 role={chatAvatarRole}
+                isPremium={(selectedConversation.type === 'USERS'
+                  ? selectedConversation.user
+                  : selectedConversation.otherStaff)?.isPremium === true}
                 size="sm"
                 defaultNameClassName="font-medium text-white"
               />
@@ -1227,6 +1276,7 @@ const AdminMessages = () => {
         isOpen={showStartConversation}
         onClose={() => setShowStartConversation(false)}
         onSelectUser={handleStartConversation}
+        allowedRoles={activeSection === SECTIONS.SUPPORT ? STAFF_TARGET_ROLES : USER_TARGET_ROLES}
       />
 
       {/* Close Confirmation Dialog */}

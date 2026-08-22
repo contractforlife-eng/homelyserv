@@ -8,6 +8,7 @@ import { CloudinaryConfigurationError, uploadFromBuffer } from '../utils/cloudin
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import { withRegistrationGeography } from '../services/registrationGeographyService.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 import {
   createOrReuseAccountDeletionRequest,
   serializeAccountDeletionRequest
@@ -609,6 +610,7 @@ export const getAllUsers = async (req, res) => {
     const users = await User.find({})
       .select('-password')
       .sort({ createdAt: -1 });
+    const activePremiumIds = await getActivePremiumUserIds(users.map((user) => String(user._id)));
 
     console.log(`✅ Auth controller: Found ${users.length} users`);
 
@@ -618,6 +620,8 @@ export const getAllUsers = async (req, res) => {
       users: users.map(user => {
         const userObj = user.toObject();
         userObj.id = userObj._id;
+        userObj.isPremium = ['EMPLOYER', 'WORKER'].includes(userObj.role)
+          && activePremiumIds.has(String(userObj.id));
         delete userObj._id;
         return userObj;
       })
@@ -648,6 +652,9 @@ export const getUserById = async (req, res) => {
 
     const userData = user.toObject();
     userData.id = userData._id;
+    const activePremiumIds = await getActivePremiumUserIds([String(userData.id)]);
+    userData.isPremium = ['EMPLOYER', 'WORKER'].includes(userData.role)
+      && activePremiumIds.has(String(userData.id));
     delete userData._id;
 
     res.json({

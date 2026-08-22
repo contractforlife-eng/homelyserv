@@ -468,9 +468,13 @@ const AdminDashboard = () => {
           <div key={payment.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-yellow-500/10 hover:border-yellow-500/30 transition">
             <UserAvatar name={payment.User?.fullName || payment.employerName || payment.userEmail || 'Unknown'} image={payment.User?.image} role={payment.User?.role || 'USER'} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
-                {payment.User?.fullName || payment.employerName || payment.userEmail || 'Unknown'}
-              </p>
+              <UserDisplayName
+                user={payment.User}
+                name={payment.employerName || payment.userEmail || 'Unknown'}
+                role={payment.User?.role || 'USER'}
+                size="sm"
+                defaultNameClassName="font-medium text-gray-900 dark:text-white"
+              />
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {payment.metadata?.jobTitle || payment.workerName || payment.jobTitle || ''}
               </p>
@@ -512,11 +516,22 @@ const AdminDashboard = () => {
           <div key={hire.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-yellow-500/10 hover:border-yellow-500/30 transition">
             <UserAvatar name={hire.WorkerProfile?.User?.fullName || i18nT('adminCommand.worker')} image={hire.WorkerProfile?.User?.image} role={hire.WorkerProfile?.User?.role || 'WORKER'} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
-                {hire.WorkerProfile?.User?.fullName || i18nT('adminCommand.worker')}
-              </p>
+              <UserDisplayName
+                user={hire.WorkerProfile?.User}
+                name={i18nT('adminCommand.worker')}
+                role="WORKER"
+                size="sm"
+                defaultNameClassName="font-medium text-gray-900 dark:text-white"
+              />
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {i18nT('adminCommand.employerName', { name: hire.User?.fullName || i18nT('adminCommand.unknown') })}
+                <span>{i18nT('adminCommand.employerName', { name: '' })}</span>
+                <UserDisplayName
+                  user={hire.User}
+                  name={i18nT('adminCommand.unknown')}
+                  role="EMPLOYER"
+                  size="sm"
+                  defaultNameClassName="text-xs text-gray-500 dark:text-gray-400"
+                />
               </p>
             </div>
             <div className="text-right flex-shrink-0">

@@ -273,10 +273,17 @@ export const escalateConversation = async (conversationId, reason, complaintId =
 // Start an official HomelyServ administrative conversation with a user.
 // Conversation type is SUPPORT (for WORKER/EMPLOYER/USER) or INTERNAL (for SUPPORT).
 // Never PRIVATE. Private user chats remain completely isolated.
-export const startAdminConversation = async (userId) => {
+export const startAdminConversation = async (userId, scope = null) => {
   if (!userId) return null;
-  const response = await api.post('/api/admin/start-conversation', { userId });
+  const response = await api.post('/api/admin/start-conversation', { userId, scope });
   return response.data;
+};
+
+// GET /api/admin/user-conversations
+// Direct Admin <-> Employer/Worker conversations only.
+export const getAdminUserConversations = async () => {
+  const response = await api.get('/api/admin/user-conversations');
+  return response.data?.conversations || [];
 };
 
 export const debugChatData = async (userId) => {

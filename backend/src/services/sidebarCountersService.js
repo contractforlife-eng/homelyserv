@@ -62,6 +62,28 @@ export const buildEmployerPaymentsCounterWhere = (userId) => ({
   ],
 });
 
+export const buildWorkerActionableEarningsWhere = (userId, hireIds = []) => ({
+  workerId: String(userId),
+  hireId: { in: hireIds.map(String) },
+  status: 'PENDING',
+});
+
+export const buildSupportComplaintsCounterWhere = (supportId) => ({
+  OR: [
+    {
+      status: 'NEW',
+      OR: [
+        { assignedSupport: null },
+        { assignedSupport: String(supportId) },
+      ],
+    },
+    {
+      assignedSupport: String(supportId),
+      status: { in: ['OPEN', 'IN_PROGRESS'] },
+    },
+  ],
+});
+
 // Guard: legacy tokens may carry non-ObjectId ids (e.g. emails or
 // "user_123" strings) which crash Prisma ObjectId filters (P2023).
 const isValidObjectId = (id) =>
@@ -136,15 +158,28 @@ export const getSidebarCounters = async (userId, role) => {
       console.error('❌ SidebarCounters: worker profile lookup failed:', error.message);
     }
 
+    let activeHireIds = [];
+    if (profileId) {
+      try {
+        const activeHires = await prisma.hire.findMany({
+          where: { workerId: profileId, status: 'active' },
+          select: { id: true },
+        });
+        activeHireIds = activeHires.map((hire) => hire.id);
+      } catch (error) {
+        console.error('â‌Œ SidebarCounters: worker active hire lookup failed:', error.message);
+      }
+    }
+
     const [offers, hires, payments, complaints] = await Promise.all([
       profileId
         ? safeCount('offers', prisma.offer.count({
             where: { workerId: profileId, status: 'pending' },
           }))
         : 0,
-      profileId
-        ? safeCount('hires', prisma.hire.count({
-            where: { workerId: profileId, status: 'active' },
+      activeHireIds.length > 0
+        ? safeCount('hires', prisma.workerEarning.count({
+            where: buildWorkerActionableEarningsWhere(uid, activeHireIds),
           }))
         : 0,
       safeCount('payments', prisma.payment.count({
@@ -214,16 +249,9 @@ export const getSidebarCounters = async (userId, role) => {
   // SUPPORT
   // ============================================================
   if (userRole === 'SUPPORT') {
-    const [newTickets, assignedNeedingResponse] = await Promise.all([
-      safeCount('complaints.new', prisma.complaint.count({
-        where: { status: 'NEW' },
-      })),
-      safeCount('complaints.assigned', prisma.complaint.count({
-        where: { assignedSupport: uid, status: { in: ['OPEN', 'IN_PROGRESS'] } },
-      })),
-    ]);
-
-    counters.complaints = newTickets + assignedNeedingResponse;
+    counters.complaints = await safeCount('complaints', prisma.complaint.count({
+      where: buildSupportComplaintsCounterWhere(uid),
+    }));
     return counters;
   }
 
@@ -237,4 +265,6 @@ export default {
   buildEmployerHiresCounterWhere,
   buildWorkerPaymentsCounterWhere,
   buildEmployerPaymentsCounterWhere,
+  buildWorkerActionableEarningsWhere,
+  buildSupportComplaintsCounterWhere,
 };
