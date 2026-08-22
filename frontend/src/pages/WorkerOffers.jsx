@@ -683,10 +683,22 @@ const WorkerOffers = () => {
                   }
                   if (earning.status === 'EARNED') {
                     return (
-                      <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
-                        <CheckCircle size={14} />
-                        {t('workerOffers.workPeriodConfirmed')}
-                      </span>
+                      <>
+                        <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
+                          <CheckCircle size={14} />
+                          {t('workerOffers.workPeriodConfirmed')}
+                        </span>
+                        {offer.employerId && (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/employer-profile-view/${encodeURIComponent(String(offer.employerId))}`)}
+                              className="px-4 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
+                            >
+                              <Building2 size={14} />
+                              {t('workerOffers.viewEmployerProfile')}
+                            </button>
+                          )}
+                      </>
                     );
                   }
                   if (earning.status === 'DISPUTED') {

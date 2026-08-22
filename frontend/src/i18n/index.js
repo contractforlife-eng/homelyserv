@@ -4015,6 +4015,12 @@ tr.translation.myHiresPage.payment.homelyServFeePaid = 'HomelyServ ücreti öden
 de.translation.myHiresPage.payment.homelyServFeePaid = 'HomelyServ-Gebühr bezahlt';
 
 en.translation.workerOffers.homelyServFeePaid = 'HomelyServ Fee Paid';
+en.translation.workerOffers.viewEmployerProfile = 'View Employer Profile';
+ar.translation.workerOffers.viewEmployerProfile = 'عرض ملف صاحب العمل';
+fr.translation.workerOffers.viewEmployerProfile = 'Voir le profil de l’employeur';
+ru.translation.workerOffers.viewEmployerProfile = 'Посмотреть профиль работодателя';
+tr.translation.workerOffers.viewEmployerProfile = 'İşveren Profilini Gör';
+de.translation.workerOffers.viewEmployerProfile = 'Arbeitgeberprofil ansehen';
 ar.translation.workerOffers.homelyServFeePaid = 'تم دفع رسوم HomelyServ';
 fr.translation.workerOffers.homelyServFeePaid = 'Frais HomelyServ payés';
 ru.translation.workerOffers.homelyServFeePaid = 'Комиссия HomelyServ оплачена';
