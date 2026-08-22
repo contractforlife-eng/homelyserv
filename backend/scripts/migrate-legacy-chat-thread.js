@@ -55,13 +55,15 @@ const readState = async (session = null) => {
     }),
   ]);
 
-  return buildLegacyChatThreadPlan({
+  const report = buildLegacyChatThreadPlan({
     conversation,
     canonicalConversation,
     messages,
     canonicalMessageCount,
     workerProfile,
   });
+
+  return { report, conversation, messages };
 };
 
 const printReport = (report) => {
@@ -75,7 +77,8 @@ const main = async () => {
 
   await mongoose.connect(process.env.DATABASE_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv');
   try {
-    const report = await readState();
+    const initialState = await readState();
+    const report = initialState.report;
     printReport({ ...report, mode: APPLY ? 'apply' : 'dry-run' });
 
     if (!APPLY || report.status === 'already_migrated') return;
@@ -84,24 +87,40 @@ const main = async () => {
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
-        const transactionReport = await readState(session);
-        if (!transactionReport.preconditionsPassed) {
-          throw new Error(`Preconditions changed before apply: ${transactionReport.reasons.join(', ')}`);
+        const transactionState = await readState(session);
+        if (!transactionState.report.preconditionsPassed) {
+          throw new Error(`Preconditions changed before apply: ${transactionState.report.reasons.join(', ')}`);
         }
 
         await applyLegacyChatThreadPlan({
           conversationModel: Conversation,
           messageModel: Message,
+          messages: transactionState.messages,
           session,
         });
 
-        const finalConversation = await Conversation.findOne({
+        const [finalConversation, finalLegacyConversationCount, finalMessageCount, finalLegacyIdentityCount] = await Promise.all([
+          Conversation.findOne({
           conversationId: LEGACY_CHAT_THREAD.canonicalConversationId,
-        }).session(session).lean();
-        const finalMessageCount = await Message.countDocuments({
-          conversationId: LEGACY_CHAT_THREAD.canonicalConversationId,
-        }).session(session);
-        if (!finalConversation || finalMessageCount !== LEGACY_CHAT_THREAD.expectedMessageCount) {
+          }).session(session).lean(),
+          Conversation.countDocuments({
+            conversationId: LEGACY_CHAT_THREAD.legacyConversationId,
+          }).session(session),
+          Message.countDocuments({
+            conversationId: LEGACY_CHAT_THREAD.canonicalConversationId,
+          }).session(session),
+          Message.countDocuments({
+            conversationId: LEGACY_CHAT_THREAD.canonicalConversationId,
+            $or: [
+              { senderId: LEGACY_CHAT_THREAD.workerProfileId },
+              { recipientId: LEGACY_CHAT_THREAD.workerProfileId },
+            ],
+          }).session(session),
+        ]);
+        if (!finalConversation
+          || finalLegacyConversationCount !== 0
+          || finalMessageCount !== LEGACY_CHAT_THREAD.expectedMessageCount
+          || finalLegacyIdentityCount !== 0) {
           throw new Error('Post-write verification failed');
         }
       });

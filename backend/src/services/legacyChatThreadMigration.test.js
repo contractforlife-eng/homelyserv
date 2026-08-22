@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   LEGACY_CHAT_THREAD,
   buildLegacyChatThreadPlan,
+  applyLegacyChatThreadPlan,
   executeLegacyChatThreadMigration,
 } from './legacyChatThreadMigration.js';
 
@@ -116,4 +117,64 @@ test('dry-run never invokes the write operation', async () => {
 
   assert.equal(report.applied, false);
   assert.equal(writes, 0);
+});
+
+test('apply uses explicit $set updates and preserves each message identity', async () => {
+  const conversationUpdates = [];
+  const messageUpdates = [];
+  const conversationModel = {
+    updateOne: async (...args) => {
+      conversationUpdates.push(args);
+      return { matchedCount: 1, modifiedCount: 1 };
+    },
+  };
+  const messageModel = {
+    updateOne: async (...args) => {
+      messageUpdates.push(args);
+      return { matchedCount: 1, modifiedCount: 1 };
+    },
+  };
+
+  const result = await applyLegacyChatThreadPlan({
+    conversationModel,
+    messageModel,
+    messages: makeMessages(),
+    session: { id: 'test-session' },
+  });
+
+  assert.equal(result.messagesMatched, 9);
+  assert.equal(conversationUpdates.length, 1);
+  assert.equal(messageUpdates.length, 9);
+  assert.ok(messageUpdates.every(([, update]) => !Array.isArray(update)));
+  assert.ok(messageUpdates.every(([, update, options]) =>
+    update.$set.conversationId === LEGACY_CHAT_THREAD.canonicalConversationId
+      && options.timestamps === false
+  ));
+  assert.equal(messageUpdates[0][1].$set.recipientId, LEGACY_CHAT_THREAD.workerUserId);
+  assert.equal(messageUpdates[1][1].$set.senderId, LEGACY_CHAT_THREAD.workerUserId);
+  assert.deepEqual(messageUpdates.map(([filter]) => filter._id), makeMessages().map((message) => message._id));
+});
+
+test('a mid-transaction apply failure is surfaced for transaction rollback', async () => {
+  let writes = 0;
+  const messageModel = {
+    updateOne: async () => {
+      writes += 1;
+      if (writes === 5) throw new Error('simulated write failure');
+      return { matchedCount: 1, modifiedCount: 1 };
+    },
+  };
+
+  await assert.rejects(
+    applyLegacyChatThreadPlan({
+      conversationModel: {
+        updateOne: async () => ({ matchedCount: 1, modifiedCount: 1 }),
+      },
+      messageModel,
+      messages: makeMessages(),
+      session: { id: 'test-session' },
+    }),
+    /simulated write failure/,
+  );
+  assert.equal(writes, 5);
 });

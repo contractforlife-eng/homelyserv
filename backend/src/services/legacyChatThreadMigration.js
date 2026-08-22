@@ -102,6 +102,7 @@ export const buildLegacyChatThreadPlan = ({
 export const applyLegacyChatThreadPlan = async ({
   conversationModel,
   messageModel,
+  messages = [],
   session,
 } = {}) => {
   if (!conversationModel || !messageModel || !session) {
@@ -126,40 +127,38 @@ export const applyLegacyChatThreadPlan = async ({
     throw new Error('Legacy conversation changed before migration');
   }
 
-  const messageResult = await messageModel.updateMany(
-    { conversationId: LEGACY_CHAT_THREAD.legacyConversationId },
-    [
-      {
-        $set: {
-          conversationId: LEGACY_CHAT_THREAD.canonicalConversationId,
-          senderId: {
-            $cond: [
-              { $eq: ['$senderId', LEGACY_CHAT_THREAD.workerProfileId] },
-              LEGACY_CHAT_THREAD.workerUserId,
-              '$senderId',
-            ],
-          },
-          recipientId: {
-            $cond: [
-              { $eq: ['$recipientId', LEGACY_CHAT_THREAD.workerProfileId] },
-              LEGACY_CHAT_THREAD.workerUserId,
-              '$recipientId',
-            ],
-          },
-        },
-      },
-    ],
-    { session, timestamps: false },
-  );
-
-  if (messageResult.matchedCount !== LEGACY_CHAT_THREAD.expectedMessageCount) {
+  if (messages.length !== LEGACY_CHAT_THREAD.expectedMessageCount) {
     throw new Error('Legacy message count changed before migration');
+  }
+
+  let messagesModified = 0;
+  for (const message of messages) {
+    const data = { conversationId: LEGACY_CHAT_THREAD.canonicalConversationId };
+    if (String(message.senderId) === LEGACY_CHAT_THREAD.workerProfileId) {
+      data.senderId = LEGACY_CHAT_THREAD.workerUserId;
+    }
+    if (String(message.recipientId) === LEGACY_CHAT_THREAD.workerProfileId) {
+      data.recipientId = LEGACY_CHAT_THREAD.workerUserId;
+    }
+
+    const result = await messageModel.updateOne(
+      {
+        _id: message._id,
+        conversationId: LEGACY_CHAT_THREAD.legacyConversationId,
+      },
+      { $set: data },
+      { session, timestamps: false },
+    );
+    if (result.matchedCount !== 1) {
+      throw new Error(`Legacy message changed before migration: ${message._id}`);
+    }
+    messagesModified += result.modifiedCount || 0;
   }
 
   return {
     conversationMatched: conversationResult.matchedCount,
-    messagesMatched: messageResult.matchedCount,
-    messagesModified: messageResult.modifiedCount,
+    messagesMatched: messages.length,
+    messagesModified,
   };
 };
 
