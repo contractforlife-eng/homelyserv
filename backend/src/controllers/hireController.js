@@ -439,7 +439,7 @@ export const getMyHires = async (req, res) => {
 
       return {
         ...hire,
-        workerName: offer?.workerName || workerUser?.fullName || null,
+        workerName: workerUser?.fullName || offer?.workerName || null,
         workerEmail: offer?.workerEmail || workerUser?.email || null,
         workerPhone: offer?.workerPhone || workerUser?.phone || null,
         workerLocation: offer?.workerLocation || workerUser?.city || null,
