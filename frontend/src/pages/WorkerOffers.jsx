@@ -691,7 +691,7 @@ const WorkerOffers = () => {
                         {offer.employerId && (
                             <button
                               type="button"
-                              onClick={() => navigate(`/employer-profile-view/${encodeURIComponent(String(offer.employerId))}`)}
+                              onClick={() => navigate(`/employer-profile-view/${encodeURIComponent(String(offer.employerId))}`, { state: { from: 'offers' } })}
                               className="px-4 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
                             >
                               <Building2 size={14} />

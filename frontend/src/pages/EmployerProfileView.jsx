@@ -11,6 +11,11 @@ const EmployerProfileView = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const backLabelKey = location.state?.from === 'offers'
+    ? 'messagesProfile.backOffers'
+    : location.state?.from === 'messages'
+      ? 'messagesProfile.backMessages'
+      : 'messagesProfile.backFallback';
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +67,7 @@ const EmployerProfileView = () => {
           onClick={() => navigate(-1)}
           className="mb-4 text-sm text-red-600 hover:text-red-700"
         >
-          {t('messagesProfile.back')}
+          {t(backLabelKey)}
         </button>
 
         {loading && <p className="text-gray-600 dark:text-gray-300">{t('messagesProfile.loading')}</p>}

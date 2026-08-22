@@ -335,7 +335,7 @@ const WorkerMessages = () => {
     try {
       const response = await api.get(`/api/employers/profile/${encodeURIComponent(employerId)}`);
       navigate(`/employer-profile-view/${encodeURIComponent(employerId)}`, {
-        state: { employer: response.data?.user || null },
+        state: { employer: response.data?.user || null, from: 'messages' },
       });
     } catch (error) {
       console.error('Error loading employer profile:', error);

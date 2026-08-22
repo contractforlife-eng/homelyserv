@@ -4725,6 +4725,20 @@ for (const [code, copy] of Object.entries(MESSAGES_PROFILE_COPY)) {
   ({ en, ar, fr, ru, tr, de }[code]).translation.messagesProfile = copy;
 }
 
+const EMPLOYER_PROFILE_BACK_COPY = {
+  en: { backOffers: 'Back to Offers', backMessages: 'Back to Messages', backFallback: 'Back' },
+  ar: { backOffers: 'العودة إلى العروض', backMessages: 'العودة إلى الرسائل', backFallback: 'رجوع' },
+  fr: { backOffers: 'Retour aux offres', backMessages: 'Retour aux messages', backFallback: 'Retour' },
+  ru: { backOffers: 'Назад к предложениям', backMessages: 'Назад к сообщениям', backFallback: 'Назад' },
+  tr: { backOffers: 'Tekliflere Dön', backMessages: 'Mesajlara Dön', backFallback: 'Geri' },
+  de: { backOffers: 'Zurück zu den Angeboten', backMessages: 'Zurück zu Nachrichten', backFallback: 'Zurück' },
+};
+
+for (const [code, copy] of Object.entries(EMPLOYER_PROFILE_BACK_COPY)) {
+  const translation = ({ en, ar, fr, ru, tr, de }[code]).translation;
+  translation.messagesProfile = { ...translation.messagesProfile, ...copy };
+}
+
 const resources = {
   en,
   ar,
