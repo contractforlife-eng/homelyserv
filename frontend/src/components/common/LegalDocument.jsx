@@ -83,7 +83,7 @@ const Block = ({ block }) => {
   }
 };
 
-const LegalDocument = ({ content }) => {
+const LegalDocument = ({ content, showDeleteAccountLink = false }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [language, setLanguage] = useState(() => {
@@ -166,6 +166,13 @@ const LegalDocument = ({ content }) => {
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 rounded-xl p-4 mt-4">
             <p className="text-sm text-red-700 dark:text-red-300 leading-relaxed">{data.notice}</p>
           </div>
+          {showDeleteAccountLink && (
+            <p className="mt-5 text-sm text-gray-600 dark:text-gray-300">
+              <Link to="/delete-account" className="text-red-600 hover:text-red-700 hover:underline font-medium">
+                {t('legalLinks.deleteAccount')}
+              </Link>
+            </p>
+          )}
         </article>
       </main>
 

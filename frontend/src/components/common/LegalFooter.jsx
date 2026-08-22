@@ -59,13 +59,14 @@ const LegalFooter = ({ className = '' }) => {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || 'en').toLowerCase();
   const links = FOOTER_LINKS[lang] || FOOTER_LINKS.en;
+  const linksWithDeletion = [...links, { to: '/delete-account', key: 'legalLinks.deleteAccount' }];
 
   return (
     <footer className={`w-full mt-auto ${className}`}>
       <div className="w-full max-w-5xl mx-auto px-4 py-5">
         <nav aria-label={t('legalFooter.navigation')} className="border-t border-gray-200 dark:border-gray-700 pt-4">
           <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            {links.map((link) => (
+            {linksWithDeletion.map((link) => (
               <li key={link.to}>
                 <Link
                   to={link.to}

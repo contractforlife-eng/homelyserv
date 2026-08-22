@@ -456,6 +456,6 @@ const CONTENT = {
   }
 };
 
-const PrivacyPolicy = () => <LegalDocument content={CONTENT} />;
+const PrivacyPolicy = () => <LegalDocument content={CONTENT} showDeleteAccountLink />;
 
 export default PrivacyPolicy;
