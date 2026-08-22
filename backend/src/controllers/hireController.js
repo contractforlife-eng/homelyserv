@@ -30,6 +30,32 @@ const createNotification = async (userId, type, title, message) => {
 
 const isObjectId = (value) => typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value);
 
+const HIDE_SAFE_HIRE_PAYMENT_STATUSES = new Set([
+  'completed',
+  'confirmed',
+  'failed',
+  'cancelled',
+  'canceled',
+  'declined',
+  'refunded',
+]);
+
+const ACTIONABLE_PAYMENT_STATUSES = ['pending', 'processing', 'pending_verification'];
+
+const hasUnresolvedHirePayment = async (hireId) => {
+  const count = await prisma.payment.count({
+    where: {
+      hireId: String(hireId),
+      OR: [
+        { status: { in: ACTIONABLE_PAYMENT_STATUSES } },
+        { status: 'completed', fulfillmentStatus: { not: 'fulfilled' } },
+      ],
+    },
+  });
+
+  return count > 0;
+};
+
 const findOwnedWorkerProfile = async (userId) => prisma.workerProfile.findUnique({
   where: { userId: String(userId) },
   select: { id: true, userId: true },
@@ -351,7 +377,13 @@ export const getMyHires = async (req, res) => {
 
     if (req.userRole === 'EMPLOYER') {
       hires = await prisma.hire.findMany({
-        where: { employerId: req.userId },
+        where: {
+          employerId: req.userId,
+          OR: [
+            { employerHiddenAt: null },
+            { employerHiddenAt: { isSet: false } },
+          ],
+        },
         orderBy: { createdAt: 'desc' }
       });
     } else {
@@ -570,6 +602,76 @@ export const updateHireStatus = async (req, res) => {
   } catch (error) {
     console.error('Update hire status error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// PATCH /api/hires/:hireId/hide
+// Employer-only presentation soft-hide. The Hire and all financial/history
+// records remain intact and visible to workers/admins.
+export const hideHireFromEmployer = async (req, res) => {
+  try {
+    if (req.userRole !== 'EMPLOYER') {
+      return res.status(403).json({ message: 'Only the Employer may hide this Hire' });
+    }
+
+    const hireId = String(req.params.hireId);
+    const hire = await prisma.hire.findUnique({
+      where: { id: hireId },
+      select: { id: true, employerId: true, status: true, paymentStatus: true, employerHiddenAt: true },
+    });
+
+    if (!hire) {
+      return res.status(404).json({ message: 'Hire not found' });
+    }
+
+    if (String(hire.employerId) !== String(req.userId)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    if (hire.employerHiddenAt) {
+      return res.json({ success: true, hidden: true });
+    }
+
+    if (hire.status !== 'terminated') {
+      return res.status(409).json({ message: 'Only terminated Hires can be removed from My Hires' });
+    }
+
+    const paymentStatus = String(hire.paymentStatus || '').toLowerCase();
+    if (!HIDE_SAFE_HIRE_PAYMENT_STATUSES.has(paymentStatus)) {
+      return res.status(409).json({
+        message: 'This Hire has an unresolved financial state and cannot be hidden yet',
+        code: 'UNRESOLVED_FINANCIAL_STATE',
+      });
+    }
+
+    if (await hasUnresolvedHirePayment(hire.id)) {
+      return res.status(409).json({
+        message: 'This Hire has an unresolved payment and cannot be hidden yet',
+        code: 'UNRESOLVED_FINANCIAL_STATE',
+      });
+    }
+
+    const updated = await prisma.hire.updateMany({
+      where: {
+        id: hire.id,
+        employerId: String(req.userId),
+        status: 'terminated',
+        OR: [
+          { employerHiddenAt: null },
+          { employerHiddenAt: { isSet: false } },
+        ],
+      },
+      data: { employerHiddenAt: new Date() },
+    });
+
+    if (updated.count !== 1) {
+      return res.status(409).json({ message: 'Hire changed before it could be hidden' });
+    }
+
+    return res.json({ success: true, hidden: true });
+  } catch (error) {
+    console.error('Hide Hire error:', error);
+    return res.status(500).json({ message: 'Failed to remove Hire from My Hires' });
   }
 };
 

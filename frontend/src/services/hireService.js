@@ -46,6 +46,11 @@ export const updateHireStatus = async (hireId, status) => {
   return response.data;
 };
 
+export const hideHireFromMyHires = async (hireId) => {
+  const response = await api.patch(`/api/hires/${hireId}/hide`);
+  return response.data;
+};
+
 export const getHireById = async (hireId) => {
   const response = await api.get(`/api/hires/${hireId}`);
   return response.data;
@@ -99,6 +104,7 @@ const hireService = {
   sendOffer,
   createHire, // Alias for backward compatibility
   updateHireStatus,
+  hideHireFromMyHires,
   getHireById,
   cancelHire,
   getHireStats,

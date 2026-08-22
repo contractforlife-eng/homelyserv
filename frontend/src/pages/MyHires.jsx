@@ -49,6 +49,16 @@ const HIRE_STATUS = {
   TERMINATED: 'terminated'
 };
 
+const HIDE_SAFE_PAYMENT_STATUSES = new Set([
+  'completed',
+  'confirmed',
+  'failed',
+  'cancelled',
+  'canceled',
+  'declined',
+  'refunded',
+]);
+
 // Collapse legacy / alias values (from older records) into canonical ones
 const normalizeStatus = (status) => {
   switch (status) {
@@ -87,6 +97,7 @@ const MyHires = () => {
   const [terminateReason, setTerminateReason] = useState('');
   const [terminatingHire, setTerminatingHire] = useState(null);
   const [terminating, setTerminating] = useState(false);
+  const [hidingHireId, setHidingHireId] = useState(null);
   const [creatingConversation, setCreatingConversation] = useState(false);
 
   // ============================================================
@@ -263,6 +274,34 @@ const MyHires = () => {
       alert(t('myHiresPage.terminate.error'));
     } finally {
       setTerminating(false);
+    }
+  };
+
+  const canHideHire = (hire) =>
+    String(hire?.status || '').toLowerCase() === HIRE_STATUS.TERMINATED &&
+    HIDE_SAFE_PAYMENT_STATUSES.has(String(hire?.paymentStatus || '').toLowerCase());
+
+  const handleHideHire = async (hire) => {
+    if (!canHideHire(hire) || hidingHireId) return;
+    if (!window.confirm(t('myHiresPage.hide.confirm'))) return;
+
+    const hireId = hire.id || hire.hireId;
+    if (!hireId) return;
+
+    setHidingHireId(hireId);
+    try {
+      await hireService.hideHireFromMyHires(hireId);
+      setHires(prev => prev.filter(item => String(item.id || item.hireId) !== String(hireId)));
+      if (selectedHire && String(selectedHire.id || selectedHire.hireId) === String(hireId)) {
+        setSelectedHire(null);
+        setShowDetailsModal(false);
+      }
+      alert(t('myHiresPage.hide.success'));
+    } catch (error) {
+      console.error('Error removing Hire from My Hires:', error);
+      alert(error?.response?.data?.message || t('myHiresPage.hide.error'));
+    } finally {
+      setHidingHireId(null);
     }
   };
 
@@ -754,6 +793,16 @@ const MyHires = () => {
                             >
                               <Eye size={16} />
                             </button>
+                            {canHideHire(hire) && (
+                              <button
+                                onClick={() => handleHideHire(hire)}
+                                disabled={hidingHireId === (hire.id || hire.hireId)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition disabled:opacity-50"
+                                title={t('myHiresPage.hide.action')}
+                              >
+                                <XIcon size={16} />
+                              </button>
+                            )}
                             {canMessageOrTerminate(hire) && (
                               <>
                                 <button
@@ -858,6 +907,16 @@ const MyHires = () => {
                         >
                           <Eye size={16} />
                         </button>
+                        {canHideHire(hire) && (
+                          <button
+                            onClick={() => handleHideHire(hire)}
+                            disabled={hidingHireId === (hire.id || hire.hireId)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition disabled:opacity-50"
+                            title={t('myHiresPage.hide.action')}
+                          >
+                            <XIcon size={16} />
+                          </button>
+                        )}
                         {canMessageOrTerminate(hire) && (
                           <>
                             <button

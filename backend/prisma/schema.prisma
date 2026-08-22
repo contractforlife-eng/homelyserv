@@ -70,6 +70,7 @@ model Hire {
   paymentProofUrl  String?
   startDate        DateTime?
   status           String        @default("offer_sent")
+  employerHiddenAt DateTime?
 
   // Work details copied from Offer
   hourlyRate         Float?

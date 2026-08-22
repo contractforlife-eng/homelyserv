@@ -4739,6 +4739,20 @@ for (const [code, copy] of Object.entries(EMPLOYER_PROFILE_BACK_COPY)) {
   translation.messagesProfile = { ...translation.messagesProfile, ...copy };
 }
 
+const MY_HIRES_HIDE_COPY = {
+  en: { action: 'Remove from My Hires', confirm: 'Remove this Hire from My Hires? Its transaction and history will not be deleted.', success: 'Hire removed from My Hires.', error: 'Unable to remove this Hire from My Hires.' },
+  ar: { action: 'إزالة من توظيفاتي', confirm: 'هل تريد إزالة هذا التوظيف من توظيفاتي؟ لن يتم حذف المعاملة أو السجل.', success: 'تمت إزالة التوظيف من توظيفاتي.', error: 'تعذر إزالة هذا التوظيف من توظيفاتي.' },
+  fr: { action: 'Retirer de mes recrutements', confirm: 'Retirer ce recrutement de mes recrutements ? Sa transaction et son historique ne seront pas supprimés.', success: 'Recrutement retiré de mes recrutements.', error: 'Impossible de retirer ce recrutement de mes recrutements.' },
+  ru: { action: 'Убрать из моих наймов', confirm: 'Убрать этот найм из моих наймов? Данные транзакции и история не будут удалены.', success: 'Найм убран из моих наймов.', error: 'Не удалось убрать этот найм из моих наймов.' },
+  tr: { action: 'İşe Alımlarımdan Kaldır', confirm: 'Bu işe alımı işe alımlarımdan kaldırmak istiyor musunuz? İşlem ve geçmiş silinmeyecek.', success: 'İşe alım, işe alımlarınızdan kaldırıldı.', error: 'Bu işe alım işe alımlarınızdan kaldırılamadı.' },
+  de: { action: 'Aus meinen Einstellungen entfernen', confirm: 'Diese Einstellung aus meinen Einstellungen entfernen? Transaktion und Verlauf werden nicht gelöscht.', success: 'Einstellung aus meinen Einstellungen entfernt.', error: 'Diese Einstellung konnte nicht entfernt werden.' },
+};
+
+for (const [code, copy] of Object.entries(MY_HIRES_HIDE_COPY)) {
+  const translation = ({ en, ar, fr, ru, tr, de }[code]).translation;
+  translation.myHiresPage = { ...translation.myHiresPage, hide: copy };
+}
+
 const resources = {
   en,
   ar,

@@ -5,6 +5,7 @@ import {
   respondToOffer,
   getMyHires,
   updateHireStatus,
+  hideHireFromEmployer,
   getAllHires,
   getMyOffers,
   updateOfferStatus
@@ -100,6 +101,7 @@ router.get('/user/:userId', authenticate, getMyHires);
 // which statuses may be set and verifies ownership (EMPLOYER owner or
 // ADMIN).
 router.put('/:hireId/status', authenticate, updateHireStatus);
+router.patch('/:hireId/hide', authenticate, hideHireFromEmployer);
 
 // ============================================================
 // Respond to Offer (accept/reject)
