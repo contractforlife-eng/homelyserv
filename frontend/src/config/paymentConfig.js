@@ -3,20 +3,11 @@
 
 // Explicit allowlist prevents Vite from bundling unrelated VITE_* variables.
 const frontendEnv = {
-  VITE_PAYMOB_API_KEY: import.meta.env.VITE_PAYMOB_API_KEY,
-  VITE_PAYMOB_HMAC_SECRET: import.meta.env.VITE_PAYMOB_HMAC_SECRET,
-  VITE_PAYMOB_INTEGRATION_ID: import.meta.env.VITE_PAYMOB_INTEGRATION_ID,
-  VITE_PAYMOB_IFRAME_ID: import.meta.env.VITE_PAYMOB_IFRAME_ID,
-  VITE_PAYMOB_BASE_URL: import.meta.env.VITE_PAYMOB_BASE_URL,
-  VITE_PAYMOB_POST_PAY_URL: import.meta.env.VITE_PAYMOB_POST_PAY_URL,
-  VITE_PAYMOB_RESPONSE_URL: import.meta.env.VITE_PAYMOB_RESPONSE_URL,
   VITE_PAYPAL_LIVE_CLIENT_ID: import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID,
   VITE_PAYPAL_SANDBOX_CLIENT_ID: import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
   VITE_PAYPAL_LIVE_BASE_URL: import.meta.env.VITE_PAYPAL_LIVE_BASE_URL,
   VITE_PAYPAL_SANDBOX_BASE_URL: import.meta.env.VITE_PAYPAL_SANDBOX_BASE_URL,
   VITE_PAYPAL_APP_NAME: import.meta.env.VITE_PAYPAL_APP_NAME,
-  VITE_PAYPAL_WEBHOOK_URL: import.meta.env.VITE_PAYPAL_WEBHOOK_URL,
-  VITE_PAYPAL_WEBHOOK_ID: import.meta.env.VITE_PAYPAL_WEBHOOK_ID,
 };
 
 // Helper function to safely get environment variables
@@ -33,74 +24,6 @@ const getEnv = (key, fallback = '', isSensitive = false) => {
 const isProduction = import.meta.env?.MODE === 'production' || import.meta.env?.PROD === true;
 
 export const PAYMENT_CONFIG = {
-  // ============================================================
-  // PAYMOB CONFIGURATION - COMPLETE
-  // ============================================================
-  paymob: {
-    // Your Paymob API Key
-    apiKey: getEnv('VITE_PAYMOB_API_KEY', '', true),
-    
-    // HMAC Secret for webhook verification
-    hmacSecret: getEnv('VITE_PAYMOB_HMAC_SECRET', '', true),
-    
-    // Main Integration ID (TAP ON PHONE - Online Card)
-    integrationId: getEnv('VITE_PAYMOB_INTEGRATION_ID', '', true),
-    
-    // IFRAME ID for payment page
-    iframeId: getEnv('VITE_PAYMOB_IFRAME_ID', '', true),
-    
-    // Paymob API Base URL
-    baseUrl: getEnv('VITE_PAYMOB_BASE_URL', 'https://accept.paymob.com/api'),
-    
-    // Currency
-    currency: 'EGP',
-    
-    // All Live Integrations
-    integrations: {
-      cashCollection: {
-        id: '3584707',
-        name: 'Cash Collection_DEPOSIT',
-        type: 'cash_collection',
-        status: 'live'
-      },
-      tapOnPhone: {
-        id: '2662716',
-        name: 'TAP ON PHONE',
-        type: 'online_card',
-        status: 'live'
-      },
-      paymentLink: {
-        id: '2662715',
-        name: 'PAYMENT LINK',
-        type: 'online_card',
-        status: 'live'
-      },
-      wallet: {
-        id: '2662714',
-        name: 'WALLET',
-        type: 'mobile_wallet',
-        status: 'live'
-      }
-    },
-    
-    // Default integrations for different payment types
-    defaults: {
-      card: '2662716',      // TAP ON PHONE
-      wallet: '2662714',    // WALLET
-      link: '2662715',      // PAYMENT LINK
-      cash: '3584707'       // Cash Collection
-    },
-    
-    // Webhook URLs
-    webhooks: {
-      postPay: getEnv('VITE_PAYMOB_POST_PAY_URL', 'https://accept.paymobsolutions.com/api/acceptance/post_pay'),
-      response: getEnv('VITE_PAYMOB_RESPONSE_URL', 'https://accept.paymobsolutions.com/api/acceptance/post_pay')
-    },
-    
-    // Iframe URL template
-    iframeUrl: 'https://accept.paymob.com/api/acceptance/iframes/{iframe_id}?payment_token={payment_token}'
-  },
-  
   // ============================================================
   // PAYPAL CONFIGURATION - COMPLETE (Sandbox + Live)
   // ============================================================
@@ -133,14 +56,6 @@ export const PAYMENT_CONFIG = {
       premiumWorker: getEnv('PAYPAL_PREMIUM_WORKER_LINK', 'https://www.paypal.com/ncp/payment/P7CX5UKC332YJ')
     },
     
-    // Webhook Configuration
-    webhooks: {
-      // Webhook URL for payment notifications
-      url: getEnv('VITE_PAYPAL_WEBHOOK_URL', '/api/webhooks/paypal'),
-      
-      // Webhook ID for verification
-      id: getEnv('VITE_PAYPAL_WEBHOOK_ID', '')
-    }
   },
   
   // ============================================================
@@ -287,57 +202,6 @@ export const SUBSCRIPTION_PLANS = {
 // ============================================================
 // HELPER FUNCTIONS
 // ============================================================
-
-/**
- * Get the appropriate Paymob integration ID based on payment type
- * @param {string} paymentType - 'card', 'wallet', 'link', or 'cash'
- * @returns {string} - Integration ID
- */
-export const getPaymobIntegrationId = (paymentType = 'card') => {
-  const defaults = PAYMENT_CONFIG.paymob.defaults;
-  return defaults[paymentType] || defaults.card;
-};
-
-/**
- * Get Paymob integration details by ID
- * @param {string} integrationId - Integration ID
- * @returns {object|null} - Integration details
- */
-export const getPaymobIntegration = (integrationId) => {
-  const integrations = PAYMENT_CONFIG.paymob.integrations;
-  for (const key in integrations) {
-    if (integrations[key].id === integrationId) {
-      return integrations[key];
-    }
-  }
-  return null;
-};
-
-/**
- * Get Paymob iframe URL with payment token
- * @param {string} paymentToken - Payment token from Paymob
- * @returns {string} - Full iframe URL
- */
-export const getPaymobIframeUrl = (paymentToken) => {
-  const { iframeId } = PAYMENT_CONFIG.paymob;
-  return `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
-};
-
-/**
- * Get all available Paymob integrations
- * @returns {object} - All integrations
- */
-export const getPaymobIntegrations = () => {
-  return PAYMENT_CONFIG.paymob.integrations;
-};
-
-/**
- * Get Paymob webhook URLs
- * @returns {object} - Webhook URLs
- */
-export const getPaymobWebhooks = () => {
-  return PAYMENT_CONFIG.paymob.webhooks;
-};
 
 /**
  * Check if PayPal is in sandbox mode
