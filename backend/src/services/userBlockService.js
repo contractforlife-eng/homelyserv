@@ -82,3 +82,23 @@ export const getPeerBlockStatus = async ({ context, prismaClient = prisma }) => 
   ]);
   return { blockedByMe: Boolean(blockedByMe), blockedMe: Boolean(blockedMe) };
 };
+
+// Symmetric communication check over directional ownership records.
+// This helper intentionally returns only relationship booleans, never block rows.
+export const getBlockRelationship = async (userA, userB, { prismaClient = prisma } = {}) => {
+  const first = String(userA || '');
+  const second = String(userB || '');
+  if (!OBJECT_ID_PATTERN.test(first) || !OBJECT_ID_PATTERN.test(second) || first === second) {
+    return { blockedByA: false, blockedByB: false, isCommunicationBlocked: false };
+  }
+
+  const [blockedByA, blockedByB] = await Promise.all([
+    prismaClient.userBlock.findUnique({ where: pairSelector(first, second), select: { id: true } }),
+    prismaClient.userBlock.findUnique({ where: pairSelector(second, first), select: { id: true } }),
+  ]);
+  return {
+    blockedByA: Boolean(blockedByA),
+    blockedByB: Boolean(blockedByB),
+    isCommunicationBlocked: Boolean(blockedByA || blockedByB),
+  };
+};

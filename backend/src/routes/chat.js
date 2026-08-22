@@ -20,6 +20,7 @@ import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { emitToUser } from '../lib/socket.js';
 import { sendPushToUser } from '../services/fcmService.js';
+import { getBlockRelationship } from '../services/userBlockService.js';
 import {
   getUserIdentity,
   getUserIdentities,
@@ -64,6 +65,14 @@ const checkPaidChatRelationship = async (req, res, next) => {
 
     if (authorization.required && !authorization.allowed) {
       return res.status(403).json({ error: 'Payment required to contact this worker.' });
+    }
+
+    const blockRelationship = await getBlockRelationship(senderId, recipientId);
+    if (blockRelationship.isCommunicationBlocked) {
+      return res.status(403).json({
+        error: 'Messaging is unavailable for this conversation.',
+        code: 'CHAT_BLOCKED',
+      });
     }
 
     next();

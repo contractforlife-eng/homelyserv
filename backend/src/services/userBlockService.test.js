@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   UserBlockValidationError,
   blockPeer,
+  getBlockRelationship,
   getPeerBlockStatus,
   resolveCustomerPeer,
   unblockPeer,
@@ -121,4 +122,20 @@ test('status reports a reciprocal block without treating it as my block', async 
     },
   });
   assert.deepEqual(status, { blockedByMe: false, blockedMe: true });
+});
+
+test('communication relationship is symmetric even when storage is directional', async () => {
+  const calls = [];
+  const relationship = await getBlockRelationship(employerId, workerId, {
+    prismaClient: {
+      userBlock: {
+        findUnique: async ({ where }) => {
+          calls.push(where.blockerId_blockedUserId);
+          return where.blockerId_blockedUserId.blockerId === workerId ? { id: 'reciprocal' } : null;
+        },
+      },
+    },
+  });
+  assert.equal(calls.length, 2);
+  assert.deepEqual(relationship, { blockedByA: false, blockedByB: true, isCommunicationBlocked: true });
 });

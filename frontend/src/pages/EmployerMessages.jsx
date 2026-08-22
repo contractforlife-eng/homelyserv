@@ -552,6 +552,11 @@ const EmployerMessages = () => {
   const emitTypingEvent = (isTyping) => {
     const recipientId = getOtherUserId();
     if (!recipientId || !selectedConversationId || !authUser?.id) return;
+    if (blockStatus.blockedByMe || blockStatus.blockedMe) {
+      typingContextRef.current = null;
+      typingStartEmittedRef.current = false;
+      return;
+    }
     const socket = getSocket(authUser.id);
     if (!socket) return;
     if (isTyping) {
@@ -631,6 +636,7 @@ const EmployerMessages = () => {
     emitTypingEvent(false);
 
     let result = null;
+    let sendError = null;
     try {
       result = await sendMessage(
         authUser.id,
@@ -641,6 +647,7 @@ const EmployerMessages = () => {
         draft
       );
     } catch (error) {
+      sendError = error;
       console.error('Failed to send message:', error);
     }
 
@@ -651,7 +658,14 @@ const EmployerMessages = () => {
       setMessages((current) => reconcileOptimisticMessage(current, optimistic.id, result));
       setRefreshKey(prev => prev + 1);
     } else {
-      setMessages((current) => markOptimisticMessageFailed(current, optimistic.id));
+      const blocked = sendError?.response?.data?.code === 'CHAT_BLOCKED';
+      if (blocked) {
+        setMessages((current) => current.filter((item) => item.id !== optimistic.id));
+        getBlockStatus(selectedConversationId).then(setBlockStatus).catch(() => {});
+        window.alert(t('messagesBlocking.sendBlocked'));
+      } else {
+        setMessages((current) => markOptimisticMessageFailed(current, optimistic.id));
+      }
       setMessage((current) => current || draft);
       console.log('❌ Failed to send message');
     }
@@ -1035,7 +1049,11 @@ const EmployerMessages = () => {
 
                     {/* Input */}
                     <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                      <form onSubmit={handleSendMessage} className="flex gap-2">
+                      {blockStatus.blockedByMe || blockStatus.blockedMe ? (
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          {t(blockStatus.blockedByMe ? 'messagesBlocking.blockedByMeNotice' : 'messagesBlocking.blockedNotice')}
+                        </p>
+                      ) : <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
                           ref={messageInputRef}
                           type="text"
@@ -1052,7 +1070,7 @@ const EmployerMessages = () => {
                           <Send size={18} />
                           {t('employerMessages.send')}
                         </button>
-                      </form>
+                      </form>}
                     </div>
                   </>
                 ) : (

@@ -38,6 +38,7 @@ import { requireAdmin } from './middleware/auth.js';
 import { setIo } from './lib/socket.js';
 import { emitToUser } from './lib/socket.js';
 import { canAccessConversation } from './routes/chat.js';
+import { getBlockRelationship } from './services/userBlockService.js';
 import Conversation from './models/Conversation.js';
 import { verifyGuestConversation, verifyStaffToken } from './services/publicSupportAccessService.js';
 import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
@@ -457,6 +458,9 @@ io.on('connection', (socket) => {
         if (!recipientOk) return;
       }
 
+      const blockRelationship = await getBlockRelationship(senderId, recipientId);
+      if (blockRelationship.isCommunicationBlocked) return;
+
       emitToUser(recipientId, 'typing:update', {
         conversationId: String(conversationId),
         userId: String(senderId),
@@ -487,6 +491,9 @@ io.on('connection', (socket) => {
           conversation.staffIds.includes(String(recipientId));
         if (!recipientOk) return;
       }
+
+      const blockRelationship = await getBlockRelationship(senderId, recipientId);
+      if (blockRelationship.isCommunicationBlocked) return;
 
       emitToUser(recipientId, 'typing:update', {
         conversationId: String(conversationId),
