@@ -33,12 +33,12 @@ const makeDb = ({ subscriptions = [], grants = [] } = {}) => {
       findMany: async ({ where, select }) => state.subscriptions
         .filter((row) => where.userId?.in?.includes(row.userId))
         .filter((row) => !where.status || row.status === where.status)
-        .filter((row) => !where.plan || row.plan === where.plan)
+        .filter((row) => !where.plan || (where.plan.not ? row.plan !== where.plan.not : row.plan === where.plan))
         .filter((row) => !where.endDate?.gte || row.endDate >= where.endDate.gte)
         .map((row) => selectFields(row, select)),
       findFirst: async ({ where, select }) => state.subscriptions
         .filter((row) => row.userId === where.userId)
-        .filter((row) => !where.plan || row.plan === where.plan)
+        .filter((row) => !where.plan || (where.plan.not ? row.plan !== where.plan.not : row.plan === where.plan))
         .filter((row) => !where.status || row.status === where.status)
         .filter((row) => !where.endDate?.gte || row.endDate >= where.endDate.gte)
         .sort((a, b) => b.endDate - a.endDate)
@@ -141,7 +141,7 @@ test('active grant is never shortened and expired/inactive grant reuses its row'
   assert.equal(db._state.grants[0].startDate.toISOString(), '2029-01-01T00:00:00.000Z');
 });
 
-test('dual-read recognizes paid, legacy manual, and grant-only Premium without duplicates', async () => {
+test('Premium recognizes paid and grant-only users but excludes legacy manual rows', async () => {
   const now = new Date();
   const db = makeDb({
     subscriptions: [
@@ -155,10 +155,10 @@ test('dual-read recognizes paid, legacy manual, and grant-only Premium without d
   });
 
   const activeIds = await getActivePremiumUserIds([ids.paid, ids.employer, ids.worker, ids.paid], db);
-  assert.deepEqual([...activeIds].sort(), [ids.employer, ids.paid, ids.worker].sort());
+  assert.deepEqual([...activeIds].sort(), [ids.paid, ids.worker].sort());
 });
 
-test('deactivation affects grant and legacy manual rows only, preserving paid rows', async () => {
+test('deactivation changes only the ManualPremiumGrant and preserves legacy and paid rows', async () => {
   const now = new Date();
   const db = makeDb({
     subscriptions: [
@@ -170,8 +170,22 @@ test('deactivation affects grant and legacy manual rows only, preserving paid ro
 
   const result = await deactivateManualPremium(ids.employer, db);
   assert.equal(result.grantDeactivatedCount, 1);
-  assert.equal(result.legacyDeactivatedCount, 1);
+  assert.equal(result.legacyDeactivatedCount, 0);
+  assert.equal(db._state.subscriptions.find((row) => row.id === 'legacy-manual').status, 'active');
   assert.equal(db._state.subscriptions.find((row) => row.id === 'paid-row').status, 'active');
+});
+
+test('legacy manual rows do not grant Premium without a ManualPremiumGrant', async () => {
+  const now = new Date();
+  const db = makeDb({ subscriptions: [
+    { userId: ids.employer, plan: 'manual', status: 'inactive', startDate: now, endDate: new Date(now.getTime() + 86400000) },
+    { userId: ids.worker, plan: 'manual', status: 'active', startDate: now, endDate: new Date(now.getTime() + 86400000) },
+  ] });
+
+  assert.equal(await getActivePremiumEntitlement(ids.employer, db), null);
+  assert.equal(await getActivePremiumEntitlement(ids.worker, db), null);
+  assert.equal((await getManualPremiumState(ids.employer, db)).hasActiveManualPremium, false);
+  assert.deepEqual([...await getActivePremiumUserIds([ids.employer, ids.worker], db)], []);
 });
 
 test('grant-only admin state is reported as active manual Premium', async () => {
@@ -211,6 +225,32 @@ test('inactive manual grant never masks an active paid subscription', async () =
   const summary = (await getSubscriptionSummaries([ids.paid], db)).get(ids.paid);
   assert.equal(summary.isPremium, true);
   assert.equal(summary.status, 'active');
+});
+
+test('active manual grant is current admin status when the paid row is expired', async () => {
+  const now = new Date();
+  const grantEnd = new Date(now.getTime() + 86400000);
+  const db = makeDb({
+    subscriptions: [{
+      userId: ids.paid,
+      plan: 'monthly',
+      status: 'active',
+      startDate: new Date(now.getTime() - 172800000),
+      endDate: new Date(now.getTime() - 86400000),
+    }],
+    grants: [{
+      userId: ids.paid,
+      status: 'active',
+      startDate: now,
+      endDate: grantEnd,
+    }],
+  });
+
+  const summary = (await getSubscriptionSummaries([ids.paid], db)).get(ids.paid);
+  assert.equal(summary.isPremium, true);
+  assert.equal(summary.status, 'active');
+  assert.equal(summary.latestPlan, 'manual');
+  assert.equal(summary.endDate, grantEnd);
 });
 
 test('Premium benefit projection can use a grant while preserving the subscription shape', async () => {

@@ -1,14 +1,14 @@
 // backend/src/services/premiumService.js
 // Worker/Employer Premium entitlement helpers.
-// Paid/legacy Subscription rows and the transition ManualPremiumGrant row are
-// the only entitlement sources. Nothing is ever inferred from client state.
+// Paid Subscription rows and ManualPremiumGrant are the only current entitlement
+// sources. Legacy manual Subscription rows remain historical records only.
 
 import prisma from '../lib/prisma.js';
 
 /**
  * Batch entitlement check for many users in ONE query (no N+1).
- * Returns a Set of normalized user ids that have an active paid, legacy
- * manual Subscription, or ManualPremiumGrant entitlement.
+ * Returns a Set of normalized user ids that have an active paid Subscription
+ * or ManualPremiumGrant entitlement.
  */
 export const getActivePremiumUserIds = async (userIds, db = prisma) => {
   const normalized = [...new Set((userIds || [])
@@ -22,6 +22,7 @@ export const getActivePremiumUserIds = async (userIds, db = prisma) => {
     db.subscription.findMany({
       where: {
         userId: { in: normalized },
+        plan: { not: 'manual' },
         status: 'active',
         endDate: { gte: now }
       },
@@ -56,11 +57,12 @@ export const isUserPremium = async (userId, db = prisma) => {
  * Returns the active subscription row for a single user (for expiry display),
  * or null when there is no active subscription.
  */
-export const getActiveSubscription = async (userId) => {
+export const getActiveSubscription = async (userId, db = prisma) => {
   if (!userId) return null;
-  return prisma.subscription.findFirst({
+  return db.subscription.findFirst({
     where: {
       userId: String(userId),
+      plan: { not: 'manual' },
       status: 'active',
       endDate: { gte: new Date() }
     },
@@ -79,7 +81,12 @@ export const getActivePremiumEntitlement = async (userId, db = prisma) => {
   const now = new Date();
   const [subscription, grant] = await Promise.all([
     db.subscription.findFirst({
-      where: { userId: String(userId), status: 'active', endDate: { gte: now } },
+      where: {
+        userId: String(userId),
+        plan: { not: 'manual' },
+        status: 'active',
+        endDate: { gte: now },
+      },
       orderBy: { endDate: 'desc' },
     }),
     db.manualPremiumGrant.findUnique({
@@ -125,7 +132,7 @@ export const getSubscriptionSummaries = async (userIds, db = prisma) => {
   if (ids.length === 0) return new Map();
   const [rows, manualGrants] = await Promise.all([
     db.subscription.findMany({
-      where: { userId: { in: ids } },
+      where: { userId: { in: ids }, plan: { not: 'manual' } },
       select: { userId: true, plan: true, status: true, startDate: true, endDate: true },
       orderBy: { endDate: 'desc' },
     }),
@@ -162,9 +169,9 @@ export const getSubscriptionSummaries = async (userIds, db = prisma) => {
     }
   }
 
-  // ManualPremiumGrant is the authority for new manual state. Keep legacy
-  // Subscription(plan="manual") rows in the summary during the transition,
-  // but let a grant-only user receive the same Premium projection.
+  // ManualPremiumGrant is the sole authority for current manual state. Legacy
+  // Subscription(plan="manual") rows are intentionally excluded above and
+  // remain available only as historical records elsewhere.
   for (const grant of manualGrants) {
     const id = String(grant.userId);
     const current = summaries.get(id);
@@ -184,7 +191,14 @@ export const getSubscriptionSummaries = async (userIds, db = prisma) => {
         latestPlan: 'manual',
       });
     } else if (active && !current.isPremium) {
-      summaries.set(id, { ...current, isPremium: true });
+      summaries.set(id, {
+        ...current,
+        isPremium: true,
+        status: 'active',
+        startDate: grant.startDate,
+        endDate: grant.endDate,
+        latestPlan: 'manual',
+      });
     }
   }
   return summaries;
@@ -217,44 +231,21 @@ export const getSubscriptionStaffDetail = async (userId, grantLimit = 20, db = p
 // Admin manual Premium helpers
 // ============================================================
 
-const MANUAL_PLAN = 'manual';
 const MANUAL_DEFAULT_DURATION_DAYS = 30;
-
-const getActiveLegacyManualRow = async (userId, db = prisma) => db.subscription.findFirst({
-  where: {
-    userId: String(userId),
-    plan: MANUAL_PLAN,
-    status: 'active',
-    endDate: { gte: new Date() },
-  },
-  orderBy: { endDate: 'desc' },
-  select: { endDate: true },
-});
 
 export const getManualPremiumState = async (userId, db = prisma) => {
   if (!userId) return { hasActiveManualPremium: false, manualPremiumEndDate: null };
-  const [legacyRow, grant] = await Promise.all([
-    getActiveLegacyManualRow(userId, db),
-    db.manualPremiumGrant.findUnique({
-      where: { userId: String(userId) },
-      select: { status: true, endDate: true },
-    }),
-  ]);
+  const grant = await db.manualPremiumGrant.findUnique({
+    where: { userId: String(userId) },
+    select: { status: true, endDate: true },
+  });
   const now = new Date();
   const grantIsActive = grant?.status === 'active'
     && grant.endDate instanceof Date
     && grant.endDate > now;
-  const legacyIsActive = !!legacyRow && new Date(legacyRow.endDate) >= now;
-  const activeEndDates = [
-    legacyIsActive ? legacyRow.endDate : null,
-    grantIsActive ? grant.endDate : null,
-  ].filter(Boolean);
-  const manualPremiumEndDate = activeEndDates.length > 0
-    ? activeEndDates.reduce((latest, value) => (new Date(value) > new Date(latest) ? value : latest))
-    : null;
   return {
-    hasActiveManualPremium: !!manualPremiumEndDate,
-    manualPremiumEndDate,
+    hasActiveManualPremium: grantIsActive,
+    manualPremiumEndDate: grantIsActive ? grant.endDate : null,
   };
 };
 
@@ -325,13 +316,9 @@ export const deactivateManualPremium = async (userId, db = prisma) => {
     where: { userId: String(userId), status: 'active' },
     data: { status: 'inactive' },
   });
-  const legacyResult = await db.subscription.updateMany({
-    where: { userId: String(userId), plan: MANUAL_PLAN, status: 'active' },
-    data: { status: 'inactive' },
-  });
   return {
-    deactivatedCount: grantResult.count + legacyResult.count,
+    deactivatedCount: grantResult.count,
     grantDeactivatedCount: grantResult.count,
-    legacyDeactivatedCount: legacyResult.count,
+    legacyDeactivatedCount: 0,
   };
 };
