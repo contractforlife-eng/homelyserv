@@ -10,6 +10,7 @@ import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js'
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { sendPushToUser } from '../services/fcmService.js';
 import { HIRE_USER_SELECT, projectHireUser } from '../utils/hireUserProjection.js';
+import { UNRESOLVED_PAYMENT_STATUSES, isTerminatedHire } from '../services/hireHideEligibility.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -30,24 +31,12 @@ const createNotification = async (userId, type, title, message) => {
 
 const isObjectId = (value) => typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value);
 
-const HIDE_SAFE_HIRE_PAYMENT_STATUSES = new Set([
-  'completed',
-  'confirmed',
-  'failed',
-  'cancelled',
-  'canceled',
-  'declined',
-  'refunded',
-]);
-
-const ACTIONABLE_PAYMENT_STATUSES = ['pending', 'processing', 'pending_verification'];
-
 const hasUnresolvedHirePayment = async (hireId) => {
   const count = await prisma.payment.count({
     where: {
       hireId: String(hireId),
       OR: [
-        { status: { in: ACTIONABLE_PAYMENT_STATUSES } },
+        { status: { in: UNRESOLVED_PAYMENT_STATUSES } },
         { status: 'completed', fulfillmentStatus: { not: 'fulfilled' } },
       ],
     },
@@ -617,7 +606,7 @@ export const hideHireFromEmployer = async (req, res) => {
     const hireId = String(req.params.hireId);
     const hire = await prisma.hire.findUnique({
       where: { id: hireId },
-      select: { id: true, employerId: true, status: true, paymentStatus: true, employerHiddenAt: true },
+      select: { id: true, employerId: true, status: true, employerHiddenAt: true },
     });
 
     if (!hire) {
@@ -632,16 +621,8 @@ export const hideHireFromEmployer = async (req, res) => {
       return res.json({ success: true, hidden: true });
     }
 
-    if (hire.status !== 'terminated') {
+    if (!isTerminatedHire(hire)) {
       return res.status(409).json({ message: 'Only terminated Hires can be removed from My Hires' });
-    }
-
-    const paymentStatus = String(hire.paymentStatus || '').toLowerCase();
-    if (!HIDE_SAFE_HIRE_PAYMENT_STATUSES.has(paymentStatus)) {
-      return res.status(409).json({
-        message: 'This Hire has an unresolved financial state and cannot be hidden yet',
-        code: 'UNRESOLVED_FINANCIAL_STATE',
-      });
     }
 
     if (await hasUnresolvedHirePayment(hire.id)) {

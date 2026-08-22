@@ -49,16 +49,6 @@ const HIRE_STATUS = {
   TERMINATED: 'terminated'
 };
 
-const HIDE_SAFE_PAYMENT_STATUSES = new Set([
-  'completed',
-  'confirmed',
-  'failed',
-  'cancelled',
-  'canceled',
-  'declined',
-  'refunded',
-]);
-
 // Collapse legacy / alias values (from older records) into canonical ones
 const normalizeStatus = (status) => {
   switch (status) {
@@ -278,8 +268,7 @@ const MyHires = () => {
   };
 
   const canHideHire = (hire) =>
-    String(hire?.status || '').toLowerCase() === HIRE_STATUS.TERMINATED &&
-    HIDE_SAFE_PAYMENT_STATUSES.has(String(hire?.paymentStatus || '').toLowerCase());
+    String(hire?.status || '').toLowerCase() === HIRE_STATUS.TERMINATED;
 
   const handleHideHire = async (hire) => {
     if (!canHideHire(hire) || hidingHireId) return;
