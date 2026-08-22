@@ -50,6 +50,16 @@ const PENDING_PAYMENT_STATUSES = ['pending', 'processing', 'pending_verification
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 
+export const buildEmployerHiresCounterWhere = (userId) => ({
+  employerId: String(userId),
+  paymentStatus: 'pending',
+  status: { not: 'terminated' },
+  OR: [
+    { employerHiddenAt: null },
+    { employerHiddenAt: { isSet: false } },
+  ],
+});
+
 // Never let a single counter failure break the whole response.
 const safeCount = async (label, promise) => {
   try {
@@ -151,7 +161,7 @@ export const getSidebarCounters = async (userId, role) => {
         where: { employerId: uid, status: 'accepted', paymentConfirmed: false },
       })),
       safeCount('hires', prisma.hire.count({
-        where: { employerId: uid, paymentStatus: 'pending' },
+        where: buildEmployerHiresCounterWhere(uid),
       })),
       safeCount('payments', prisma.payment.count({
         where: {
@@ -214,4 +224,4 @@ export const getSidebarCounters = async (userId, role) => {
   return counters;
 };
 
-export default { getSidebarCounters, SIDEBAR_COUNTER_KEYS };
+export default { getSidebarCounters, SIDEBAR_COUNTER_KEYS, buildEmployerHiresCounterWhere };
