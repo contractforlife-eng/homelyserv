@@ -100,6 +100,26 @@ const WorkerMessages = () => {
 
   const userIsPremium = isPremium();
 
+  const resolveMessagePremium = (msg) => {
+    if (typeof msg?.senderIsPremium === 'boolean') return msg.senderIsPremium;
+    if (typeof msg?.sender?.isPremium === 'boolean') return msg.sender.isPremium;
+
+    const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+    const senderId = msg?.senderId == null ? null : String(msg.senderId);
+
+    if (senderId && String(selectedConversation?.otherUserId) === senderId) {
+      return typeof selectedConversation?.isPremium === 'boolean'
+        ? selectedConversation.isPremium
+        : undefined;
+    }
+
+    if (senderId && String(authUser?.id) === senderId) {
+      return typeof authUser?.isPremium === 'boolean' ? authUser.isPremium : userIsPremium;
+    }
+
+    return undefined;
+  };
+
   const formatSenderName = (senderName, senderRole) => {
     return formatDisplayName(senderName, senderRole);
   };
@@ -867,7 +887,7 @@ const WorkerMessages = () => {
                                     <UserDisplayName
                                       name={msg.senderName}
                                       role={msg.senderRole}
-                                      isPremium={msg.senderIsPremium || msg.sender?.isPremium}
+                                      isPremium={resolveMessagePremium(msg)}
                                       size="sm"
                                       className="text-red-600"
                                     />
