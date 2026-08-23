@@ -49,6 +49,12 @@ const ACTIONABLE_USER_PAYMENT_STATE = {
   manualReviewState: 'awaiting_transfer',
 };
 
+export const ADMIN_PAYMENT_REVIEW_COUNTER_WHERE = Object.freeze({
+  status: 'pending',
+  fulfillmentStatus: 'pending',
+  manualReviewState: 'pending_verification',
+});
+
 export const buildWorkerPaymentsCounterWhere = (userId) => ({
   ...ACTIONABLE_USER_PAYMENT_STATE,
   userId: String(userId),
@@ -232,7 +238,7 @@ export const getSidebarCounters = async (userId, role) => {
         where: { paymentStatus: 'pending', paymentProofUrl: { not: null } },
       })),
       safeCount('payments', prisma.payment.count({
-        where: { status: 'pending_verification' },
+        where: ADMIN_PAYMENT_REVIEW_COUNTER_WHERE,
       })),
       safeCount('complaints', prisma.complaint.count({
         where: { status: 'ESCALATED' },
@@ -267,4 +273,5 @@ export default {
   buildEmployerPaymentsCounterWhere,
   buildWorkerActionableEarningsWhere,
   buildSupportComplaintsCounterWhere,
+  ADMIN_PAYMENT_REVIEW_COUNTER_WHERE,
 };

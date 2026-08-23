@@ -9,6 +9,7 @@ import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService.js';
 import { sendPushToUser } from '../services/fcmService.js';
+import { notifyAdminsForPaymentReview } from '../services/paymentReviewAlertService.js';
 import User from '../models/User.js';
 import {
   PAYMENT_PURPOSES,
@@ -2744,11 +2745,12 @@ router.post('/bank-transfer/:paymentId/submit-reference', authenticate, async (r
       return res.json({ success: true, payment: serializeBankTransferPayment(payment), message: 'Payment is already submitted for review' });
     }
 
-    await prisma.payment.updateMany({
+    const transitioned = await prisma.payment.updateMany({
       where: { id: payment.id, manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER, status: 'pending', fulfillmentStatus: 'pending' },
       data: { externalTransactionReference: externalReference, submittedAt: new Date(), manualReviewState: MANUAL_REVIEW_STATES.PENDING_VERIFICATION },
     });
     const updated = await prisma.payment.findUnique({ where: { id: payment.id } });
+    if (transitioned.count === 1) await notifyAdminsForPaymentReview(updated);
     return res.json({ success: true, message: 'Bank transfer submitted for verification', payment: serializeBankTransferPayment(updated) });
   } catch (error) {
     console.error('Bank transfer reference submission error:', error);
@@ -3028,6 +3030,7 @@ router.post('/manual/submit', authenticate, proofUpload.single('proof'), async (
       },
     });
     paymentCreated = true;
+    await notifyAdminsForPaymentReview(payment);
 
     return res.json({
       success: true,
@@ -3463,6 +3466,8 @@ router.post('/manual/:paymentId/proof', authenticate, proofUpload.single('proof'
           },
         });
       }
+
+      await notifyAdminsForPaymentReview(await prisma.payment.findUnique({ where: { id: paymentId } }));
 
       const finalPayment = await prisma.payment.findUnique({
         where: { id: paymentId },
