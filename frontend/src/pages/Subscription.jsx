@@ -69,11 +69,17 @@ const Subscription = () => {
   // UI refresh/purchase cycles (polling + popup-return can both fire).
   const subscriptionProcessedRef = useRef(false);
   const paypalPollingRef = useRef(null);
+  const paypalAttemptKeyRef = useRef(null);
 
   const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
   const selectedPlanQuote = subscriptionQuote?.plans?.[selectedPlan] || null;
   const price = selectedPlanQuote?.amount ?? null;
   const selectedPlanPurchasable = isSubscriptionPlanPurchaseEnabled(subscriptionQuote, selectedPlan);
+  const genericMarketGateRequired = selectedMethod === PAYMENT_METHODS.VODAFONE_CASH
+    || selectedMethod === PAYMENT_METHODS.INSTAPAY;
+  const selectedMethodCheckoutEnabled = selectedMethod === PAYMENT_METHODS.PAYPAL
+    || selectedMethod === PAYMENT_METHODS.BANK_TRANSFER
+    || (genericMarketGateRequired && selectedPlanPurchasable);
   const quotePlans = getRenderableSubscriptionPlans(subscriptionQuote);
 
   const loadSubscriptionQuote = async () => {
@@ -141,6 +147,10 @@ const Subscription = () => {
   const planVisiblePaymentMethods = selectedPlan === 'annual'
     ? visiblePaymentMethods.filter(({ id }) => id === PAYMENT_METHODS.PAYPAL || id === PAYMENT_METHODS.BANK_TRANSFER)
     : visiblePaymentMethods;
+
+  useEffect(() => {
+    paypalAttemptKeyRef.current = null;
+  }, [selectedPlan, authUser?.id]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -336,7 +346,7 @@ const Subscription = () => {
       return;
     }
 
-    if (!selectedPlanQuote || !selectedPlanPurchasable) {
+    if (!selectedPlanQuote || (genericMarketGateRequired && !selectedPlanPurchasable)) {
       setPaymentError(t('subscriptionPlanOptions.purchaseComingSoon'));
       return;
     }
@@ -379,7 +389,20 @@ const Subscription = () => {
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
-        const result = await createPayPalOrder(price, orderId, customerData, { purpose: 'SUBSCRIPTION', plan: selectedPlan });
+        if (!paypalAttemptKeyRef.current) {
+          paypalAttemptKeyRef.current = globalThis.crypto?.randomUUID?.()
+            || `attempt-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+        }
+        let result;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          result = await createPayPalOrder(price, orderId, customerData, {
+            purpose: 'SUBSCRIPTION',
+            plan: selectedPlan,
+            attemptKey: paypalAttemptKeyRef.current,
+          });
+          if (result?.success || result?.code !== 'PAYPAL_SUBSCRIPTION_PREPARING' || attempt === 2) break;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
         
         if (result.success) {
           window.open(result.approvalUrl, '_blank');
@@ -671,7 +694,7 @@ const Subscription = () => {
                             <span className="flex min-h-[48px] items-center justify-center font-semibold text-gray-800 dark:text-white">{t(`subscriptionPlanOptions.plans.${plan.id}`)}</span>
                             <span className="flex min-h-[28px] items-center justify-center whitespace-nowrap text-lg sm:text-xl font-bold text-purple-600">{formatSubscriptionAmount(plan.amount, plan.currency)}</span>
                             <span className="block min-h-[20px] text-sm text-gray-500">{t('subscriptionPlanOptions.durationDays', { days: plan.durationDays })}</span>
-                            <span className="block min-h-[16px] text-xs text-amber-600 mt-1">{plan.purchaseEnabled !== true ? t('subscriptionPlanOptions.purchaseComingSoon') : ' '}</span>
+                            <span className="block min-h-[16px] mt-1">&nbsp;</span>
                           </button>
                         ))}
                       </div>
@@ -780,7 +803,7 @@ const Subscription = () => {
                       })}
                     </div>
 
-                    {selectedPlanPurchasable && selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
+                    {selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
                       <BankTransferFlow
                         purpose="SUBSCRIPTION"
                         plan={selectedPlan}
@@ -797,9 +820,9 @@ const Subscription = () => {
                     ) : (
                       <button
                         onClick={handleSubscribe}
-                        disabled={processing || !selectedMethod || quoteLoading || !!quoteError || !selectedPlanPurchasable}
+                        disabled={processing || !selectedMethod || quoteLoading || !!quoteError || !selectedMethodCheckoutEnabled}
                         className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${(
-                          processing || !selectedMethod || quoteLoading || !!quoteError || !selectedPlanPurchasable
+                          processing || !selectedMethod || quoteLoading || !!quoteError || !selectedMethodCheckoutEnabled
                             ? 'bg-gray-300 cursor-not-allowed'
                             : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
                         )}`}
@@ -812,7 +835,7 @@ const Subscription = () => {
                         ) : (
                           <>
                             <Crown size={22} />
-                            {selectedPlanPurchasable ? t('subscriptionPage.payNow') : t('subscriptionPlanOptions.purchaseComingSoon')}
+                            {selectedMethodCheckoutEnabled ? t('subscriptionPage.payNow') : t('subscriptionPlanOptions.purchaseComingSoon')}
                           </>
                         )}
                       </button>

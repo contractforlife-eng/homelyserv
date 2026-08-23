@@ -21,6 +21,10 @@ export const SUBSCRIPTION_PLANS = {
   monthly: {
     durationDays: 30,
     prices: { EMPLOYER: 300, WORKER: 200 }
+  },
+  annual: {
+    durationDays: 365,
+    prices: { EMPLOYER: 2700, WORKER: 1800 }
   }
 };
 

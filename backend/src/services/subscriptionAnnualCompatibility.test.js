@@ -79,10 +79,8 @@ test('manual Premium target roles are limited to Employer and Worker', () => {
   assert.equal(isManualPremiumTargetRole(''), false);
 });
 
-test('the current automated/manual purchase authority and PayPal capability reject annual', () => {
-  // Both subscription payment route paths call getSubscriptionPlan(); the
-  // existing purchasable configuration intentionally remains weekly/monthly.
-  assert.equal(getSubscriptionPlan('annual'), null);
+test('the current automated/manual purchase authority recognizes annual', () => {
+  assert.equal(getSubscriptionPlan('annual').durationDays, 365);
   assert.equal(getSubscriptionPlan('weekly').durationDays, 7);
   assert.equal(getSubscriptionPlan('monthly').durationDays, 30);
   assert.equal(getProviderCapability({

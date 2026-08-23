@@ -65,6 +65,13 @@ import {
 } from '../config/bankTransfers.js';
 import { resolveBankTransferUsdSettlement } from '../services/bankTransferFxService.js';
 import {
+  buildPayPalSubscriptionOrderId,
+  getPayPalProviderEvidenceMissingFilter,
+  isActionablePayPalSubscription,
+  isPayPalProviderClaimStale,
+  normalizePayPalSubscriptionAttemptKey,
+} from '../services/paypalSubscriptionIdempotency.js';
+import {
   buildBankTransferOrderId,
   isActionableBankTransfer,
   isUniqueConstraintError,
@@ -111,6 +118,53 @@ const generateId = () => {
 
 const generateOrderId = () => {
   return 'ORD-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
+};
+
+const buildPayPalSubscriptionResult = (payment) => ({
+  success: true,
+  orderId: payment.orderId,
+  transactionId: payment.transactionId,
+  paymentId: payment.transactionId,
+  approvalUrl: payment.approvalUrl,
+  paypalOrderId: payment.paypalOrderId,
+  status: payment.status,
+  amount: payment.amount,
+  currency: payment.currency,
+  paymentMethod: 'paypal',
+});
+
+const waitForPayPalSubscriptionPreparation = async (orderId, { attempts = 8, intervalMs = 250 } = {}) => {
+  let payment = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    payment = await prisma.payment.findUnique({ where: { orderId } });
+    if (!payment || payment.paypalOrderId && payment.approvalUrl || payment.status === 'failed') return payment;
+    if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return payment;
+};
+
+const claimPayPalSubscriptionProvider = async (payment, { reclaim = false } = {}) => {
+  const claimToken = crypto.randomUUID();
+  const claimAt = new Date().toISOString();
+  const claimed = await prisma.payment.updateMany({
+    where: {
+      id: payment.id,
+      status: reclaim ? 'processing' : 'pending',
+      ...getPayPalProviderEvidenceMissingFilter(),
+      ...(reclaim && payment.updatedAt ? { updatedAt: payment.updatedAt } : {}),
+    },
+    data: {
+      status: 'processing',
+      metadata: {
+        ...(payment.metadata || {}),
+        paypalProviderClaimToken: claimToken,
+        paypalProviderClaimedAt: claimAt,
+        paypalProviderClaimError: null,
+        paypalProviderClaimReleasedAt: null,
+      },
+    },
+  });
+  return claimed.count === 1 ? claimToken : null;
 };
 
 // ============================================================
@@ -948,6 +1002,12 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       // Price, duration, currency and purchaser role are derived here.
       const normalizedRequestedPlan = normalizeSubscriptionPlanId(requestedPlan);
       const annualPayPalRequest = normalizedRequestedPlan === 'annual' && selectedPaymentMethod === 'paypal';
+      const paypalSubscriptionAttemptKey = selectedPaymentMethod === 'paypal'
+        ? normalizePayPalSubscriptionAttemptKey(req.body.attemptKey)
+        : null;
+      if (selectedPaymentMethod === 'paypal' && !paypalSubscriptionAttemptKey) {
+        return res.status(400).json({ success: false, error: 'PayPal subscription attempt key is required' });
+      }
       const selectedPlan = getSubscriptionPlan(normalizedRequestedPlan);
       if (!selectedPlan && !annualPayPalRequest) {
         return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
@@ -969,7 +1029,10 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         return res.status(400).json({ success: false, error: priceBookError.message });
       }
       const isTurkeySubscription = resolvedSubscription.market === 'TURKEY';
-      if (!isSubscriptionPurchaseMarketEnabled(resolvedSubscription.market, { user: dbUser, plan: normalizedRequestedPlan })) {
+      if (
+        selectedPaymentMethod !== 'paypal'
+        && !isSubscriptionPurchaseMarketEnabled(resolvedSubscription.market, { user: dbUser, plan: normalizedRequestedPlan })
+      ) {
         return res.status(422).json({ success: false, error: 'Subscription payment is not currently available for this market' });
       }
       if (isTurkeySubscription && selectedPaymentMethod !== 'paypal') {
@@ -985,6 +1048,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         market: resolvedSubscription.market,
         countryCode: resolvedSubscription.countryCode,
         priceBookVersion: resolvedSubscription.priceBookVersion,
+        ...(selectedPaymentMethod === 'paypal' ? { attemptKey: paypalSubscriptionAttemptKey } : {}),
       };
 
       if (!amount || amount <= 0) {
@@ -1111,7 +1175,15 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       offerId
     });
 
-    const orderId = generateOrderId();
+    const orderId = purpose === PAYMENT_PURPOSES.SUBSCRIPTION && selectedPaymentMethod === 'paypal'
+      ? buildPayPalSubscriptionOrderId({
+        userId: req.userId,
+        purpose,
+        planId: subscriptionSnapshot.plan,
+        purchaserRole: subscriptionSnapshot.purchaserRole,
+        attemptKey: subscriptionSnapshot.attemptKey,
+      })
+      : generateOrderId();
     const transactionId = generateId();
 
     const customerData = {
@@ -1230,6 +1302,57 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         });
         console.log('✅ Payment record created:', transactionId);
       }
+    } else if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION && selectedPaymentMethod === 'paypal') {
+      const identity = {
+        userId: req.userId,
+        planId: subscriptionSnapshot.plan,
+        purchaserRole: subscriptionSnapshot.purchaserRole,
+      };
+      let existingPayment = await prisma.payment.findUnique({ where: { orderId } });
+      if (existingPayment) {
+        if (!isActionablePayPalSubscription(existingPayment, identity)) {
+          return res.status(409).json({ success: false, error: 'This PayPal subscription attempt is no longer actionable' });
+        }
+        payment = existingPayment;
+      } else {
+        try {
+          payment = await prisma.payment.create({
+            data: {
+              orderId,
+              transactionId,
+              amount: Number(amount),
+              currency: transactionCurrency,
+              paymentMethod: selectedPaymentMethod,
+              providerAmount: providerEvidence.amount,
+              providerCurrency: providerEvidence.currency,
+              purpose: PAYMENT_PURPOSES.SUBSCRIPTION,
+              status: 'pending',
+              userEmail: userEmail || 'employer@example.com',
+              userId: req.userId || null,
+              workerId: workerId || null,
+              workerName: workerName || null,
+              jobTitle: jobTitle || null,
+              employerId: employerId || null,
+              employerName: employerName || null,
+              hireId: null,
+              offerId: offerId || null,
+              phone: phone || null,
+              metadata: {
+                createdFrom: 'payment-intent',
+                source: 'frontend',
+                originalAmount: amount,
+                originalCurrency: transactionCurrency,
+                ...subscriptionSnapshot,
+              },
+            },
+          });
+        } catch (error) {
+          if (!isUniqueConstraintError(error)) throw error;
+          existingPayment = await prisma.payment.findUnique({ where: { orderId } });
+          if (!isActionablePayPalSubscription(existingPayment, identity)) throw error;
+          payment = existingPayment;
+        }
+      }
     } else {
       // SUBSCRIPTION: no hire context — a fresh Payment row per attempt. The
       // completion flow (webhook / capture) grants Premium via purpose.
@@ -1316,7 +1439,43 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       }
 
     } else if (selectedPaymentMethod === 'paypal') {
+      let paypalClaimToken = null;
       try {
+        if (payment.paypalOrderId && payment.approvalUrl) {
+          return res.json(buildPayPalSubscriptionResult(payment));
+        }
+
+        if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+          paypalClaimToken = await claimPayPalSubscriptionProvider(payment);
+          if (!paypalClaimToken) {
+            const concurrent = await waitForPayPalSubscriptionPreparation(payment.orderId);
+            if (concurrent?.paypalOrderId && concurrent.approvalUrl) {
+              return res.json(buildPayPalSubscriptionResult(concurrent));
+            }
+            if (concurrent?.status === 'failed') {
+              return res.status(502).json({
+                success: false,
+                error: concurrent.metadata?.error || 'PayPal payment failed',
+              });
+            }
+            if (concurrent) {
+              if (isPayPalProviderClaimStale(concurrent)) {
+                paypalClaimToken = await claimPayPalSubscriptionProvider(concurrent, { reclaim: true });
+              }
+            }
+            if (!paypalClaimToken) {
+              return res.status(202).json({
+                success: false,
+                retryable: true,
+                code: 'PAYPAL_SUBSCRIPTION_PREPARING',
+                error: 'PayPal subscription payment is still being prepared',
+              });
+            }
+          }
+          payment = await prisma.payment.findUnique({ where: { id: payment.id } });
+          if (!payment) throw new Error('PayPal subscription provider claim could not be established');
+        }
+
         const accessToken = await getPayPalAccessToken();
         const paypalOrder = await createPayPalOrder(
           accessToken,
@@ -1359,13 +1518,41 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
 
       } catch (error) {
         console.error('❌ PayPal integration error:', error);
-        await prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: 'failed',
-            metadata: { ...(payment.metadata || {}), error: error.message }
-          }
-        });
+        const current = await prisma.payment.findUnique({ where: { id: payment.id } });
+        if (current?.paypalOrderId && current.approvalUrl) {
+          return res.json(buildPayPalSubscriptionResult(current));
+        }
+        const ownsSubscriptionClaim = purpose === PAYMENT_PURPOSES.SUBSCRIPTION
+          && paypalClaimToken
+          && current?.status === 'processing'
+          && !current.paypalOrderId
+          && current.metadata?.paypalProviderClaimToken === paypalClaimToken;
+        if (ownsSubscriptionClaim) {
+          await prisma.payment.updateMany({
+            where: {
+              id: payment.id,
+              status: 'processing',
+              paypalOrderId: null,
+              ...(current.updatedAt ? { updatedAt: current.updatedAt } : {}),
+            },
+            data: {
+              status: 'pending',
+              metadata: {
+                ...(current.metadata || {}),
+                paypalProviderClaimError: error.message,
+                paypalProviderClaimReleasedAt: new Date().toISOString(),
+              },
+            },
+          });
+        } else {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'failed',
+              metadata: { ...(payment.metadata || {}), error: error.message }
+            }
+          });
+        }
 
         return res.status(500).json({
           success: false,

@@ -107,6 +107,7 @@ export const createPayPalOrder = async (amount, orderId, customerData, options =
     paymentMethod: 'paypal',
     purpose: options.purpose || 'COMMISSION',
     plan: options.plan,
+    attemptKey: options.attemptKey,
     userEmail: customerData?.email || 'employer@example.com',
     workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
     userId: customerData?.userId,
