@@ -10,6 +10,8 @@ const VALID_CHANNEL_IDS = new Set([
   'system',
 ]);
 
+const safeUserId = (value) => String(value || 'unknown').slice(-8);
+
 function normalizeStringValue(value) {
   if (typeof value === 'string') return value;
   if (value === null || value === undefined) return null;
@@ -32,12 +34,15 @@ function sanitizeData(input) {
 }
 
 export async function sendPushToUser(userId, { title, body, data = {}, channelId = 'system' }) {
+  const safeId = safeUserId(userId);
   if (isFcmDisabled()) {
+    console.info(`[FCM] user=${safeId} activeDevices=0 success=0 failure=0 skipped=disabled`);
     return { disabled: true, attempted: 0, successCount: 0, failureCount: 0 };
   }
 
   const messaging = getMessaging();
   if (!messaging) {
+    console.info(`[FCM] user=${safeId} activeDevices=0 success=0 failure=0 skipped=uninitialized`);
     return { disabled: true, attempted: 0, successCount: 0, failureCount: 0 };
   }
 
@@ -52,10 +57,12 @@ export async function sendPushToUser(userId, { title, body, data = {}, channelId
   }
 
   if (settings.notifications === false) {
+    console.info(`[FCM] user=${safeId} activeDevices=0 success=0 failure=0 skipped=notifications-disabled`);
     return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
   }
 
   if (settings.pushNotifications === false) {
+    console.info(`[FCM] user=${safeId} activeDevices=0 success=0 failure=0 skipped=push-disabled`);
     return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
   }
 
@@ -72,6 +79,7 @@ export async function sendPushToUser(userId, { title, body, data = {}, channelId
 
     const activeDevices = devices.filter((d) => d.token && d.token.trim().length > 0);
     if (activeDevices.length === 0) {
+      console.info(`[FCM] user=${safeId} activeDevices=0 success=0 failure=0 skipped=no-active-device`);
       return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
     }
 
@@ -132,13 +140,22 @@ export async function sendPushToUser(userId, { title, body, data = {}, channelId
       }
     }
 
+    console.info(`[FCM] user=${safeId} activeDevices=${activeDevices.length} success=${successCount} failure=${failureCount}`);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        const code = result.reason?.code || result.reason?.name || 'unknown';
+        console.error(`[FCM] send failed user=${safeId} code=${code}`);
+      }
+    }
+
     return {
       disabled: false,
       attempted: activeDevices.length,
       successCount,
       failureCount,
     };
-  } catch {
+  } catch (error) {
+    console.error(`[FCM] send failed user=${safeId} code=${error?.code || error?.name || 'unknown'}`);
     return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
   }
 }

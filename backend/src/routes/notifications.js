@@ -46,8 +46,10 @@ function validateDeviceInput(body) {
 // Register or update a push device for the authenticated user.
 // ============================================================
 router.post('/devices', async (req, res) => {
+  const safeUserId = (value) => String(value || 'unknown').slice(-8);
   try {
     const userId = String(req.userId);
+    console.info(`[PushDevice] registration request user=${safeUserId(userId)} role=${req.userRole || 'UNKNOWN'} platform=${req.body?.platform || 'UNKNOWN'}`);
     const validationError = validateDeviceInput(req.body);
     if (validationError) {
       return res.status(400).json({ success: false, message: validationError.error });
@@ -76,6 +78,8 @@ router.post('/devices', async (req, res) => {
       },
     });
 
+    console.info(`[PushDevice] registration success user=${safeUserId(userId)} platform=${device.platform} active=${device.revokedAt ? 'NO' : 'YES'} revoked=${device.revokedAt ? 'YES' : 'NO'}`);
+
     return res.json({
       success: true,
       device: {
@@ -88,7 +92,7 @@ router.post('/devices', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ Error registering push device:', error);
+    console.error(`[PushDevice] registration failed user=${safeUserId(req.userId)} role=${req.userRole || 'UNKNOWN'} code=${error?.code || error?.name || 'unknown'}`);
     return res.status(500).json({ success: false, message: 'Failed to register device' });
   }
 });
