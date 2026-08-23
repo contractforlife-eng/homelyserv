@@ -95,7 +95,9 @@ export async function sendPushToUser(userId, { title, body, data = {}, channelId
           notification: { title: safeTitle, body: safeBody },
           data: safeData,
           android: {
-            channelId: safeChannel,
+            notification: {
+              channelId: safeChannel,
+            },
           },
         })
       )
