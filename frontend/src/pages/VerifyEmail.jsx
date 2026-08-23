@@ -24,7 +24,7 @@ function VerifyEmail() {
   const navigate = useNavigate();
   const token = searchParams.get('token');
 
-  const [state, setState] = useState('loading'); // loading | success | failed | expired | already_verified
+  const [state, setState] = useState(token ? 'landing' : 'failed'); // landing | loading | success | failed | expired | already_verified
   const [error, setError] = useState('');
 
   // Guard to prevent duplicate verification requests (React StrictMode safety)
@@ -32,62 +32,63 @@ function VerifyEmail() {
   const currentTokenRef = useRef(null);
 
   useEffect(() => {
-    const verify = async () => {
-      if (!token) {
-        setState('failed');
-        setError(t('invalidVerificationLink'));
-        return;
-      }
+    if (!token) {
+      setState('failed');
+      setError(t('invalidVerificationLink'));
+      return;
+    }
+    setState('landing');
+    setError('');
+  }, [token, t]);
 
-      // Prevent duplicate requests for the same token
-      if (verificationStartedRef.current && currentTokenRef.current === token) {
-        return;
-      }
+  const handleVerify = async () => {
+    if (!token || (verificationStartedRef.current && currentTokenRef.current === token)) {
+      return;
+    }
 
-      verificationStartedRef.current = true;
-      currentTokenRef.current = token;
+    verificationStartedRef.current = true;
+    currentTokenRef.current = token;
+    setState('loading');
+    setError('');
 
-      try {
-        const response = await api.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+    try {
+      const response = await api.post('/api/auth/verify-email', { token });
 
-        if (response.data?.success) {
-          const status = response.data.status;
+      if (response.data?.success) {
+        const status = response.data.status;
 
-          if (status === 'already_verified') {
-            setState('already_verified');
-          } else {
-            setState('success');
-          }
-
-          // Update auth store if user is logged in
-          if (response.data.user) {
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser && currentUser.id === response.data.user.id) {
-              useAuthStore.setState({ user: response.data.user });
-            }
-          }
+        if (status === 'already_verified') {
+          setState('already_verified');
         } else {
-          const status = response.data?.status;
-          if (status === 'expired') {
-            setState('expired');
-          } else {
-            setState('failed');
-            setError(response.data?.message || t('emailVerificationFailed'));
+          setState('success');
+        }
+
+        // Update auth store if user is logged in
+        if (response.data.user) {
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser && currentUser.id === response.data.user.id) {
+            useAuthStore.setState({ user: response.data.user });
           }
         }
-      } catch (err) {
-        const status = err.response?.data?.status;
+      } else {
+        const status = response.data?.status;
         if (status === 'expired') {
           setState('expired');
         } else {
           setState('failed');
-          setError(err.response?.data?.message || t('emailVerificationFailed'));
+          setError(response.data?.message || t('emailVerificationFailed'));
         }
       }
-    };
-
-    verify();
-  }, [token]);
+    } catch (err) {
+      const status = err.response?.data?.status;
+      if (status === 'expired') {
+        setState('expired');
+      } else {
+        setState('failed');
+        setError(err.response?.data?.message || t('emailVerificationFailed'));
+      }
+    }
+  };
 
   const handleResend = async () => {
     try {
@@ -104,6 +105,29 @@ function VerifyEmail() {
 
   const renderContent = () => {
     switch (state) {
+      case 'landing':
+        return (
+          <div className="text-center">
+            <div className="relative inline-block mb-6">
+              <div className="absolute inset-0 bg-red-500/30 rounded-full blur-xl opacity-60 scale-110"></div>
+              <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/30">
+                <MailCheck size={40} className="text-white" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('verifyMyEmail')}</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-3">{t('verificationLandingDesc')}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">{t('latestVerificationLinkNotice')}</p>
+            <button
+              type="button"
+              onClick={handleVerify}
+              disabled={!token || verificationStartedRef.current}
+              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <MailCheck size={18} />
+              {t('verifyMyEmail')}
+            </button>
+          </div>
+        );
       case 'loading':
         return (
           <div className="text-center">

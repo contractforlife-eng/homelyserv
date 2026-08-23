@@ -48,7 +48,8 @@ router.get('/verify', authenticate, authController.verifyToken);
 // Verify Email - Delegates to controller
 // Public route - no auth required (user clicks link in email)
 // ============================================================
-router.get('/verify-email', authController.verifyEmail);
+router.get('/verify-email', authController.verifyEmailGet);
+router.post('/verify-email', authController.verifyEmail);
 
 // ============================================================
 // Resend Verification - Delegates to controller

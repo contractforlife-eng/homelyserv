@@ -297,11 +297,12 @@ export const register = async (req, res) => {
 // ============================================================
 export const verifyEmail = async (req, res) => {
   try {
-    const { token } = req.query;
+    const { token } = req.body || {};
 
     if (!token) {
       return res.status(400).json({
         success: false,
+        reason: 'missing_token',
         message: 'Verification token is required'
       });
     }
@@ -314,13 +315,15 @@ export const verifyEmail = async (req, res) => {
         return res.status(400).json({
           success: false,
           status: 'expired',
+          reason: 'expired',
           message: 'This verification link has expired. Please request a new one.'
         });
       }
       return res.status(400).json({
         success: false,
         status: 'invalid',
-        message: 'Verification failed. The link is invalid or has already been used.'
+        reason: 'invalid_or_superseded',
+        message: 'This verification link is no longer valid. If your email is already verified, you can sign in. Otherwise request a new verification email.'
       });
     }
 
@@ -333,6 +336,7 @@ export const verifyEmail = async (req, res) => {
     return res.json({
       success: true,
       status: result.status,
+      reason: result.status === 'already_verified' ? 'already_verified' : 'success',
       message: result.status === 'already_verified'
         ? 'Your email is already verified'
         : 'Email verified successfully',
@@ -347,6 +351,15 @@ export const verifyEmail = async (req, res) => {
     });
   }
 };
+
+// Email links must never mutate verification state. Scanners and legacy GET
+// callers receive only a safe instruction to use the explicit POST action.
+export const verifyEmailGet = async (req, res) => res.status(405).json({
+  success: false,
+  status: 'use_post',
+  reason: 'use_post',
+  message: 'Open this page and select Verify my email to continue.'
+});
 
 // ============================================================
 // RESEND VERIFICATION

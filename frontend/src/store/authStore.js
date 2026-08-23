@@ -486,7 +486,7 @@ const useAuthStore = create(
       verifyEmail: async (token) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+          const response = await api.post('/api/auth/verify-email', { token });
 
           if (response.data?.success && response.data?.user) {
             const normalizedUser = normalizeUser(response.data.user);

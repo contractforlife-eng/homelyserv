@@ -101,8 +101,34 @@ export const verifyEmailWithToken = async (rawToken) => {
     console.log('[VERIFY-EMAIL] Computed hash prefix:', tokenHash.substring(0, 8));
   }
 
-  // Find user by token hash. Do NOT reveal whether a token existed.
-  const user = await User.findOne({ emailVerificationTokenHash: tokenHash });
+  const now = new Date();
+
+  // Claim the token atomically. Only one concurrent request can satisfy the
+  // hash, expiry, and unverified predicates and clear the token.
+  const updatedUser = await User.findOneAndUpdate(
+    {
+      emailVerificationTokenHash: tokenHash,
+      emailVerified: { $ne: true },
+      emailVerificationExpiresAt: { $gt: now },
+    },
+    {
+      $set: { emailVerified: true, emailVerifiedAt: now },
+      $unset: { emailVerificationTokenHash: 1, emailVerificationExpiresAt: 1 },
+    },
+    { new: true }
+  );
+
+  if (updatedUser) {
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] User verified successfully');
+    }
+    return { success: true, status: 'verified', user: updatedUser };
+  }
+
+  // Classify without mutating. A consumed token has been cleared and is
+  // intentionally indistinguishable from an invalid/superseded token.
+  const user = await User.findOne({ emailVerificationTokenHash: tokenHash })
+    .select('_id emailVerified emailVerificationExpiresAt');
 
   if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
     console.log('[VERIFY-EMAIL] User found:', !!user);
@@ -124,7 +150,7 @@ export const verifyEmailWithToken = async (rawToken) => {
     return { success: false, status: 'invalid' };
   }
 
-  // Already verified - return success (idempotent)
+  // This is only safely provable when the matching hash is still present.
   if (user.emailVerified) {
     if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
       console.log('[VERIFY-EMAIL] User already verified');
@@ -133,30 +159,14 @@ export const verifyEmailWithToken = async (rawToken) => {
   }
 
   // Check expiration
-  if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
+  if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt <= now) {
     if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
       console.log('[VERIFY-EMAIL] Token expired or missing expiry');
     }
     return { success: false, status: 'expired', user };
   }
 
-  // Mark as verified and clear token fields (one-time use)
-  const updatedUser = await User.findByIdAndUpdate(
-    user._id,
-    {
-      emailVerified: true,
-      emailVerifiedAt: new Date(),
-      emailVerificationTokenHash: null,
-      emailVerificationExpiresAt: null
-    },
-    { new: true }
-  );
-
-  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
-    console.log('[VERIFY-EMAIL] User verified successfully');
-  }
-
-  return { success: true, status: 'verified', user: updatedUser };
+  return { success: false, status: 'invalid' };
 };
 
 // ============================================================

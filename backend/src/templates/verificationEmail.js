@@ -91,13 +91,13 @@ export const buildVerificationEmail = ({ fullName, email, rawToken }) => {
     previewText: 'Please verify your email address to activate your HomelyServ account',
     content: content,
     actionButton: actionButton,
-    footerNote: 'This verification link will expire in 24 hours. If you did not create an account, you can safely ignore this email.'
+    footerNote: 'This verification link will expire in 24 hours. Only the most recent verification email link will work. If you did not create an account, you can safely ignore this email.'
   });
 
   return {
     subject: 'Verify your email address - HomelyServ',
     html: html,
-    text: `Hi ${safeFullName},\n\nThank you for joining HomelyServ.\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis verification link will expire in 24 hours.\n\nIf you did not create an account, you can safely ignore this email.\n\n© ${new Date().getFullYear()} HomelyServ\nThis email was sent automatically.`
+    text: `Hi ${safeFullName},\n\nThank you for joining HomelyServ.\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis verification link will expire in 24 hours. Only the most recent verification email link will work.\n\nIf you did not create an account, you can safely ignore this email.\n\n© ${new Date().getFullYear()} HomelyServ\nThis email was sent automatically.`
   };
 };
 
