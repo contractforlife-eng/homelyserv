@@ -6,7 +6,7 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
-import { Plus, Eye, Pencil, Pause, Play, XCircle, MapPin, Calendar, Clock, Loader2, Users } from 'lucide-react';
+import { Plus, Eye, Pencil, Pause, Play, XCircle, MapPin, Calendar, Clock, Loader2, Users, RotateCcw } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
@@ -76,6 +76,23 @@ const EmployerJobs = () => {
     }
   };
 
+  const handleRepost = async (job) => {
+    setActionJobId(job.id);
+    try {
+      const data = await jobService.repostJob(job.id);
+      if (data?.success && data.job) {
+        setJobs(prev => [data.job, ...prev]);
+      } else {
+        alert(t('employerJobs.actionError'));
+      }
+    } catch (repostError) {
+      console.error('Repost job error:', repostError);
+      alert(repostError.response?.data?.message || t('employerJobs.actionError'));
+    } finally {
+      setActionJobId(null);
+    }
+  };
+
   const formatSalary = (job) => formatJobCompensation(job, t, i18n.resolvedLanguage);
 
   const formatDate = (dateStr) => {
@@ -94,6 +111,8 @@ const EmployerJobs = () => {
         return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
       case 'closed':
         return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+      case 'expired':
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
     }
@@ -204,6 +223,11 @@ const EmployerJobs = () => {
                         <span className="inline-flex items-center gap-1">
                           <Clock size={14} /> {t('employerJobs.deadline')}: {formatDate(job.deadline) || t('employerJobs.noDeadline')}
                         </span>
+                        {job.expiresAt && (
+                          <span className="inline-flex items-center gap-1">
+                            <Clock size={14} /> {job.status === 'expired' ? t('employerJobs.expiredOn') : t('employerJobs.expires')}: {formatDate(job.expiresAt)}
+                          </span>
+                        )}
                       </div>
 
                       {job.weeklyDaysOff && (
@@ -252,7 +276,16 @@ const EmployerJobs = () => {
                           <Play size={16} /> {t('employerJobs.reopen')}
                         </button>
                       )}
-                      {job.status !== 'closed' && (
+                      {job.status === 'expired' && (
+                        <button
+                          onClick={() => handleRepost(job)}
+                          disabled={actionJobId === job.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-teal-600 text-white hover:bg-teal-700 transition disabled:opacity-50"
+                        >
+                          <RotateCcw size={16} /> {t('employerJobs.repost')}
+                        </button>
+                      )}
+                      {(job.status === 'open' || job.status === 'paused') && (
                         <button
                           onClick={() => handleStatusChange(job, 'closed')}
                           disabled={actionJobId === job.id}

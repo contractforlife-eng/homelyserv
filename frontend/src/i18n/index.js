@@ -4821,6 +4821,23 @@ for (const [code, copy] of Object.entries(BANK_TRANSFER_COPY)) {
   ({ en, ar, fr, ru, tr, de }[code]).translation.bankTransfer = copy;
 }
 
+const JOB_LIFECYCLE_COPY = {
+  en: { expires: 'Expires', expiredOn: 'Expired on', repost: 'Repost', expired: 'Expired' },
+  ar: { expires: 'ينتهي', expiredOn: 'انتهت في', repost: 'إعادة النشر', expired: 'منتهية' },
+  fr: { expires: 'Expire', expiredOn: 'Expiré le', repost: 'Republier', expired: 'Expirée' },
+  ru: { expires: 'Истекает', expiredOn: 'Истёк: ', repost: 'Опубликовать снова', expired: 'Истёкшая' },
+  tr: { expires: 'Son kullanma', expiredOn: 'Şu tarihte sona erdi', repost: 'Yeniden yayınla', expired: 'Süresi doldu' },
+  de: { expires: 'Läuft ab', expiredOn: 'Abgelaufen am', repost: 'Erneut veröffentlichen', expired: 'Abgelaufen' },
+};
+
+for (const [code, copy] of Object.entries(JOB_LIFECYCLE_COPY)) {
+  const employerJobs = ({ en, ar, fr, ru, tr, de }[code]).translation.employerJobs;
+  employerJobs.expires = copy.expires;
+  employerJobs.expiredOn = copy.expiredOn;
+  employerJobs.repost = copy.repost;
+  employerJobs.status.expired = copy.expired;
+}
+
 const resources = {
   en,
   ar,

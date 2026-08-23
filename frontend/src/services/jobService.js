@@ -37,6 +37,11 @@ export const updateJobStatus = async (jobId, status) => {
   return response.data;
 };
 
+export const repostJob = async (jobId) => {
+  const response = await api.post(`/api/jobs/${jobId}/repost`);
+  return response.data;
+};
+
 // ============================================================
 // JOB APPLICATIONS — Phase 2 Job Marketplace
 // ============================================================
@@ -84,6 +89,7 @@ const jobService = {
   getMyJobs,
   updateJob,
   updateJobStatus,
+  repostJob,
   applyToJob,
   getMyApplications,
   withdrawApplication,

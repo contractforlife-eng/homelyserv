@@ -620,6 +620,7 @@ model JobPost {
   workEndTime        String?
   employmentStartDate DateTime?
   deadline           DateTime?
+  expiresAt          DateTime?
 
   requirements       String[]
   benefits           String[]

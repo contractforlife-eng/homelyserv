@@ -130,7 +130,7 @@ export const applyToJob = async (req, res) => {
     // JobPost must exist and be open
     const jobPost = await prisma.jobPost.findUnique({
       where: { id: jobPostId },
-      select: { id: true, employerId: true, status: true },
+      select: { id: true, employerId: true, status: true, expiresAt: true, deadline: true },
     });
     if (!jobPost) {
       return res.status(404).json({ success: false, message: 'Job not found' });
@@ -139,6 +139,19 @@ export const applyToJob = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'This job is no longer accepting applications',
+      });
+    }
+    const now = new Date();
+    if (jobPost.expiresAt && new Date(jobPost.expiresAt).getTime() <= now.getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: 'This job has expired and is no longer accepting applications',
+      });
+    }
+    if (jobPost.deadline && new Date(jobPost.deadline).getTime() <= now.getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: 'The application deadline has passed',
       });
     }
 

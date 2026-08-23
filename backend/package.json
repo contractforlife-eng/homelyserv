@@ -5,6 +5,7 @@
   "description": "HomelyServ Backend API",
   "main": "src/index.js",
   "scripts": {
+    "prestart": "npx prisma generate --schema=./prisma/schema.prisma",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "npx prisma generate",

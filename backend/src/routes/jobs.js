@@ -11,10 +11,17 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
+import {
+  buildRepostData,
+  canReopenJob,
+  createJobLifecycleFields,
+  getEffectiveJobStatus,
+  isJobWorkerEligible,
+} from '../services/jobLifecycle.js';
 
 const router = express.Router();
 
-const JOB_STATUSES = ['open', 'paused', 'closed'];
+const JOB_STATUSES = ['open', 'paused', 'closed', 'expired'];
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'freelance'];
 
 const isValidObjectId = (id) => {
@@ -375,6 +382,7 @@ router.post('/', requireEmployer, async (req, res) => {
       data: {
         ...data,
         employerId: String(req.userId),
+        ...createJobLifecycleFields(new Date()),
         status: req.body.status === 'closed' || req.body.status === 'paused'
           ? req.body.status
           : 'open',
@@ -399,7 +407,11 @@ router.get('/mine', requireEmployer, async (req, res) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ success: true, jobs });
+    const now = new Date();
+    res.json({
+      success: true,
+      jobs: jobs.map((job) => ({ ...job, status: getEffectiveJobStatus(job, now) })),
+    });
   } catch (error) {
     console.error('Jobs: my jobs error:', error);
     res.status(500).json({ success: false, message: 'Failed to load your jobs' });
@@ -413,7 +425,14 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const { query, location, employmentType, salaryMin, salaryMax, compensationCurrency } = req.query;
 
-    const where = { status: 'open' };
+    const now = new Date();
+    const where = {
+      status: 'open',
+      AND: [
+        { OR: [{ expiresAt: null }, { expiresAt: { isSet: false } }, { expiresAt: { gt: now } }] },
+        { OR: [{ deadline: null }, { deadline: { isSet: false } }, { deadline: { gt: now } }] },
+      ],
+    };
 
     if (query && String(query).trim()) {
       const q = String(query).trim();
@@ -440,7 +459,7 @@ router.get('/', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: compensationFilter.error });
     }
     if (compensationFilter.conditions.length > 0) {
-      where.AND = compensationFilter.conditions;
+      where.AND.push(...compensationFilter.conditions);
     }
 
     const jobs = await prisma.jobPost.findMany({
@@ -487,7 +506,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
     const isOwner = req.userRole === 'EMPLOYER' && String(job.employerId) === String(req.userId);
 
-    if (job.status !== 'open' && !isOwner) {
+    if (!isOwner && !isJobWorkerEligible(job, new Date())) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
@@ -499,6 +518,39 @@ router.get('/:id', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Jobs: detail error:', error);
     res.status(500).json({ success: false, message: 'Failed to load job' });
+  }
+});
+
+// ============================================================
+// POST /api/jobs/:id/repost — Employer owner only, expired jobs
+// Creates a new listing and leaves all historical relationships untouched.
+// ============================================================
+router.post('/:id/repost', requireEmployer, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    const source = await prisma.jobPost.findUnique({ where: { id: String(req.params.id) } });
+    if (!source) return res.status(404).json({ success: false, message: 'Job not found' });
+    if (String(source.employerId) !== String(req.userId)) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const now = new Date();
+    const effectivelyExpired = source.status === 'expired' ||
+      (source.status === 'open' && source.expiresAt && new Date(source.expiresAt).getTime() <= now.getTime());
+    if (!effectivelyExpired) {
+      return res.status(400).json({ success: false, message: 'Only expired jobs can be reposted' });
+    }
+
+    const job = await prisma.jobPost.create({
+      data: buildRepostData(source, req.userId, now),
+    });
+    res.status(201).json({ success: true, message: 'Job reposted successfully', job });
+  } catch (error) {
+    console.error('Jobs: repost error:', error);
+    res.status(500).json({ success: false, message: 'Failed to repost job' });
   }
 });
 
@@ -527,6 +579,12 @@ router.patch('/:id', requireEmployer, async (req, res) => {
     }
 
     if (req.body.status && JOB_STATUSES.includes(String(req.body.status))) {
+      if (String(req.body.status) === 'open' && !canReopenJob(job, new Date())) {
+        return res.status(400).json({ success: false, message: 'Expired jobs must be reposted before reopening' });
+      }
+      if (String(req.body.status) === 'expired' && getEffectiveJobStatus(job, new Date()) !== 'expired') {
+        return res.status(400).json({ success: false, message: 'Only expired jobs can use expired status' });
+      }
       data.status = String(req.body.status);
     }
 
@@ -544,7 +602,7 @@ router.patch('/:id', requireEmployer, async (req, res) => {
 
 // ============================================================
 // PATCH /api/jobs/:id/status — Employer owner only
-// Allowed: open | paused | closed
+// Allowed: open | paused | closed | expired
 // ============================================================
 router.patch('/:id/status', requireEmployer, async (req, res) => {
   try {
@@ -569,6 +627,13 @@ router.patch('/:id/status', requireEmployer, async (req, res) => {
 
     if (String(job.employerId) !== String(req.userId)) {
       return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    if (String(status) === 'open' && !canReopenJob(job, new Date())) {
+      return res.status(400).json({ success: false, message: 'Expired jobs must be reposted before reopening' });
+    }
+    if (String(status) === 'expired' && getEffectiveJobStatus(job, new Date()) !== 'expired') {
+      return res.status(400).json({ success: false, message: 'Only expired jobs can use expired status' });
     }
 
     const updated = await prisma.jobPost.update({
