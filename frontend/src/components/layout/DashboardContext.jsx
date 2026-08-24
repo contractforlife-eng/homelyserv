@@ -9,6 +9,7 @@ const DashboardContext = createContext({
   sidebarCollapsed: false,
   mobileMenuOpen: false,
   authUser: null,
+  premiumStatus: { userId: null, known: false, isPremium: null, subscription: null },
   handleLogout: () => {},
 });
 

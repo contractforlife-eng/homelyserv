@@ -5,6 +5,12 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import { applyBackendSubscription } from '../../utils/subscriptionService';
 import { fetchSubscriptionStatus } from '../../services/paymentService';
+import {
+  applyCanonicalPremiumState,
+  createInitialPremiumState,
+  createUnknownPremiumState,
+  preservePremiumStateForUser,
+} from '../../utils/premiumSessionState';
 import EmployerSidebar from '../employer/EmployerSidebar';
 import WorkerSidebar from '../worker/WorkerSidebar';
 import AdminSidebar from '../AdminSidebar';
@@ -31,6 +37,7 @@ const DashboardLayout = ({
   const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem('homelyserv_language') || 'en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [premiumStatus, setPremiumStatus] = useState(() => createInitialPremiumState(authUser?.id, authUser));
 
   // Keep context language in sync whenever i18n changes (from any page)
   useEffect(() => {
@@ -67,16 +74,25 @@ const DashboardLayout = ({
   // the authoritative subscription status into localStorage and authStore so
   // that Sidebar, DashboardHeader, and all dashboard pages agree.
   useEffect(() => {
-    if (!authUser?.id) return;
+    if (!authUser?.id) {
+      setPremiumStatus(createUnknownPremiumState());
+      return;
+    }
     const role = (authUser.role || '').toUpperCase();
-    if (role !== 'WORKER' && role !== 'EMPLOYER') return;
+    if (role !== 'WORKER' && role !== 'EMPLOYER') {
+      setPremiumStatus(createUnknownPremiumState(authUser.id));
+      return;
+    }
 
     let cancelled = false;
+    const userId = String(authUser.id);
+    setPremiumStatus((current) => preservePremiumStateForUser(current, userId, authUser));
     const syncSubscription = async () => {
       try {
         const data = await fetchSubscriptionStatus();
         if (cancelled || !data?.success) return;
-        applyBackendSubscription(authUser.id, authUser.email, data.subscription);
+        setPremiumStatus(applyCanonicalPremiumState(userId, data));
+        applyBackendSubscription(userId, authUser.email, data.subscription);
       } catch (error) {
         console.warn('Could not sync subscription status from backend:', error);
       }
@@ -118,8 +134,9 @@ const DashboardLayout = ({
     sidebarCollapsed,
     mobileMenuOpen,
     authUser,
+    premiumStatus,
     handleLogout,
-  }), [language, sidebarCollapsed, mobileMenuOpen, authUser]);
+  }), [language, sidebarCollapsed, mobileMenuOpen, authUser, premiumStatus]);
 
   // Only block during initial unresolved authentication
   // Once user is loaded, never show full-page loader during SPA navigation

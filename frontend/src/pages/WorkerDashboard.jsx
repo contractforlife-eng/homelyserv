@@ -3,12 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { fetchSubscriptionStatus } from '../services/paymentService';
-import { applyBackendSubscription } from '../utils/subscriptionService';
-import { normalizePremiumStatus } from '../utils/premiumStatus';
 import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
   getUserConversations,
   getTotalUnreadCount
@@ -50,12 +48,13 @@ import {
   Award
 } from 'lucide-react';
 
-const WorkerDashboard = () => {
+const WorkerDashboardContent = () => {
   
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const { premiumStatus } = useDashboard();
    
   const [stats, setStats] = useState({
     
@@ -76,31 +75,10 @@ const WorkerDashboard = () => {
     totalEarningsByCurrency: []
   });
   const [recentActivity, setRecentActivity] = useState([]);
-  const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
-
   const { t } = useTranslation();
 
-  const userIsPremium = subscriptionStatus.isPremium;
-
-  // Backend subscription = the ONLY source of truth for premium entitlement.
-  useEffect(() => {
-    let cancelled = false;
-    const loadPremium = async () => {
-      try {
-        const data = await fetchSubscriptionStatus();
-        if (!cancelled && data?.success) {
-          const normalized = normalizePremiumStatus(data);
-          setSubscriptionStatus(normalized);
-          applyBackendSubscription(authUser?.id || authUser?.email, authUser?.email, normalized.subscription);
-        }
-      } catch (error) {
-        // Non-fatal: premium defaults to false when the check fails.
-        console.error('Failed to load subscription status:', error);
-      }
-    };
-    if (authUser) loadPremium();
-    return () => { cancelled = true; };
-  }, [authUser]);
+  const premiumKnown = premiumStatus?.known === true;
+  const userIsPremium = premiumKnown && premiumStatus.isPremium === true;
 
 
   const handleLogout = () => {
@@ -381,11 +359,12 @@ const WorkerDashboard = () => {
   }
 
   return (
-    <DashboardLayout requiredRole="WORKER">
+    <>
       <DashboardHeader
         title={t('workerDashboard.dashboard')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
+        premiumKnown={premiumKnown}
       />
 
         <div className="p-4 md:p-6">
@@ -438,7 +417,7 @@ const WorkerDashboard = () => {
                   <User size={16} />
                   {t('workerDashboard.viewProfile')}
                 </Link>
-                {!userIsPremium && (
+                {premiumKnown && !userIsPremium && (
                   <Link
                     to="/subscription"
                     className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
@@ -613,8 +592,14 @@ const WorkerDashboard = () => {
             )}
           </div>
         </div>
-    </DashboardLayout>
+    </>
   );
 };
+
+const WorkerDashboard = () => (
+  <DashboardLayout requiredRole="WORKER">
+    <WorkerDashboardContent />
+  </DashboardLayout>
+);
 
 export default WorkerDashboard;

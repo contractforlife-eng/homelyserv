@@ -2,7 +2,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
-import { isUserPremium } from '../../utils/subscriptionService';
 import { getDisplayName } from '../../utils/userDisplay';
 import { UserDisplayName } from '../users';
 import NotificationBell from '../NotificationBell';
@@ -41,12 +40,15 @@ const DashboardHeader = ({
   markAllReadText,
   notificationsText,
   customNotificationComponent,
-  variant = 'default'
+  variant = 'default',
+  premiumKnown: premiumKnownProp
 }) => {
   const { t } = useTranslation();
   // Consume layout state from DashboardLayout context
   const dashboard = useDashboard();
   const authUser = useAuthStore(state => state.user);
+  const sharedPremiumKnown = dashboard.premiumStatus?.known === true;
+  const sharedPremium = dashboard.premiumStatus?.isPremium === true;
 
   // Use prop or fall back to context value
   const language = languageProp !== undefined ? languageProp : dashboard.language;
@@ -54,11 +56,8 @@ const DashboardHeader = ({
   // Language toggle removed - using shared LanguageSwitcher component
 
   // Use prop or calculate from authUser
-  const isPremium = isPremiumProp !== undefined ? isPremiumProp : (() => {
-    const userId = authUser?.id || authUser?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  })();
+  const premiumKnown = premiumKnownProp !== undefined ? premiumKnownProp : sharedPremiumKnown;
+  const isPremium = premiumKnown ? (isPremiumProp !== undefined ? isPremiumProp : sharedPremium) : false;
 
   const profileImage = userProfileImage || authUser?.profileImage;
   const fullName = authUser?.fullName || t('sharedChrome.header.user');
