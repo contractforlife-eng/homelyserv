@@ -1,5 +1,6 @@
 import { PAYMENT_PURPOSES } from './subscription.js';
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
+import { isPayPalNativeCurrency } from '../services/paypalFxService.js';
 
 export const PROVIDERS = Object.freeze({
   PAYMOB: 'paymob',
@@ -9,6 +10,7 @@ export const PROVIDERS = Object.freeze({
 export const PROVIDER_CAPABILITY_MODES = Object.freeze({
   DIRECT: 'DIRECT',
   LEGACY_CONVERTED: 'LEGACY_CONVERTED',
+  FX_CONVERTED: 'FX_CONVERTED',
   UNSUPPORTED: 'UNSUPPORTED',
 });
 
@@ -106,24 +108,11 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
 
   const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
   const isPaymobEgp = isPaymob && normalizedCurrency === 'EGP';
-  const isLegacyPayPalEgp = (
-    normalizedProvider === PROVIDERS.PAYPAL &&
-    normalizedCurrency === 'EGP'
-  );
-  const isLivePayPalDirectCommission = (
-    normalizedProvider === PROVIDERS.PAYPAL &&
-    normalizedPurpose === PAYMENT_PURPOSES.COMMISSION &&
-    configuration.environment === 'production' &&
-    ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
-  );
-  const isLivePayPalDirectSubscription = (
-    normalizedProvider === PROVIDERS.PAYPAL &&
-    normalizedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION &&
-    configuration.environment === 'production' &&
-    ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
-  );
+  const isPayPal = normalizedProvider === PROVIDERS.PAYPAL;
+  const isPayPalNative = isPayPal && isPayPalNativeCurrency(normalizedCurrency);
+  const isPayPalFallback = isPayPal && !isPayPalNative;
 
-  if (!isPaymobEgp && !isLegacyPayPalEgp && !isLivePayPalDirectCommission && !isLivePayPalDirectSubscription) {
+  if (!isPaymobEgp && !isPayPalNative && !isPayPalFallback) {
     return unsupportedCapability({
       provider: normalizedProvider,
       purpose: normalizedPurpose,
@@ -137,11 +126,11 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     provider: normalizedProvider,
     purpose: normalizedPurpose,
     transactionCurrency: normalizedCurrency,
-    providerCurrency: isPaymobEgp ? 'EGP' : isLegacyPayPalEgp ? 'USD' : normalizedCurrency,
+    providerCurrency: isPaymobEgp ? 'EGP' : isPayPalNative ? normalizedCurrency : 'USD',
     supported: true,
     enabled: configuration.configured,
-    mode: isLegacyPayPalEgp
-      ? PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED
+    mode: isPayPalFallback
+      ? PROVIDER_CAPABILITY_MODES.FX_CONVERTED
       : PROVIDER_CAPABILITY_MODES.DIRECT,
     verificationStatus: PROVIDER_VERIFICATION_STATUSES.CURRENTLY_IMPLEMENTED,
     externalAccountVerificationRequired: false,

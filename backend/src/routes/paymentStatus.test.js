@@ -6,6 +6,9 @@ import paymentRouter, { buildBankTransferFxUnavailableResponse, buildSubscriptio
 const bankTransferCreateHandler = paymentRouter.stack
   .find((layer) => layer.route?.path === '/bank-transfer/create')
   .route.stack.at(-1).handle;
+const paymentIntentHandler = paymentRouter.stack
+  .find((layer) => layer.route?.path === '/create-payment-intent')
+  .route.stack.at(-1).handle;
 
 const withEnvironment = async (values, callback) => {
   const previous = Object.fromEntries(Object.keys(values).map((key) => [key, process.env[key]]));
@@ -74,6 +77,54 @@ test('Bank Transfer FX failure returns safely before creating a Payment', async 
   assert.deepEqual(responseBody, {
     success: false,
     error: 'Bank transfer is temporarily unavailable for this currency',
+  });
+  assert.equal(paymentCreateCalls, 0);
+});
+
+test('PayPal FX failure returns safely before creating a Payment or PayPal order', async () => {
+  const originalHireLookup = prisma.hire.findUnique;
+  const originalPaymentCreate = prisma.payment.create;
+  const originalFetch = globalThis.fetch;
+  let paymentCreateCalls = 0;
+  let responseStatus;
+  let responseBody;
+
+  prisma.hire.findUnique = async () => ({
+    id: 'hire-paypal-1',
+    totalDue: '60',
+    employerId: 'employer-1',
+    compensationCurrency: 'EGP',
+  });
+  prisma.payment.create = async () => {
+    paymentCreateCalls += 1;
+    throw new Error('Payment creation must not be reached');
+  };
+  globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({ message: 'internal provider error' }) });
+
+  try {
+    await withEnvironment({ PAYPAL_CLIENT_ID: 'test-client', PAYPAL_SECRET: 'test-secret' }, async () => {
+      await paymentIntentHandler(
+        {
+          userId: 'employer-1',
+          user: { email: 'test@example.invalid' },
+          body: { paymentMethod: 'paypal', purpose: 'COMMISSION', hireId: 'hire-paypal-1', amount: 999999 },
+        },
+        {
+          status(code) { responseStatus = code; return this; },
+          json(body) { responseBody = body; return this; },
+        },
+      );
+    });
+  } finally {
+    prisma.hire.findUnique = originalHireLookup;
+    prisma.payment.create = originalPaymentCreate;
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(responseStatus, 503);
+  assert.deepEqual(responseBody, {
+    success: false,
+    error: 'PayPal is temporarily unavailable for this currency',
   });
   assert.equal(paymentCreateCalls, 0);
 });

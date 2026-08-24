@@ -22,6 +22,7 @@ import {
   getAvailableProviders,
   getProviderCapability,
 } from '../config/providerCapabilities.js';
+import { isPayPalNativeCurrency, PayPalFxError, resolvePayPalProviderEvidence, buildPayPalFxEvidenceMetadata, getPayPalFxCapability } from '../services/paypalFxService.js';
 import {
   formatMoneyDecimal,
   multiplyMoneyByRatio,
@@ -56,9 +57,7 @@ import {
 import {
   isTurkeySubscriptionPayment,
   resolvePersistedTrySubscriptionEvidence,
-  resolveTrySubscriptionProviderEvidenceForUser,
 } from '../services/trySubscriptionProviderEvidenceService.js';
-import { getTryUsdRateConfig } from '../config/fxRates.js';
 import {
   BANK_TRANSFER_PROVIDER,
   BANK_TRANSFER_CURRENCY,
@@ -352,8 +351,8 @@ const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency
   });
   if (!capability.enabled) throw new Error('Provider does not support this payment currency');
   if (paymentMethod === 'paypal') {
-    if (capability.mode === PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED) {
-      return getExpectedPayPalCharge(paymentAmount);
+    if (capability.mode === PROVIDER_CAPABILITY_MODES.FX_CONVERTED) {
+      throw new Error('Persisted PayPal provider evidence is required for converted currency');
     }
     return {
       amount: formatMoneyDecimal(paymentAmount, paymentCurrency),
@@ -373,13 +372,36 @@ const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency
   throw new Error('Unsupported payment method');
 };
 
-const isHistoricalPayPalEgpCommissionAttempt = (payment) => (
+const isHistoricalPayPalEgpAttempt = (payment) => (
   payment?.paymentMethod === 'paypal' &&
-  payment?.purpose === PAYMENT_PURPOSES.COMMISSION &&
   String(payment?.currency || '').trim().toUpperCase() === 'EGP' &&
   typeof payment?.paypalOrderId === 'string' &&
   payment.paypalOrderId.trim().length > 0
 );
+
+const hasGenericPayPalFxEvidence = (payment) => {
+  if (payment?.paymentMethod !== 'paypal' || payment?.providerCurrency !== PAYPAL_PROVIDER_CURRENCY) return false;
+  const metadata = payment?.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata)
+    ? payment.metadata
+    : {};
+  if (metadata.fxMode !== 'FRANKFURTER_SOURCE_TO_USD') return false;
+  try {
+    return metadata.sourceCurrency === String(payment.currency || '').trim().toUpperCase()
+      && metadata.sourceAmount === formatMoneyDecimal(payment.amount, payment.currency)
+      && metadata.settlementCurrency === PAYPAL_PROVIDER_CURRENCY
+      && metadata.settlementAmount === String(payment.providerAmount)
+      && typeof metadata.exchangeRate === 'string'
+      && metadata.exchangeRate.length > 0
+      && metadata.rateDirection === 'SOURCE_TO_USD'
+      && typeof metadata.exchangeRateSource === 'string'
+      && typeof metadata.exchangeRateVersion === 'string'
+      && typeof metadata.exchangeRateTimestamp === 'string'
+      && typeof metadata.exchangeRateFetchedAt === 'string'
+      && metadata.exchangeRateProvider === 'Frankfurter';
+  } catch {
+    return false;
+  }
+};
 
 export const resolveExpectedProviderEvidence = (payment) => {
   const hasAmount = payment?.providerAmount != null;
@@ -403,11 +425,13 @@ export const resolveExpectedProviderEvidence = (payment) => {
       purpose: payment.purpose,
       transactionCurrency: payment.currency,
     });
-    // Historical EGP PayPal attempts retain their immutable provider evidence.
-    // Current EGP PayPal attempts use the same server-side legacy conversion
-    // mode exposed by providerCapabilities.
-    const allowedCurrency = isHistoricalPayPalEgpCommissionAttempt(payment)
-      ? PAYPAL_PROVIDER_CURRENCY
+    const isNativePayPalEvidence = payment.paymentMethod === 'paypal'
+      && isPayPalNativeCurrency(payment.currency)
+      && currency === String(payment.currency).trim().toUpperCase();
+    const allowedCurrency = payment.paymentMethod === 'paypal'
+      ? (isHistoricalPayPalEgpAttempt(payment) || hasGenericPayPalFxEvidence(payment) || isNativePayPalEvidence
+        ? currency
+        : null)
       : capability.enabled ? capability.providerCurrency : null;
     if (!allowedCurrency || currency !== allowedCurrency) {
       throw new Error('Persisted provider currency is incompatible with payment method');
@@ -419,7 +443,7 @@ export const resolveExpectedProviderEvidence = (payment) => {
     return { amount, currency, persisted: true };
   }
 
-  const expected = isHistoricalPayPalEgpCommissionAttempt(payment)
+  const expected = isHistoricalPayPalEgpAttempt(payment)
     ? getExpectedPayPalCharge(payment.amount)
     : getExpectedProviderCharge(payment.paymentMethod, payment.amount, payment.currency, payment.purpose);
   return { ...expected, persisted: false };
@@ -961,8 +985,19 @@ router.get('/providers', authenticate, async (req, res) => {
         : 'EGP';
     }
 
-    const providers = getAvailableProviders({ purpose, transactionCurrency: currency })
+    const configuredProviders = getAvailableProviders({ purpose, transactionCurrency: currency });
+    const paypalConfigured = configuredProviders.some(({ provider }) => provider === 'paypal');
+    const paypalCapability = await getPayPalFxCapability({ currency, configured: paypalConfigured });
+    const providers = configuredProviders
+      .filter(({ provider }) => provider !== 'paypal')
       .map(({ provider, mode, providerCurrency }) => ({ provider, mode, providerCurrency }));
+    if (paypalCapability.available) {
+      providers.push({
+        provider: 'paypal',
+        mode: paypalCapability.mode,
+        providerCurrency: paypalCapability.providerCurrency,
+      });
+    }
     const bankConfig = getBankTransferUsdConfig();
     const fxCapability = await getBankTransferFxCapability({ canonicalCurrency: currency });
     const bankTransfer = {
@@ -1019,7 +1054,6 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     }
     let transactionCurrency = 'EGP';
     let subscriptionSnapshot = null;
-    let subscriptionUser = null;
 
     if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       // SERVER-SIDE PLAN AUTHORITY: the client selects only a stable plan id.
@@ -1044,8 +1078,6 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       if (!dbUser || !['EMPLOYER', 'WORKER'].includes(dbUser.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
-      subscriptionUser = dbUser;
-
       let resolvedSubscription;
       try {
         resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: normalizedRequestedPlan });
@@ -1158,27 +1190,26 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     }
 
     let providerEvidence;
-    if (
-      purpose === PAYMENT_PURPOSES.SUBSCRIPTION
-      && transactionCurrency === 'TRY'
-      && subscriptionSnapshot?.market === 'TURKEY'
-    ) {
+    let providerFxMetadata = null;
+    if (selectedPaymentMethod === 'paypal') {
       try {
-        const tryEvidence = resolveTrySubscriptionProviderEvidenceForUser({
-          user: subscriptionUser,
-          plan: subscriptionSnapshot.plan,
-          fxConfig: getTryUsdRateConfig(),
+        const paypalEvidence = await resolvePayPalProviderEvidence({
+          sourceAmount: amount,
+          sourceCurrency: transactionCurrency,
         });
         providerEvidence = {
-          amount: tryEvidence.providerAmount,
-          currency: tryEvidence.providerCurrency,
+          amount: paypalEvidence.providerAmount,
+          currency: paypalEvidence.providerCurrency,
         };
-        subscriptionSnapshot = {
-          ...subscriptionSnapshot,
-          ...tryEvidence.fxMetadata,
-        };
+        providerFxMetadata = buildPayPalFxEvidenceMetadata(paypalEvidence);
       } catch (error) {
-        return res.status(422).json({ success: false, error: 'Turkey subscription FX configuration is not currently available' });
+        if (error instanceof PayPalFxError) {
+          return res.status(503).json({
+            success: false,
+            error: 'PayPal is temporarily unavailable for this currency',
+          });
+        }
+        throw error;
       }
     } else {
       providerEvidence = getExpectedProviderCharge(
@@ -1288,6 +1319,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
               source: 'frontend',
               originalAmount: amount,
               originalCurrency: transactionCurrency,
+              ...(providerFxMetadata || {}),
               updatedAt: new Date().toISOString()
             }
           }
@@ -1320,7 +1352,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
               createdFrom: 'payment-intent',
               source: 'frontend',
               originalAmount: amount,
-              originalCurrency: transactionCurrency
+              originalCurrency: transactionCurrency,
+              ...(providerFxMetadata || {}),
             }
           }
         });
@@ -1366,6 +1399,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
                 source: 'frontend',
                 originalAmount: amount,
                 originalCurrency: transactionCurrency,
+                ...(providerFxMetadata || {}),
                 ...subscriptionSnapshot,
               },
             },
@@ -1406,6 +1440,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             source: 'frontend',
             originalAmount: amount,
             originalCurrency: transactionCurrency,
+            ...(providerFxMetadata || {}),
             ...subscriptionSnapshot
           }
         }

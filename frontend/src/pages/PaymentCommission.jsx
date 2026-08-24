@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchBankTransferCapability, getPaymentStatus } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, getPaymentStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
@@ -42,6 +42,7 @@ const PaymentCommission = () => {
   const paypalCaptureRequestedRef = useRef(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
   const [bankTransferAvailable, setBankTransferAvailable] = useState(null);
+  const [paypalAvailable, setPaypalAvailable] = useState(null);
   const commissionCurrency = getStoredCurrency(commissionData);
 
   // Get authenticated user from authStore
@@ -51,14 +52,14 @@ const PaymentCommission = () => {
 
   // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const paymentMethods = [
-    {
+    ...(paypalAvailable !== false ? [{
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
       icon: Wallet,
       description: t('paymentCommission.methods.paypalDescription'),
       color: 'from-blue-700 to-blue-800',
       badge: null
-    },
+    }] : []),
     {
       id: PAYMENT_METHODS.VODAFONE_CASH,
       name: t('manualPayment.vodafoneCash'),
@@ -104,16 +105,24 @@ const PaymentCommission = () => {
     const hireId = commissionData?.hireId;
     if (!hireId) {
       setBankTransferAvailable(null);
+      setPaypalAvailable(null);
       return undefined;
     }
     let cancelled = false;
     setBankTransferAvailable(null);
-    fetchBankTransferCapability({ purpose: 'COMMISSION', hireId })
-      .then((capability) => {
-        if (!cancelled) setBankTransferAvailable(capability?.available === true);
+    setPaypalAvailable(null);
+    fetchCommissionProviders(hireId)
+      .then((providerResponse) => {
+        if (!cancelled) {
+          setBankTransferAvailable(providerResponse?.bankTransfer?.available === true);
+          setPaypalAvailable((providerResponse?.providers || []).some(({ provider }) => provider === PAYMENT_METHODS.PAYPAL));
+        }
       })
       .catch(() => {
-        if (!cancelled) setBankTransferAvailable(false);
+        if (!cancelled) {
+          setBankTransferAvailable(false);
+          setPaypalAvailable(false);
+        }
       });
     return () => { cancelled = true; };
   }, [commissionData?.hireId]);

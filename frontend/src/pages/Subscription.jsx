@@ -62,6 +62,7 @@ const Subscription = () => {
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
   const [subscriptionQuote, setSubscriptionQuote] = useState(null);
   const [bankTransferAvailable, setBankTransferAvailable] = useState(false);
+  const [paypalAvailable, setPaypalAvailable] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [quoteError, setQuoteError] = useState(null);
   const initializationKeyRef = useRef(null);
@@ -81,7 +82,7 @@ const Subscription = () => {
     && isSubscriptionPlanPurchaseEnabled(subscriptionQuote, selectedPlan);
   const genericMarketGateRequired = selectedMethod === PAYMENT_METHODS.VODAFONE_CASH
     || selectedMethod === PAYMENT_METHODS.INSTAPAY;
-  const selectedMethodCheckoutEnabled = selectedMethod === PAYMENT_METHODS.PAYPAL
+  const selectedMethodCheckoutEnabled = (selectedMethod === PAYMENT_METHODS.PAYPAL && paypalAvailable === true)
     || selectedMethod === PAYMENT_METHODS.BANK_TRANSFER
     || (genericMarketGateRequired && selectedPlanPurchasable);
   const quotePlans = getRenderableSubscriptionPlans(subscriptionQuote);
@@ -99,9 +100,11 @@ const Subscription = () => {
       try {
         const providerResponse = await getSubscriptionPaymentProviders(preferredPlan);
         setBankTransferAvailable(providerResponse?.bankTransfer?.available === true);
+        setPaypalAvailable((providerResponse?.providers || []).some(({ provider }) => provider === PAYMENT_METHODS.PAYPAL));
       } catch (providerError) {
         console.warn('Could not load Bank Transfer capability:', providerError);
         setBankTransferAvailable(false);
+        setPaypalAvailable(false);
       }
     } catch (error) {
       console.warn('Could not load subscription quote:', error);
@@ -117,7 +120,7 @@ const Subscription = () => {
 
   // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const paymentMethods = [
-    {
+    ...(paypalAvailable !== false ? [{
       id: PAYMENT_METHODS.PAYPAL,
       name: t('subscriptionPage.methods.paypal'),
       icon: Wallet,
@@ -125,7 +128,7 @@ const Subscription = () => {
       color: 'from-blue-700 to-blue-800',
       badge: null,
       badgeColor: null
-    },
+    }] : []),
     {
       id: PAYMENT_METHODS.VODAFONE_CASH,
       name: t('manualPayment.vodafoneCash'),

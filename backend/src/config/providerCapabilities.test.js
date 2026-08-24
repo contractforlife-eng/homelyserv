@@ -22,7 +22,7 @@ test.afterEach(() => {
   else process.env.PAYPAL_SECRET = originalEnv.paypalSecret;
 });
 
-test('configured PayPal supports EGP commission through the existing USD conversion mode', () => {
+test('configured PayPal advertises EGP as an FX-converted capability', () => {
   withPayPalConfigured();
   const capability = getProviderCapability({
     provider: 'paypal',
@@ -32,10 +32,10 @@ test('configured PayPal supports EGP commission through the existing USD convers
 
   assert.equal(capability.enabled, true);
   assert.equal(capability.providerCurrency, 'USD');
-  assert.equal(capability.mode, PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED);
+  assert.equal(capability.mode, PROVIDER_CAPABILITY_MODES.FX_CONVERTED);
 });
 
-test('configured PayPal keeps EGP subscription capability unchanged', () => {
+test('configured PayPal advertises EGP subscription FX capability', () => {
   withPayPalConfigured();
   const capability = getProviderCapability({
     provider: 'paypal',
@@ -45,7 +45,7 @@ test('configured PayPal keeps EGP subscription capability unchanged', () => {
 
   assert.equal(capability.enabled, true);
   assert.equal(capability.providerCurrency, 'USD');
-  assert.equal(capability.mode, PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED);
+  assert.equal(capability.mode, PROVIDER_CAPABILITY_MODES.FX_CONVERTED);
 });
 
 test('configured production PayPal supports direct USD/EUR/GBP subscriptions', () => {
@@ -68,15 +68,15 @@ test('configured production PayPal supports direct USD/EUR/GBP subscriptions', (
   else process.env.PAYPAL_MODE = previousMode;
 });
 
-test('PayPal subscription capability does not include TRY or sandbox direct currencies', () => {
+test('configured PayPal supports canonical fallback currencies in every environment', () => {
   withPayPalConfigured();
   const previousMode = process.env.PAYPAL_MODE;
-  process.env.PAYPAL_MODE = 'production';
-
-  assert.equal(getProviderCapability({ provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'TRY' }).supported, false);
-
   process.env.PAYPAL_MODE = 'sandbox';
-  assert.equal(getProviderCapability({ provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'USD' }).supported, false);
+  const tryCapability = getProviderCapability({ provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'TRY' });
+  assert.equal(tryCapability.supported, true);
+  assert.equal(tryCapability.providerCurrency, 'USD');
+  assert.equal(tryCapability.mode, PROVIDER_CAPABILITY_MODES.FX_CONVERTED);
+  assert.equal(getProviderCapability({ provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'USD' }).supported, true);
 
   if (previousMode === undefined) delete process.env.PAYPAL_MODE;
   else process.env.PAYPAL_MODE = previousMode;

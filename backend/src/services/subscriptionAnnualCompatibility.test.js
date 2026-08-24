@@ -85,5 +85,5 @@ test('the current automated/manual purchase authority recognizes annual', () => 
   assert.equal(getSubscriptionPlan('monthly').durationDays, 30);
   assert.equal(getProviderCapability({
     provider: 'paypal', purpose: 'SUBSCRIPTION', transactionCurrency: 'USD',
-  }).supported, false);
+  }).supported, true);
 });
