@@ -106,4 +106,28 @@ export const resolveBankTransferUsdSettlement = ({ canonicalAmount, canonicalCur
   });
 };
 
+// Capability discovery is deliberately non-throwing and never exposes rate
+// values. Conversion continues to use resolveBankTransferUsdSettlement(),
+// which remains the authoritative amount/rounding path.
+export const getBankTransferFxCapability = ({ canonicalCurrency, config = getBankTransferFxConfig(), now = Date.now() } = {}) => {
+  const currency = String(canonicalCurrency || '').trim().toUpperCase();
+  if (currency === BANK_TRANSFER_FX_QUOTE_CURRENCY) {
+    return Object.freeze({ available: true, settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY, code: null });
+  }
+  if (!BANK_TRANSFER_FX_CURRENCIES.includes(currency)) {
+    return Object.freeze({ available: false, settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY, code: BANK_TRANSFER_FX_ERROR_CODES.UNSUPPORTED_CURRENCY });
+  }
+
+  try {
+    validateRate(config?.[currency], now);
+    return Object.freeze({ available: true, settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY, code: null });
+  } catch (error) {
+    return Object.freeze({
+      available: false,
+      settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY,
+      code: error?.code || BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION,
+    });
+  }
+};
+
 export default resolveBankTransferUsdSettlement;

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { applyBackendSubscription } from '../utils/subscriptionService';
 import { normalizePremiumStatus } from '../utils/premiumStatus';
-import { capturePayPalOrder, fetchSubscriptionStatus, getPaymentStatus, getSubscriptionQuote, isTerminalPayPalCaptureResult } from "../services/paymentService";
+import { capturePayPalOrder, fetchSubscriptionStatus, getPaymentStatus, getSubscriptionPaymentProviders, getSubscriptionQuote, isTerminalPayPalCaptureResult } from "../services/paymentService";
 import {
   Sparkles,
   AlertCircle,
@@ -61,6 +61,7 @@ const Subscription = () => {
   const [retryableStatus, setRetryableStatus] = useState(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
   const [subscriptionQuote, setSubscriptionQuote] = useState(null);
+  const [bankTransferAvailable, setBankTransferAvailable] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [quoteError, setQuoteError] = useState(null);
 
@@ -90,7 +91,15 @@ const Subscription = () => {
       const response = await getSubscriptionQuote();
       if (!response?.success || !response.quote) throw new Error('Invalid subscription quote');
       setSubscriptionQuote(response.quote);
-      setSelectedPlan((currentPlan) => getPreferredSubscriptionPlan(response.quote, currentPlan) || currentPlan);
+      const preferredPlan = getPreferredSubscriptionPlan(response.quote, selectedPlan) || selectedPlan;
+      setSelectedPlan(preferredPlan);
+      try {
+        const providerResponse = await getSubscriptionPaymentProviders(preferredPlan);
+        setBankTransferAvailable(providerResponse?.bankTransfer?.available === true);
+      } catch (providerError) {
+        console.warn('Could not load Bank Transfer capability:', providerError);
+        setBankTransferAvailable(false);
+      }
     } catch (error) {
       console.warn('Could not load subscription quote:', error);
       setSubscriptionQuote(null);
@@ -130,7 +139,7 @@ const Subscription = () => {
       badge: t('manualPayment.manualVerification'),
       badgeColor: 'bg-amber-100 text-amber-700'
     },
-    {
+    ...(bankTransferAvailable ? [{
       id: PAYMENT_METHODS.BANK_TRANSFER,
       name: t('bankTransfer.category'),
       icon: Building2,
@@ -138,7 +147,7 @@ const Subscription = () => {
       color: 'from-teal-500 to-teal-600',
       badge: t('bankTransfer.available'),
       badgeColor: 'bg-green-100 text-green-700'
-    }
+    }] : [])
   ];
   const visiblePaymentMethods = canShowEgyptianManualPaymentMethods(authUser)
     ? paymentMethods

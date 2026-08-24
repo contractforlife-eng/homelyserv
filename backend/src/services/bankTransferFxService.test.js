@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { resolveBankTransferUsdSettlement, BankTransferFxError, BANK_TRANSFER_FX_ERROR_CODES } from './bankTransferFxService.js';
+import { resolveBankTransferUsdSettlement, getBankTransferFxCapability, BankTransferFxError, BANK_TRANSFER_FX_ERROR_CODES } from './bankTransferFxService.js';
 
 const config = (overrides = {}) => ({
   EGP: { baseCurrency: 'EGP', quoteCurrency: 'USD', rate: '0.033', rateDirection: 'EGP_TO_USD', source: 'TEST', version: 'v1', effectiveAt: '2026-08-20T00:00:00.000Z', maxAgeSeconds: '90000' },
@@ -29,4 +29,14 @@ test('missing, stale, invalid, and unsupported FX fail closed', () => {
   assert.throws(() => resolveBankTransferUsdSettlement({ canonicalAmount: 300, canonicalCurrency: 'EGP', config: config({ EGP: { ...config().EGP, effectiveAt: '2020-01-01T00:00:00.000Z', maxAgeSeconds: '10' } }), now }), (error) => error.code === BANK_TRANSFER_FX_ERROR_CODES.STALE_RATE);
   assert.throws(() => resolveBankTransferUsdSettlement({ canonicalAmount: 300, canonicalCurrency: 'EGP', config: config({ EGP: { ...config().EGP, rate: '0' } }), now }), (error) => error instanceof BankTransferFxError);
   assert.throws(() => resolveBankTransferUsdSettlement({ canonicalAmount: 300, canonicalCurrency: 'CAD', config: config(), now }), (error) => error.code === BANK_TRANSFER_FX_ERROR_CODES.UNSUPPORTED_CURRENCY);
+});
+
+test('FX capability discovery is safe and currency-specific', () => {
+  assert.equal(getBankTransferFxCapability({ canonicalCurrency: 'USD', config: {}, now }).available, true);
+  assert.equal(getBankTransferFxCapability({ canonicalCurrency: 'EUR', config: config(), now }).available, true);
+  assert.equal(getBankTransferFxCapability({ canonicalCurrency: 'EUR', config: {}, now }).available, false);
+  assert.equal(getBankTransferFxCapability({ canonicalCurrency: 'EUR', config: config({ EUR: { ...config().EUR, rate: '0' } }), now }).available, false);
+  for (const currency of ['GBP', 'TRY', 'EGP']) {
+    assert.equal(getBankTransferFxCapability({ canonicalCurrency: currency, config: config(), now }).available, true);
+  }
 });

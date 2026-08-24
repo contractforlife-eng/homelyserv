@@ -65,7 +65,7 @@ import {
   buildBankTransferUsdInstructions,
   getBankTransferUsdConfig,
 } from '../config/bankTransfers.js';
-import { resolveBankTransferUsdSettlement } from '../services/bankTransferFxService.js';
+import { resolveBankTransferUsdSettlement, getBankTransferFxCapability } from '../services/bankTransferFxService.js';
 import {
   buildPayPalSubscriptionOrderId,
   getPayPalProviderEvidenceMissingFilter,
@@ -929,28 +929,50 @@ router.get('/providers', authenticate, async (req, res) => {
     const purpose = typeof req.query.purpose === 'string'
       ? req.query.purpose.trim().toUpperCase()
       : '';
-    if (purpose !== PAYMENT_PURPOSES.COMMISSION) {
+    if (![PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.SUBSCRIPTION].includes(purpose)) {
       return res.status(400).json({ success: false, error: 'Unsupported capability purpose' });
     }
-    if (!req.query.hireId) {
-      return res.status(400).json({ success: false, error: 'hireId is required' });
+    let currency;
+    if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      const selectedPlan = getSubscriptionPlan(req.query.plan);
+      if (!selectedPlan) return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
+      const user = await prisma.user.findUnique({
+        where: { id: String(req.userId) },
+        select: { role: true, countryCode: true },
+      });
+      if (!user || !['EMPLOYER', 'WORKER'].includes(user.role)) {
+        return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
+      }
+      currency = resolveSubscriptionPriceBook({ user, plan: selectedPlan.id }).currency;
+    } else {
+      if (!req.query.hireId) {
+        return res.status(400).json({ success: false, error: 'hireId is required' });
+      }
+      const hire = await prisma.hire.findUnique({
+        where: { id: String(req.query.hireId) },
+        select: { employerId: true, compensationCurrency: true },
+      });
+      if (!hire) return res.status(404).json({ success: false, error: 'Hire not found' });
+      if (!req.userId || String(hire.employerId) !== String(req.userId)) {
+        return res.status(403).json({ success: false, error: 'You are not authorized for this hire' });
+      }
+      currency = hire.compensationCurrency
+        ? String(hire.compensationCurrency).trim().toUpperCase()
+        : 'EGP';
     }
 
-    const hire = await prisma.hire.findUnique({
-      where: { id: String(req.query.hireId) },
-      select: { employerId: true, compensationCurrency: true },
-    });
-    if (!hire) return res.status(404).json({ success: false, error: 'Hire not found' });
-    if (!req.userId || String(hire.employerId) !== String(req.userId)) {
-      return res.status(403).json({ success: false, error: 'You are not authorized for this hire' });
-    }
-
-    const currency = hire.compensationCurrency
-      ? String(hire.compensationCurrency).trim().toUpperCase()
-      : 'EGP';
     const providers = getAvailableProviders({ purpose, transactionCurrency: currency })
       .map(({ provider, mode, providerCurrency }) => ({ provider, mode, providerCurrency }));
-    return res.json({ success: true, purpose, currency, providers });
+    const bankConfig = getBankTransferUsdConfig();
+    const fxCapability = getBankTransferFxCapability({ canonicalCurrency: currency });
+    const bankTransfer = {
+      available: bankConfig.configured && fxCapability.available,
+      settlementCurrency: BANK_TRANSFER_CURRENCY,
+      code: !bankConfig.configured
+        ? 'BANK_TRANSFER_CONFIGURATION_REQUIRED'
+        : fxCapability.code,
+    };
+    return res.json({ success: true, purpose, currency, providers, bankTransfer });
   } catch (error) {
     console.error('Provider capability lookup failed:', error.message);
     return res.status(500).json({ success: false, error: 'Unable to load payment providers' });
@@ -2543,6 +2565,11 @@ const serializeBankTransferPayment = (payment) => ({
   canonicalCurrency: payment.metadata?.canonicalCurrency ?? null,
 });
 
+export const buildBankTransferFxUnavailableResponse = () => ({
+  error: 'Bank transfer is temporarily unavailable for this currency',
+  status: 503,
+});
+
 const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId }) => {
   const bankConfig = getBankTransferUsdConfig();
   if (!bankConfig.configured) {
@@ -2566,7 +2593,8 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
     try {
       fxEvidence = resolveBankTransferUsdSettlement({ canonicalAmount: resolved.amount, canonicalCurrency: resolved.currency });
     } catch (error) {
-      return { error: error.message || 'USD bank transfer FX is not currently configured', status: 503 };
+      console.warn('[BankTransferFX] subscription settlement unavailable:', error?.code || 'UNKNOWN');
+      return buildBankTransferFxUnavailableResponse();
     }
 
     return {
@@ -2606,7 +2634,8 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
   try {
     fxEvidence = resolveBankTransferUsdSettlement({ canonicalAmount: hire.totalDue, canonicalCurrency: hire.compensationCurrency || 'EGP' });
   } catch (error) {
-    return { error: error.message || 'USD bank transfer FX is not currently configured', status: 503 };
+    console.warn('[BankTransferFX] commission settlement unavailable:', error?.code || 'UNKNOWN');
+    return buildBankTransferFxUnavailableResponse();
   }
 
   return {

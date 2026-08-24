@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSubscriptionStatusPayload, normalizePayPalOrderStatus } from './payment.js';
+import { buildBankTransferFxUnavailableResponse, buildSubscriptionStatusPayload, normalizePayPalOrderStatus } from './payment.js';
+
+test('Bank Transfer FX failures use a safe unavailable response', () => {
+  assert.deepEqual(buildBankTransferFxUnavailableResponse(), {
+    error: 'Bank transfer is temporarily unavailable for this currency',
+    status: 503,
+  });
+});
 
 const now = new Date('2026-01-01T00:00:00.000Z');
 

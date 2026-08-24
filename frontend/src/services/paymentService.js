@@ -11,6 +11,13 @@ export const getSubscriptionQuote = async () => {
   return response.data;
 };
 
+export const getSubscriptionPaymentProviders = async (plan) => {
+  const response = await api.get('/api/payments/providers', {
+    params: { purpose: 'SUBSCRIPTION', plan },
+  });
+  return response.data;
+};
+
 export const createBankTransferPayment = async ({ purpose, plan, hireId } = {}) => {
   const scope = `${String(purpose || '').toUpperCase()}:${String(plan || '')}:${String(hireId || '')}`;
   const storageKey = `homelyserv.bank-transfer.attempt.${scope}`;
