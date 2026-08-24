@@ -13,6 +13,7 @@ import useThemeStore from './store/themeStore';
 import './i18n';
 import './index.css';
 import { registerPwaServiceWorker } from './pwa/registerServiceWorker';
+import { initializeTikTokPixel } from './utils/tiktokPixel';
 
 const GOOGLE_CLIENT_ID = '165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.googleusercontent.com';
 
@@ -20,6 +21,7 @@ const GOOGLE_CLIENT_ID = '165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.goo
 useThemeStore.getState().initializeTheme();
 
 registerPwaServiceWorker();
+initializeTikTokPixel();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

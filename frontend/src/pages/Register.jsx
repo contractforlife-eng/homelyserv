@@ -1,5 +1,5 @@
 // src/pages/Register.jsx - RED AND WHITE THEME ONLY
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from "../utils/api";
 import useAuthStore from "../store/authStore";
@@ -28,6 +28,7 @@ import LegalFooter from '../components/common/LegalFooter';
 import CountrySelect from '../components/CountrySelect';
 import { getCountryByCode } from '../utils/countries';
 import { trackCompleteRegistration } from '../utils/metaPixel';
+import { trackTikTokCompleteRegistration } from '../utils/tiktokPixel';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS } from '../constants/tutorSpecializations';
 
@@ -39,6 +40,7 @@ function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
   const [success, setSuccess] = useState(false);
+  const tikTokRegistrationTrackedRef = useRef(false);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -249,6 +251,10 @@ function Register() {
       console.log("✅ User registered in MongoDB:", response.data.user);
 
       trackCompleteRegistration();
+      if (!tikTokRegistrationTrackedRef.current) {
+        tikTokRegistrationTrackedRef.current = true;
+        trackTikTokCompleteRegistration();
+      }
 
       setSuccess(true);
 

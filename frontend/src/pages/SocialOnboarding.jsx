@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Briefcase, ChevronDown, Globe2, Phone, Save, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import CountrySelect from '../components/CountrySelect';
 import { getCountryByCode } from '../utils/countries';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS } from '../constants/tutorSpecializations';
+import { trackTikTokCompleteRegistration } from '../utils/tiktokPixel';
 
 const SocialOnboarding = () => {
   const { t } = useTranslation();
@@ -27,6 +28,7 @@ const SocialOnboarding = () => {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const tikTokRegistrationTrackedRef = useRef(false);
 
   useEffect(() => {
     if (formData.countryCode) return;
@@ -105,6 +107,10 @@ const SocialOnboarding = () => {
       }
 
       setAuth(response.data.user, response.data.token);
+      if (!tikTokRegistrationTrackedRef.current) {
+        tikTokRegistrationTrackedRef.current = true;
+        trackTikTokCompleteRegistration();
+      }
       if (response.data.user.role?.toUpperCase() === 'EMPLOYER') {
         navigate('/employer-dashboard', { replace: true });
       } else {
