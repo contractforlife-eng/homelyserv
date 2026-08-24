@@ -26,7 +26,8 @@ const MobileDrawerNav = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const dashboard = useDashboard();
-  const { authUser, handleLogout, mobileMenuOpen, toggleMobileMenu } = dashboard;
+  const { authUser, handleLogout, mobileMenuOpen, toggleMobileMenu, premiumStatus } = dashboard;
+  const isPremium = premiumStatus?.known === true && premiumStatus.isPremium === true;
 
   const role = (authUser?.role || '').toUpperCase();
   const isWorker = role === 'WORKER';
@@ -120,7 +121,7 @@ const MobileDrawerNav = () => {
               )}
             </div>
             <div>
-              <UserDisplayName user={authUser} />
+              <UserDisplayName user={authUser} isPremium={isPremium} />
               <p className="text-xs text-gray-500 dark:text-gray-400">{getRoleLabel(authUser?.role)}</p>
             </div>
           </div>
