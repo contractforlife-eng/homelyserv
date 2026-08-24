@@ -12,6 +12,7 @@ import { enrichUserResponse } from '../utils/userResponse.js';
 import { withRegistrationGeography } from '../services/registrationGeographyService.js';
 import { captureRegistrationGeography } from '../services/registrationGeographyService.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
+import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { resolveAccountDefaultCurrency } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
 import { validatePhone } from '../controllers/authController.js';
@@ -320,6 +321,10 @@ router.post('/social-onboarding/complete', async (req, res) => {
         return res.status(409).json({ success: false, message: 'This account already exists. Please sign in.' });
       }
       throw error;
+    }
+
+    if (user.role === 'WORKER') {
+      await ensureWorkerProfile(user);
     }
 
     const token = jwt.sign(

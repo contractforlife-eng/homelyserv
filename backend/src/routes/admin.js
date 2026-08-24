@@ -14,6 +14,7 @@ import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 import { sendRoleChangeNotification, sendSecurityNotificationEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import { sendTransactionConfirmationEmail } from '../services/emailService.js';
+import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import {
   getDuplicateRefundEvidence,
@@ -431,30 +432,15 @@ router.put('/users/:id/role', async (req, res) => {
     // (create minimal, hidden, non-broken profile when missing)
     // ============================================================
     if (normalizedRole === 'WORKER') {
-      const existingProfile = await prisma.workerProfile.findUnique({
-        where: { userId },
-        select: { id: true }
-      });
-      if (!existingProfile) {
-        await prisma.workerProfile.create({
-          data: {
-            userId,
-            category: '',
-            experienceYears: 0,
-            expectedSalary: 0,
-            availability: 'available',
-            workType: 'full-time',
-            bioAr: '',
-            bioEn: '',
-            skills: [],
-            profilePhotoUrl: '',
-            docStatus: 'pending',
-            ratingAvg: 0,
-            ratingCount: 0,
-            isVisible: false
-          }
-        });
-      }
+      await ensureWorkerProfile(
+        {
+          id: userId,
+          role: normalizedRole,
+          desiredJob: user.desiredJob,
+          profileImage: user.profileImage
+        },
+        { isVisible: false }
+      );
     }
 
     // ============================================================

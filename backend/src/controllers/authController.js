@@ -20,6 +20,7 @@ import {
 } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, shouldSendOptionalEmail } from '../services/emailService.js';
+import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import {
   verifyEmailWithToken,
   resendVerificationEmail,
@@ -237,6 +238,10 @@ export const register = async (req, res) => {
     console.log('[DEBUG-REGISTER] User creation attempt:', { email: user.email, role: user.role });
     await user.save();
     console.log('[DEBUG-REGISTER] User created successfully:', { id: user._id, email: user.email, createdAt: user.createdAt });
+
+    if (user.role === 'WORKER') {
+      await ensureWorkerProfile(user);
+    }
 
     // Send welcome email (non-blocking, fire-and-forget)
     // Email sending must never block registration or cause rollback
