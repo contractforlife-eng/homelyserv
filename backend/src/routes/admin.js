@@ -12,7 +12,7 @@ import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSum
 import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
-import { sendRoleChangeNotification, shouldSendOptionalEmail } from '../services/emailService.js';
+import { sendRoleChangeNotification, sendSecurityNotificationEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import {
