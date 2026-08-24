@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { applyBackendSubscription } from '../utils/subscriptionService';
+import { normalizePremiumStatus } from '../utils/premiumStatus';
 import { capturePayPalOrder, fetchSubscriptionStatus, getPaymentStatus, getSubscriptionQuote, isTerminalPayPalCaptureResult } from "../services/paymentService";
 import {
   Sparkles,
@@ -19,9 +20,7 @@ import {
   Building2
 } from 'lucide-react';
 import {
-  createSubscription,
-  getUserSubscription,
-  getSubscriptionStatus
+  createSubscription
 } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
@@ -74,7 +73,9 @@ const Subscription = () => {
   const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
   const selectedPlanQuote = subscriptionQuote?.plans?.[selectedPlan] || null;
   const price = selectedPlanQuote?.amount ?? null;
-  const selectedPlanPurchasable = isSubscriptionPlanPurchaseEnabled(subscriptionQuote, selectedPlan);
+  const hasActivePremium = subscriptionStatus?.active === true;
+  const selectedPlanPurchasable = !hasActivePremium
+    && isSubscriptionPlanPurchaseEnabled(subscriptionQuote, selectedPlan);
   const genericMarketGateRequired = selectedMethod === PAYMENT_METHODS.VODAFONE_CASH
     || selectedMethod === PAYMENT_METHODS.INSTAPAY;
   const selectedMethodCheckoutEnabled = selectedMethod === PAYMENT_METHODS.PAYPAL
@@ -166,14 +167,6 @@ const Subscription = () => {
     // Fast first paint from the localStorage mirror, then ALWAYS reconcile
     // against the authoritative backend row (MongoDB via ensureSubscription).
     // Backend status wins — localStorage must never override it.
-    const userId = authUser.id || authUser.email;
-    const localStatus = getSubscriptionStatus(userId);
-    if (localStatus.active) {
-      setCurrentSubscription(getUserSubscription(userId));
-      setSubscriptionStatus(localStatus);
-      setPaymentSuccess(true);
-    }
-
     (async () => {
       try {
         await Promise.all([loadSubscriptionQuote(), fetchSubscriptionStatus().then((res) => {
@@ -284,14 +277,11 @@ const Subscription = () => {
   // localStorage only mirrors it and never overrides it.
   const applyBackendSubscriptionState = (backendStatus) => {
     const userId = authUser?.id || authUser?.email;
-    const subscription = backendStatus?.subscription;
-    const isActive =
-      !!subscription &&
-      subscription.status === 'active' &&
-      subscription.endDate &&
-      new Date(subscription.endDate) > new Date();
+    const normalized = normalizePremiumStatus(backendStatus);
+    const subscription = normalized.subscription;
+    const isActive = normalized.active;
 
-    if (userId && subscription) {
+    if (userId) {
       applyBackendSubscription(userId, authUser?.email, subscription);
     }
 
@@ -300,6 +290,8 @@ const Subscription = () => {
     if (isActive) {
       setSubscriptionStatus({
         active: true,
+        isPremium: true,
+        source: subscription.source,
         status: 'active',
         message: 'Active',
         daysLeft: computeDaysLeft(subscription.endDate),
@@ -309,7 +301,7 @@ const Subscription = () => {
       setRetryableStatus(false);
       setPaymentSuccess(true);
     } else {
-      setSubscriptionStatus({ active: false, status: 'inactive', message: 'No active subscription' });
+      setSubscriptionStatus({ active: false, isPremium: false, status: 'inactive', message: 'No active subscription' });
       setPaymentSuccess(false);
     }
   };
@@ -336,6 +328,11 @@ const Subscription = () => {
   };
 
   const handleSubscribe = async () => {
+    if (hasActivePremium) {
+      setPaymentError('Premium is already active for this account.');
+      return;
+    }
+
     if (!selectedMethod) {
       setPaymentError(t('subscriptionPage.payment.selectMethodError'));
       return;
@@ -679,8 +676,9 @@ const Subscription = () => {
                           <button
                             type="button"
                             key={plan.id}
-                            disabled={processing}
+                            disabled={processing || hasActivePremium}
                             onClick={() => {
+                              if (hasActivePremium) return;
                               setSelectedPlan(plan.id);
                               if (plan.id === 'annual' && plan.purchaseEnabled === true) {
                                 setSelectedMethod(PAYMENT_METHODS.PAYPAL);
@@ -769,7 +767,7 @@ const Subscription = () => {
                           <div
                             key={method.id}
                             onClick={() => {
-                              if (processing || manualPaymentSubmitted) return;
+                              if (processing || manualPaymentSubmitted || hasActivePremium) return;
                               setSelectedMethod(method.id);
                               setPaymentError(null);
                             }}
@@ -777,7 +775,7 @@ const Subscription = () => {
                               isSelected
                                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-md'
                                 : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-                            )} ${processing || manualPaymentSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            )} ${processing || manualPaymentSubmitted || hasActivePremium ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="flex items-center gap-4">
                               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${method.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
@@ -803,7 +801,11 @@ const Subscription = () => {
                       })}
                     </div>
 
-                    {selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
+                    {hasActivePremium ? (
+                      <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-2xl border border-green-200 text-green-700">
+                        {t('subscriptionPage.status.active')}
+                      </div>
+                    ) : selectedMethod === PAYMENT_METHODS.BANK_TRANSFER ? (
                       <BankTransferFlow
                         purpose="SUBSCRIPTION"
                         plan={selectedPlan}
@@ -820,9 +822,9 @@ const Subscription = () => {
                     ) : (
                       <button
                         onClick={handleSubscribe}
-                        disabled={processing || !selectedMethod || quoteLoading || !!quoteError || !selectedMethodCheckoutEnabled}
+                        disabled={hasActivePremium || processing || !selectedMethod || quoteLoading || !!quoteError || !selectedMethodCheckoutEnabled}
                         className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${(
-                          processing || !selectedMethod || quoteLoading || !!quoteError || !selectedMethodCheckoutEnabled
+                          hasActivePremium || processing || !selectedMethod || quoteLoading || !!quoteError || !selectedMethodCheckoutEnabled
                             ? 'bg-gray-300 cursor-not-allowed'
                             : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
                         )}`}

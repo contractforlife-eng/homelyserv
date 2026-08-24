@@ -6,6 +6,8 @@ import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS, getTutorSpecializationLabel } from '../constants/tutorSpecializations';
 import { fetchSubscriptionStatus } from '../services/paymentService';
+import { applyBackendSubscription } from '../utils/subscriptionService';
+import { normalizePremiumStatus } from '../utils/premiumStatus';
 import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -126,10 +128,9 @@ const WorkerProfile = () => {
       try {
         const data = await fetchSubscriptionStatus();
         if (!cancelled && data?.success) {
-          setSubscriptionStatus({
-            isPremium: data.isPremium === true,
-            subscription: data.subscription || null
-          });
+          const normalized = normalizePremiumStatus(data);
+          setSubscriptionStatus(normalized);
+          applyBackendSubscription(authUser?.id || authUser?.email, authUser?.email, normalized.subscription);
         }
       } catch (error) {
         console.error('Failed to load subscription status:', error);

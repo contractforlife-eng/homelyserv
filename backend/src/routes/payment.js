@@ -34,6 +34,7 @@ import {
   getManualPaymentConfig,
 } from '../config/manualPayments.js';
 import { buildSubscriptionQuote, isSubscriptionPurchaseMarketEnabled } from '../services/subscriptionQuoteService.js';
+import { getActivePremiumEntitlement } from '../services/premiumService.js';
 import {
   proofUpload,
   uploadProof,
@@ -2073,6 +2074,43 @@ router.post('/complete-payment', (_req, res) => {
  * The frontend uses this to REFLECT premium state after payment — it never
  * creates a subscription here.
  */
+export const buildSubscriptionStatusPayload = (entitlement, now = new Date()) => {
+  const endDate = entitlement?.endDate ? new Date(entitlement.endDate) : null;
+  const active = entitlement?.status === 'active'
+    && endDate instanceof Date
+    && !Number.isNaN(endDate.getTime())
+    // Preserve the canonical service boundary: paid rows are active through
+    // their end instant, while manual grants use a strict future end date.
+    && (entitlement.plan === 'manual' ? endDate > now : endDate >= now);
+
+  if (!active) {
+    return {
+      success: true,
+      isPremium: false,
+      active: false,
+      subscriptionActive: false,
+      subscription: null,
+    };
+  }
+
+  const source = entitlement.plan === 'manual' ? 'manual' : 'paid';
+  return {
+    success: true,
+    isPremium: true,
+    active: true,
+    subscriptionActive: true,
+    subscription: {
+      plan: entitlement.plan || null,
+      source,
+      isManual: source === 'manual',
+      isPaid: source === 'paid',
+      status: entitlement.status,
+      startDate: entitlement.startDate,
+      endDate: entitlement.endDate,
+    },
+  };
+};
+
 router.get('/subscription-status', authenticate, async (req, res) => {
   try {
     const userId = req.userId;
@@ -2084,27 +2122,8 @@ router.get('/subscription-status', authenticate, async (req, res) => {
       });
     }
 
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        userId: String(userId),
-        status: 'active',
-        endDate: { gte: new Date() }
-      },
-      orderBy: { endDate: 'desc' }
-    });
-
-    res.json({
-      success: true,
-      isPremium: !!subscription,
-      subscription: subscription
-        ? {
-            plan: subscription.plan,
-            status: subscription.status,
-            startDate: subscription.startDate,
-            endDate: subscription.endDate
-          }
-        : null
-    });
+    const entitlement = await getActivePremiumEntitlement(String(userId));
+    res.json(buildSubscriptionStatusPayload(entitlement));
 
   } catch (error) {
     console.error('❌ Subscription status error:', error);

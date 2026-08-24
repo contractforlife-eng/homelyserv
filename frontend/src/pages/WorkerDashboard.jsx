@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { fetchSubscriptionStatus } from '../services/paymentService';
+import { applyBackendSubscription } from '../utils/subscriptionService';
+import { normalizePremiumStatus } from '../utils/premiumStatus';
 import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -87,10 +89,9 @@ const WorkerDashboard = () => {
       try {
         const data = await fetchSubscriptionStatus();
         if (!cancelled && data?.success) {
-          setSubscriptionStatus({
-            isPremium: data.isPremium === true,
-            subscription: data.subscription || null
-          });
+          const normalized = normalizePremiumStatus(data);
+          setSubscriptionStatus(normalized);
+          applyBackendSubscription(authUser?.id || authUser?.email, authUser?.email, normalized.subscription);
         }
       } catch (error) {
         // Non-fatal: premium defaults to false when the check fails.
