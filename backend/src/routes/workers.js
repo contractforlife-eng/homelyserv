@@ -10,6 +10,8 @@ import { isUserPremium } from '../services/premiumService.js';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { buildWorkerProfileUpdate, profileUpdateErrorResponse } from '../services/userProfileUpdateService.js';
+import { ensureWorkerProfile } from '../services/workerProfileService.js';
+import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
 
 const router = express.Router();
 
@@ -251,6 +253,10 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 
     const userObj = user.toObject ? user.toObject() : { ...user };
     userObj.id = userObj._id;
+
+    if (user.role === 'WORKER' && isCanonicalWorkerJob(user.desiredJob)) {
+      await ensureWorkerProfile(user);
+    }
 
     res.json({ success: true, user: enrichUserResponse(userObj) });
   } catch (error) {
