@@ -242,14 +242,14 @@ const SupportSettings = () => {
             </h2>
           </div>
           <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.changePassword}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{t.changePasswordDesc}</p>
               </div>
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
+                className="w-full sm:w-auto shrink-0 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2"
               >
                 <Lock size={16} />
                 {t.changePassword}
