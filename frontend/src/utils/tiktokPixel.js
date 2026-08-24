@@ -69,9 +69,40 @@ export const initializeTikTokPixel = () => {
 };
 
 export const trackTikTokCompleteRegistration = () => {
-  if (!loadTikTokPixel() || typeof window.ttq?.track !== 'function') return false;
+  console.info('[TikTok] CompleteRegistration requested');
 
-  // Deliberately send no event parameters or user-identifying data.
-  window.ttq.track('CompleteRegistration');
-  return true;
+  try {
+    if (import.meta.env.PROD !== true) {
+      console.info('[TikTok] CompleteRegistration queued=NO reason=non-production');
+      return false;
+    }
+
+    if (Capacitor.isNativePlatform()) {
+      console.info('[TikTok] CompleteRegistration queued=NO reason=native-capacitor');
+      return false;
+    }
+
+    if (!hasTrackingConsent()) {
+      console.info('[TikTok] CompleteRegistration queued=NO reason=consent-not-granted');
+      return false;
+    }
+
+    if (!loadTikTokPixel()) {
+      console.info('[TikTok] CompleteRegistration queued=NO reason=pixel-not-ready');
+      return false;
+    }
+
+    if (typeof window.ttq?.track !== 'function') {
+      console.info('[TikTok] CompleteRegistration queued=NO reason=ttq-unavailable');
+      return false;
+    }
+
+    // Deliberately send no event parameters or user-identifying data.
+    window.ttq.track('CompleteRegistration');
+    console.info('[TikTok] CompleteRegistration queued=YES');
+    return true;
+  } catch {
+    console.info('[TikTok] CompleteRegistration queued=NO reason=tracking-error');
+    return false;
+  }
 };

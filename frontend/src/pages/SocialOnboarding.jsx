@@ -108,8 +108,8 @@ const SocialOnboarding = () => {
 
       setAuth(response.data.user, response.data.token);
       if (!tikTokRegistrationTrackedRef.current) {
-        tikTokRegistrationTrackedRef.current = true;
-        trackTikTokCompleteRegistration();
+        const tikTokQueued = trackTikTokCompleteRegistration();
+        if (tikTokQueued) tikTokRegistrationTrackedRef.current = true;
       }
       if (response.data.user.role?.toUpperCase() === 'EMPLOYER') {
         navigate('/employer-dashboard', { replace: true });

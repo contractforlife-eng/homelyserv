@@ -252,8 +252,8 @@ function Register() {
 
       trackCompleteRegistration();
       if (!tikTokRegistrationTrackedRef.current) {
-        tikTokRegistrationTrackedRef.current = true;
-        trackTikTokCompleteRegistration();
+        const tikTokQueued = trackTikTokCompleteRegistration();
+        if (tikTokQueued) tikTokRegistrationTrackedRef.current = true;
       }
 
       setSuccess(true);
