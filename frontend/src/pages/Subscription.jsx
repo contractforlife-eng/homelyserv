@@ -64,6 +64,8 @@ const Subscription = () => {
   const [bankTransferAvailable, setBankTransferAvailable] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [quoteError, setQuoteError] = useState(null);
+  const initializationKeyRef = useRef(null);
+  const initializationInFlightRef = useRef(false);
 
   // Guard against duplicate PayPal capture responses triggering duplicate
   // UI refresh/purchase cycles (polling + popup-return can both fire).
@@ -85,7 +87,8 @@ const Subscription = () => {
   const quotePlans = getRenderableSubscriptionPlans(subscriptionQuote);
 
   const loadSubscriptionQuote = async () => {
-    setQuoteLoading(true);
+    const hasLoadedQuote = Boolean(subscriptionQuote?.plans && typeof subscriptionQuote.plans === 'object');
+    if (!hasLoadedQuote) setQuoteLoading(true);
     setQuoteError(null);
     try {
       const response = await getSubscriptionQuote();
@@ -102,10 +105,12 @@ const Subscription = () => {
       }
     } catch (error) {
       console.warn('Could not load subscription quote:', error);
-      setSubscriptionQuote(null);
-      setQuoteError(t('subscriptionPlanOptions.quoteLoadFailed'));
+      if (!hasLoadedQuote) {
+        setSubscriptionQuote(null);
+        setQuoteError(t('subscriptionPlanOptions.quoteLoadFailed'));
+      }
     } finally {
-      setQuoteLoading(false);
+      if (!hasLoadedQuote) setQuoteLoading(false);
     }
   };
 
@@ -173,6 +178,15 @@ const Subscription = () => {
     const isEmployerRole = authUser.role === 'EMPLOYER';
     setIsEmployer(isEmployerRole);
 
+    const initializationKey = [
+      authUser.id || authUser.email,
+      authUser.role || '',
+      authUser.countryCode || '',
+    ].join(':');
+    if (initializationKeyRef.current === initializationKey || initializationInFlightRef.current === initializationKey) return;
+    initializationKeyRef.current = initializationKey;
+    initializationInFlightRef.current = initializationKey;
+
     // Fast first paint from the localStorage mirror, then ALWAYS reconcile
     // against the authoritative backend row (MongoDB via ensureSubscription).
     // Backend status wins — localStorage must never override it.
@@ -185,11 +199,14 @@ const Subscription = () => {
         console.warn('Could not refresh subscription status on mount:', statusError);
       } finally {
         setLoading(false);
+        if (initializationInFlightRef.current === initializationKey) {
+          initializationInFlightRef.current = null;
+        }
       }
     })();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+  }, [authUser?.id, authUser?.email, authUser?.role, authUser?.countryCode, isAuthenticated, authLoading, navigate]);
 
   // Handle Paymob iframe message
   const handlePaymobMessage = (event) => {
