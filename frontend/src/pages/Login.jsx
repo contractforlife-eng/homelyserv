@@ -1,5 +1,5 @@
 // src/pages/Login.jsx - BRIGHT RED, WHITE, AND BLACK THEME
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle, Download as DownloadIcon } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
@@ -28,6 +28,7 @@ function Login() {
   const [changePasswordLoading, setChangePasswordLoading] = useState(false);
   const [changePasswordError, setChangePasswordError] = useState('');
   const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
+  const temporaryCurrentPasswordRef = useRef('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [rememberMe, setRememberMe] = useState(true);
   const authUser = useAuthStore(state => state.user);
@@ -95,6 +96,7 @@ function Login() {
   const loginUser = async (email, password) => {
     setError('');
     setLoading(true);
+    temporaryCurrentPasswordRef.current = '';
 
     try {
       const response = await api.post('/api/auth/login', {
@@ -144,17 +146,21 @@ function Login() {
       }
 
       if (data.mustChangePassword) {
+        temporaryCurrentPasswordRef.current = password;
         setMustChangePassword(true);
         setLoading(false);
         setPassword('');
         return;
       }
 
+      temporaryCurrentPasswordRef.current = '';
+
       // Get the latest user from store (in case migration updated it)
       const latestUser = useAuthStore.getState().user || user;
       redirectUser(latestUser);
     } catch (error) {
       console.error('Login error:', error);
+      temporaryCurrentPasswordRef.current = '';
       setError(t('loginFailed'));
       setLoading(false);
     }
@@ -179,10 +185,11 @@ function Login() {
     }
 
     setChangePasswordLoading(true);
+    const forceChangeForm = e.currentTarget;
 
     try {
       const response = await api.put('/api/auth/change-password', {
-        currentPassword: password,
+        currentPassword: temporaryCurrentPasswordRef.current,
         newPassword
       });
 
@@ -194,6 +201,9 @@ function Login() {
         return;
       }
 
+      temporaryCurrentPasswordRef.current = '';
+      forceChangeForm.reset();
+      setPassword('');
       setChangePasswordSuccess(true);
       setChangePasswordLoading(false);
 
@@ -207,7 +217,7 @@ function Login() {
       }, 1500);
     } catch (error) {
       console.error('Force change password error:', error);
-      setChangePasswordError(t('error'));
+      setChangePasswordError(error.response?.data?.message || t('error'));
       setChangePasswordLoading(false);
     }
   };
@@ -245,6 +255,8 @@ function Login() {
   };
 
   const handleBackToEmail = () => {
+    temporaryCurrentPasswordRef.current = '';
+    setMustChangePassword(false);
     setShowPasswordField(false);
     setIsEmailValid(false);
     setPassword('');
