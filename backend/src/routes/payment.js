@@ -964,7 +964,7 @@ router.get('/providers', authenticate, async (req, res) => {
     const providers = getAvailableProviders({ purpose, transactionCurrency: currency })
       .map(({ provider, mode, providerCurrency }) => ({ provider, mode, providerCurrency }));
     const bankConfig = getBankTransferUsdConfig();
-    const fxCapability = getBankTransferFxCapability({ canonicalCurrency: currency });
+    const fxCapability = await getBankTransferFxCapability({ canonicalCurrency: currency });
     const bankTransfer = {
       available: bankConfig.configured && fxCapability.available,
       settlementCurrency: BANK_TRANSFER_CURRENCY,
@@ -2591,7 +2591,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
     const resolved = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
     let fxEvidence;
     try {
-      fxEvidence = resolveBankTransferUsdSettlement({ canonicalAmount: resolved.amount, canonicalCurrency: resolved.currency });
+      fxEvidence = await resolveBankTransferUsdSettlement({ canonicalAmount: resolved.amount, canonicalCurrency: resolved.currency });
     } catch (error) {
       console.warn('[BankTransferFX] subscription settlement unavailable:', error?.code || 'UNKNOWN');
       return buildBankTransferFxUnavailableResponse();
@@ -2632,7 +2632,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
   }
   let fxEvidence;
   try {
-    fxEvidence = resolveBankTransferUsdSettlement({ canonicalAmount: hire.totalDue, canonicalCurrency: hire.compensationCurrency || 'EGP' });
+    fxEvidence = await resolveBankTransferUsdSettlement({ canonicalAmount: hire.totalDue, canonicalCurrency: hire.compensationCurrency || 'EGP' });
   } catch (error) {
     console.warn('[BankTransferFX] commission settlement unavailable:', error?.code || 'UNKNOWN');
     return buildBankTransferFxUnavailableResponse();
@@ -2741,6 +2741,8 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
           exchangeRateSource: details.fxEvidence.exchangeRateSource,
           exchangeRateVersion: details.fxEvidence.exchangeRateVersion,
           exchangeRateTimestamp: details.fxEvidence.exchangeRateTimestamp,
+          exchangeRateFetchedAt: details.fxEvidence.exchangeRateFetchedAt,
+          exchangeRateProvider: details.fxEvidence.exchangeRateProvider,
           rateDirection: details.fxEvidence.rateDirection,
           ...details.snapshot,
         },

@@ -1,6 +1,9 @@
-// Server-only reviewed FX configuration for the active USD Bank Transfer rail.
-// Rates are deliberately environment-provided and never bundled into the client.
-export const BANK_TRANSFER_FX_CURRENCIES = Object.freeze(['EGP', 'EUR', 'GBP', 'TRY']);
+import { SUPPORTED_CURRENCIES } from '../utils/currencyMetadata.js';
+
+// Legacy server-only static FX configuration. The active Bank Transfer path
+// now uses Frankfurter quotes and does not fall back to these values.
+// Rates are never bundled into the client.
+export const BANK_TRANSFER_FX_CURRENCIES = SUPPORTED_CURRENCIES;
 export const BANK_TRANSFER_FX_QUOTE_CURRENCY = 'USD';
 
 const read = (env, key) => {

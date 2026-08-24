@@ -50,6 +50,13 @@ export const fetchCommissionProviders = async (hireId) => {
   return response.data;
 };
 
+export const fetchBankTransferCapability = async ({ purpose, plan, hireId } = {}) => {
+  const response = await api.get('/api/payments/providers', {
+    params: { purpose, plan, hireId },
+  });
+  return response.data?.bankTransfer || null;
+};
+
 // PURPOSE is the backend's explicit discriminator (PAYMENT_PURPOSES in
 // backend/src/config/subscription.js): SUBSCRIPTION or COMMISSION. The
 // backend is authoritative for amounts — a SUBSCRIPTION intent is priced by

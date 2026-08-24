@@ -1,28 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Building2, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { createBankTransferPayment, submitBankTransferReference } from '../../services/paymentService';
+import { createBankTransferPayment, fetchBankTransferCapability, submitBankTransferReference } from '../../services/paymentService';
 
-const CURRENCIES = [
-  { code: 'USD', labelKey: 'usd', available: true },
-  { code: 'EUR', labelKey: 'eur', available: false },
-  { code: 'GBP', labelKey: 'gbp', available: false },
-];
-
-const BankTransferFlow = ({ purpose, plan, hireId, onCancel }) => {
+const BankTransferFlow = ({ purpose, plan, hireId, onCancel, capabilityAvailable }) => {
   const { t } = useTranslation();
-  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [payment, setPayment] = useState(null);
   const [instructions, setInstructions] = useState(null);
   const [referenceInput, setReferenceInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [capabilityLoading, setCapabilityLoading] = useState(capabilityAvailable == null);
 
   useEffect(() => {
     let active = true;
-    const create = async () => {
+    const create = async (allowed = capabilityAvailable === true) => {
       try {
+        if (!allowed) return;
         setLoading(true);
         setError(null);
         const result = await createBankTransferPayment({ purpose, plan, hireId });
@@ -36,9 +31,35 @@ const BankTransferFlow = ({ purpose, plan, hireId, onCancel }) => {
         if (active) setLoading(false);
       }
     };
-    if (selectedCurrency === 'USD') create();
+    const loadCapability = async () => {
+      if (capabilityAvailable !== undefined && capabilityAvailable !== null) {
+        setCapabilityLoading(false);
+        if (capabilityAvailable) create(true);
+        else {
+          setLoading(false);
+          setError(t('bankTransfer.unavailable'));
+        }
+        return;
+      }
+      try {
+        const capability = await fetchBankTransferCapability({ purpose, plan, hireId });
+        if (!active) return;
+        setCapabilityLoading(false);
+        if (capability?.available === true) create(true);
+        else {
+          setLoading(false);
+          setError(t('bankTransfer.unavailable'));
+        }
+      } catch (capabilityError) {
+        if (!active) return;
+        setCapabilityLoading(false);
+        setLoading(false);
+        setError(capabilityError.response?.data?.error || t('bankTransfer.unavailable'));
+      }
+    };
+    loadCapability();
     return () => { active = false; };
-  }, [purpose, plan, hireId, selectedCurrency, t]);
+  }, [purpose, plan, hireId, capabilityAvailable, t]);
 
   const submitReference = async (event) => {
     event.preventDefault();
@@ -65,24 +86,9 @@ const BankTransferFlow = ({ purpose, plan, hireId, onCancel }) => {
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('bankTransfer.description')}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {CURRENCIES.map(({ code, labelKey, available }) => (
-          <button
-            type="button"
-            key={code}
-            disabled={!available || loading || submitted}
-            onClick={() => setSelectedCurrency(code)}
-            className={`text-left rounded-lg border-2 p-3 ${selectedCurrency === code ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-gray-200 dark:border-gray-700'} ${!available ? 'opacity-60 cursor-not-allowed' : ''}`}
-          >
-            <div className="flex items-center gap-2 font-medium text-gray-800 dark:text-white"><Building2 size={16} />{t(`bankTransfer.${labelKey}`)} ({code})</div>
-            <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">{t(`bankTransfer.${available ? 'available' : 'comingSoon'}`)}</div>
-          </button>
-        ))}
-      </div>
-
       {error && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm flex gap-2"><AlertCircle size={16} />{error}</div>}
 
-      {loading && <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 size={16} className="animate-spin" />{t('bankTransfer.loading')}</div>}
+      {(capabilityLoading || loading) && <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 size={16} className="animate-spin" />{t('bankTransfer.loading')}</div>}
 
       {!loading && instructions && payment && !submitted && (
         <>

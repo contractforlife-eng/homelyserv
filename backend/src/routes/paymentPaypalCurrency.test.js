@@ -37,3 +37,27 @@ test('Turkey subscription capture evidence uses persisted USD evidence without e
   });
   assert.deepEqual(expected, { amount: '4.23', currency: 'USD', persisted: true });
 });
+
+test('PayPal regression does not invoke Bank Transfer FX or change its charge contract', () => {
+  const originalFetch = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error('Frankfurter must not be called by PayPal');
+  };
+  try {
+    assert.deepEqual(getExpectedPayPalCharge(300), { amount: '9.90', currency: 'USD' });
+    assert.deepEqual(resolveExpectedProviderEvidence({
+      paymentMethod: 'paypal',
+      purpose: 'COMMISSION',
+      amount: 300,
+      currency: 'EGP',
+      providerAmount: '9.90',
+      providerCurrency: 'USD',
+      metadata: {},
+    }), { amount: '9.90', currency: 'USD', persisted: true });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(fetchCalls, 0);
+});

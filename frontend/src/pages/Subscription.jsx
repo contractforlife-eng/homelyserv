@@ -835,6 +835,7 @@ const Subscription = () => {
                       <BankTransferFlow
                         purpose="SUBSCRIPTION"
                         plan={selectedPlan}
+                        capabilityAvailable={bankTransferAvailable}
                         onCancel={() => setSelectedMethod(null)}
                       />
                     ) : selectedPlanPurchasable && (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) ? (

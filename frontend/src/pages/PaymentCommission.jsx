@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, getPaymentStatus } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchBankTransferCapability, getPaymentStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
@@ -41,6 +41,7 @@ const PaymentCommission = () => {
   const paypalPollingRef = useRef(null);
   const paypalCaptureRequestedRef = useRef(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
+  const [bankTransferAvailable, setBankTransferAvailable] = useState(null);
   const commissionCurrency = getStoredCurrency(commissionData);
 
   // Get authenticated user from authStore
@@ -74,14 +75,14 @@ const PaymentCommission = () => {
       color: 'from-blue-500 to-blue-600',
       badge: t('manualPayment.manualVerification')
     },
-    {
+    ...(bankTransferAvailable !== false ? [{
       id: PAYMENT_METHODS.BANK_TRANSFER,
       name: t('bankTransfer.category'),
       icon: Building2,
       description: t('bankTransfer.description'),
       color: 'from-teal-500 to-teal-600',
       badge: t('bankTransfer.available')
-    }
+    }] : [])
   ];
 
   useEffect(() => {
@@ -98,6 +99,24 @@ const PaymentCommission = () => {
       navigate('/worker/offers');
     }
   }, [navigate, isAuthenticated, authUser]);
+
+  useEffect(() => {
+    const hireId = commissionData?.hireId;
+    if (!hireId) {
+      setBankTransferAvailable(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setBankTransferAvailable(null);
+    fetchBankTransferCapability({ purpose: 'COMMISSION', hireId })
+      .then((capability) => {
+        if (!cancelled) setBankTransferAvailable(capability?.available === true);
+      })
+      .catch(() => {
+        if (!cancelled) setBankTransferAvailable(false);
+      });
+    return () => { cancelled = true; };
+  }, [commissionData?.hireId]);
 
   // Handle Paymob iframe message
   const handlePaymobMessage = (event) => {
@@ -491,6 +510,7 @@ const PaymentCommission = () => {
             <BankTransferFlow
               purpose="COMMISSION"
               hireId={commissionData.hireId}
+              capabilityAvailable={bankTransferAvailable}
               onCancel={() => setSelectedMethod(null)}
             />
           ) : selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (

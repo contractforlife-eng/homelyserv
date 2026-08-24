@@ -3,11 +3,12 @@ import {
   multiplyMoneyByDecimal,
   toMinorUnits,
 } from '../utils/money.js';
-import {
-  BANK_TRANSFER_FX_CURRENCIES,
-  BANK_TRANSFER_FX_QUOTE_CURRENCY,
-  getBankTransferFxConfig,
-} from '../config/bankTransferFx.js';
+import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
+import { fetchFrankfurterQuote, validateFrankfurterQuote } from './frankfurterFxService.js';
+
+export const BANK_TRANSFER_FX_QUOTE_CURRENCY = 'USD';
+export const BANK_TRANSFER_FX_CACHE_TTL_MS = 15 * 60 * 1000;
+export const BANK_TRANSFER_FX_MAX_WORKING_DAYS = 3;
 
 export const BANK_TRANSFER_FX_ERROR_CODES = Object.freeze({
   INVALID_CONFIGURATION: 'INVALID_BANK_TRANSFER_FX_CONFIGURATION',
@@ -15,6 +16,7 @@ export const BANK_TRANSFER_FX_ERROR_CODES = Object.freeze({
   UNSUPPORTED_CURRENCY: 'UNSUPPORTED_BANK_TRANSFER_FX_CURRENCY',
   STALE_RATE: 'STALE_BANK_TRANSFER_FX_RATE',
   INVALID_SETTLEMENT: 'INVALID_BANK_TRANSFER_FX_SETTLEMENT',
+  PROVIDER_UNAVAILABLE: 'BANK_TRANSFER_FX_PROVIDER_UNAVAILABLE',
 });
 
 export class BankTransferFxError extends Error {
@@ -25,38 +27,8 @@ export class BankTransferFxError extends Error {
   }
 }
 
+const quoteCache = new Map();
 const isDecimal = (value) => typeof value === 'string' && /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.trim());
-const requireText = (value, label) => {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION, `${label} is required`);
-  }
-  return value.trim();
-};
-
-const validateRate = (config, now) => {
-  if (!config || !BANK_TRANSFER_FX_CURRENCIES.includes(config.baseCurrency) || config.quoteCurrency !== BANK_TRANSFER_FX_QUOTE_CURRENCY) {
-    throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION, 'Unsupported FX currency pair');
-  }
-  if (!isDecimal(config.rate) || !/[1-9]/.test(config.rate.trim())) {
-    throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION, 'FX rate must be positive');
-  }
-  if (requireText(config.rateDirection, 'FX rateDirection') !== `${config.baseCurrency}_TO_USD`) {
-    throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION, 'FX rateDirection is invalid');
-  }
-  const source = requireText(config.source, 'FX source');
-  const version = requireText(config.version, 'FX version');
-  const effectiveAt = requireText(config.effectiveAt, 'FX effectiveAt');
-  const timestamp = Date.parse(effectiveAt);
-  if (!Number.isFinite(timestamp) || timestamp > now) {
-    throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION, 'FX effectiveAt is invalid');
-  }
-  if (config.maxAgeSeconds != null && String(config.maxAgeSeconds).trim() !== '') {
-    if (!/^\d+$/.test(String(config.maxAgeSeconds)) || Number(config.maxAgeSeconds) <= 0 || now - timestamp > Number(config.maxAgeSeconds) * 1000) {
-      throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.STALE_RATE, 'FX rate is stale or maxAgeSeconds is invalid');
-    }
-  }
-  return { source, version, effectiveAt, timestamp };
-};
 
 const normalizeAmount = (amount, currency) => {
   const text = String(amount ?? '').trim();
@@ -66,29 +38,77 @@ const normalizeAmount = (amount, currency) => {
   return formatMoneyDecimal(text, currency);
 };
 
-export const resolveBankTransferUsdSettlement = ({ canonicalAmount, canonicalCurrency, config = getBankTransferFxConfig(), now = Date.now() } = {}) => {
-  const currency = String(canonicalCurrency || '').trim().toUpperCase();
-  if (currency !== BANK_TRANSFER_FX_QUOTE_CURRENCY && !BANK_TRANSFER_FX_CURRENCIES.includes(currency)) {
+const normalizeCurrency = (value) => {
+  const currency = normalizeCurrencyCode(value);
+  if (!currency || !isSupportedCurrency(currency)) {
     throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.UNSUPPORTED_CURRENCY, 'Unsupported canonical currency');
   }
+  return currency;
+};
+
+const identityEvidence = (amount, now) => Object.freeze({
+  canonicalAmount: amount,
+  canonicalCurrency: 'USD',
+  settlementAmount: formatMoneyDecimal(amount, 'USD'),
+  settlementCurrency: 'USD',
+  exchangeRate: '1',
+  rateDirection: 'SOURCE_TO_USD',
+  exchangeRateSource: 'identity',
+  exchangeRateVersion: 'identity',
+  exchangeRateTimestamp: new Date(now).toISOString(),
+  exchangeRateFetchedAt: new Date(now).toISOString(),
+  exchangeRateProvider: 'identity',
+});
+
+export const clearBankTransferFxCache = () => quoteCache.clear();
+
+const getValidatedQuote = async ({ currency, now, quoteProvider = fetchFrankfurterQuote }) => {
+  const cached = quoteCache.get(currency);
+  if (cached && now - cached.cachedAt <= BANK_TRANSFER_FX_CACHE_TTL_MS) {
+    return cached.quote;
+  }
+
+  try {
+    const fetched = await quoteProvider(currency, { now });
+    const quote = validateFrankfurterQuote({
+      quote: fetched,
+      sourceCurrency: currency,
+      now,
+      maxWorkingDays: BANK_TRANSFER_FX_MAX_WORKING_DAYS,
+    });
+    quoteCache.set(currency, { cachedAt: now, quote });
+    return quote;
+  } catch (error) {
+    if (error instanceof BankTransferFxError) throw error;
+    throw new BankTransferFxError(
+      error?.code || BANK_TRANSFER_FX_ERROR_CODES.PROVIDER_UNAVAILABLE,
+      'Bank transfer FX quote is unavailable',
+    );
+  }
+};
+
+export const resolveBankTransferUsdSettlement = async ({
+  canonicalAmount,
+  canonicalCurrency,
+  now = Date.now(),
+  quoteProvider = fetchFrankfurterQuote,
+} = {}) => {
+  const currency = normalizeCurrency(canonicalCurrency);
   const normalizedCanonicalAmount = normalizeAmount(canonicalAmount, currency);
 
   if (currency === BANK_TRANSFER_FX_QUOTE_CURRENCY) {
-    return Object.freeze({
-      canonicalAmount: normalizedCanonicalAmount,
-      canonicalCurrency: currency,
-      settlementAmount: formatMoneyDecimal(normalizedCanonicalAmount, BANK_TRANSFER_FX_QUOTE_CURRENCY),
-      settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY,
-      exchangeRate: '1',
-      rateDirection: 'USD_TO_USD',
-      exchangeRateSource: 'IDENTITY',
-      exchangeRateVersion: 'IDENTITY',
-      exchangeRateTimestamp: new Date(now).toISOString(),
-    });
+    return identityEvidence(normalizedCanonicalAmount, now);
   }
 
-  const fx = validateRate(config?.[currency], now);
-  const settlementAmount = multiplyMoneyByDecimal(normalizedCanonicalAmount, config[currency].rate, BANK_TRANSFER_FX_QUOTE_CURRENCY);
+  let quote;
+  try {
+    quote = await getValidatedQuote({ currency, now, quoteProvider });
+  } catch (error) {
+    if (error instanceof BankTransferFxError) throw error;
+    throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.PROVIDER_UNAVAILABLE, 'Bank transfer FX quote is unavailable');
+  }
+
+  const settlementAmount = multiplyMoneyByDecimal(normalizedCanonicalAmount, quote.rate, BANK_TRANSFER_FX_QUOTE_CURRENCY);
   if (toMinorUnits(settlementAmount, BANK_TRANSFER_FX_QUOTE_CURRENCY) <= 0) {
     throw new BankTransferFxError(BANK_TRANSFER_FX_ERROR_CODES.INVALID_SETTLEMENT, 'USD settlement amount is invalid');
   }
@@ -98,34 +118,42 @@ export const resolveBankTransferUsdSettlement = ({ canonicalAmount, canonicalCur
     canonicalCurrency: currency,
     settlementAmount: formatMoneyDecimal(settlementAmount, BANK_TRANSFER_FX_QUOTE_CURRENCY),
     settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY,
-    exchangeRate: String(config[currency].rate).trim(),
-    rateDirection: config[currency].rateDirection,
-    exchangeRateSource: fx.source,
-    exchangeRateVersion: fx.version,
-    exchangeRateTimestamp: fx.effectiveAt,
+    exchangeRate: quote.rate,
+    rateDirection: 'SOURCE_TO_USD',
+    exchangeRateSource: quote.source,
+    exchangeRateVersion: quote.version,
+    exchangeRateTimestamp: quote.effectiveAt,
+    exchangeRateFetchedAt: quote.fetchedAt,
+    exchangeRateProvider: 'Frankfurter',
   });
 };
 
 // Capability discovery is deliberately non-throwing and never exposes rate
-// values. Conversion continues to use resolveBankTransferUsdSettlement(),
-// which remains the authoritative amount/rounding path.
-export const getBankTransferFxCapability = ({ canonicalCurrency, config = getBankTransferFxConfig(), now = Date.now() } = {}) => {
-  const currency = String(canonicalCurrency || '').trim().toUpperCase();
-  if (currency === BANK_TRANSFER_FX_QUOTE_CURRENCY) {
-    return Object.freeze({ available: true, settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY, code: null });
+// values. It uses the same cached, validated quote path as payment creation.
+export const getBankTransferFxCapability = async ({
+  canonicalCurrency,
+  now = Date.now(),
+  quoteProvider = fetchFrankfurterQuote,
+} = {}) => {
+  let currency;
+  try {
+    currency = normalizeCurrency(canonicalCurrency);
+  } catch (error) {
+    return Object.freeze({ available: false, settlementCurrency: 'USD', code: error?.code || BANK_TRANSFER_FX_ERROR_CODES.UNSUPPORTED_CURRENCY });
   }
-  if (!BANK_TRANSFER_FX_CURRENCIES.includes(currency)) {
-    return Object.freeze({ available: false, settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY, code: BANK_TRANSFER_FX_ERROR_CODES.UNSUPPORTED_CURRENCY });
+
+  if (currency === 'USD') {
+    return Object.freeze({ available: true, settlementCurrency: 'USD', code: null });
   }
 
   try {
-    validateRate(config?.[currency], now);
-    return Object.freeze({ available: true, settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY, code: null });
+    await getValidatedQuote({ currency, now, quoteProvider });
+    return Object.freeze({ available: true, settlementCurrency: 'USD', code: null });
   } catch (error) {
     return Object.freeze({
       available: false,
-      settlementCurrency: BANK_TRANSFER_FX_QUOTE_CURRENCY,
-      code: error?.code || BANK_TRANSFER_FX_ERROR_CODES.INVALID_CONFIGURATION,
+      settlementCurrency: 'USD',
+      code: error?.code || BANK_TRANSFER_FX_ERROR_CODES.PROVIDER_UNAVAILABLE,
     });
   }
 };

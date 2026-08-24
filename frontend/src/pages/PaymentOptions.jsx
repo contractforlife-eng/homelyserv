@@ -7,7 +7,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchBankTransferCapability, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
@@ -73,6 +73,7 @@ const PaymentOptions = () => {
   const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
   const [paymentCurrency, setPaymentCurrency] = useState('EGP');
   const [availableProviderIds, setAvailableProviderIds] = useState(null);
+  const [bankTransferAvailable, setBankTransferAvailable] = useState(null);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
 
   const displayWorkerName = workerData?.workerNameIsFallback
@@ -134,7 +135,8 @@ const PaymentOptions = () => {
     }
   ];
   const paymentMethods = getVisiblePaymentMethods(allPaymentMethods, availableProviderIds, {
-    showEgyptianManualMethods: canShowEgyptianManualPaymentMethods(authUser)
+    showEgyptianManualMethods: canShowEgyptianManualPaymentMethods(authUser),
+    bankTransferAvailable,
   });
 
 
@@ -743,24 +745,26 @@ const PaymentOptions = () => {
     if (!hireId) {
       setPaymentCurrency('EGP');
       setAvailableProviderIds(null);
+      setBankTransferAvailable(null);
       return;
     }
 
     let cancelled = false;
     setAvailableProviderIds([]);
+    setBankTransferAvailable(null);
     setSelectedMethod(null);
     fetchCommissionProviders(hireId)
       .then((result) => {
         if (cancelled) return;
         setPaymentCurrency(result?.currency || 'EGP');
         setAvailableProviderIds((result?.providers || []).map(item => item.provider));
+        setBankTransferAvailable(result?.bankTransfer?.available === true);
       })
       .catch((error) => {
         if (cancelled) return;
         console.error('Failed to load payment provider capabilities:', error);
         setAvailableProviderIds([]);
-        // Bank Transfer is a separate manual rail and remains selectable even
-        // when automated provider capabilities are empty for this currency.
+        setBankTransferAvailable(false);
         if (!allPaymentMethods.some(({ id }) => id === PAYMENT_METHODS.BANK_TRANSFER)) {
           setPaymentError(t('paymentCapabilityMessages.unsupportedCurrency'));
         }
@@ -1052,6 +1056,7 @@ const PaymentOptions = () => {
             <BankTransferFlow
               purpose="COMMISSION"
               hireId={pendingPayment?.hireId}
+              capabilityAvailable={bankTransferAvailable}
               onCancel={() => setSelectedMethod(null)}
             />
           ) : selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
