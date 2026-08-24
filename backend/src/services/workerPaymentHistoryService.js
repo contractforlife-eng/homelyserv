@@ -8,8 +8,32 @@ const planFromMetadata = (metadata) => (
     : null
 );
 
+const MANUAL_PAYMENT_METHODS = new Set(['bank_transfer', 'vodafone_cash', 'instapay']);
+const MANUAL_REVIEW_STATES_TO_SHOW = new Set([
+  'awaiting_transfer',
+  'proof_submitted',
+  'pending_verification',
+  'verified',
+  'rejected',
+]);
+
+// Only expose payment records that represent a meaningful financial or review outcome.
+// Transient provider attempts (pending/processing/created/approval-required) remain
+// stored for reconciliation but are intentionally omitted from Worker history.
+export const isMeaningfulPremiumPayment = (payment) => {
+  const status = String(payment?.status || '').trim().toLowerCase();
+  const paymentMethod = String(payment?.paymentMethod || '').trim().toLowerCase();
+  const fulfillmentStatus = String(payment?.fulfillmentStatus || '').trim().toLowerCase();
+  const manualReviewState = String(payment?.manualReviewState || '').trim().toLowerCase();
+
+  if (status === 'completed' || status === 'failed' || fulfillmentStatus === 'fulfilled') return true;
+
+  return MANUAL_PAYMENT_METHODS.has(paymentMethod)
+    && MANUAL_REVIEW_STATES_TO_SHOW.has(manualReviewState);
+};
+
 export const buildWorkerPaymentHistory = ({ payments, manualGrant, legacyManualSubscriptions }) => ({
-  paid: (payments || []).map((payment) => ({
+  paid: (payments || []).filter(isMeaningfulPremiumPayment).map((payment) => ({
     source: 'paid',
     plan: payment.SubscriptionGrant?.plan || planFromMetadata(payment.metadata),
     status: payment.status,
@@ -61,6 +85,8 @@ export const getWorkerPaymentHistory = async (userId, db = prisma) => {
         currency: true,
         paymentMethod: true,
         status: true,
+        fulfillmentStatus: true,
+        manualReviewState: true,
         metadata: true,
         createdAt: true,
         completedAt: true,
