@@ -13,6 +13,7 @@ import hireService from '../services/hireService';
 import { getNotifications } from '../utils/notificationService';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
+import { getAccountCurrency } from '../utils/currencyPresentation';
 import {
   User,
   Briefcase,
@@ -85,7 +86,7 @@ const WorkerSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [selectedCurrency, setSelectedCurrency] = useState('EGP');
+  const [selectedCurrency, setSelectedCurrency] = useState(() => getAccountCurrency(authUser));
   const [currencyDirty, setCurrencyDirty] = useState(false);
   const currencyDirtyRef = useRef(false);
 
@@ -99,7 +100,7 @@ const WorkerSettings = () => {
     autoSave: true,
     language: 'en',
     timezone: 'UTC+2',
-    currency: 'EGP',
+    currency: getAccountCurrency(authUser),
     dateFormat: 'DD/MM/YYYY',
     profileVisibility: 'public',
     showOnlineStatus: true,
@@ -155,7 +156,7 @@ useEffect(() => {
               authUser?.preferredCurrency ||
                 authUser?.effectiveCurrency ||
                 response.data.settings?.currency ||
-                'EGP'
+                getAccountCurrency(authUser)
             );
           }
         }
@@ -172,7 +173,7 @@ useEffect(() => {
                 authUser?.preferredCurrency ||
                   authUser?.effectiveCurrency ||
                   parsedSettings.currency ||
-                  'EGP'
+                  getAccountCurrency(authUser)
               );
             }
           } catch (e) {
@@ -213,7 +214,7 @@ useEffect(() => {
              authUser.preferredCurrency ||
                authUser.effectiveCurrency ||
                parsedSettings.currency ||
-               'EGP'
+               getAccountCurrency(authUser)
            );
          }
        } catch (e) {

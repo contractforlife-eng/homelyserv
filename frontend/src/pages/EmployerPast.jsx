@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { formatCurrencyAmount, getAccountCurrency } from '../utils/currencyPresentation';
 import {
   Eye,
   Calendar,
@@ -139,7 +140,7 @@ function EmployerPast() {
 
                 <div className="flex flex-col items-end justify-center min-w-[120px]">
                   <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPast.salary')}</p>
-                  <p className="font-bold text-gray-800 dark:text-white">{t('employerPast.salaryValue', { amount: app.salary.toLocaleString() })}</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{formatCurrencyAmount(app.salary, getAccountCurrency(authUser))}</p>
                   {app.rating && (
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={14} className="fill-yellow-400 text-yellow-400" />

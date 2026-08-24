@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getAccountCurrency, SUPPORTED_CURRENCIES } from '../utils/currencyPresentation';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -19,13 +20,13 @@ import {
 } from 'lucide-react';
 import hireService from '../services/hireService';
 
-const OFFER_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+const OFFER_CURRENCIES = SUPPORTED_CURRENCIES;
 const resolveInitialCurrency = (user) => {
   const preferred = typeof user?.preferredCurrency === 'string' ? user.preferredCurrency.toUpperCase() : '';
   const effective = typeof user?.effectiveCurrency === 'string' ? user.effectiveCurrency.toUpperCase() : '';
   if (OFFER_CURRENCIES.includes(preferred)) return preferred;
   if (OFFER_CURRENCIES.includes(effective)) return effective;
-  return 'EGP';
+  return getAccountCurrency(user);
 };
 
 const EmployerCreateOffer = () => {

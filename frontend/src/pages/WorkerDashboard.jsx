@@ -12,6 +12,8 @@ import {
   getTotalUnreadCount
 } from '../utils/chatService';
 import hireService from '../services/hireService';
+import { getWorkerEarnings } from '../services/workerEarningService';
+import { formatCurrencyAmount, formatCurrencyTotals, getAccountCurrency, groupCurrencyTotals } from '../utils/currencyPresentation';
 import {
   Home,
   User,
@@ -68,7 +70,8 @@ const WorkerDashboard = () => {
     acceptedOffers: 0,
     inProgressOffers: 0,
     rejectedOffers: 0,
-    completedOffers: 0
+    completedOffers: 0,
+    totalEarningsByCurrency: []
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
@@ -141,9 +144,27 @@ const WorkerDashboard = () => {
         }
       }
 
-      const workerPayments = [];
-      const pendingPayments = 0;
-      const totalEarnings = 0;
+      let workerPayments = [];
+      let pendingPayments = 0;
+      let totalEarningsByCurrency = [];
+      try {
+        const earningsData = await getWorkerEarnings();
+        workerPayments = Array.isArray(earningsData?.records) ? earningsData.records : [];
+        pendingPayments = workerPayments.filter((record) => (
+          record.status === 'PENDING' || record.status === 'AWAITING_CONFIRMATION'
+        )).length;
+        totalEarningsByCurrency = groupCurrencyTotals(
+          workerPayments.filter((record) => record.status === 'EARNED' || record.status === 'PAID'),
+          (record) => record.amount,
+          (record) => record.currency
+        );
+      } catch (error) {
+        console.error('Error loading worker earnings:', error);
+      }
+
+      if (totalEarningsByCurrency.length === 0) {
+        totalEarningsByCurrency = [{ currency: getAccountCurrency(authUser), amount: 0 }];
+      }
 
       setStats({
         totalApplications: appliedOffers.length,
@@ -154,12 +175,12 @@ const WorkerDashboard = () => {
         messages: messagesCount,
         completedJobs: completedOffers,
         pendingPayments: pendingPayments,
-        totalEarnings: totalEarnings,
         pendingOffers: pendingOffers,
         acceptedOffers: acceptedOffers,
         inProgressOffers: inProgressOffers,
         rejectedOffers: rejectedOffers,
-        completedOffers: completedOffers
+        completedOffers: completedOffers,
+        totalEarningsByCurrency
       });
 
       generateRecentActivity(
@@ -265,6 +286,7 @@ const WorkerDashboard = () => {
         type: 'payment',
         icon: 'payment',
         amount: payment.amount,
+        currency: payment.currency,
         paymentState: payment.status,
         time: payment.date ? new Date(payment.date).toLocaleDateString() : 'Recently',
         status: payment.status === 'completed' ? 'Completed' : 'Pending'
@@ -296,12 +318,10 @@ const WorkerDashboard = () => {
 
   const formatActivityMessage = (activity) => {
     if (activity.type === 'payment') {
-      return t('workerDashboard.activity.payment', {
-        amount: activity.amount,
-        state: activity.paymentState === 'completed'
-          ? t('workerDashboard.activity.received')
-          : t('workerDashboard.status.pending')
-      });
+      const state = activity.paymentState === 'completed'
+        ? t('workerDashboard.activity.received')
+        : t('workerDashboard.status.pending');
+      return `${t('workerDashboard.stats.totalEarnings')}: ${formatCurrencyAmount(activity.amount, activity.currency)} — ${state}`;
     }
     return t('workerDashboard.activity.offer', {
       job: activity.jobTitle || t('workerDashboard.activity.jobOffer'),
@@ -476,7 +496,9 @@ const WorkerDashboard = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.totalEarnings')}</p>
                 <span className="text-red-500 font-bold">$</span>
               </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">EGP {stats.totalEarnings}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">
+                {formatCurrencyTotals(stats.totalEarningsByCurrency)}
+              </p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">

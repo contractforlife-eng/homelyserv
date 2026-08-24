@@ -12,6 +12,7 @@ import TrackingConsentSettings from '../components/TrackingConsentSettings';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import api from '../utils/api';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
+import { getAccountCurrency } from '../utils/currencyPresentation';
 import {
   Home,
   User,
@@ -75,7 +76,7 @@ const EmployerSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [selectedCurrency, setSelectedCurrency] = useState('EGP');
+  const [selectedCurrency, setSelectedCurrency] = useState(() => getAccountCurrency(authUser));
   const [currencyDirty, setCurrencyDirty] = useState(false);
   const currencyDirtyRef = useRef(false);
 
@@ -89,7 +90,7 @@ const EmployerSettings = () => {
     autoSave: true,
     language: 'en',
     timezone: 'UTC+2',
-    currency: 'EGP',
+    currency: getAccountCurrency(authUser),
     dateFormat: 'DD/MM/YYYY',
     profileVisibility: 'public',
     showOnlineStatus: true,
@@ -128,7 +129,7 @@ const EmployerSettings = () => {
               authUser?.preferredCurrency ||
                 authUser?.effectiveCurrency ||
                 response.data.settings?.currency ||
-                'EGP'
+                getAccountCurrency(authUser)
             );
           }
         }
@@ -145,7 +146,7 @@ const EmployerSettings = () => {
                 authUser?.preferredCurrency ||
                   authUser?.effectiveCurrency ||
                   parsedSettings.currency ||
-                  'EGP'
+                  getAccountCurrency(authUser)
               );
             }
           } catch (e) {

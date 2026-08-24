@@ -9,6 +9,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
 import workerEarningService from '../services/workerEarningService';
+import { formatCurrencyAmount, formatCurrencyTotals, getAccountCurrency, groupCurrencyTotals, getStoredCurrency } from '../utils/currencyPresentation';
 import api from '../utils/api';
 import {
   User,
@@ -335,24 +336,25 @@ const WorkerPayment = () => {
   };
 
   const resolveEarningCurrency = (earning) => {
-    if (earning?.currency == null) return 'EGP';
-    if (typeof earning.currency !== 'string' || !/^[A-Z]{3}$/i.test(earning.currency.trim())) return null;
-    return earning.currency.trim().toUpperCase();
+    return getStoredCurrency(earning, getAccountCurrency(authUser));
   };
 
   const formatEarningAmount = (amount, earning) => {
     const numericAmount = typeof amount === 'number' ? amount : Number(amount);
     const currency = resolveEarningCurrency(earning);
     if (!Number.isFinite(numericAmount) || !currency) return '—';
-    return `${numericAmount.toLocaleString()} ${currency}`;
+    return formatCurrencyAmount(numericAmount, currency, dashboard.language === 'ar' ? 'ar-EG' : 'en-US');
   };
 
   const formatEarningSummary = (amount, statuses) => {
     const relevantRecords = ledgerRecords.filter(record => statuses.includes(record.status));
-    if (relevantRecords.length === 0) return formatEarningAmount(amount, { currency: 'EGP' });
-    const currencies = new Set(relevantRecords.map(resolveEarningCurrency));
-    if (currencies.has(null) || currencies.size !== 1) return '—';
-    return formatEarningAmount(amount, { currency: [...currencies][0] });
+    if (relevantRecords.length === 0) return formatEarningAmount(amount, { currency: getAccountCurrency(authUser) });
+    const totals = groupCurrencyTotals(
+      relevantRecords,
+      (record) => record.amount,
+      resolveEarningCurrency
+    );
+    return formatCurrencyTotals(totals, dashboard.language === 'ar' ? 'ar-EG' : 'en-US');
   };
 
   const stats = {

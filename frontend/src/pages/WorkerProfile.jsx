@@ -11,18 +11,12 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
 import { formatExperienceDisplay } from '../utils/experienceDisplay';
+import { getAccountCurrency, normalizeCurrencyCode, SUPPORTED_CURRENCIES } from '../utils/currencyPresentation';
 
-const RATE_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
-
-const isCanonicalCurrencyCode = (value) =>
-  typeof value === 'string' && /^[A-Z]{3}$/.test(value);
+const RATE_CURRENCIES = SUPPORTED_CURRENCIES;
 
 const getInitialRateCurrency = (user) => {
-  if (isCanonicalCurrencyCode(user?.hourlyRateCurrency)) return user.hourlyRateCurrency;
-  if (user?.hourlyRate) return 'EGP';
-  if (isCanonicalCurrencyCode(user?.preferredCurrency)) return user.preferredCurrency;
-  if (isCanonicalCurrencyCode(user?.effectiveCurrency)) return user.effectiveCurrency;
-  return 'EGP';
+  return normalizeCurrencyCode(user?.hourlyRateCurrency) || getAccountCurrency(user);
 };
 
 import {
@@ -75,7 +69,7 @@ const WorkerProfile = () => {
     skills: [],
     experience: '',
     hourlyRate: '',
-    hourlyRateCurrency: 'EGP',
+    hourlyRateCurrency: getAccountCurrency(authUser),
     profileImage: '',
     desiredJob: '',
     tutorSpecialization: ''

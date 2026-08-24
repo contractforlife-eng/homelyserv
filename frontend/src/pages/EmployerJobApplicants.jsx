@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
+import { formatCurrencyAmount, getAccountCurrency, getStoredCurrency } from '../utils/currencyPresentation';
 import { UserDisplayName } from '../components/users';
 
 const STATUS_STYLES = {
@@ -186,7 +187,8 @@ const EmployerJobApplicants = () => {
 
   const formatSalary = (value) => {
     if (value === null || value === undefined) return '—';
-    return t('employerJobApplicants.salaryValue', { amount: Math.round(value).toLocaleString() });
+    const currency = getStoredCurrency(offerModalApp?.jobPost || offerModalApp?.job || authUser, getAccountCurrency(offerModalApp?.worker || authUser));
+    return formatCurrencyAmount(value, currency, i18n.resolvedLanguage === 'ar' ? 'ar-EG' : 'en-US');
   };
 
   const formatSalaryRange = (jobPost) => formatJobCompensation(jobPost, t, i18n.resolvedLanguage);
@@ -481,7 +483,7 @@ const EmployerJobApplicants = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('employerJobApplicants.finalMonthlySalary', {
-                    currency: offerModalApp.jobPost?.compensationCurrency || 'EGP'
+                    currency: getStoredCurrency(offerModalApp.jobPost, getAccountCurrency(authUser))
                   })}
                 </label>
                 <input

@@ -36,6 +36,7 @@ import {
   formatWorkerRate,
   getComparableWorkerRate
 } from '../utils/workerRateDisplay';
+import { getAccountCurrency, SUPPORTED_CURRENCIES } from '../utils/currencyPresentation';
 import {
   getSearchLimitState,
   hasEmployerSearchAccountChanged,
@@ -44,12 +45,12 @@ import {
   shouldShowWorkerDiscovery,
 } from '../utils/employerSearchQuota';
 
-const SEARCH_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+const SEARCH_CURRENCIES = SUPPORTED_CURRENCIES;
 
 const getInitialSearchCurrency = (user) => {
   if (SEARCH_CURRENCIES.includes(user?.preferredCurrency)) return user.preferredCurrency;
   if (SEARCH_CURRENCIES.includes(user?.effectiveCurrency)) return user.effectiveCurrency;
-  return 'EGP';
+  return getAccountCurrency(user);
 };
 
 const createInitialAdvancedFilters = () => ({

@@ -7,9 +7,10 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import jobService from '../services/jobService';
+import { getAccountCurrency, SUPPORTED_CURRENCIES } from '../utils/currencyPresentation';
 
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'freelance'];
-const JOB_COMPENSATION_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+const JOB_COMPENSATION_CURRENCIES = SUPPORTED_CURRENCIES;
 const STRICT_DECIMAL_PATTERN = /^\d+(?:\.\d+)?$/;
 
 const normalizeCurrency = (value) => {
@@ -25,7 +26,7 @@ const resolveNewJobCurrency = (user) => {
   const effective = normalizeCurrency(user?.effectiveCurrency);
   if (effective && JOB_COMPENSATION_CURRENCIES.includes(effective)) return effective;
 
-  return 'EGP';
+  return getAccountCurrency(user);
 };
 
 const parseSalaryInput = (value) => {
@@ -50,7 +51,7 @@ const EmployerPostJob = () => {
     location: '',
     salaryMin: '',
     salaryMax: '',
-    compensationCurrency: 'EGP',
+    compensationCurrency: getAccountCurrency(authUser),
     type: 'full-time',
     description: '',
     requirements: [],

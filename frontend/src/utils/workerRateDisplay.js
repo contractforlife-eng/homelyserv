@@ -1,11 +1,8 @@
 const STRICT_DISPLAY_RATE_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
-const CANONICAL_CURRENCY_PATTERN = /^[A-Z]{3}$/;
+import { getAccountCurrency, normalizeCurrencyCode } from './currencyPresentation';
 
 export const resolveWorkerRateCurrency = (worker) =>
-  typeof worker?.hourlyRateCurrency === 'string' &&
-  CANONICAL_CURRENCY_PATTERN.test(worker.hourlyRateCurrency)
-    ? worker.hourlyRateCurrency
-    : 'EGP';
+  normalizeCurrencyCode(worker?.hourlyRateCurrency) || getAccountCurrency(worker);
 
 export const getComparableWorkerRate = (worker) => {
   const rawRate = worker?.hourlyRateDisplayValue ?? worker?.hourlyRate;

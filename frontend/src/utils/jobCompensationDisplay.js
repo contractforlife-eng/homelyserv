@@ -1,4 +1,4 @@
-const LEGACY_JOB_COMPENSATION_CURRENCY = 'EGP';
+import { formatNumericAmount, getStoredCurrency } from './currencyPresentation';
 
 const UI_LOCALES = Object.freeze({
   en: 'en-US',
@@ -17,12 +17,7 @@ const toFiniteAmount = (value) => {
 };
 
 export const resolveJobCompensationCurrency = (job) => {
-  if (typeof job?.compensationCurrency === 'string') {
-    const normalized = job.compensationCurrency.trim().toUpperCase();
-    if (/^[A-Z]{3}$/.test(normalized)) return normalized;
-  }
-
-  return LEGACY_JOB_COMPENSATION_CURRENCY;
+  return getStoredCurrency(job);
 };
 
 export const formatJobCompensation = (job, t, language = 'en') => {
@@ -32,7 +27,7 @@ export const formatJobCompensation = (job, t, language = 'en') => {
 
   const locale = UI_LOCALES[language] || UI_LOCALES.en;
   const currency = resolveJobCompensationCurrency(job);
-  const formatAmount = (amount) => Math.round(amount).toLocaleString(locale);
+  const formatAmount = (amount) => formatNumericAmount(Math.round(amount), locale);
 
   if (min !== null && max !== null && min === max) {
     return t('jobCompensation.exact', { amount: formatAmount(min), currency });
@@ -49,4 +44,3 @@ export const formatJobCompensation = (job, t, language = 'en') => {
   }
   return t('jobCompensation.upTo', { amount: formatAmount(max), currency });
 };
-

@@ -27,6 +27,7 @@ import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import useAuthStore from '../store/authStore';
+import { formatCurrencyAmount, getStoredCurrency } from '../utils/currencyPresentation';
 
 const PaymentCommission = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const PaymentCommission = () => {
   const paypalPollingRef = useRef(null);
   const paypalCaptureRequestedRef = useRef(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
+  const commissionCurrency = getStoredCurrency(commissionData);
 
   // Get authenticated user from authStore
   const authUser = useAuthStore(state => state.user);
@@ -362,7 +364,7 @@ const PaymentCommission = () => {
           </div>
           <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">{t('paymentCommission.success.title')}</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            {t('paymentCommission.success.commissionPrefix')} <strong>EGP {commissionData.commissionAmount?.toLocaleString()}</strong> {t('paymentCommission.success.commissionSuffix')}
+            {t('paymentCommission.success.commissionPrefix')} <strong>{formatCurrencyAmount(commissionData.commissionAmount, commissionCurrency)}</strong> {t('paymentCommission.success.commissionSuffix')}
           </p>
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 mb-6 border border-green-200">
             <div className="flex items-center gap-2 justify-center text-green-700">
@@ -411,11 +413,11 @@ const PaymentCommission = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentCommission.platformCommission')}</p>
-                <p className="text-3xl font-bold text-amber-600">EGP {commissionData.commissionAmount?.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-amber-600">{formatCurrencyAmount(commissionData.commissionAmount, commissionCurrency)}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentCommission.workerSalaryInfo')}</p>
-                <p className="font-medium text-gray-800 dark:text-white">EGP {commissionData.fullSalary?.toLocaleString()}</p>
+                <p className="font-medium text-gray-800 dark:text-white">{formatCurrencyAmount(commissionData.fullSalary, commissionCurrency)}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">{t('paymentCommission.salaryDirect')}</p>
               </div>
             </div>
@@ -515,7 +517,7 @@ const PaymentCommission = () => {
                   {t('paymentCommission.processing')}
                 </>
               ) : (
-                t('paymentCommission.payToUnlock', { amount: commissionData.commissionAmount?.toLocaleString() })
+                t('paymentCommission.payToUnlock', { amount: commissionData.commissionAmount?.toLocaleString() }).replaceAll('EGP', commissionCurrency)
               )}
             </button>
           )}
