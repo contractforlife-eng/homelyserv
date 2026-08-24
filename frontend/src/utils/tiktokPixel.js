@@ -35,6 +35,16 @@ const loadTikTokPixel = () => {
     if (typeof ttq[method] !== 'function') ttq.setAndDefer(ttq, method);
   });
 
+  ttq.instance = (pixelId) => {
+    const instance = ttq._i?.[pixelId] || [];
+    methods.forEach((method) => {
+      if (typeof instance[method] !== 'function') {
+        instance[method] = (...args) => instance.push([method, ...args]);
+      }
+    });
+    return instance;
+  };
+
   ttq.load = (pixelId) => {
     ttq._i = ttq._i || {};
     ttq._i[pixelId] = [];
@@ -45,9 +55,15 @@ const loadTikTokPixel = () => {
     ttq._o[pixelId] = {};
 
     const script = document.createElement('script');
+    script.type = 'text/javascript';
     script.async = true;
     script.src = `${ttq._i[pixelId]._u}?sdkid=${pixelId}&lib=ttq`;
-    document.head.appendChild(script);
+    const firstScript = document.getElementsByTagName('script')[0];
+    if (firstScript?.parentNode) {
+      firstScript.parentNode.insertBefore(script, firstScript);
+    } else {
+      document.head.appendChild(script);
+    }
   };
 
   ttq.load(TIKTOK_PIXEL_ID);
