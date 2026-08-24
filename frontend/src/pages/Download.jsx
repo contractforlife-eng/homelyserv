@@ -6,19 +6,19 @@ import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
 import { classifyDevice } from '../utils/deviceType';
 
-const RELEASE_MANIFEST_URL = '/downloads/android/1.0.3-4/release.json';
-const FALLBACK_DOWNLOAD_URL = '/downloads/android/HomelyServ-1.0.3-4.apk';
+const RELEASE_MANIFEST_URL = '/downloads/android/1.0.4-5/release.json';
+const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/android-v1.0.4/HomelyServ-1.0.4-5.apk';
 const FALLBACK_RELEASE = {
   appName: 'HomelyServ',
-  versionName: '1.0.3',
-  versionCode: 4,
+  versionName: '1.0.4',
+  versionCode: 5,
   releaseDate: '2026-08-24',
-  sizeBytes: 97710063,
+  sizeBytes: 7784669,
   minAndroid: 'Android 7.0',
   minSdk: 24,
   targetSdk: 36,
   packageName: 'com.homelyserv.app',
-  sha256: '7483deac6d64c6201780f886ecaaaa461cd20d8589e16755da9e3fee6547770d',
+  sha256: '2eea298d5d517cf7d0e3c4c0d0336aa18b898c78fc403672e7a50a67e99e5c76',
   signingCertificateSha256: 'b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50',
   downloadUrl: FALLBACK_DOWNLOAD_URL
 };

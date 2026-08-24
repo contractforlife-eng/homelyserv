@@ -52,6 +52,9 @@ frontend/build/
 backend/dist/
 backend/build/
 
+# Android release APKs are hosted externally and must not enter the Vite public tree.
+/frontend/public/downloads/android/*.apk
+
 # ============================================================
 # OS FILES
 # ============================================================
