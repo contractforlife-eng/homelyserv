@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 import { Capacitor } from '@capacitor/core';
 import MobileLoginView from '../components/mobile/MobileLoginView';
+import { trackOperationalAnalytics } from '../utils/operationalAnalytics';
 
 function Login() {
   const navigate = useNavigate();
@@ -44,6 +45,10 @@ function Login() {
   const isNative = Capacitor.isNativePlatform();
   const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
   const nativeMobileMode = isNative || isMobile;
+
+  useEffect(() => {
+    trackOperationalAnalytics('LOGIN_PAGE_VIEW', isAndroidCapacitor ? 'android' : 'web');
+  }, [isAndroidCapacitor]);
 
 // Check if user is already logged in — redirect based on Zustand auth state
   useEffect(() => {

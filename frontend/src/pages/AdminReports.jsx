@@ -47,6 +47,34 @@ const colorPalette = [
   'bg-indigo-500',
 ];
 
+const AnalyticsMetricGroup = ({ title, values, labels }) => {
+  const metrics = [
+    [labels.today, values.today],
+    [labels.last7Days, values.last7Days],
+    [labels.last30Days, values.last30Days],
+    [labels.allTime, values.allTime],
+  ];
+  return (
+    <div className="rounded-xl border border-yellow-500/20 bg-white p-5 shadow-sm dark:bg-gray-800">
+      <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">{title}</h3>
+      <div className="grid grid-cols-2 gap-3">
+        {metrics.map(([label, value]) => (
+          <div key={label} className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
+            <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
+            <div className="mt-1 text-xl font-bold text-gray-900 dark:text-white">{Number(value || 0).toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
+      {labels.showSources && (
+        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+          <div><div className="text-xs text-gray-500 dark:text-gray-400">{labels.web}</div><div className="font-semibold text-gray-900 dark:text-white">{Number(values.bySource?.web || 0).toLocaleString()}</div></div>
+          <div><div className="text-xs text-gray-500 dark:text-gray-400">{labels.android}</div><div className="font-semibold text-gray-900 dark:text-white">{Number(values.bySource?.android || 0).toLocaleString()}</div></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ============================================================
 // MAIN ADMIN REPORTS COMPONENT
 // ============================================================
@@ -216,6 +244,9 @@ const AdminReports = () => {
     { label: t.activeSubs, value: a.subscriptionStatistics?.active ?? 0, icon: Crown, color: 'purple' },
   ];
 
+  const apkDownloads = a.apkDownloads || {};
+  const loginPageVisits = a.loginPageVisits || {};
+
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
@@ -265,6 +296,18 @@ const AdminReports = () => {
             ============================================ */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <AnalyticsMetricGroup
+                title={t.apkDownloads}
+                values={apkDownloads}
+                labels={{ ...t, showSources: false }}
+              />
+              <AnalyticsMetricGroup
+                title={t.loginPageVisits}
+                values={loginPageVisits}
+                labels={{ ...t, showSources: true }}
+              />
+            </div>
             {/* KPI cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {overviewStats.map((card, i) => (

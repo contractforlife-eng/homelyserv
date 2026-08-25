@@ -5,6 +5,8 @@ import appIcon from '../assets/homelyserv-app-icon.png';
 import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
 import { classifyDevice } from '../utils/deviceType';
+import { getAnalyticsSource, getOperationalAnalyticsDedupeKey } from '../utils/operationalAnalytics';
+import { API_BASE } from '../config/api';
 
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.7-8/release.json';
 const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/android-v1.0.7/HomelyServ-1.0.7-8.apk';
@@ -117,7 +119,8 @@ const Download = () => {
     };
   }, [i18n.language, t]);
 
-  const downloadUrl = release?.downloadUrl || FALLBACK_DOWNLOAD_URL;
+  const analyticsApiBase = API_BASE.replace(/\/$/, '').replace(/\/api$/, '');
+  const downloadUrl = `${analyticsApiBase}/api/analytics/apk-download?source=${getAnalyticsSource()}&dedupeKey=${encodeURIComponent(getOperationalAnalyticsDedupeKey() || '')}`;
   const minimumAndroid = release?.minAndroid?.endsWith('+')
     ? release.minAndroid
     : String(release?.minAndroid || 'Android 7.0') + '+';

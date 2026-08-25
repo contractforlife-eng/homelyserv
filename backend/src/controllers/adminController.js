@@ -10,6 +10,7 @@
 // No fake numbers. All data comes from the database.
 // ============================================================
 import prisma from '../lib/prisma.js';
+import { getAnalyticsMetrics } from './analyticsController.js';
 import { addMoney } from '../utils/money.js';
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 
@@ -110,6 +111,8 @@ export const getAnalytics = async (req, res) => {
       legacySubscriptionProjections,
       // ---- Worker categories ----
       workerProfiles,
+      // ---- First-party operational analytics ----
+      analyticsMetrics,
     ] = await Promise.all([
       prisma.user.findMany({
         where: { createdAt: { gte: twelveMonthsAgo } },
@@ -157,6 +160,8 @@ export const getAnalytics = async (req, res) => {
       prisma.workerProfile.findMany({
         select: { category: true },
       }),
+
+      getAnalyticsMetrics(),
     ]);
 
     // ============================================================
@@ -261,6 +266,7 @@ export const getAnalytics = async (req, res) => {
         complaintsStatistics,
         subscriptionStatistics,
         categoryDistribution,
+        ...analyticsMetrics,
       },
     });
   } catch (error) {
