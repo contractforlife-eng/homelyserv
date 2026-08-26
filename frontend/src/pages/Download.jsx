@@ -199,7 +199,7 @@ const Download = () => {
   const storeStatuses = [
     ['direct', t('downloadPage.directDownload'), 'available'],
     ['uptodown', 'Uptodown', 'underReview'],
-    ['huawei', 'Huawei AppGallery', 'comingSoon'],
+    ['huawei', 'Huawei AppGallery', 'available', 'https://appgallery.huawei.com/app/C118757611'],
     ['googlePlay', 'Google Play', 'comingSoon'],
   ];
 
@@ -321,14 +321,21 @@ const Download = () => {
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
             <SectionHeading title={t('downloadPage.storeTitle')} description={t('downloadPage.storeDescription')} />
             <div className="mt-6 space-y-3">
-              {storeStatuses.map(([key, name, status]) => (
-                <div key={key} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+              {storeStatuses.map(([key, name, status, url]) => {
+                const StoreRow = url ? 'a' : 'div';
+                return (
+                <StoreRow
+                  key={key}
+                  {...(url ? { href: url, target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
+                >
                   <span className="text-sm font-bold text-slate-700">{name}</span>
                   <span className={`rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide ${status === 'available' ? 'bg-emerald-100 text-emerald-700' : status === 'underReview' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>
                     {t(`downloadPage.status.${status}`)}
                   </span>
-                </div>
-              ))}
+                </StoreRow>
+                );
+              })}
             </div>
           </section>
         </section>
