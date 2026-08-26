@@ -78,6 +78,20 @@ const LegalFooter = ({ className = '' }) => {
             ))}
           </ul>
         </nav>
+        <div className="mt-4 flex justify-center">
+          <a
+            href="https://www.launchory.app/startups/homelyserv?ref=badge"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://www.launchory.app/api/badge/homelyserv?theme=dark"
+              alt="Featured on Launchory"
+              width="240"
+              height="54"
+            />
+          </a>
+        </div>
         <p className="mt-3 text-center text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500">
           {t('legalFooter.copyright', { year: new Date().getFullYear() })}
         </p>
