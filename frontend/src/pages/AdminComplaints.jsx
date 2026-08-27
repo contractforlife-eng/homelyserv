@@ -72,6 +72,7 @@ const AdminComplaints = () => {
   const categoryLabel = (value) => t.category[String(value || 'Other').toLowerCase().replace(/\s+/g, '_')] || t.category.other;
   const timelineLabel = (value) => t.timelineActions[value] || statusLabel(value);
   const roleLabel = (value) => t.roles[value] || t.roles.user;
+  const isSuspensionReview = selectedComplaint?.reviewType === 'USER_SUSPENSION';
   const formatDate = (value) => value
     ? new Intl.DateTimeFormat(i18n.resolvedLanguage || 'en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
     : t.notAvailable;
@@ -364,6 +365,27 @@ const AdminComplaints = () => {
     } catch (error) {
       console.error('❌ Error returning:', error);
       setNotification({ type: 'error', text: t.notifications.returnFailed });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleSuspensionDecision = async (approved) => {
+    if (!selectedComplaint) return;
+    setProcessing(true);
+    try {
+      const data = approved
+        ? await complaintsService.adminApproveSuspensionRequest(selectedComplaint.id)
+        : await complaintsService.adminRejectSuspensionRequest(selectedComplaint.id);
+      if (data?.success) {
+        setNotification({ type: 'success', text: approved ? 'Suspension approved' : 'Suspension request rejected' });
+        const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
+        setSelectedComplaint(detail?.complaint || data.complaint);
+        if (detail?.success) setTimeline(detail.timeline || []);
+        loadComplaints();
+      }
+    } catch (error) {
+      setNotification({ type: 'error', text: error.response?.data?.message || 'Unable to process suspension request' });
     } finally {
       setProcessing(false);
     }
@@ -738,12 +760,17 @@ const AdminComplaints = () => {
       {showDetailsModal && selectedComplaint && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-yellow-500/20">
-            <div className="flex items-center justify-between p-6 border-b border-yellow-500/20">
+              <div className="flex items-center justify-between p-6 border-b border-yellow-500/20">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t.modal.title}</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {t.modal.complaintId}: {selectedComplaint.id}
                 </p>
+                {isSuspensionReview && (
+                  <span className="inline-flex items-center mt-2 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800 dark:bg-red-900/30 dark:text-red-200">
+                    User Suspension Review
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => setShowDetailsModal(false)}
@@ -779,7 +806,23 @@ const AdminComplaints = () => {
                 </div>
               </div>
 
-              {(selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
+              {isSuspensionReview && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                  <h4 className="text-sm font-semibold text-red-800 dark:text-red-200 mb-3">Suspension Request</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-red-900 dark:text-red-100">
+                    <p><span className="font-medium">Target:</span> {selectedComplaint.targetUser?.fullName || 'Unavailable'}</p>
+                    <p><span className="font-medium">Email:</span> {selectedComplaint.targetUser?.email || 'Unavailable'}</p>
+                    <p><span className="font-medium">Role:</span> {selectedComplaint.targetUser?.role || 'Unavailable'}</p>
+                    <p><span className="font-medium">Request date:</span> {formatDate(selectedComplaint.createdAt)}</p>
+                    <p><span className="font-medium">Requested by:</span> {selectedComplaint.requester?.fullName || selectedComplaint.User?.fullName || 'Unavailable'}</p>
+                    <p><span className="font-medium">Requester email:</span> {selectedComplaint.requester?.email || selectedComplaint.User?.email || 'Unavailable'}</p>
+                  </div>
+                  <p className="mt-3 text-sm text-red-900 dark:text-red-100"><span className="font-medium">Reason:</span> {selectedComplaint.escalationReason || selectedComplaint.description}</p>
+                  <p className="mt-2 text-xs font-medium text-red-800 dark:text-red-200">Review status: {statusLabel(selectedComplaint.status)}</p>
+                </div>
+              )}
+
+              {!isSuspensionReview && (selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
                   <h4 className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-200">{i18nT('messagesReporting.reportMessage')}</h4>
                   <div className="space-y-1 text-xs text-amber-900 dark:text-amber-100">
@@ -995,7 +1038,7 @@ const AdminComplaints = () => {
               </div>
 
               {/* Admin Reply */}
-              {!['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+              {!isSuspensionReview && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.modal.reply}</h4>
                   <div className="flex gap-2">
@@ -1020,7 +1063,7 @@ const AdminComplaints = () => {
               )}
 
               {/* Reassign */}
-              {!['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+              {!isSuspensionReview && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                     <ArrowLeftRight size={14} />
@@ -1107,7 +1150,13 @@ const AdminComplaints = () => {
               >
                 {t.modal.close}
               </button>
-              {!['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+              {isSuspensionReview && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+                <>
+                  <button onClick={() => handleSuspensionDecision(false)} disabled={processing} className="px-4 py-2.5 bg-gray-600 text-white rounded-lg disabled:opacity-50">Reject Suspension</button>
+                  <button onClick={() => handleSuspensionDecision(true)} disabled={processing} className="px-4 py-2.5 bg-red-600 text-white rounded-lg disabled:opacity-50">Approve Suspension</button>
+                </>
+              )}
+              {!isSuspensionReview && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
                 <>
                   <button
                     onClick={() => setConfirmDialog({

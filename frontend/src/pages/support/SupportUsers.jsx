@@ -1,5 +1,6 @@
 // Support Users Page - Safe user discovery for support communication
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SupportLayout from '../../layouts/SupportLayout';
 import {
@@ -10,6 +11,7 @@ import {
   Shield,
   Filter,
   Key,
+  Eye,
   AlertCircle,
   X
 } from 'lucide-react';
@@ -232,8 +234,6 @@ const SupportUsers = () => {
                 <option value="">{t.allRoles}</option>
                 <option value="WORKER">{t.workers}</option>
                 <option value="EMPLOYER">{t.employers}</option>
-                <option value="SUPPORT">{t.support}</option>
-                <option value="ADMIN">{t.admin}</option>
               </select>
             </div>
           </div>
@@ -271,6 +271,9 @@ const SupportUsers = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {t.role}
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -287,11 +290,6 @@ const SupportUsers = () => {
                           />
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             <UserDisplayName user={user} />
-                            {user.subscription?.isPremium && (
-                              <div className="text-xs font-semibold text-amber-600 mt-0.5">
-                                {t.premium} · {formatDate(user.subscription.endDate)}
-                              </div>
-                            )}
                           </div>
                         </div>
                       </td>
@@ -306,6 +304,16 @@ const SupportUsers = () => {
                           <Shield size={12} />
                           {getRoleLabel(user.role)}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <Link
+                          to={`/support/users/${user.id}`}
+                          title="View profile"
+                          aria-label={`View profile for ${user.fullName}`}
+                          className="inline-flex items-center justify-center p-2 rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                        >
+                          <Eye size={18} />
+                        </Link>
                       </td>
                     </tr>
                   ))}

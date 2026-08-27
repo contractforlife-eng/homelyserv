@@ -21,7 +21,7 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  deleteConversation,
+  archiveConversation,
   getSupportConversations,
   getInternalConversations,
   ensureConversationExists,
@@ -51,6 +51,7 @@ const SupportMessages = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [archiveError, setArchiveError] = useState('');
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
@@ -153,8 +154,16 @@ const SupportMessages = () => {
       const mapped = await loadVisibleConversations();
 
       setConversations(prevConversations => {
-        if (JSON.stringify(prevConversations) !== JSON.stringify(mapped)) {
-          return mapped;
+        const targetId = requestedConversationId || selectedConversationId;
+        const retainedTarget = targetId
+          ? prevConversations.find((conversation) => String(conversation.id) === String(targetId))
+          : null;
+        const hasTarget = targetId && mapped.some((conversation) => String(conversation.id) === String(targetId));
+        const nextConversations = retainedTarget && !hasTarget
+          ? [retainedTarget, ...mapped]
+          : mapped;
+        if (JSON.stringify(prevConversations) !== JSON.stringify(nextConversations)) {
+          return nextConversations;
         }
         return prevConversations;
       });
@@ -264,7 +273,7 @@ const SupportMessages = () => {
   const loadMessagesForConversation = async (conversationId) => {
     const conversationMessages = await getConversationMessages(conversationId);
     setMessages(conversationMessages);
-    
+
     const userId = authUser?.id;
     if (userId) {
       markMessagesAsRead(conversationId, userId)
@@ -284,6 +293,7 @@ const SupportMessages = () => {
   }, []);
 
   const handleSelectConversation = (conversationId) => {
+    setArchiveError('');
     setSelectedConversationId(conversationId);
     setOtherUserTyping(false);
     if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
@@ -294,17 +304,20 @@ const SupportMessages = () => {
   // Deep-link only to conversations already returned by the server's
   // membership/assignment-scoped list. Unknown IDs remain unselected.
   useEffect(() => {
-    if (!requestedConversationId || selectedConversationId || conversations.length === 0) return;
+    const targetId = requestedConversationId;
+    if (!targetId || selectedConversationId || conversations.length === 0) return;
     const conversation = conversations.find(
-      (item) => String(item.id) === String(requestedConversationId)
+      (item) => String(item.id) === String(targetId)
     );
-    if (conversation) handleSelectConversation(conversation.id);
+    if (conversation) {
+      handleSelectConversation(conversation.id);
+    }
   }, [requestedConversationId, conversations, selectedConversationId]);
 
   const handleStartNewConversation = async (userId, userName, userRole) => {
     if (!authUser?.id) return;
 
-    const conversationId = await ensureConversationExists(
+    const ensuredConversation = await ensureConversationExists(
       authUser.id,
       authUser.fullName || 'Support',
       'SUPPORT',
@@ -312,9 +325,14 @@ const SupportMessages = () => {
       userName,
       userRole
     );
+    const conversationId = typeof ensuredConversation === 'string'
+      ? ensuredConversation
+      : ensuredConversation?.conversationId || ensuredConversation?.id;
+    if (!conversationId) return;
+    const canonicalConversationId = String(conversationId);
 
     const newConversation = {
-      id: conversationId,
+      id: canonicalConversationId,
       type: 'SUPPORT',
       otherUserId: String(userId),
       otherUserName: userName || 'User',
@@ -327,14 +345,28 @@ const SupportMessages = () => {
       updatedAt: new Date().toISOString(),
     };
 
+    let authorizedConversation = null;
+    try {
+      const refreshedConversations = await loadVisibleConversations();
+      authorizedConversation = refreshedConversations.find(
+        (conversation) => String(conversation.id) === canonicalConversationId
+      ) || null;
+    } catch (error) {
+      // The locally constructed row remains a safe fallback; message loading
+      // still uses the existing server-side conversation authorization.
+      console.warn('Unable to refresh the new support conversation:', error);
+    }
+
+    const conversationForList = authorizedConversation || newConversation;
     setConversations((current) => [
-      newConversation,
-      ...current.filter((conversation) => conversation.id !== conversationId),
+      conversationForList,
+      ...current.filter((conversation) => String(conversation.id) !== canonicalConversationId),
     ]);
-    setSelectedConversationId(conversationId);
-    setMessages([]);
     setShowNewConversationModal(false);
-    await loadMessagesForConversation(conversationId);
+    // Use the same selection path as a manual conversation-row click. URL
+    // synchronization remains available for reloads and notifications.
+    handleSelectConversation(canonicalConversationId);
+    navigate(`/support-messages?conversationId=${encodeURIComponent(canonicalConversationId)}`, { replace: true });
   };
 
   const getOtherUserId = () => {
@@ -600,22 +632,32 @@ const SupportMessages = () => {
                       </button>
                       {dropdownOpen && (
                         <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
-                          <button
-                            onClick={async () => {
-                              setDropdownOpen(false);
-                              if (selectedConversationId) {
-                                const success = await deleteConversation(selectedConversationId);
-                                if (success) {
-                                  setConversations(prev => prev.filter(c => c.id !== selectedConversationId));
-                                  setSelectedConversationId(null);
-                                  setMessages([]);
+                          {conversations.find(c => c.id === selectedConversationId)?.type === 'SUPPORT' && (
+                            <button
+                              onClick={async () => {
+                                setDropdownOpen(false);
+                                setArchiveError('');
+                                if (selectedConversationId) {
+                                  try {
+                                    const success = await archiveConversation(selectedConversationId);
+                                    if (success) {
+                                      setConversations(prev => prev.filter(c => c.id !== selectedConversationId));
+                                      setSelectedConversationId(null);
+                                      setMessages([]);
+                                    } else {
+                                      setArchiveError('Unable to archive this conversation.');
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to archive support conversation:', error);
+                                    setArchiveError('Unable to archive this conversation.');
+                                  }
                                 }
-                              }
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
-                          >
-                            {t.deleteConversation}
-                          </button>
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
+                            >
+                              {t.deleteConversation}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -623,6 +665,11 @@ const SupportMessages = () => {
 
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/20">
+                    {archiveError && (
+                      <div role="alert" className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                        {archiveError}
+                      </div>
+                    )}
                     {messages.length === 0 ? (
                       <div className="text-center text-gray-400 py-8">
                         <p>{t.noMessages}</p>

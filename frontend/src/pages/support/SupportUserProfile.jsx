@@ -8,7 +8,7 @@
 // profile is owned entirely by UserProfileView's local state.
 //
 // Permissions (SUPPORT):
-//   Allowed:    View users, Reset password, Suspend/Activate,
+//   Allowed:    View users, Reset password, Request suspension,
 //               Start conversation, View complaints
 //   Not allowed: Delete users, Change roles, Promote to admin,
 //               Access system settings

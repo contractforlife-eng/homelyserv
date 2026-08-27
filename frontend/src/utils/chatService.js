@@ -159,6 +159,12 @@ export const deleteConversation = async (conversationId) => {
   return !!response.data?.success;
 };
 
+export const archiveConversation = async (conversationId) => {
+  if (!conversationId) return false;
+  const response = await api.post(`/api/chat/conversations/${encodeURIComponent(conversationId)}/archive`);
+  return !!response.data?.success;
+};
+
 export const getBlockStatus = async (conversationId) => {
   if (!conversationId) return { blockedByMe: false, blockedMe: false };
   const response = await api.get(`/api/chat/block-user/status?conversationId=${encodeURIComponent(conversationId)}`);
@@ -339,6 +345,7 @@ export default {
   getOrCreateConversation,
   sendWelcomeMessage,
   deleteConversation,
+  archiveConversation,
   getBlockStatus,
   blockUser,
   unblockUser,

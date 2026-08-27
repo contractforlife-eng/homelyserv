@@ -14,6 +14,7 @@
 import prisma from '../lib/prisma.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
+import User from '../models/User.js';
 import {
   createNotification as createUserNotification,
   NOTIFICATION_TYPES,
@@ -246,7 +247,7 @@ export const serializeComplaint = (complaint, {
         createdAt: serialized.createdAt,
       };
     }),
-        User: complaint.User
+    User: complaint.User
           ? {
               id: complaint.User.id,
               fullName: complaint.User.fullName,
@@ -256,6 +257,10 @@ export const serializeComplaint = (complaint, {
             }
           : null,
   };
+
+  if (includeInternal && complaint.reportedUserId && String(complaint.subject || '').startsWith('[Suspension Request]')) {
+    base.reviewType = 'USER_SUSPENSION';
+  }
 
   if (includeInternal) {
     base.internalNotes = complaint.internalNotes || null;
@@ -381,11 +386,17 @@ export const requireAssignedSupportComplaint = async (req, res, next) => {
   if (req.userRole === 'ADMIN') return next();
   const complaint = await prisma.complaint.findUnique({
     where: { id: req.params.id },
-    select: { id: true, assignedSupport: true },
+    select: { id: true, assignedSupport: true, assignedTo: true },
   });
   if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
-  if (complaint.assignedSupport !== String(req.userId)) {
+  const supportId = String(req.userId);
+  const modernAssignment = complaint.assignedSupport ? String(complaint.assignedSupport) : null;
+  const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
+  if (modernAssignment !== supportId && legacyAssignment !== supportId) {
     return res.status(403).json({ success: false, message: 'Complaint is not assigned to you' });
+  }
+  if ((modernAssignment && modernAssignment !== supportId) || (legacyAssignment && legacyAssignment !== supportId)) {
+    return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
   }
   return next();
 };
@@ -397,10 +408,13 @@ export const requireSupportComplaintAccess = async (req, res, next) => {
   if (req.userRole === 'ADMIN') return next();
   const complaint = await prisma.complaint.findUnique({
     where: { id: req.params.id },
-    select: { id: true, assignedSupport: true },
+    select: { id: true, assignedSupport: true, assignedTo: true },
   });
   if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
-  if (complaint.assignedSupport && complaint.assignedSupport !== String(req.userId)) {
+  const supportId = String(req.userId);
+  const modernAssignment = complaint.assignedSupport ? String(complaint.assignedSupport) : null;
+  const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
+  if ((modernAssignment && modernAssignment !== supportId) || (legacyAssignment && legacyAssignment !== supportId)) {
     return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
   }
   return next();
@@ -803,7 +817,9 @@ export const supportGetComplaint = async (req, res) => {
     const serializedComplaint = serializeComplaint(complaint, {
       includeInternal: req.userRole === 'ADMIN',
       includeSensitive: req.userRole === 'ADMIN',
-      includeAttachments: req.userRole === 'ADMIN' || complaint.assignedSupport === String(req.userId),
+      includeAttachments: req.userRole === 'ADMIN'
+        || complaint.assignedSupport === String(req.userId)
+        || complaint.assignedTo === String(req.userId),
     });
     serializedComplaint.replies = await enrichAuthorIdentities(serializedComplaint.replies);
 
@@ -1446,9 +1462,20 @@ export const adminListComplaints = async (req, res) => {
     const total = await prisma.complaint.count({ where });
 
     const activePremiumIds = await getActivePremiumUserIds(complaints.map((c) => c.userId));
-    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: true }));
+    const suspensionTargetIds = complaints
+      .filter((c) => c.reportedUserId && String(c.subject || '').startsWith('[Suspension Request]'))
+      .map((c) => String(c.reportedUserId));
+    const suspensionTargets = suspensionTargetIds.length > 0
+      ? await prisma.user.findMany({ where: { id: { in: suspensionTargetIds } }, select: { id: true, fullName: true, email: true, role: true } })
+      : [];
+    const suspensionTargetMap = new Map(suspensionTargets.map((user) => [String(user.id), user]));
+    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: true, includeSensitive: true }));
     serializedComplaints.forEach((item) => {
       if (item.User) item.User.isPremium = activePremiumIds.has(String(item.userId));
+      if (item.reviewType === 'USER_SUSPENSION') {
+        item.targetUser = suspensionTargetMap.get(String(item.reportedUserId)) || null;
+        item.requester = item.User || null;
+      }
     });
 
     return res.json({
@@ -1493,9 +1520,16 @@ export const adminGetComplaint = async (req, res) => {
     }
 
     const activePremiumIds = await getActivePremiumUserIds([complaint.userId]);
-    const serializedComplaint = serializeComplaint(complaint, { includeInternal: true });
+    const serializedComplaint = serializeComplaint(complaint, { includeInternal: true, includeSensitive: true });
     if (serializedComplaint.User) {
       serializedComplaint.User.isPremium = activePremiumIds.has(String(complaint.userId));
+    }
+    if (serializedComplaint.reviewType === 'USER_SUSPENSION') {
+      serializedComplaint.targetUser = await prisma.user.findUnique({
+        where: { id: String(complaint.reportedUserId) },
+        select: { id: true, fullName: true, email: true, role: true },
+      });
+      serializedComplaint.requester = serializedComplaint.User || null;
     }
     serializedComplaint.replies = await enrichAuthorIdentities(serializedComplaint.replies);
 
@@ -1991,6 +2025,48 @@ export const adminReturnToSupport = async (req, res) => {
 // ============================================================
 // STATISTICS
 // ============================================================
+
+const isSuspensionRequest = (complaint) => (
+  complaint?.reportedUserId && String(complaint.subject || '').startsWith('[Suspension Request]')
+);
+
+export const adminApproveSuspensionRequest = async (req, res) => {
+  try {
+    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
+    if (!isSuspensionRequest(complaint)) return res.status(404).json({ success: false, message: 'Suspension request not found' });
+    if (['RESOLVED', 'CLOSED'].includes(complaint.status)) return res.status(409).json({ success: false, message: 'Suspension request is already decided' });
+    const target = await User.findById(String(complaint.reportedUserId)).select('role isSuspended');
+    if (!target || !['WORKER', 'EMPLOYER'].includes(target.role)) return res.status(404).json({ success: false, message: 'Target user not found' });
+    if (!target.isSuspended) {
+      target.isSuspended = true;
+      target.status = 'SUSPENDED';
+      target.suspensionReason = complaint.escalationReason || complaint.description;
+      target.suspendedAt = new Date();
+      target.suspendedBy = String(req.userId);
+      await target.save();
+    }
+    const updated = await prisma.complaint.update({ where: { id: complaint.id }, data: { status: 'RESOLVED', resolvedAt: new Date(), assignedAdmin: String(req.userId) } });
+    await addTimeline(complaint.id, { action: 'SUSPENSION_APPROVED', description: 'Suspension request approved by Admin', authorId: String(req.userId), authorRole: 'ADMIN', newValue: 'SUSPENDED' });
+    return res.json({ success: true, message: 'Suspension approved', complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: true }) });
+  } catch (error) {
+    console.error('Admin suspension approval failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Unable to approve suspension request' });
+  }
+};
+
+export const adminRejectSuspensionRequest = async (req, res) => {
+  try {
+    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
+    if (!isSuspensionRequest(complaint)) return res.status(404).json({ success: false, message: 'Suspension request not found' });
+    if (['RESOLVED', 'CLOSED'].includes(complaint.status)) return res.status(409).json({ success: false, message: 'Suspension request is already decided' });
+    const updated = await prisma.complaint.update({ where: { id: complaint.id }, data: { status: 'CLOSED', closedAt: new Date(), assignedAdmin: String(req.userId) } });
+    await addTimeline(complaint.id, { action: 'SUSPENSION_REJECTED', description: 'Suspension request rejected by Admin', authorId: String(req.userId), authorRole: 'ADMIN', newValue: 'REJECTED' });
+    return res.json({ success: true, message: 'Suspension request rejected', complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: true }) });
+  } catch (error) {
+    console.error('Admin suspension rejection failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Unable to reject suspension request' });
+  }
+};
 
 /**
  * GET /api/support/stats
@@ -2549,6 +2625,8 @@ export default {
   adminResolve,
   adminClose,
   adminReturnToSupport,
+  adminApproveSuspensionRequest,
+  adminRejectSuspensionRequest,
   adminEscalatedComplaints,
   supportStats,
   supportDashboard,

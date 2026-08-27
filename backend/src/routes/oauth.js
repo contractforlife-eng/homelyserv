@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
+import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
 import { withRegistrationGeography } from '../services/registrationGeographyService.js';
 import { captureRegistrationGeography } from '../services/registrationGeographyService.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
@@ -60,8 +61,7 @@ const normalizeSuggestedCountryCode = (countryCode) => {
 };
 
 const serializeSocialUser = (user) => {
-  const userData = user.toObject();
-  delete userData.password;
+  const userData = sanitizeUserResponse(user.toObject());
   delete userData.registrationIp;
   delete userData.registrationCountryCode;
   delete userData.registrationCountryName;

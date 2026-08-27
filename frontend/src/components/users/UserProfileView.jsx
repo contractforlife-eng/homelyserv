@@ -82,6 +82,8 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const [actionLoading, setActionLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showSuspensionRequestModal, setShowSuspensionRequestModal] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState('');
   const [resetReason, setResetReason] = useState('');
   const [tempPassword, setTempPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -96,15 +98,14 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     if (!userId) return;
     setLoading(true);
     try {
-      const [userRes, statsRes] = await Promise.all([
-        api.get(`${apiBase}/users/${userId}`),
-        api.get(`/api/support/users/${userId}/stats`)
-      ]);
+      const requests = [api.get(`${apiBase}/users/${userId}`)];
+      if (isAdmin) requests.push(api.get(`/api/support/users/${userId}/stats`));
+      const [userRes, statsRes] = await Promise.all(requests);
 
       if (userRes.data?.success) {
         setProfileUser(userRes.data.user);
       }
-      if (statsRes.data?.success) {
+      if (statsRes?.data?.success) {
         setStats(statsRes.data.stats);
       }
     } catch (error) {
@@ -113,7 +114,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     } finally {
       setLoading(false);
     }
-  }, [userId, apiBase]);
+  }, [userId, apiBase, isAdmin]);
 
   useEffect(() => {
     loadUser();
@@ -146,8 +147,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   useEffect(() => {
     setPaymentHistory([]);
     setPaymentPagination({ page: 1, hasMore: false });
-    loadPaymentHistory();
-  }, [loadPaymentHistory]);
+    if (isAdmin) loadPaymentHistory();
+    else setPaymentHistoryLoading(false);
+  }, [loadPaymentHistory, isAdmin]);
 
   // ============================================================
   // SUSPEND / ACTIVATE
@@ -174,28 +176,28 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             text: suspend ? t.feedback.suspended : t.feedback.activated
           });
         }
-      } else {
-        const response = await api.put(`${apiBase}/users/${profileUser.id}/suspend`, {
-          suspend,
-          reason: suspend ? 'Violation of terms of service' : 'Account reactivated by support'
-        });
-
-        if (response.data?.success) {
-          setProfileUser(prev => ({
-            ...prev,
-            isSuspended: suspend,
-            suspendedAt: suspend ? new Date().toISOString() : null,
-            suspensionReason: suspend ? 'Violation of terms of service' : null
-          }));
-          setNotification({
-            type: 'success',
-            text: suspend ? t.feedback.suspended : t.feedback.activated
-          });
-        }
       }
     } catch (error) {
       console.error('Error updating user status:', error);
       setNotification({ type: 'error', text: t.errors.updateStatus });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSuspensionRequest = async () => {
+    const reason = suspensionReason.trim();
+    if (!profileUser || isAdmin || !reason) return;
+    setActionLoading(true);
+    try {
+      const response = await api.post(`/api/support/users/${profileUser.id}/suspension-request`, { reason });
+      if (response.data?.success) {
+        setNotification({ type: 'success', text: 'Suspension request sent to Admin for review' });
+        setShowSuspensionRequestModal(false);
+        setSuspensionReason('');
+      }
+    } catch (error) {
+      setNotification({ type: 'error', text: error.response?.data?.message || 'Unable to submit suspension request' });
     } finally {
       setActionLoading(false);
     }
@@ -340,7 +342,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         
         navigate('/admin/messages', { state: { targetUserId } });
       } else {
-        await ensureConversationExists(
+        const ensuredConversation = await ensureConversationExists(
           authUser.id,
           authUser.fullName || 'Support',
           authUser.role || 'SUPPORT',
@@ -348,7 +350,12 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           profileUser.fullName,
           profileUser.role
         );
-        navigate(messageTarget);
+        const conversationId = typeof ensuredConversation === 'string'
+          ? ensuredConversation
+          : ensuredConversation?.conversationId || ensuredConversation?.id;
+        if (!conversationId) throw new Error('Conversation ID was not returned');
+        const separator = messageTarget.includes('?') ? '&' : '?';
+        navigate(`${messageTarget}${separator}conversationId=${encodeURIComponent(String(conversationId))}`);
       }
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -568,7 +575,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           </div>
 
           {/* AUTHORITATIVE PREMIUM VISIBILITY (read-only) */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          {isAdmin && <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <CreditCard size={18} className="text-amber-500" />
@@ -645,10 +652,10 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </div>
               )}
             </div>
-          </div>
+          </div>}
 
           {/* READ-ONLY PAYMENT / TRANSACTION HISTORY */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          {isAdmin && <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <CreditCard size={18} className="text-teal-600" />
@@ -767,7 +774,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 )}
               </>
             )}
-          </section>
+          </section>}
 
           {/* ACCOUNT INFO */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -870,7 +877,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           )}
 
           {/* STATISTICS */}
-          <div>
+          {isAdmin && <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <FileText size={18} className="text-green-600" />
               {t.statistics}
@@ -882,7 +889,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               <UserStatsCard label={t.offers} value={stats?.offersCount || 0} icon={FileText} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
               <UserStatsCard label={t.payments} value={stats?.paymentsCount || 0} icon={CreditCard} color="text-teal-600" bg="bg-teal-50 dark:bg-teal-900/30" />
             </div>
-          </div>
+          </div>}
 
           {/* QUICK ACTIONS */}
           <div>
@@ -909,7 +916,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </button>
               )}
 
-              {profileUser.role !== 'ADMIN' && (
+              {isAdmin && profileUser.role !== 'ADMIN' && (
                 profileUser.isSuspended ? (
                   <button
                     onClick={() => handleSuspend(false)}
@@ -939,6 +946,17 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     </div>
                   </button>
                 )
+              )}
+
+              {!isAdmin && !profileUser.isSuspended && (
+                <button
+                  onClick={() => setShowSuspensionRequestModal(true)}
+                  disabled={actionLoading}
+                  className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition disabled:opacity-50"
+                >
+                  <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center"><Pause size={20} className="text-red-600" /></div>
+                  <div className="text-left"><p className="font-medium text-gray-900 dark:text-white">Request Suspension</p><p className="text-xs text-gray-500 dark:text-gray-400">Send for Admin review</p></div>
+                </button>
               )}
 
               <button
@@ -976,6 +994,32 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               <p className="text-sm text-yellow-700 dark:text-yellow-300">{t.adminProtected}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {showSuspensionRequestModal && profileUser && !isAdmin && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Request Suspension</h3>
+              <button onClick={() => setShowSuspensionRequestModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300">Provide a concise reason for Admin review.</p>
+              <textarea
+                value={suspensionReason}
+                onChange={(e) => setSuspensionReason(e.target.value)}
+                maxLength={500}
+                rows={4}
+                placeholder="Reason for suspension request"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white"
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setShowSuspensionRequestModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg">Cancel</button>
+                <button onClick={handleSuspensionRequest} disabled={actionLoading || !suspensionReason.trim()} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg disabled:opacity-50">{actionLoading ? 'Submitting…' : 'Submit Request'}</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

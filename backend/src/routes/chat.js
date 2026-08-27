@@ -363,6 +363,15 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
       staffIds
     });
 
+    // A new legitimate message makes the support conversation visible again
+    // to its assigned agent if that agent previously archived it.
+    if (conversationType === 'SUPPORT' && supportAgentId) {
+      await Conversation.updateOne(
+        { conversationId, type: 'SUPPORT', supportAgentId },
+        { $pull: { archivedForSupportIds: supportAgentId } }
+      );
+    }
+
     const message = await Message.create({
       conversationId,
       senderId: String(senderId),
@@ -752,6 +761,13 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
       staffIds
     });
 
+    if (conversationType === 'SUPPORT' && supportAgentId) {
+      await Conversation.updateOne(
+        { conversationId, type: 'SUPPORT', supportAgentId },
+        { $pull: { archivedForSupportIds: supportAgentId } }
+      );
+    }
+
     if (!existing) {
       // DYNAMIC STAFF IDENTITY: resolve both participant names/roles
       // from the database instead of trusting client-passed values.
@@ -785,6 +801,9 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
 // ============================================================
 router.delete('/conversations/:conversationId', authenticate, requireConversationAccess, async (req, res) => {
   try {
+    if (req.userRole === 'SUPPORT') {
+      return res.status(403).json({ success: false, message: 'Support agents cannot delete conversation history' });
+    }
     await Message.deleteMany({ 
       conversationId: req.params.conversationId 
     });
@@ -799,6 +818,35 @@ router.delete('/conversations/:conversationId', authenticate, requireConversatio
 });
 
 // ============================================================
+// Archive a SUPPORT conversation for the authenticated agent only.
+// This never deletes the Conversation or its Messages.
+router.post('/conversations/:conversationId/archive', authenticate, async (req, res) => {
+  try {
+    const userId = String(req.userId);
+    if (req.userRole !== 'SUPPORT') {
+      return res.status(403).json({ success: false, message: 'Only support agents can archive conversations' });
+    }
+
+    const conversation = await Conversation.findOne({
+      conversationId: req.params.conversationId,
+      type: 'SUPPORT',
+      supportAgentId: userId,
+    });
+    if (!conversation || !(await canAccessConversation(req.params.conversationId, userId, req.userRole))) {
+      return res.status(403).json({ success: false, message: 'Not authorized to archive this conversation' });
+    }
+
+    await Conversation.updateOne(
+      { conversationId: conversation.conversationId, type: 'SUPPORT', supportAgentId: userId },
+      { $addToSet: { archivedForSupportIds: userId } }
+    );
+    return res.json({ success: true, archived: true, conversationId: conversation.conversationId });
+  } catch (error) {
+    console.error('Error archiving support conversation:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to archive conversation' });
+  }
+});
+
 // GET ALL SUPPORT USERS
 // ============================================================
 router.get('/support-users', authenticate, async (req, res) => {
@@ -850,6 +898,7 @@ router.get('/support/conversations', authenticate, async (req, res) => {
     const query = { type: 'SUPPORT' };
     if (userRole === 'SUPPORT') {
       query.supportAgentId = userId;
+      query.archivedForSupportIds = { $ne: userId };
     }
 
     const conversationsMeta = await Conversation.find(query).sort({ lastMessageAt: -1 });

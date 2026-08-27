@@ -24,6 +24,9 @@ const conversationSchema = new mongoose.Schema(
     participantIds: { type: [String], default: [], index: true },
     // Support agent assigned to handle this conversation (SUPPORT type).
     supportAgentId: { type: String, default: null, index: true },
+    // Participant-specific inbox hiding for SUPPORT agents. Missing fields
+    // are treated as an empty array for backwards compatibility.
+    archivedForSupportIds: { type: [String], default: undefined },
     // Internal staff members (SUPPORT/ADMIN) participating in INTERNAL chats.
     staffIds: { type: [String], default: [] },
     // Escalation metadata (ESCALATED type).

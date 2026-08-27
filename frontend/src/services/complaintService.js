@@ -248,6 +248,16 @@ export const adminReturnComplaint = async (complaintId, supportId, note) => {
   return response.data;
 };
 
+export const adminApproveSuspensionRequest = async (complaintId) => {
+  const response = await api.post(`/api/admin/complaints/${complaintId}/suspension/approve`);
+  return response.data;
+};
+
+export const adminRejectSuspensionRequest = async (complaintId) => {
+  const response = await api.post(`/api/admin/complaints/${complaintId}/suspension/reject`);
+  return response.data;
+};
+
 /**
  * Get escalated complaints (backward-compatible).
  */
@@ -345,6 +355,8 @@ const complaintService = {
   adminResolveComplaint,
   adminCloseComplaint,
   adminReturnComplaint,
+  adminApproveSuspensionRequest,
+  adminRejectSuspensionRequest,
   getEscalatedComplaints,
   getAdminComplaintStats,
   COMPLAINT_STATUSES,

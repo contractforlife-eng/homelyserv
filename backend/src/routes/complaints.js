@@ -32,6 +32,8 @@ import {
   adminResolve,
   adminClose,
   adminReturnToSupport,
+  adminApproveSuspensionRequest,
+  adminRejectSuspensionRequest,
   adminEscalatedComplaints,
   supportStats,
   supportDashboard,
@@ -137,7 +139,7 @@ router.post('/support/complaints/:id/close', authenticate, requireSupport, requi
 router.get('/support/stats', authenticate, requireSupport, requireAdminForSupportAnalytics, supportStats);
 
 // GET /api/support/dashboard - Support workspace dashboard data
-router.get('/support/dashboard', authenticate, requireSupport, requireAdminForSupportAnalytics, supportDashboard);
+router.get('/support/dashboard', authenticate, requireSupport, supportDashboard);
 
 // ============================================================
 // ADMIN COMPLAINT ROUTES
@@ -169,5 +171,7 @@ router.put('/admin/complaints/:id/close', authenticate, requireAdmin, adminClose
 
 // POST /api/admin/complaints/:id/return - Return to support
 router.post('/admin/complaints/:id/return', authenticate, requireAdmin, adminReturnToSupport);
+router.post('/admin/complaints/:id/suspension/approve', authenticate, requireAdmin, adminApproveSuspensionRequest);
+router.post('/admin/complaints/:id/suspension/reject', authenticate, requireAdmin, adminRejectSuspensionRequest);
 
 export default router;

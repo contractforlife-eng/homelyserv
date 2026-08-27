@@ -11,6 +11,10 @@ import { createAndSendPasswordReset } from '../services/passwordResetTokenServic
 import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 
+const supportResetAttempts = new Map();
+const SUPPORT_RESET_WINDOW_MS = 60 * 60 * 1000;
+const SUPPORT_RESET_MAX_ATTEMPTS = 5;
+
 const router = express.Router();
 
 // All routes require authentication and support/admin role
@@ -66,7 +70,7 @@ router.get('/users', async (req, res) => {
 
     const where = {};
 
-    if (isSupportChatLookup) {
+    if (isSupport) {
       where.role = { in: ['WORKER', 'EMPLOYER'] };
     } else if (role && (!isSupport || ['WORKER', 'EMPLOYER', 'SUPPORT', 'ADMIN'].includes(role))) {
       where.role = role;
@@ -180,13 +184,29 @@ router.get('/users/:id/payment-history', requireAdminForSensitiveSupport, async 
 
 // GET /api/support/users/:id
 // Get a single user's profile (read-only)
-router.get('/users/:id', requireAdminForSensitiveSupport, async (req, res) => {
+router.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const isSupport = req.userRole === 'SUPPORT';
 
     const user = await prisma.user.findUnique({
       where: { id },
-      select: {
+      select: isSupport ? {
+        id: true, fullName: true, email: true, role: true, profileImage: true,
+        createdAt: true, updatedAt: true, isVerified: true, isSuspended: true,
+        suspendedAt: true, phone: true, city: true, countryCode: true, countryName: true,
+        language: true, location: true, bio: true, skills: true, experience: true,
+        hourlyRate: true, hourlyRateCurrency: true, companyName: true, website: true,
+        profileComplete: true, desiredJob: true,
+        WorkerProfile: { select: {
+          category: true, experienceYears: true, availability: true, workType: true,
+          skills: true, ratingAvg: true, ratingCount: true, bioAr: true, bioEn: true, isVisible: true,
+        } },
+        EmployerProfile: { select: {
+          companyName: true, companyWebsite: true, companySize: true, industry: true,
+          description: true, isVerified: true, ratingAvg: true, ratingCount: true,
+        } },
+      } : {
         id: true,
         fullName: true,
         email: true,
@@ -202,28 +222,13 @@ router.get('/users/:id', requireAdminForSensitiveSupport, async (req, res) => {
         phone: true,
         city: true,
         language: true,
-        WorkerProfile: {
-          select: {
-            category: true,
-            experienceYears: true,
-            expectedSalary: true,
-            availability: true,
-            workType: true,
-            skills: true,
-            ratingAvg: true,
-            ratingCount: true,
-            docStatus: true,
-          },
-        },
-        EmployerProfile: {
-          select: {
-            companyName: true,
-            companyWebsite: true,
-            companySize: true,
-            industry: true,
-            isVerified: true,
-          },
-        },
+        WorkerProfile: { select: {
+          category: true, experienceYears: true, expectedSalary: true, availability: true,
+          workType: true, skills: true, ratingAvg: true, ratingCount: true, docStatus: true,
+        } },
+        EmployerProfile: { select: {
+          companyName: true, companyWebsite: true, companySize: true, industry: true, isVerified: true,
+        } },
       },
     });
 
@@ -232,6 +237,10 @@ router.get('/users/:id', requireAdminForSensitiveSupport, async (req, res) => {
         success: false,
         message: 'User not found',
       });
+    }
+
+    if (isSupport && !['WORKER', 'EMPLOYER'].includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Profile access is limited to platform users' });
     }
 
     // Fetch lastLogin from the Mongoose User model (kept in sync by auth routes)
@@ -243,6 +252,10 @@ router.get('/users/:id', requireAdminForSensitiveSupport, async (req, res) => {
       }
     } catch (e) {
       console.error('❌ Error fetching lastLogin for user:', e.message);
+    }
+
+    if (isSupport) {
+      return res.json({ success: true, user });
     }
 
     const subscription = await getSubscriptionStaffDetail(id);
@@ -407,12 +420,22 @@ router.put('/users/:id/suspend', requireAdminForSensitiveSupport, async (req, re
 
 // POST /api/support/users/:id/reset-password
 // Send a secure password reset link to the user
-router.post('/users/:id/reset-password', requireAdminForSensitiveSupport, async (req, res) => {
+router.post('/users/:id/reset-password', async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
     const supportId = req.userId;
     const supportRole = req.userRole;
+
+    if (supportRole === 'SUPPORT') {
+      const key = `${supportId}:${id}`;
+      const now = Date.now();
+      const recent = (supportResetAttempts.get(key) || []).filter((timestamp) => now - timestamp < SUPPORT_RESET_WINDOW_MS);
+      if (recent.length >= SUPPORT_RESET_MAX_ATTEMPTS) {
+        return res.status(429).json({ success: false, message: 'Please try again later' });
+      }
+      supportResetAttempts.set(key, [...recent, now]);
+    }
 
     // Prevent self-password reset through staff endpoint
     if (id === supportId) {
@@ -456,17 +479,6 @@ router.post('/users/:id/reset-password', requireAdminForSensitiveSupport, async 
       });
     }
 
-    // Send security notification email with reset link
-    // Note: Using tempPassword parameter to pass the reset URL for SUPPORT resets
-    sendSecurityNotificationEmail({
-      to: targetUser.email,
-      actorRole: supportRole,
-      reason: reason || 'Password reset requested by support',
-      tempPassword: result.resetUrl,
-    }).catch((emailError) => {
-      console.error('[SECURITY_EMAIL] Failed to send password reset notification:', emailError);
-    });
-
     // Log the activity (no password or token data)
     await logActivity(
       supportId,
@@ -482,6 +494,62 @@ router.post('/users/:id/reset-password', requireAdminForSensitiveSupport, async 
   } catch (error) {
     console.error('❌ Error sending password reset link:', error);
     return res.status(500).json({ error: 'Failed to send password reset link' });
+  }
+});
+
+// POST /api/support/users/:id/suspension-request
+// Submit a review request; this route never changes the target account.
+router.post('/users/:id/suspension-request', async (req, res) => {
+  try {
+    if (req.userRole !== 'SUPPORT') {
+      return res.status(403).json({ success: false, message: 'Support authorization required' });
+    }
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    if (!reason || reason.length > 500) {
+      return res.status(400).json({ success: false, message: 'A concise reason is required' });
+    }
+    const target = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, fullName: true, role: true, isSuspended: true },
+    });
+    if (!target || !['WORKER', 'EMPLOYER'].includes(target.role)) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (target.isSuspended) {
+      return res.status(409).json({ success: false, message: 'User is already suspended' });
+    }
+    const requester = await prisma.user.findUnique({ where: { id: req.userId }, select: { fullName: true } });
+    const complaint = await prisma.complaint.create({
+      data: {
+        ticketNumber: `HS-SR-${Date.now().toString(36).toUpperCase()}`,
+        userId: String(req.userId),
+        reportedUserId: target.id,
+        assignedTo: String(req.userId),
+        subject: `[Suspension Request] ${target.fullName}`,
+        description: reason,
+        category: 'Abuse',
+        priority: 'High',
+        status: 'ESCALATED',
+        escalatedBy: String(req.userId),
+        escalatedAt: new Date(),
+        escalationReason: reason,
+        attachments: [],
+      },
+    });
+    await prisma.complaintTimeline.create({
+      data: {
+        complaintId: complaint.id,
+        action: 'SUSPENSION_REQUESTED',
+        description: 'Suspension request submitted for Admin review',
+        authorId: String(req.userId),
+        authorName: requester?.fullName || 'Support Agent',
+        authorRole: 'SUPPORT',
+      },
+    });
+    return res.status(201).json({ success: true, message: 'Suspension request submitted for Admin review' });
+  } catch (error) {
+    console.error('Support suspension request failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Unable to submit suspension request' });
   }
 });
 
@@ -503,6 +571,7 @@ router.get('/conversations', async (req, res) => {
     const query = { type: 'SUPPORT' };
     if (userRole === 'SUPPORT') {
       query.supportAgentId = userId;
+      query.archivedForSupportIds = { $ne: userId };
     }
 
     const conversationsMeta = await Conversation.find(query).sort({ lastMessageAt: -1 });
