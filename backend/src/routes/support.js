@@ -51,16 +51,24 @@ const logActivity = async (supportId, action, description, targetUserId = null, 
 
 // GET /api/support/users
 // Return users list for support lookup (read-only)
-router.get('/users', requireAdminForSensitiveSupport, async (req, res) => {
+router.get('/users', async (req, res) => {
   try {
-    const { search, role, page = 1, limit = 50 } = req.query;
+    const { search, role, page = 1, limit = 50, eligibleForSupportChat } = req.query;
+    const isSupport = req.userRole === 'SUPPORT';
+    const isSupportChatLookup = isSupport && eligibleForSupportChat === 'true';
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
+    const pageNumber = Math.max(Number.parseInt(page, 10) || 1, 1);
+    const requestedLimit = Number.parseInt(limit, 10);
+    const take = isSupport
+      ? Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 50, 1), 50)
+      : requestedLimit;
+    const skip = (pageNumber - 1) * take;
 
     const where = {};
 
-    if (role) {
+    if (isSupportChatLookup) {
+      where.role = { in: ['WORKER', 'EMPLOYER'] };
+    } else if (role && (!isSupport || ['WORKER', 'EMPLOYER', 'SUPPORT', 'ADMIN'].includes(role))) {
       where.role = role;
     }
 
@@ -74,7 +82,13 @@ router.get('/users', requireAdminForSensitiveSupport, async (req, res) => {
 
     const users = await prisma.user.findMany({
       where,
-      select: {
+      select: isSupport ? {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        profileImage: true,
+      } : {
         id: true,
         fullName: true,
         email: true,
@@ -97,13 +111,24 @@ router.get('/users', requireAdminForSensitiveSupport, async (req, res) => {
     });
 
     const total = await prisma.user.count({ where });
+    if (isSupport) {
+      return res.json({
+        success: true,
+        count: users.length,
+        total,
+        page: pageNumber,
+        limit: take,
+        users,
+      });
+    }
+
     const summaries = await getSubscriptionSummaries(users.map((user) => user.id));
 
     return res.json({
       success: true,
       count: users.length,
       total,
-      page: parseInt(page),
+      page: pageNumber,
       limit: take,
       users: users.map((user) => ({
         id: user.id,

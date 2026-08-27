@@ -1,8 +1,6 @@
-// Support Users Page - View users, suspend/reactivate, reset passwords
+// Support Users Page - Safe user discovery for support communication
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import {
   Search,
@@ -11,10 +9,7 @@ import {
   Mail,
   Shield,
   Filter,
-  Pause,
-  Play,
   Key,
-  Eye,
   AlertCircle,
   X
 } from 'lucide-react';
@@ -24,8 +19,6 @@ import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportUsers = () => {
   const { t: i18nT, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const authUser = useAuthStore(state => state.user);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -278,15 +271,6 @@ const SupportUsers = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {t.role}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t.status}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t.joined}
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t.actions}
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -322,54 +306,6 @@ const SupportUsers = () => {
                           <Shield size={12} />
                           {getRoleLabel(user.role)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(user.isVerified, user.isSuspended)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(user.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {user.role !== 'ADMIN' && (
-                            <>
-                              {user.isSuspended ? (
-                                <button
-                                  onClick={() => handleSuspend(user.id, false)}
-                                  disabled={actionLoading === user.id}
-                                  className="p-1.5 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
-                                  title={t.reactivate}
-                                >
-                                  <Play size={16} />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleSuspend(user.id, true)}
-                                  disabled={actionLoading === user.id}
-                                  className="p-1.5 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
-                                  title={t.suspend}
-                                >
-                                  <Pause size={16} />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setShowResetModal(user.id)}
-                                disabled={actionLoading === user.id}
-                                className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-colors"
-                                title={t.resetPassword}
-                              >
-                                <Key size={16} />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => navigate(`/support/users/${user.id}`)}
-                            className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            title={t.viewProfile}
-                          >
-                            <Eye size={16} />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}

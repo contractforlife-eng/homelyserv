@@ -1,7 +1,7 @@
 // Support Messages Page - Reuses existing chat system
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import api from '../../utils/api';
@@ -24,6 +24,7 @@ import {
   deleteConversation,
   getSupportConversations,
   getInternalConversations,
+  ensureConversationExists,
   getSupportConversationMessages,
   escalateConversation,
   createOptimisticMessage,
@@ -36,6 +37,8 @@ import { UserAvatar, UserDisplayName } from '../../components/users';
 const SupportMessages = () => {
   const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedConversationId = searchParams.get('conversationId');
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -48,6 +51,7 @@ const SupportMessages = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -287,6 +291,52 @@ const SupportMessages = () => {
     loadMessagesForConversation(conversationId);
   };
 
+  // Deep-link only to conversations already returned by the server's
+  // membership/assignment-scoped list. Unknown IDs remain unselected.
+  useEffect(() => {
+    if (!requestedConversationId || selectedConversationId || conversations.length === 0) return;
+    const conversation = conversations.find(
+      (item) => String(item.id) === String(requestedConversationId)
+    );
+    if (conversation) handleSelectConversation(conversation.id);
+  }, [requestedConversationId, conversations, selectedConversationId]);
+
+  const handleStartNewConversation = async (userId, userName, userRole) => {
+    if (!authUser?.id) return;
+
+    const conversationId = await ensureConversationExists(
+      authUser.id,
+      authUser.fullName || 'Support',
+      'SUPPORT',
+      userId,
+      userName,
+      userRole
+    );
+
+    const newConversation = {
+      id: conversationId,
+      type: 'SUPPORT',
+      otherUserId: String(userId),
+      otherUserName: userName || 'User',
+      usesFallbackUserName: !userName,
+      otherUserRole: userRole || 'USER',
+      otherUserImage: null,
+      lastMessage: t.startConversationHere,
+      unread: 0,
+      role: userRole || 'USER',
+      updatedAt: new Date().toISOString(),
+    };
+
+    setConversations((current) => [
+      newConversation,
+      ...current.filter((conversation) => conversation.id !== conversationId),
+    ]);
+    setSelectedConversationId(conversationId);
+    setMessages([]);
+    setShowNewConversationModal(false);
+    await loadMessagesForConversation(conversationId);
+  };
+
   const getOtherUserId = () => {
     const c = conversations.find(c => c.id === selectedConversationId);
     return c?.otherUserId || null;
@@ -420,6 +470,13 @@ const SupportMessages = () => {
                 <p className="text-white/80 mt-1">{t.subtitle}</p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowNewConversationModal(true)}
+              className="px-4 py-2 bg-white/15 hover:bg-white/25 rounded-lg transition"
+            >
+              {t.newConversation}
+            </button>
           </div>
         </div>
 
@@ -682,6 +739,13 @@ const SupportMessages = () => {
           </div>
         </div>
 
+        {showNewConversationModal && (
+          <NewConversationModal
+            onSelectUser={handleStartNewConversation}
+            onClose={() => setShowNewConversationModal(false)}
+            t={t}
+          />
+        )}
       </div>
     </SupportLayout>
   );
@@ -694,14 +758,23 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const timer = setTimeout(() => fetchUsers(searchTerm), 250);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (term = '') => {
+    setLoading(true);
     try {
-      const response = await api.get('/api/support/users?limit=100');
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '50',
+        eligibleForSupportChat: 'true',
+      });
+      if (term.trim()) params.set('search', term.trim());
+
+      const response = await api.get(`/api/support/users?${params.toString()}`);
       if (response.data?.success) {
-        setUserList(response.data.users);
+        setUserList(response.data.users || []);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -709,11 +782,6 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
       setLoading(false);
     }
   };
-
-  const filteredUsers = userList.filter(user =>
-    user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -742,11 +810,11 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
               <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{t.loadingUsers}</p>
             </div>
-          ) : filteredUsers.length === 0 ? (
+          ) : userList.length === 0 ? (
             <p className="text-gray-500 text-center py-8">{t.noUsers}</p>
           ) : (
             <div className="space-y-2">
-              {filteredUsers.map((user) => (
+              {userList.map((user) => (
                 <button
                   key={user.id}
                   onClick={() => onSelectUser(user.id, user.fullName, user.role)}

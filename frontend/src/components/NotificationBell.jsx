@@ -158,8 +158,14 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
       markAsRead(notification.id);
     }
     
-    // Navigate to the related entity
-    const route = getEntityRoute(notification);
+    // Message notifications use the existing role-specific Messages route.
+    // The page will only select a conversation returned by its authorized list.
+    const isMessageNotification = notification.type === 'NEW_MESSAGE'
+      || notification.entityType === 'MESSAGE';
+    const conversationId = notification.data?.conversationId || notification.entityId;
+    const route = isMessageNotification && user?.role === 'SUPPORT'
+      ? `/support-messages${conversationId ? `?conversationId=${encodeURIComponent(conversationId)}` : ''}`
+      : getEntityRoute(notification);
     navigate(route);
     setIsOpen(false);
   };
