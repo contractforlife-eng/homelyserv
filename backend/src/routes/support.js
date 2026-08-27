@@ -10,6 +10,7 @@ import { enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
+import { isRootAdmin } from '../security/rootAdmin.js';
 
 const supportResetAttempts = new Map();
 const SUPPORT_RESET_WINDOW_MS = 60 * 60 * 1000;
@@ -362,6 +363,10 @@ router.put('/users/:id/suspend', requireAdminForSensitiveSupport, async (req, re
         success: false,
         message: 'User not found',
       });
+    }
+
+    if (isRootAdmin(user)) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
 
     // Prevent support from suspending themselves or admins

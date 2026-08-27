@@ -118,13 +118,14 @@ const isSuspendedAccount = (user) => (
   user?.isSuspended === true || String(user?.status || '').toUpperCase() === 'SUSPENDED'
 );
 
-const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate, labels }) => {
+const UserActionsMenu = ({ user, currentAdminId, isRootAdmin, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate, labels }) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
 
   const userId = user.id || user._id;
   const isSelf = String(userId) === String(currentAdminId);
-  const canChangeRole = user.role !== 'ADMIN' && !isSelf;
+  const isProtectedRoot = String(user.email || '').trim().toLowerCase() === 'emad@homelyserv.com';
+  const canChangeRole = !isSelf && !isProtectedRoot && (user.role !== 'ADMIN' || isRootAdmin);
 
   const closeMenu = () => setIsOpen(false);
 
@@ -168,15 +169,15 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
             {labels.changeRole}
           </button>
         )}
-        <button
+        {!isSelf && !isProtectedRoot && <button
           onClick={() => { onResetPassword(user); closeMenu(); }}
           className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
           role="menuitem"
         >
           <Key size={14} />
           {labels.resetPassword}
-        </button>
-        {isSuspendedAccount(user) ? (
+        </button>}
+        {!isSelf && !isProtectedRoot && (isSuspendedAccount(user) ? (
           <button
             onClick={() => { onActivate(user.id || user._id); closeMenu(); }}
             className="w-full text-left px-4 py-2 text-sm text-green-700 dark:text-green-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
@@ -194,7 +195,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
             <Pause size={14} />
             {labels.suspendAccount}
           </button>
-        )}
+        ))}
       </ActionMenuPortal>
     </>
   );
@@ -236,6 +237,7 @@ const AdminUsers = () => {
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
+  const isRootAdmin = String(authUser?.email || '').trim().toLowerCase() === 'emad@homelyserv.com';
 
   useEffect(() => {
     const sidebarState = localStorage.getItem('sidebar_collapsed');
@@ -714,6 +716,9 @@ const AdminUsers = () => {
                           </div>
                           <div>
                             <UserDisplayName user={u} size="lg" />
+                            {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
+                              <p className="text-xs font-semibold text-purple-600 mt-0.5">Root Admin</p>
+                            )}
                             {u.subscription?.isPremium && (
                               <p className="text-xs font-semibold text-amber-600 mt-0.5">
                                 {t.premiumActive} · {new Date(u.subscription.endDate).toLocaleDateString(i18n.resolvedLanguage || 'en')}
@@ -747,6 +752,7 @@ const AdminUsers = () => {
                         <UserActionsMenu
                           user={u}
                           currentAdminId={user?.id || user?._id}
+                          isRootAdmin={isRootAdmin}
                           onViewProfile={handleViewProfile}
                           onChangeRole={openRoleChangeModal}
                           onResetPassword={openPasswordModal}
@@ -973,7 +979,7 @@ const AdminUsers = () => {
                   {t.changeRole.newRole}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['WORKER', 'EMPLOYER', 'SUPPORT']).map((roleOption) => {
+                  {(isRootAdmin ? ['ADMIN', 'WORKER', 'EMPLOYER', 'SUPPORT'] : ['WORKER', 'EMPLOYER', 'SUPPORT']).map((roleOption) => {
                     const isCurrent = roleOption === selectedUserForRole.role;
                     const isSelected = roleOption === selectedRole;
                     return (

@@ -20,6 +20,7 @@ import {
   resolveAccountDefaultCurrency
 } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { ROOT_ADMIN_EMAIL, normalizeEmail } from '../security/rootAdmin.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import {
@@ -160,6 +161,12 @@ export const register = async (req, res) => {
     // EMPLOYER registrations skip these checks entirely.
     // ----------------------------------------------------------
     const normalizedRole = (role || 'WORKER').toUpperCase();
+    if (!['WORKER', 'EMPLOYER'].includes(normalizedRole)) {
+      return res.status(400).json({ success: false, message: 'Please select a valid account role' });
+    }
+    if (normalizeEmail(email) === ROOT_ADMIN_EMAIL) {
+      return res.status(400).json({ success: false, message: 'This email is reserved.' });
+    }
     let canonicalDesiredJob = '';
     let normalizedHourlyRate = '';
     let normalizedTutorSpecialization = '';
@@ -1122,6 +1129,10 @@ export const deleteAccount = async (req, res) => {
         success: false,
         message: 'User not found'
       });
+    }
+
+    if (normalizeEmail(user.email) === ROOT_ADMIN_EMAIL) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
 
     const { request, reused } = await createOrReuseAccountDeletionRequest(req.userId);

@@ -28,6 +28,7 @@ import { getFinancialCenterData } from '../services/financialCenterService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { completePaymentTransaction } from '../routes/payment.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
+import { isRootAdmin, isRootAdminId } from '../security/rootAdmin.js';
 
 const router = express.Router();
 
@@ -187,6 +188,9 @@ router.get('/users/:id', async (req, res) => {
 // ============================================================
 router.post('/users/:id/suspend', async (req, res) => {
   try {
+    if (await isRootAdminId(User, req.params.id)) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
+    }
     const { reason } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -228,6 +232,9 @@ router.post('/users/:id/suspend', async (req, res) => {
 // ============================================================
 router.post('/users/:id/activate', async (req, res) => {
   try {
+    if (await isRootAdminId(User, req.params.id)) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
+    }
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { 
@@ -293,6 +300,10 @@ router.put('/users/:id/reset-password', async (req, res) => {
         success: false,
         message: 'User not found'
       });
+    }
+
+    if (isRootAdmin(user)) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
 
     // Authorization: Admin cannot reset another Admin's password
@@ -364,10 +375,12 @@ router.put('/users/:id/role', async (req, res) => {
     }
 
     const normalizedRole = String(newRole).toUpperCase();
-    if (!ALLOWED_ROLE_CHANGES.includes(normalizedRole)) {
+    const actingAdmin = await User.findById(req.userId).select('email role');
+    const actingRoot = isRootAdmin(actingAdmin);
+    if (![...ALLOWED_ROLE_CHANGES, 'ADMIN'].includes(normalizedRole)) {
       return res.status(400).json({
         success: false,
-        message: 'newRole must be one of: WORKER, EMPLOYER, SUPPORT'
+        message: 'newRole must be one of: ADMIN, WORKER, EMPLOYER, SUPPORT'
       });
     }
 
@@ -387,8 +400,16 @@ router.put('/users/:id/role', async (req, res) => {
       });
     }
 
+    if (isRootAdmin(user)) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
+    }
+
+    if (normalizedRole === 'ADMIN' && !actingRoot) {
+      return res.status(403).json({ success: false, message: 'Only the Root Admin can promote users to Admin.' });
+    }
+
     // Authorization: Admin cannot change another Admin's role
-    if (user.role === 'ADMIN') {
+    if (user.role === 'ADMIN' && !actingRoot) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to change roles of admin accounts'
@@ -517,6 +538,10 @@ router.delete('/users/:id', async (req, res) => {
         success: false,
         message: 'User not found'
       });
+    }
+
+    if (isRootAdmin(user)) {
+      return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
 
     // Safety: Prevent deleting the last admin
