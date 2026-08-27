@@ -28,7 +28,7 @@ import { getFinancialCenterData } from '../services/financialCenterService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { completePaymentTransaction } from '../routes/payment.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
-import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryUserId } from '../security/rootAdmin.js';
+import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryRequest, isRootRecoveryTarget } from '../security/rootAdmin.js';
 
 const router = express.Router();
 
@@ -188,7 +188,7 @@ router.get('/users/:id', async (req, res) => {
 // ============================================================
 router.post('/users/:id/suspend', async (req, res) => {
   try {
-    if (isRootRecoveryUserId(req.params.id) || await isRootAdminId(User, req.params.id)) {
+    if (isRootRecoveryTarget(req, req.params.id) || await isRootAdminId(User, req.params.id)) {
       return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
     const { reason } = req.body;
@@ -232,7 +232,7 @@ router.post('/users/:id/suspend', async (req, res) => {
 // ============================================================
 router.post('/users/:id/activate', async (req, res) => {
   try {
-    if (isRootRecoveryUserId(req.params.id) || await isRootAdminId(User, req.params.id)) {
+    if (isRootRecoveryTarget(req, req.params.id) || await isRootAdminId(User, req.params.id)) {
       return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
     const user = await User.findByIdAndUpdate(
@@ -302,7 +302,7 @@ router.put('/users/:id/reset-password', async (req, res) => {
       });
     }
 
-    if (isRootRecoveryUserId(req.params.id) || isRootAdmin(user)) {
+    if (isRootRecoveryTarget(req, req.params.id) || isRootAdmin(user)) {
       return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
 
@@ -399,7 +399,7 @@ router.put('/users/:id/role', async (req, res) => {
       });
     }
 
-    if (isRootRecoveryUserId(req.params.id) || isRootAdmin(user)) {
+    if (isRootRecoveryTarget(req, req.params.id) || isRootAdmin(user)) {
       return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
 
@@ -531,7 +531,7 @@ router.put('/users/:id/role', async (req, res) => {
 // ============================================================
 router.delete('/users/:id', async (req, res) => {
   try {
-    if (isRootRecoveryUserId(req.params.id)) {
+    if (isRootRecoveryTarget(req, req.params.id)) {
       return res.status(403).json({ success: false, message: 'The Root Admin account is protected.' });
     }
     const user = await User.findById(req.params.id);
@@ -925,7 +925,7 @@ router.get('/users/role/:role', async (req, res) => {
 // ============================================================
 router.get('/profile', authenticate, requireAdmin, async (req, res) => {
   try {
-    if (isRootRecoveryUserId(req.userId)) {
+    if (isRootRecoveryRequest(req)) {
       return res.json({ success: true, user: { id: req.userId, fullName: 'Root Admin', role: 'ADMIN', authContext: 'ROOT_RECOVERY' } });
     }
     const user = await User.findById(req.userId).select('-password');
@@ -953,7 +953,7 @@ router.put('/profile', authenticate, requireAdmin, async (req, res) => {
   try {
     const { fullName, phone, language, profileImage } = req.body;
 
-    if (isRootRecoveryUserId(req.userId)) {
+    if (isRootRecoveryRequest(req)) {
       return res.json({ success: true, user: { id: req.userId, fullName: 'Root Admin', role: 'ADMIN', authContext: 'ROOT_RECOVERY' } });
     }
 

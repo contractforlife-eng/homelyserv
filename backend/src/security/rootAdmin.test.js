@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ROOT_ADMIN_EMAIL, isRecoveryEmail, isRootAdmin, isRootAdminId } from './rootAdmin.js';
+import { createRootRecoveryTokenClaims, ROOT_ADMIN_EMAIL, isRecoveryEmail, isRootAdmin, isRootAdminId } from './rootAdmin.js';
 
 test('Root Admin identity comparison is normalized and role-independent', () => {
   assert.equal(ROOT_ADMIN_EMAIL, 'emad@homelyserv.com');
@@ -39,4 +39,14 @@ test('recovery identity is read only from backend configuration', () => {
     if (previous === undefined) delete process.env.ROOT_ADMIN_RECOVERY_EMAIL;
     else process.env.ROOT_ADMIN_RECOVERY_EMAIL = previous;
   }
+});
+
+test('recovery token claims use the existing user ObjectId and trusted context', () => {
+  const claims = createRootRecoveryTokenClaims({ _id: '507f1f77bcf86cd799439011', role: 'WORKER', tokenVersion: 3 });
+  assert.deepEqual(claims, {
+    userId: '507f1f77bcf86cd799439011',
+    role: 'ADMIN',
+    authContext: 'ROOT_RECOVERY',
+    tokenVersion: 3
+  });
 });

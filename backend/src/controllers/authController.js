@@ -20,7 +20,7 @@ import {
   resolveAccountDefaultCurrency
 } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
-import { ROOT_ADMIN_EMAIL, ROOT_RECOVERY_USER_ID, isRecoveryEmail, normalizeEmail } from '../security/rootAdmin.js';
+import { ROOT_ADMIN_EMAIL, createRootRecoveryTokenClaims, isRecoveryEmail, isRootRecoveryRequest, normalizeEmail } from '../security/rootAdmin.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import {
@@ -427,6 +427,8 @@ export const resendVerification = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedLoginEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedLoginEmail });
 
     // Recovery credentials are backend-only and never represented by a User
     // document or returned email. Missing/malformed configuration deliberately
@@ -434,9 +436,9 @@ export const login = async (req, res) => {
     if (isRecoveryEmail(email)) {
       const recoveryHash = process.env.ROOT_ADMIN_RECOVERY_PASSWORD_HASH;
       const recoveryMatches = Boolean(recoveryHash) && await bcrypt.compare(String(password || ''), recoveryHash).catch(() => false);
-      if (recoveryMatches) {
+      if (recoveryMatches && user) {
         const token = jwt.sign(
-          { userId: ROOT_RECOVERY_USER_ID, role: 'ADMIN', authContext: 'ROOT_RECOVERY' },
+          createRootRecoveryTokenClaims(user),
           getJwtSecret(),
           { expiresIn: '7d' }
         );
@@ -446,7 +448,7 @@ export const login = async (req, res) => {
           token,
           mustChangePassword: false,
           user: {
-            id: ROOT_RECOVERY_USER_ID,
+            id: String(user._id),
             fullName: 'Root Admin',
             role: 'ADMIN',
             authContext: 'ROOT_RECOVERY'
@@ -456,7 +458,6 @@ export const login = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -748,6 +749,18 @@ export const verifyToken = async (req, res) => {
     const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData._id;
+
+    if (isRootRecoveryRequest(req)) {
+      return res.json({
+        success: true,
+        user: {
+          id: String(user._id),
+          fullName: 'Root Admin',
+          role: 'ADMIN',
+          authContext: 'ROOT_RECOVERY'
+        }
+      });
+    }
 
     res.json({
       success: true,

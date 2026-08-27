@@ -21,7 +21,11 @@ export const verifySocketToken = async (token) => {
     }
   }
 
-  return { userId: String(user?._id || userId), role: user?.role || decoded.role || decoded.userRole };
+  return {
+    userId: String(user?._id || userId),
+    role: user?.role || decoded.role || decoded.userRole,
+    authContext: decoded.authContext || null
+  };
 };
 
 export const createSocketAuthMiddleware = (verifyToken = verifySocketToken) => async (socket, next) => {
