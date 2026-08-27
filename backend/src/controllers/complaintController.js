@@ -263,7 +263,7 @@ const serializeAuthorRecord = (record) => {
  * Serialize a complaint for API responses.
  * Internal notes are only included for staff (SUPPORT/ADMIN).
  */
-export const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
+export const serializeComplaint = (complaint, { includeInternal = false, includeSensitive = true } = {}) => {
   if (!complaint) return null;
 
   const base = {
@@ -275,9 +275,9 @@ export const serializeComplaint = (complaint, { includeInternal = false } = {}) 
     status: complaint.status,
     priority: complaint.priority,
     category: complaint.category || 'Other',
-    reportedUserId: complaint.reportedUserId || null,
-    messageId: complaint.messageId || null,
-    conversationId: complaint.conversationId || null,
+    reportedUserId: includeSensitive ? complaint.reportedUserId || null : null,
+    messageId: includeSensitive ? complaint.messageId || null : null,
+    conversationId: includeSensitive ? complaint.conversationId || null : null,
     assignedTo: complaint.assignedTo,
         assignedSupport: complaint.AssignedSupport
           ? {
@@ -292,7 +292,7 @@ export const serializeComplaint = (complaint, { includeInternal = false } = {}) 
     escalatedBy: complaint.escalatedBy,
     escalatedAt: complaint.escalatedAt,
     escalationReason: complaint.escalationReason,
-    attachments: complaint.attachments || [],
+    attachments: includeSensitive ? complaint.attachments || [] : [],
     resolvedAt: complaint.resolvedAt,
     closedAt: complaint.closedAt,
     createdAt: complaint.createdAt,
@@ -438,6 +438,21 @@ export const createComplaint = async (req, res) => {
     console.error('❌ Error creating complaint:', error);
     return res.status(500).json({ success: false, message: 'Failed to create complaint' });
   }
+};
+
+// Ordinary support agents may work only complaints explicitly assigned to
+// them. Admins retain the existing broad complaint-management access.
+export const requireAssignedSupportComplaint = async (req, res, next) => {
+  if (req.userRole === 'ADMIN') return next();
+  const complaint = await prisma.complaint.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, assignedSupport: true },
+  });
+  if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
+  if (complaint.assignedSupport !== String(req.userId)) {
+    return res.status(403).json({ success: false, message: 'Complaint is not assigned to you' });
+  }
+  return next();
 };
 
 /**
@@ -735,9 +750,9 @@ export const supportListComplaints = async (req, res) => {
       where.userId = userId;
     }
 
-    // SUPPORT and ADMIN both see ALL complaints.
-    // The difference between roles is permissions, not visibility.
-    // No assignment-scoped filter: every complaint is always visible.
+    if (req.userRole === 'SUPPORT') {
+      where.assignedSupport = supportId;
+    }
 
     if (search && search.trim()) {
       const searchTerm = search.trim();
@@ -770,7 +785,7 @@ export const supportListComplaints = async (req, res) => {
     const total = await prisma.complaint.count({ where });
 
     const activePremiumIds = await getActivePremiumUserIds(complaints.map((c) => c.userId));
-    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: true }));
+    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }));
     serializedComplaints.forEach((item) => {
       if (item.User) item.User.isPremium = activePremiumIds.has(String(item.userId));
     });
@@ -816,9 +831,8 @@ export const supportGetComplaint = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    // SUPPORT and ADMIN both view all complaints.
     const activePremiumIds = await getActivePremiumUserIds([complaint.userId]);
-    const serializedComplaint = serializeComplaint(complaint, { includeInternal: true });
+    const serializedComplaint = serializeComplaint(complaint, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' });
     if (serializedComplaint.User) {
       serializedComplaint.User.isPremium = activePremiumIds.has(String(complaint.userId));
     }
@@ -827,7 +841,7 @@ export const supportGetComplaint = async (req, res) => {
     return res.json({
       success: true,
       complaint: serializedComplaint,
-      notes: (complaint.Notes || []).map(serializeAuthorRecord),
+      notes: req.userRole === 'ADMIN' ? (complaint.Notes || []).map(serializeAuthorRecord) : [],
       timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
     });
   } catch (error) {
@@ -920,7 +934,7 @@ export const supportAssignComplaint = async (req, res) => {
     return res.json({
       success: true,
       message: 'Complaint assigned successfully',
-      complaint: serializeComplaint(updated, { includeInternal: true }),
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
     });
   } catch (error) {
     console.error('❌ Error assigning complaint:', error);
@@ -1053,7 +1067,7 @@ export const supportReply = async (req, res) => {
     return res.json({
       success: true,
       message: 'Reply sent successfully',
-      complaint: serializeComplaint(updated, { includeInternal: true }),
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
     });
   } catch (error) {
     console.error('❌ Error replying to complaint:', error);
@@ -1135,7 +1149,7 @@ export const supportAddNote = async (req, res) => {
     return res.json({
       success: true,
       message: 'Internal note added successfully',
-      complaint: serializeComplaint(updated, { includeInternal: true }),
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
     });
   } catch (error) {
     console.error('❌ Error adding internal note:', error);
@@ -1231,7 +1245,7 @@ export const supportChangeStatus = async (req, res) => {
     return res.json({
       success: true,
       message: 'Complaint status updated successfully',
-      complaint: serializeComplaint(updated, { includeInternal: true }),
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
     });
   } catch (error) {
     console.error('❌ Error changing complaint status:', error);
@@ -1375,7 +1389,7 @@ export const supportEscalate = async (req, res) => {
     return res.json({
       success: true,
       message: 'Complaint escalated to admin successfully',
-      complaint: serializeComplaint(updated, { includeInternal: true }),
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
       conversationId,
     });
   } catch (error) {
@@ -1455,7 +1469,7 @@ export const supportClose = async (req, res) => {
     return res.json({
       success: true,
       message: 'Complaint closed successfully',
-      complaint: serializeComplaint(updated, { includeInternal: true }),
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
     });
   } catch (error) {
     console.error('❌ Error closing complaint:', error);

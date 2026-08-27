@@ -1,6 +1,7 @@
 // backend/src/routes/workers.js
 import express from 'express';
 import User from '../models/User.js';
+import Conversation from '../models/Conversation.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireWorker } from '../middleware/auth.js';
@@ -12,6 +13,7 @@ import { getJwtSecret } from '../config/jwtSecret.js';
 import { buildWorkerProfileUpdate, profileUpdateErrorResponse } from '../services/userProfileUpdateService.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
 
 const router = express.Router();
 
@@ -110,6 +112,16 @@ router.patch('/hourly-rate', requireWorker, async (req, res) => {
 // ============================================================
 router.get('/profile/:userId', authenticate, async (req, res) => {
   try {
+    if (req.userRole === 'SUPPORT' && String(req.params.userId) !== String(req.userId)) {
+      const authorizedConversation = await Conversation.findOne({
+        type: 'SUPPORT',
+        supportAgentId: String(req.userId),
+        participantIds: String(req.params.userId),
+      }).select('_id');
+      if (!authorizedConversation) {
+        return res.status(403).json({ success: false, message: 'Not authorized to view this profile' });
+      }
+    }
     const user = await User.findById(req.params.userId).select('-password');
     if (!user) {
       return res.status(404).json({
@@ -118,7 +130,7 @@ router.get('/profile/:userId', authenticate, async (req, res) => {
       });
     }
     
-    const userObj = user.toObject ? user.toObject() : { ...user };
+    const userObj = sanitizeUserResponse(user.toObject ? user.toObject() : user);
     userObj.id = userObj._id;
 
     // Premium entitlement + availability (computed server-side, batched for
@@ -251,7 +263,7 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
       });
     }
 
-    const userObj = user.toObject ? user.toObject() : { ...user };
+    const userObj = sanitizeUserResponse(user.toObject ? user.toObject() : user);
     userObj.id = userObj._id;
 
     if (user.role === 'WORKER' && isCanonicalWorkerJob(user.desiredJob)) {

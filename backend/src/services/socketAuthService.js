@@ -52,8 +52,9 @@ export const joinAuthenticatedUserRoom = (socket) => {
  * sockets are NOT allowed to use generic `join_room`; their only room access
  * goes through the dedicated, verified `public-support:join-guest` flow.
  *
- * For authenticated sockets, private `user_*` rooms remain joinable ONLY for
- * the socket's own derived user id, while any other room name may be joined.
+ * For authenticated sockets, only the socket's own derived private room is
+ * joinable here. Conversation and support rooms use dedicated handlers that
+ * perform their own authorization checks.
  *
  * Returns true when the requested room was joined, false otherwise.
  */
@@ -68,6 +69,5 @@ export const joinGenericRoom = (socket, roomId) => {
     return false;
   }
 
-  socket.join(roomId);
-  return true;
+  return false;
 };

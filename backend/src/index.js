@@ -437,7 +437,11 @@ io.on('connection', (socket) => {
   socket.on('public-support:join-staff', async ({ token } = {}, acknowledge = () => {}) => {
     const staff = await verifyStaffToken(token);
     if (!staff) return acknowledge({ ok: false });
-    socket.join('public-support:staff');
+    if (staff.role === 'ADMIN') socket.join('public-support:staff:admins');
+    else {
+      socket.join(`public-support:staff:${staff.userId}`);
+      socket.join('public-support:queue');
+    }
     acknowledge({ ok: true });
   });
   

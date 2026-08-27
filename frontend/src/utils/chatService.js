@@ -246,6 +246,12 @@ export const getSupportConversations = async () => {
   return response.data?.conversations || [];
 };
 
+// Internal staff conversations are membership-scoped server-side.
+export const getInternalConversations = async () => {
+  const response = await api.get('/api/chat/internal/conversations');
+  return Array.isArray(response.data) ? response.data : [];
+};
+
 // GET /api/support/conversations/:id
 // Get a single support conversation with messages.
 export const getSupportConversationMessages = async (conversationId) => {

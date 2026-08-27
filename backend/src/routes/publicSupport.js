@@ -40,7 +40,14 @@ async function requireGuest(req, res, next) {
 }
 
 function emitGuest(conversation, event, payload) { getIo()?.to(`public-support:${conversation.publicId}`).emit(event, payload); }
-function emitStaff(event, payload) { getIo()?.to('public-support:staff').emit(event, payload); }
+function emitStaff(event, payload) {
+  const io = getIo();
+  if (!io) return;
+  const assignedTo = payload?.assignedTo;
+  if (assignedTo) io.to(`public-support:staff:${assignedTo}`).emit(event, payload);
+  else io.to('public-support:queue').emit(event, payload);
+  io.to('public-support:staff:admins').emit(event, payload);
+}
 
 router.post('/session', limit(60_000, 10), async (req, res) => {
   try {
@@ -90,7 +97,7 @@ router.post('/session/:publicId/messages', limit(60_000, 30), requireGuest, asyn
     await conversation.save();
     emitGuest(conversation, 'public-support:message', messageDto(visitorMessage));
     if (conversation.status !== 'BOT') {
-      emitStaff('public-support:staff-message', { conversationId:String(conversation._id), message:messageDto(visitorMessage) });
+      emitStaff('public-support:staff-message', { conversationId:String(conversation._id), assignedTo:conversation.assignedTo ? String(conversation.assignedTo) : null, message:messageDto(visitorMessage) });
       emitStaff('public-support:queue', conversationDto(conversation));
     }
 
@@ -140,7 +147,11 @@ router.post('/session/:publicId/escalate', limit(60_000, 10), requireGuest, asyn
 
 router.get('/staff/conversations', requireSupport, async (req, res) => {
   const statuses = clean(req.query.status, 50).split(',').filter((status) => ['WAITING_FOR_SUPPORT','ASSIGNED','CLOSED'].includes(status));
-  const filter = statuses.length ? { status:{ $in:statuses } } : { status:{ $ne:'BOT' } };
+  const statusFilter = statuses.length ? { status:{ $in:statuses } } : { status:{ $ne:'BOT' } };
+  const ownershipFilter = req.userRole === 'ADMIN'
+    ? {}
+    : { $or:[{ assignedTo:String(req.userId) }, { assignedTo:null }, { assignedTo:{ $exists:false } }] };
+  const filter = req.userRole === 'ADMIN' ? statusFilter : { $and:[statusFilter, ownershipFilter] };
   const conversations = await PublicSupportConversation.find(filter).sort({ lastMessageAt:-1 }).limit(100).lean();
   res.json({ success:true, conversations:conversations.map(conversationDto) });
 });
@@ -151,6 +162,9 @@ router.get('/staff/conversations/:id', requireSupport, async (req, res) => {
     PublicSupportMessage.find({ conversationId:req.params.id }).sort({ createdAt:1 }).limit(500).lean(),
   ]);
   if (!conversation) return res.status(404).json({ success:false, message:'Conversation not found.' });
+  if (req.userRole !== 'ADMIN' && conversation.assignedTo && String(conversation.assignedTo) !== String(req.userId)) {
+    return res.status(403).json({ success:false, message:'Conversation is assigned to another staff member.' });
+  }
   conversation = await expireConversationIfInactive(conversation);
   conversation.staffUnreadCount = 0;
   await conversation.save();
@@ -193,13 +207,18 @@ router.post('/staff/conversations/:id/messages', requireSupport, async (req, res
   conversation.guestUnreadCount += 1;
   await conversation.save();
   emitGuest(conversation, 'public-support:message', messageDto(message));
-  emitStaff('public-support:staff-message', { conversationId:String(conversation._id), message:messageDto(message) });
+  emitStaff('public-support:staff-message', { conversationId:String(conversation._id), assignedTo:conversation.assignedTo ? String(conversation.assignedTo) : null, message:messageDto(message) });
   emitGuest(conversation, 'public-support:conversation', conversationDto(conversation));
   emitStaff('public-support:queue', conversationDto(conversation));
   res.status(201).json({ success:true, message:messageDto(message), conversation:conversationDto(conversation) });
 });
 
 router.post('/staff/conversations/:id/close', requireSupport, async (req, res) => {
+  const existing = await PublicSupportConversation.findById(req.params.id);
+  if (!existing) return res.status(404).json({ success:false, message:'Conversation not found.' });
+  if (req.userRole !== 'ADMIN' && String(existing.assignedTo || '') !== String(req.userId)) {
+    return res.status(403).json({ success:false, message:'Conversation is not assigned to you.' });
+  }
   const conversation = await PublicSupportConversation.findByIdAndUpdate(req.params.id, { status:'CLOSED', closeReason:'STAFF_CLOSED', closedAt:new Date(), staffUnreadCount:0 }, { new:true });
   if (!conversation) return res.status(404).json({ success:false, message:'Conversation not found.' });
   const dto = conversationDto(conversation);

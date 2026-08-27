@@ -56,12 +56,12 @@ test('unauthenticated generic socket cannot use generic join_room', () => {
   assert.deepEqual(socket.joined, []);
 });
 
-test("authenticated user can join ordinary rooms but not another user's private room", () => {
+test("authenticated user cannot join arbitrary rooms or another user's private room", () => {
   const socket = makeUserSocket('A');
-  assert.equal(joinGenericRoom(socket, 'general'), true);
-  assert.equal(joinGenericRoom(socket, 'hire_123'), true);
+  assert.equal(joinGenericRoom(socket, 'general'), false);
+  assert.equal(joinGenericRoom(socket, 'hire_123'), false);
   assert.equal(joinGenericRoom(socket, privateUserRoom('B')), false);
-  assert.deepEqual(socket.joined, ['general', 'hire_123']);
+  assert.deepEqual(socket.joined, []);
 });
 
 test('authenticated user can join only their own private room', () => {

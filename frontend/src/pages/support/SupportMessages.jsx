@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
+import api from '../../utils/api';
 import {
   Search,
   Send,
@@ -20,17 +21,15 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  getSupportUsers,
-  ensureConversationExists,
   deleteConversation,
   getSupportConversations,
+  getInternalConversations,
   getSupportConversationMessages,
   escalateConversation,
   createOptimisticMessage,
   reconcileOptimisticMessage,
   markOptimisticMessageFailed
 } from '../../utils/chatService';
-import api from '../../utils/api';
 import { onSocketEvent, getSocket } from '../../utils/socket';
 import { UserAvatar, UserDisplayName } from '../../components/users';
 
@@ -49,8 +48,6 @@ const SupportMessages = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
-  const [allUsers, setAllUsers] = useState([]);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -71,33 +68,46 @@ const SupportMessages = () => {
   // ============================================================
   // loadConversations - SECURE: only assigned support conversations
   // ============================================================
+  const mapConversation = (conv, internal = false) => {
+    const other = internal ? conv.otherStaff : conv.user;
+    return {
+      id: conv.id,
+      type: conv.type || 'INTERNAL',
+      otherUserId: internal ? conv.otherStaffId : conv.userId,
+      otherUserName: other?.fullName || 'User',
+      isPremium: other?.isPremium === true,
+      usesFallbackUserName: !other?.fullName,
+      otherUserRole: other?.role || 'USER',
+      otherUserImage: other?.profileImage || other?.image || null,
+      lastMessage: conv.lastMessage,
+      lastMessageTime: conv.lastMessageTime,
+      time: conv.time,
+      unread: conv.unread,
+      role: other?.role || 'USER',
+      updatedAt: conv.updatedAt,
+      escalated: conv.type === 'ESCALATED',
+      complaintId: conv.complaintId || null,
+    };
+  };
+
+  const loadVisibleConversations = async () => {
+    const [supportConversations, internalConversations] = await Promise.all([
+      getSupportConversations(),
+      getInternalConversations(),
+    ]);
+    return [
+      ...supportConversations.map((conv) => mapConversation(conv)),
+      ...internalConversations.map((conv) => mapConversation(conv, true)),
+    ];
+  };
+
   const loadConversations = async () => {
     if (!authUser?.id) return;
     
     try {
       // Use the secure support conversations endpoint.
       // Support only sees conversations assigned to them.
-      const supportConversations = await getSupportConversations();
-      
-      // Map to the format expected by the UI
-      const mapped = supportConversations.map(conv => ({
-        id: conv.id,
-        type: conv.type,
-        otherUserId: conv.userId,
-        otherUserName: conv.user?.fullName || 'User',
-        isPremium: conv.user?.isPremium === true,
-        usesFallbackUserName: !conv.user?.fullName,
-        otherUserRole: conv.user?.role || 'USER',
-        otherUserImage: conv.user?.profileImage || conv.user?.image || null,
-        lastMessage: conv.lastMessage,
-        lastMessageTime: conv.lastMessageTime,
-        time: conv.time,
-        unread: conv.unread,
-        role: conv.user?.role || 'USER',
-        updatedAt: conv.updatedAt,
-        escalated: conv.type === 'ESCALATED',
-        complaintId: conv.complaintId || null
-      }));
+      const mapped = await loadVisibleConversations();
       
       setConversations(mapped);
     } catch (error) {
@@ -136,25 +146,7 @@ const SupportMessages = () => {
     if (!authUser) return;
 
     intervalRef.current = setInterval(async () => {
-      const updatedConversations = await getSupportConversations();
-      const mapped = updatedConversations.map(conv => ({
-        id: conv.id,
-        type: conv.type,
-        otherUserId: conv.userId,
-        otherUserName: conv.user?.fullName || 'User',
-        isPremium: conv.user?.isPremium === true,
-        usesFallbackUserName: !conv.user?.fullName,
-        otherUserRole: conv.user?.role || 'USER',
-        otherUserImage: conv.user?.profileImage || conv.user?.image || null,
-        lastMessage: conv.lastMessage,
-        lastMessageTime: conv.lastMessageTime,
-        time: conv.time,
-        unread: conv.unread,
-        role: conv.user?.role || 'USER',
-        updatedAt: conv.updatedAt,
-        escalated: conv.type === 'ESCALATED',
-        complaintId: conv.complaintId || null
-      }));
+      const mapped = await loadVisibleConversations();
 
       setConversations(prevConversations => {
         if (JSON.stringify(prevConversations) !== JSON.stringify(mapped)) {
@@ -394,25 +386,7 @@ const SupportMessages = () => {
     setIsRefreshing(true);
     
     if (authUser) {
-      const updatedConversations = await getSupportConversations();
-      const mapped = updatedConversations.map(conv => ({
-        id: conv.id,
-        type: conv.type,
-        otherUserId: conv.userId,
-        otherUserName: conv.user?.fullName || 'User',
-        isPremium: conv.user?.isPremium === true,
-        usesFallbackUserName: !conv.user?.fullName,
-        otherUserRole: conv.user?.role || 'USER',
-        otherUserImage: conv.user?.profileImage || conv.user?.image || null,
-        lastMessage: conv.lastMessage,
-        lastMessageTime: conv.lastMessageTime,
-        time: conv.time,
-        unread: conv.unread,
-        role: conv.user?.role || 'USER',
-        updatedAt: conv.updatedAt,
-        escalated: conv.type === 'ESCALATED',
-        complaintId: conv.complaintId || null
-      }));
+      const mapped = await loadVisibleConversations();
       setConversations(mapped);
       
       if (selectedConversationId) {
@@ -423,46 +397,6 @@ const SupportMessages = () => {
     }
     
     setIsRefreshing(false);
-  };
-
-  const handleStartNewConversation = async (userId, userName, userRole) => {
-    // Create or find the conversation between SUPPORT and selected user
-    const conversationId = await ensureConversationExists(
-      authUser.id,
-      authUser.fullName,
-      'SUPPORT',
-      userId,
-      userName,
-      userRole
-    );
-
-    // Build the conversation object and add it to the list
-    const newConversation = {
-      id: conversationId,
-      otherUserId: String(userId),
-      otherUserName: userName || 'User',
-      usesFallbackUserName: !userName,
-      lastMessage: 'Start your conversation here',
-      isNewConversation: true,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      unread: 0,
-      role: userRole || 'USER',
-      otherUserImage: null,
-      updatedAt: new Date()
-    };
-
-    // Add to conversations list if not already there
-    setConversations(prev => {
-      const exists = prev.some(c => c.id === conversationId);
-      if (exists) return prev;
-      return [newConversation, ...prev];
-    });
-
-    // Set as selected conversation and load messages
-    setSelectedConversationId(conversationId);
-    setMessages([]);
-    await loadMessagesForConversation(conversationId);
-    setShowNewConversationModal(false);
   };
 
   const getConversationDisplayName = (conversation) =>
@@ -486,13 +420,6 @@ const SupportMessages = () => {
                 <p className="text-white/80 mt-1">{t.subtitle}</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowNewConversationModal(true)}
-              className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <Shield size={16} />
-              {t.newConversation}
-            </button>
           </div>
         </div>
 
@@ -755,15 +682,6 @@ const SupportMessages = () => {
           </div>
         </div>
 
-        {/* New Conversation Modal */}
-        {showNewConversationModal && (
-          <NewConversationModal
-            users={allUsers}
-            onSelectUser={handleStartNewConversation}
-            onClose={() => setShowNewConversationModal(false)}
-            t={t}
-          />
-        )}
       </div>
     </SupportLayout>
   );

@@ -17,6 +17,7 @@ import {
   userReply,
   supportListComplaints,
   supportGetComplaint,
+  requireAssignedSupportComplaint,
   supportAssignComplaint,
   supportReply,
   supportAddNote,
@@ -38,6 +39,20 @@ import {
 import { reportUser, reportMessage, reportProfile } from '../controllers/reportController.js';
 
 const router = express.Router();
+
+const requireAdminForSupportAnalytics = (req, res, next) => {
+  if (req.userRole !== 'ADMIN') {
+    return res.status(403).json({ success: false, message: 'Admin authorization required' });
+  }
+  return next();
+};
+
+const requireAdminForSupportAssignment = (req, res, next) => {
+  if (req.userRole !== 'ADMIN') {
+    return res.status(403).json({ success: false, message: 'Admin authorization required' });
+  }
+  return next();
+};
 
 // ============================================================
 // USER COMPLAINT ROUTES (WORKER / EMPLOYER)
@@ -104,31 +119,31 @@ router.post('/complaints/:id/reply', authenticate, userReply);
 router.get('/support/complaints', authenticate, requireSupport, supportListComplaints);
 
 // GET /api/support/complaints/:id - Get complaint details
-router.get('/support/complaints/:id', authenticate, requireSupport, supportGetComplaint);
+router.get('/support/complaints/:id', authenticate, requireSupport, requireAssignedSupportComplaint, supportGetComplaint);
 
 // POST /api/support/complaints/:id/assign - Assign to self
-router.post('/support/complaints/:id/assign', authenticate, requireSupport, supportAssignComplaint);
+router.post('/support/complaints/:id/assign', authenticate, requireSupport, requireAdminForSupportAssignment, supportAssignComplaint);
 
 // POST /api/support/complaints/:id/reply - Support reply
-router.post('/support/complaints/:id/reply', authenticate, requireSupport, supportReply);
+router.post('/support/complaints/:id/reply', authenticate, requireSupport, requireAssignedSupportComplaint, supportReply);
 
 // POST /api/support/complaints/:id/notes - Add internal note
-router.post('/support/complaints/:id/notes', authenticate, requireSupport, supportAddNote);
+router.post('/support/complaints/:id/notes', authenticate, requireSupport, requireAssignedSupportComplaint, supportAddNote);
 
 // PUT /api/support/complaints/:id/status - Change status
-router.put('/support/complaints/:id/status', authenticate, requireSupport, supportChangeStatus);
+router.put('/support/complaints/:id/status', authenticate, requireSupport, requireAssignedSupportComplaint, supportChangeStatus);
 
 // POST /api/support/complaints/:id/escalate - Escalate to admin
-router.post('/support/complaints/:id/escalate', authenticate, requireSupport, supportEscalate);
+router.post('/support/complaints/:id/escalate', authenticate, requireSupport, requireAssignedSupportComplaint, supportEscalate);
 
 // POST /api/support/complaints/:id/close - Close complaint
-router.post('/support/complaints/:id/close', authenticate, requireSupport, supportClose);
+router.post('/support/complaints/:id/close', authenticate, requireSupport, requireAssignedSupportComplaint, supportClose);
 
 // GET /api/support/stats - Support dashboard statistics
-router.get('/support/stats', authenticate, requireSupport, supportStats);
+router.get('/support/stats', authenticate, requireSupport, requireAdminForSupportAnalytics, supportStats);
 
 // GET /api/support/dashboard - Support workspace dashboard data
-router.get('/support/dashboard', authenticate, requireSupport, supportDashboard);
+router.get('/support/dashboard', authenticate, requireSupport, requireAdminForSupportAnalytics, supportDashboard);
 
 // ============================================================
 // ADMIN COMPLAINT ROUTES

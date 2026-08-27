@@ -328,6 +328,15 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     const senderRoleUpper = (senderRole || '').toUpperCase();
     const recipientRoleUpper = (recipientRole || '').toUpperCase();
 
+    // Support may reply only within an existing conversation that already
+    // authorizes the agent. Admins retain the ability to initiate staff chat.
+    if (senderRoleUpper === 'SUPPORT') {
+      const existingConversation = await Conversation.findOne({ conversationId });
+      if (!existingConversation || !(await canAccessConversation(conversationId, senderId, senderRoleUpper))) {
+        return res.status(403).json({ error: 'Not authorized to start this conversation' });
+      }
+    }
+
     let conversationType = 'PRIVATE';
     let supportAgentId = null;
     let staffIds = [];
@@ -690,6 +699,15 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
       return res.status(403).json({ error: 'Not authorized to create this conversation' });
     }
 
+    const requestedUsers = await prisma.user.findMany({
+      where: { id: { in: [String(user1Id), String(user2Id)] } },
+      select: { id: true, role: true },
+    });
+    const requestedRoles = new Map(requestedUsers.map((user) => [String(user.id), user.role]));
+    if (!requestedRoles.has(String(user1Id)) || !requestedRoles.has(String(user2Id))) {
+      return res.status(404).json({ error: 'Conversation participant not found' });
+    }
+
     const conversationId = getConversationId(user1Id, user2Id);
     const existing = await Message.findOne({ conversationId });
 
@@ -703,13 +721,21 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
     let supportAgentId = null;
     let staffIds = [];
 
-    const role1 = (user1Role || 'USER').toUpperCase();
-    const role2 = (user2Role || 'USER').toUpperCase();
+    const role1 = String(requestedRoles.get(String(user1Id))).toUpperCase();
+    const role2 = String(requestedRoles.get(String(user2Id))).toUpperCase();
 
     const user1IsStaff = STAFF_ROLES.has(role1);
     const user2IsStaff = STAFF_ROLES.has(role2);
 
     if (user1IsStaff && user2IsStaff) {
+      const existingInternal = await Conversation.findOne({
+        conversationId,
+        type: 'INTERNAL',
+        staffIds: authenticatedId,
+      });
+      if (req.userRole === 'SUPPORT' && !existingInternal) {
+        return res.status(403).json({ error: 'Not authorized to create an internal conversation' });
+      }
       // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN)
       conversationType = 'INTERNAL';
       staffIds = [String(user1Id), String(user2Id)];

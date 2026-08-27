@@ -7,6 +7,7 @@ import { getJwtSecret } from '../config/jwtSecret.js';
 import { CloudinaryConfigurationError, uploadFromBuffer } from '../utils/cloudinary.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
+import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
 import { withRegistrationGeography } from '../services/registrationGeographyService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import {
@@ -272,7 +273,7 @@ export const register = async (req, res) => {
     );
 
     // Return user data (without password)
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData.password;
     delete userData._id;
@@ -333,7 +334,7 @@ export const verifyEmail = async (req, res) => {
     }
 
     // Success (verified or already_verified)
-    const userData = result.user.toObject();
+    const userData = sanitizeUserResponse(result.user.toObject());
     userData.id = userData._id;
     delete userData.password;
     delete userData._id;
@@ -452,7 +453,7 @@ export const login = async (req, res) => {
     );
 
     // Return user data (without password)
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData.password;
     delete userData._id;
@@ -488,7 +489,7 @@ export const getMe = async (req, res) => {
       });
     }
 
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData._id;
 
@@ -539,7 +540,7 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData._id;
 
@@ -636,7 +637,7 @@ export const getAllUsers = async (req, res) => {
       success: true,
       count: users.length,
       users: users.map(user => {
-        const userObj = user.toObject();
+        const userObj = sanitizeUserResponse(user.toObject());
         userObj.id = userObj._id;
         userObj.isPremium = ['EMPLOYER', 'WORKER'].includes(userObj.role)
           && activePremiumIds.has(String(userObj.id));
@@ -668,7 +669,7 @@ export const getUserById = async (req, res) => {
       });
     }
 
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     const activePremiumIds = await getActivePremiumUserIds([String(userData.id)]);
     userData.isPremium = ['EMPLOYER', 'WORKER'].includes(userData.role)
@@ -712,7 +713,7 @@ export const verifyToken = async (req, res) => {
       });
     }
 
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData._id;
 
@@ -914,7 +915,7 @@ export const uploadProfilePhoto = async (req, res) => {
       });
     }
 
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData._id;
 
@@ -985,7 +986,7 @@ export const updateSettings = async (req, res) => {
       });
     }
 
-    const userData = user.toObject();
+    const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     delete userData._id;
 

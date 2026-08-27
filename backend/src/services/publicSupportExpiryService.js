@@ -23,7 +23,9 @@ function emitClosed(conversation, io = getIo()) {
   if (!io) return;
   const dto = closureDto(conversation);
   io.to(`public-support:${conversation.publicId}`).emit('public-support:conversation', dto);
-  io.to('public-support:staff').emit('public-support:queue', dto);
+  if (dto.assignedTo) io.to(`public-support:staff:${dto.assignedTo}`).emit('public-support:queue', dto);
+  else io.to('public-support:queue').emit('public-support:queue', dto);
+  io.to('public-support:staff:admins').emit('public-support:queue', dto);
 }
 
 const inactivityFilter = (cutoff) => ({

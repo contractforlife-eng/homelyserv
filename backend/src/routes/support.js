@@ -17,6 +17,15 @@ const router = express.Router();
 router.use(authenticate);
 router.use(supportAuth);
 
+// Support handles assigned conversations only. User administration, global
+// directories, financial history, and security actions remain Admin-only.
+const requireAdminForSensitiveSupport = (req, res, next) => {
+  if (req.userRole !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin authorization required' });
+  }
+  return next();
+};
+
 // ============================================================
 // HELPER: Log support activity
 // ============================================================
@@ -42,7 +51,7 @@ const logActivity = async (supportId, action, description, targetUserId = null, 
 
 // GET /api/support/users
 // Return users list for support lookup (read-only)
-router.get('/users', async (req, res) => {
+router.get('/users', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { search, role, page = 1, limit = 50 } = req.query;
 
@@ -121,7 +130,7 @@ router.get('/users', async (req, res) => {
 
 // Support-safe, read-only payment history. The DTO intentionally excludes
 // provider identifiers, reconciliation reasons, metadata, and mutation data.
-router.get('/users/:id/payment-history', async (req, res) => {
+router.get('/users/:id/payment-history', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { id } = req.params;
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
@@ -146,7 +155,7 @@ router.get('/users/:id/payment-history', async (req, res) => {
 
 // GET /api/support/users/:id
 // Get a single user's profile (read-only)
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -229,7 +238,7 @@ router.get('/users/:id', async (req, res) => {
 // GET /api/support/users/:id/stats
 // Get user statistics (read-only) for the support profile page.
 // Supports viewing counts only; no payment details are exposed.
-router.get('/users/:id/stats', async (req, res) => {
+router.get('/users/:id/stats', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -299,7 +308,7 @@ router.get('/users/:id/stats', async (req, res) => {
 
 // PUT /api/support/users/:id/suspend
 // Temporarily suspend or reactivate a user account
-router.put('/users/:id/suspend', async (req, res) => {
+router.put('/users/:id/suspend', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { id } = req.params;
     const { suspend, reason } = req.body;
@@ -373,7 +382,7 @@ router.put('/users/:id/suspend', async (req, res) => {
 
 // POST /api/support/users/:id/reset-password
 // Send a secure password reset link to the user
-router.post('/users/:id/reset-password', async (req, res) => {
+router.post('/users/:id/reset-password', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -634,6 +643,21 @@ router.post('/conversations/:id/escalate', async (req, res) => {
       });
     }
 
+    if (complaintId && req.userRole !== 'ADMIN') {
+      const relatedComplaint = await prisma.complaint.findUnique({
+        where: { id: complaintId },
+        select: { id: true, userId: true, assignedSupport: true, conversationId: true },
+      });
+      const isRelated = relatedComplaint
+        && relatedComplaint.assignedSupport === String(supportId)
+        && (relatedComplaint.conversationId === conversationId
+          || conversation.complaintId === complaintId
+          || conversation.participantIds.includes(String(relatedComplaint.userId)));
+      if (!isRelated) {
+        return res.status(403).json({ success: false, message: 'Complaint is not related to this conversation' });
+      }
+    }
+
     // If a complaintId is provided, verify it exists and update its status
     if (complaintId) {
       const complaint = await prisma.complaint.findUnique({
@@ -708,7 +732,7 @@ router.post('/conversations/:id/escalate', async (req, res) => {
 
 // GET /api/support/activity
 // Get support activity log
-router.get('/activity', async (req, res) => {
+router.get('/activity', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { page = 1, limit = 50, action } = req.query;
 
