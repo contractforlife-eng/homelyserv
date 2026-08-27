@@ -237,7 +237,7 @@ const AdminUsers = () => {
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
-  const isRootAdmin = String(authUser?.email || '').trim().toLowerCase() === 'emad@homelyserv.com';
+  const isRootAdmin = authUser?.authContext === 'ROOT_RECOVERY' || String(authUser?.email || '').trim().toLowerCase() === 'emad@homelyserv.com';
 
   useEffect(() => {
     const sidebarState = localStorage.getItem('sidebar_collapsed');

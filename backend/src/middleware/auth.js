@@ -58,6 +58,7 @@ export const authenticate = async (req, res, next) => {
       // Attach user info to request
       req.userId = decoded.userId || decoded.id || decoded.email;
       req.userRole = decoded.role || decoded.userRole;
+      req.authContext = decoded.authContext || null;
       req.user = decoded; // Full decoded token
 
       // ============================================================

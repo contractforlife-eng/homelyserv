@@ -20,7 +20,7 @@ import {
   resolveAccountDefaultCurrency
 } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
-import { ROOT_ADMIN_EMAIL, normalizeEmail } from '../security/rootAdmin.js';
+import { ROOT_ADMIN_EMAIL, ROOT_RECOVERY_USER_ID, isRecoveryEmail, normalizeEmail } from '../security/rootAdmin.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import {
@@ -118,7 +118,6 @@ export const validatePhone = (phone) => {
 };
 
 export const register = async (req, res) => {
-  console.log('📝 Registration request received:', req.body);
   try {
     const { fullName, email, password, role, phone, countryCode, countryName, location, desiredJob, hourlyRate, tutorSpecialization } = req.body;
 
@@ -426,9 +425,35 @@ export const resendVerification = async (req, res) => {
 // LOGIN
 // ============================================================
 export const login = async (req, res) => {
-  console.log('📝 Login request received:', req.body.email);
   try {
     const { email, password } = req.body;
+
+    // Recovery credentials are backend-only and never represented by a User
+    // document or returned email. Missing/malformed configuration deliberately
+    // produces the same generic authentication failure.
+    if (isRecoveryEmail(email)) {
+      const recoveryHash = process.env.ROOT_ADMIN_RECOVERY_PASSWORD_HASH;
+      const recoveryMatches = Boolean(recoveryHash) && await bcrypt.compare(String(password || ''), recoveryHash).catch(() => false);
+      if (recoveryMatches) {
+        const token = jwt.sign(
+          { userId: ROOT_RECOVERY_USER_ID, role: 'ADMIN', authContext: 'ROOT_RECOVERY' },
+          getJwtSecret(),
+          { expiresIn: '7d' }
+        );
+
+        return res.json({
+          success: true,
+          token,
+          mustChangePassword: false,
+          user: {
+            id: ROOT_RECOVERY_USER_ID,
+            fullName: 'Root Admin',
+            role: 'ADMIN',
+            authContext: 'ROOT_RECOVERY'
+          }
+        });
+      }
+    }
 
     // Find user
     const user = await User.findOne({ email });

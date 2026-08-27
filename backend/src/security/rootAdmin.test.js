@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ROOT_ADMIN_EMAIL, isRootAdmin, isRootAdminId } from './rootAdmin.js';
+import { ROOT_ADMIN_EMAIL, isRecoveryEmail, isRootAdmin, isRootAdminId } from './rootAdmin.js';
 
 test('Root Admin identity comparison is normalized and role-independent', () => {
   assert.equal(ROOT_ADMIN_EMAIL, 'emad@homelyserv.com');
@@ -27,4 +27,16 @@ test('Root Admin lookup supports canonical ObjectId and legacy email request ide
     ['id', '507f1f77bcf86cd799439011'],
     ['email', 'emad@homelyserv.com'],
   ]);
+});
+
+test('recovery identity is read only from backend configuration', () => {
+  const previous = process.env.ROOT_ADMIN_RECOVERY_EMAIL;
+  process.env.ROOT_ADMIN_RECOVERY_EMAIL = 'recovery@example.test';
+  try {
+    assert.equal(isRecoveryEmail(' RECOVERY@EXAMPLE.TEST '), true);
+    assert.equal(isRecoveryEmail('other@example.test'), false);
+  } finally {
+    if (previous === undefined) delete process.env.ROOT_ADMIN_RECOVERY_EMAIL;
+    else process.env.ROOT_ADMIN_RECOVERY_EMAIL = previous;
+  }
 });
