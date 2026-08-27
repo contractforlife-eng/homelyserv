@@ -17,6 +17,7 @@ import {
   userReply,
   supportListComplaints,
   supportGetComplaint,
+  requireSupportComplaintAccess,
   requireAssignedSupportComplaint,
   supportAssignComplaint,
   supportReply,
@@ -41,13 +42,6 @@ import { reportUser, reportMessage, reportProfile } from '../controllers/reportC
 const router = express.Router();
 
 const requireAdminForSupportAnalytics = (req, res, next) => {
-  if (req.userRole !== 'ADMIN') {
-    return res.status(403).json({ success: false, message: 'Admin authorization required' });
-  }
-  return next();
-};
-
-const requireAdminForSupportAssignment = (req, res, next) => {
   if (req.userRole !== 'ADMIN') {
     return res.status(403).json({ success: false, message: 'Admin authorization required' });
   }
@@ -119,10 +113,10 @@ router.post('/complaints/:id/reply', authenticate, userReply);
 router.get('/support/complaints', authenticate, requireSupport, supportListComplaints);
 
 // GET /api/support/complaints/:id - Get complaint details
-router.get('/support/complaints/:id', authenticate, requireSupport, requireAssignedSupportComplaint, supportGetComplaint);
+router.get('/support/complaints/:id', authenticate, requireSupport, requireSupportComplaintAccess, supportGetComplaint);
 
 // POST /api/support/complaints/:id/assign - Assign to self
-router.post('/support/complaints/:id/assign', authenticate, requireSupport, requireAdminForSupportAssignment, supportAssignComplaint);
+router.post('/support/complaints/:id/assign', authenticate, requireSupport, supportAssignComplaint);
 
 // POST /api/support/complaints/:id/reply - Support reply
 router.post('/support/complaints/:id/reply', authenticate, requireSupport, requireAssignedSupportComplaint, supportReply);

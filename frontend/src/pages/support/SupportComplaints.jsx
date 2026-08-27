@@ -60,6 +60,11 @@ const SupportComplaints = () => {
   const getCategoryLabel = (category) =>
     t.categoryLabels[String(category || '').toLowerCase().replaceAll(' ', '_')] || t.unknownCategory;
 
+  const selectedAssignedSupportId = selectedComplaint?.assignedSupport?.id
+    || selectedComplaint?.assignedSupport;
+  const canWorkSelectedComplaint = authUser?.role === 'ADMIN'
+    || String(selectedAssignedSupportId || '') === String(authUser?.id || '');
+
   const getTimelineActionLabel = (action) =>
     t.timelineActions[String(action || '').toUpperCase()] || t.unknownActivity;
 
@@ -135,6 +140,7 @@ const SupportComplaints = () => {
         setSelectedComplaint(response.complaint);
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
+          setSelectedComplaint(detail.complaint);
           setTimeline(detail.timeline || []);
         }
         fetchComplaints();
@@ -675,7 +681,7 @@ const SupportComplaints = () => {
               )}
 
               {/* Status Change */}
-              <div>
+              {canWorkSelectedComplaint && <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.changeStatus}</h4>
                 <div className="flex flex-wrap gap-2">
                   {['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'RESOLVED', 'CLOSED'].map((status) => (
@@ -693,7 +699,7 @@ const SupportComplaints = () => {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>}
 
               {/* Conversation Thread */}
               <div>
@@ -705,7 +711,7 @@ const SupportComplaints = () => {
               </div>
 
               {/* Reply */}
-              <div>
+              {canWorkSelectedComplaint && <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.reply}</h4>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
@@ -725,10 +731,10 @@ const SupportComplaints = () => {
                     {t.send}
                   </button>
                 </div>
-              </div>
+              </div>}
 
               {/* Internal Note */}
-              <div>
+              {canWorkSelectedComplaint && <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.addNote}</h4>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
@@ -747,10 +753,10 @@ const SupportComplaints = () => {
                     {t.addNote}
                   </button>
                 </div>
-              </div>
+              </div>}
 
               {/* Internal Notes Display */}
-              {notes.length > 0 && (
+              {canWorkSelectedComplaint && notes.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.internalNotes}</h4>
                   <div className="space-y-2">
@@ -821,7 +827,7 @@ const SupportComplaints = () => {
               )}
 
               {/* Escalate Button */}
-              {!['ESCALATED', 'RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+              {canWorkSelectedComplaint && !['ESCALATED', 'RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => setShowEscalateModal(true)}
@@ -834,7 +840,7 @@ const SupportComplaints = () => {
               )}
 
               {/* Close Button */}
-              {!['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+              {canWorkSelectedComplaint && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => setConfirmDialog({

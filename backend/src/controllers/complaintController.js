@@ -133,75 +133,6 @@ const logSupportActivity = async (supportId, action, description, targetUserId =
   }
 };
 
-/**
- * Build the conversation ID for a user <-> support conversation.
- */
-const getConversationId = (user1Id, user2Id) => {
-  const ids = [String(user1Id), String(user2Id)].sort();
-  return `conv_${ids.join('_')}`;
-};
-
-/**
- * Ensure a SUPPORT conversation exists between a user and a support agent.
- * This integrates the complaint with the messaging architecture.
- */
-const ensureSupportConversation = async (userId, supportId, complaintId = null) => {
-  try {
-    const conversationId = getConversationId(userId, supportId);
-
-    const existing = await Conversation.findOne({ conversationId });
-    if (existing) {
-      if (complaintId && existing.type === 'SUPPORT') {
-        await Conversation.updateOne(
-          { conversationId },
-          { complaintId }
-        );
-      }
-      return conversationId;
-    }
-
-    // Look up user info
-    const user = await prisma.user.findUnique({
-      where: { id: String(userId) },
-      select: { id: true, fullName: true, role: true },
-    });
-
-    const support = await prisma.user.findUnique({
-      where: { id: String(supportId) },
-      select: { id: true, fullName: true, role: true },
-    });
-
-    await Conversation.create({
-      conversationId,
-      type: 'SUPPORT',
-      participantIds: [String(userId), String(supportId)],
-      supportAgentId: String(supportId),
-      complaintId: complaintId || null,
-      lastMessageAt: new Date(),
-      lastMessagePreview: 'Complaint support conversation',
-    });
-
-    // Create an initial system message (identity resolved live from DB above)
-    await Message.create({
-      conversationId,
-      senderId: String(supportId),
-      senderName: support?.fullName || 'Support Agent',
-      senderRole: support?.role || 'SUPPORT',
-      recipientId: String(userId),
-      recipientName: user?.fullName || 'User',
-      recipientRole: user?.role || 'USER',
-      text: 'This conversation is linked to your complaint. Support will respond here.',
-      read: false,
-      delivered: true,
-    });
-
-    return conversationId;
-  } catch (error) {
-    console.error('❌ Error ensuring support conversation:', error);
-    return null;
-  }
-};
-
 // ============================================================
 // DYNAMIC STAFF IDENTITY
 // Every complaint detail query joins the live Author record so
@@ -263,7 +194,11 @@ const serializeAuthorRecord = (record) => {
  * Serialize a complaint for API responses.
  * Internal notes are only included for staff (SUPPORT/ADMIN).
  */
-export const serializeComplaint = (complaint, { includeInternal = false, includeSensitive = true } = {}) => {
+export const serializeComplaint = (complaint, {
+  includeInternal = false,
+  includeSensitive = true,
+  includeAttachments = includeSensitive,
+} = {}) => {
   if (!complaint) return null;
 
   const base = {
@@ -292,7 +227,7 @@ export const serializeComplaint = (complaint, { includeInternal = false, include
     escalatedBy: complaint.escalatedBy,
     escalatedAt: complaint.escalatedAt,
     escalationReason: complaint.escalationReason,
-    attachments: includeSensitive ? complaint.attachments || [] : [],
+    attachments: includeAttachments ? complaint.attachments || [] : [],
     resolvedAt: complaint.resolvedAt,
     closedAt: complaint.closedAt,
     createdAt: complaint.createdAt,
@@ -307,7 +242,7 @@ export const serializeComplaint = (complaint, { includeInternal = false, include
         authorRole: serialized.authorRole,
         author: serialized.author,
         message: serialized.message,
-        attachments: serialized.attachments || [],
+        attachments: includeAttachments ? serialized.attachments || [] : [],
         createdAt: serialized.createdAt,
       };
     }),
@@ -451,6 +386,22 @@ export const requireAssignedSupportComplaint = async (req, res, next) => {
   if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
   if (complaint.assignedSupport !== String(req.userId)) {
     return res.status(403).json({ success: false, message: 'Complaint is not assigned to you' });
+  }
+  return next();
+};
+
+// Support may inspect an unassigned ticket in the queue, or an assigned ticket
+// belonging to them. All mutating support routes continue using the stricter
+// requireAssignedSupportComplaint middleware.
+export const requireSupportComplaintAccess = async (req, res, next) => {
+  if (req.userRole === 'ADMIN') return next();
+  const complaint = await prisma.complaint.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, assignedSupport: true },
+  });
+  if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
+  if (complaint.assignedSupport && complaint.assignedSupport !== String(req.userId)) {
+    return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
   }
   return next();
 };
@@ -751,7 +702,29 @@ export const supportListComplaints = async (req, res) => {
     }
 
     if (req.userRole === 'SUPPORT') {
-      where.assignedSupport = supportId;
+      // Treat only records with no modern or legacy assignment as queue items.
+      // Prisma's `null` filter does not match MongoDB fields that are missing,
+      // so both explicit-null and legacy-missing shapes are covered here.
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { assignedSupport: supportId },
+            {
+              assignedSupport: null,
+              OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+            },
+            {
+              assignedSupport: { isSet: false },
+              OR: [
+                { assignedTo: supportId },
+                { assignedTo: null },
+                { assignedTo: { isSet: false } },
+              ],
+            },
+          ],
+        },
+      ];
     }
 
     if (search && search.trim()) {
@@ -784,11 +757,7 @@ export const supportListComplaints = async (req, res) => {
 
     const total = await prisma.complaint.count({ where });
 
-    const activePremiumIds = await getActivePremiumUserIds(complaints.map((c) => c.userId));
     const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }));
-    serializedComplaints.forEach((item) => {
-      if (item.User) item.User.isPremium = activePremiumIds.has(String(item.userId));
-    });
 
     return res.json({
       success: true,
@@ -831,11 +800,11 @@ export const supportGetComplaint = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    const activePremiumIds = await getActivePremiumUserIds([complaint.userId]);
-    const serializedComplaint = serializeComplaint(complaint, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' });
-    if (serializedComplaint.User) {
-      serializedComplaint.User.isPremium = activePremiumIds.has(String(complaint.userId));
-    }
+    const serializedComplaint = serializeComplaint(complaint, {
+      includeInternal: req.userRole === 'ADMIN',
+      includeSensitive: req.userRole === 'ADMIN',
+      includeAttachments: req.userRole === 'ADMIN' || complaint.assignedSupport === String(req.userId),
+    });
     serializedComplaint.replies = await enrichAuthorIdentities(serializedComplaint.replies);
 
     return res.json({
@@ -872,8 +841,12 @@ export const supportAssignComplaint = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    // If already assigned to someone else, cannot reassign (admin can)
-    if (complaint.assignedSupport && complaint.assignedSupport !== supportId) {
+    // Do not treat a populated legacy assignment as unassigned when the
+    // canonical support assignment field is absent.
+    if (
+      (complaint.assignedSupport && complaint.assignedSupport !== supportId)
+      || (!complaint.assignedSupport && complaint.assignedTo)
+    ) {
       return res.status(400).json({
         success: false,
         message: 'This complaint is already assigned to another support agent',
@@ -889,7 +862,7 @@ export const supportAssignComplaint = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -928,9 +901,6 @@ export const supportAssignComplaint = async (req, res) => {
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
-    // Ensure support conversation exists
-    await ensureSupportConversation(complaint.userId, supportId, id);
-
     return res.json({
       success: true,
       message: 'Complaint assigned successfully',
@@ -960,7 +930,7 @@ export const supportReply = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -988,9 +958,6 @@ export const supportReply = async (req, res) => {
         status: newStatus,
         assignedSupport,
         assignedTo: assignedSupport,
-        internalNotes: complaint.internalNotes
-          ? `${complaint.internalNotes}\n\n[Support Reply - ${new Date().toISOString()}] ${message}`
-          : `[Support Reply - ${new Date().toISOString()}] ${message}`,
       },
       include: {
         User: {
@@ -1038,31 +1005,6 @@ export const supportReply = async (req, res) => {
       priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
-
-    // Ensure support conversation exists and send message
-    const conversationId = await ensureSupportConversation(complaint.userId, assignedSupport, id);
-    if (conversationId) {
-      try {
-        await Message.create({
-          conversationId,
-          senderId: supportId,
-          senderName: actor.name,
-          senderRole: actor.role,
-          recipientId: complaint.userId,
-          recipientName: complaint.User?.fullName || 'User',
-          recipientRole: complaint.User?.role || 'USER',
-          text: message.trim(),
-          read: false,
-          delivered: true,
-        });
-        await Conversation.updateOne(
-          { conversationId },
-          { lastMessageAt: new Date(), lastMessagePreview: message.trim().slice(0, 120) }
-        );
-      } catch (msgError) {
-        console.error('❌ Error sending support message:', msgError);
-      }
-    }
 
     return res.json({
       success: true,
@@ -1351,46 +1293,10 @@ export const supportEscalate = async (req, res) => {
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
-    // ============================================================
-    // MESSAGING ARCHITECTURE INTEGRATION
-    // Make the conversation visible to Admin by upgrading to ESCALATED
-    // ============================================================
-    const supportAgentId = complaint.assignedSupport || supportId;
-    const conversationId = getConversationId(complaint.userId, supportAgentId);
-
-    const existingConv = await Conversation.findOne({ conversationId });
-    if (existingConv) {
-      await Conversation.updateOne(
-        { conversationId },
-        {
-          type: 'ESCALATED',
-          complaintId: id,
-          escalatedBy: supportId,
-          escalatedAt: new Date(),
-          escalationReason: reason.trim(),
-        }
-      );
-    } else {
-      // Create the conversation if it doesn't exist yet
-      await Conversation.create({
-        conversationId,
-        type: 'ESCALATED',
-        participantIds: [complaint.userId, supportAgentId],
-        supportAgentId,
-        complaintId: id,
-        escalatedBy: supportId,
-        escalatedAt: new Date(),
-        escalationReason: reason.trim(),
-        lastMessageAt: new Date(),
-        lastMessagePreview: `Escalated: ${reason.trim().slice(0, 120)}`,
-      });
-    }
-
     return res.json({
       success: true,
       message: 'Complaint escalated to admin successfully',
       complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
-      conversationId,
     });
   } catch (error) {
     console.error('❌ Error escalating complaint:', error);
