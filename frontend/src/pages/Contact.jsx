@@ -88,9 +88,6 @@ function Contact() {
               <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm mb-6">
                 {t('contactPage.description')}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-                {t('contactPage.ownerDisclosure')}
-              </p>
               <div className="space-y-4">
                 {contactInfo.map((info, i) => (
                   <div key={i} className="flex items-start gap-3">
