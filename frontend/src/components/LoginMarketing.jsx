@@ -21,7 +21,7 @@ function LoginMarketing() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col px-8 sm:px-10 py-6 2xl:max-w-3xl 2xl:mx-auto 2xl:px-14 2xl:py-10">
+    <div className="flex flex-col px-8 sm:px-10 py-6 lg:py-4 2xl:max-w-3xl 2xl:mx-auto 2xl:px-14 2xl:py-10">
       {/* Brand */}
       <div className="mb-4 2xl:mb-6">
         <h1 className="text-3xl sm:text-4xl 2xl:text-5xl font-bold mb-1.5 2xl:mb-2">
@@ -92,7 +92,7 @@ function LoginMarketing() {
       </div>
 
       {/* CTA */}
-      <div className="mt-auto pt-1 2xl:pt-2">
+      <div className="mt-auto mb-4 pt-1 2xl:mb-5 2xl:pt-2">
         <Link
           to="/register"
           className="inline-flex items-center gap-2 2xl:gap-2.5 px-7 2xl:px-8 py-2.5 2xl:py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors font-semibold shadow-md hover:shadow-lg text-sm 2xl:text-base"
