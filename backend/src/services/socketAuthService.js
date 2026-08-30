@@ -14,11 +14,12 @@ export const verifySocketToken = async (token) => {
 
   let user = null;
   if (isValidObjectId(String(userId))) {
-    user = await User.findById(String(userId)).select('role tokenVersion');
+    user = await User.findById(String(userId)).select('role tokenVersion isSuspended');
     if (!user) throw new Error('SOCKET_AUTH_USER_NOT_FOUND');
     if ((user.tokenVersion ?? 0) !== (decoded.tokenVersion ?? 0)) {
       throw new Error('SOCKET_AUTH_TOKEN_VERSION');
     }
+    if (user.isSuspended === true) throw new Error('SOCKET_AUTH_ACCOUNT_SUSPENDED');
   }
 
   return {

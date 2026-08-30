@@ -19,7 +19,18 @@ function Login() {
   const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    try {
+      const storedError = JSON.parse(sessionStorage.getItem('homelyserv_auth_error') || 'null');
+      if (storedError?.code === 'ACCOUNT_SUSPENDED') {
+        sessionStorage.removeItem('homelyserv_auth_error');
+        return 'ACCOUNT_SUSPENDED';
+      }
+    } catch {
+      sessionStorage.removeItem('homelyserv_auth_error');
+    }
+    return '';
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
@@ -112,7 +123,7 @@ function Login() {
       const data = response.data;
 
       if (!data.success) {
-        setError(data.message || t('invalidCredentials'));
+        setError(data.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : (data.message || t('invalidCredentials')));
         setLoading(false);
         return;
       }
@@ -166,7 +177,7 @@ function Login() {
     } catch (error) {
       console.error('Login error:', error);
       temporaryCurrentPasswordRef.current = '';
-      setError(t('loginFailed'));
+      setError(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : t('loginFailed'));
       setLoading(false);
     }
   };
@@ -328,7 +339,7 @@ function Login() {
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30/90 backdrop-blur-sm border-2 border-red-300 rounded-xl text-red-600 text-sm flex items-center gap-2 animate-shake shadow-md shadow-red-200">
-          <AlertCircle size={16} className="text-red-500" /> {error}
+          <AlertCircle size={16} className="text-red-500" /> {error === 'ACCOUNT_SUSPENDED' ? t('accountSuspended') : error}
         </div>
       )}
 

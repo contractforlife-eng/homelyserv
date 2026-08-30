@@ -474,6 +474,14 @@ export const login = async (req, res) => {
       });
     }
 
+    if (user.isSuspended === true) {
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'Your account has been suspended. Please contact support if you believe this is a mistake.'
+      });
+    }
+
     // Update last login
     user.lastLogin = new Date();
     await user.save();

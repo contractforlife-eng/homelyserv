@@ -33,8 +33,8 @@ const withServer = async ({ currentVersion = 0, user = createUser() } = {}, run)
   const originalFindById = User.findById;
   User.findById = () => ({
     select: async (selection) => {
-      if (selection === 'tokenVersion') {
-        return user ? { tokenVersion: currentVersion } : null;
+      if (selection === 'tokenVersion isSuspended') {
+        return user ? { tokenVersion: currentVersion, isSuspended: user.isSuspended } : null;
       }
       if (selection === '-password') {
         const { password, ...userWithoutPassword } = user;
@@ -106,14 +106,28 @@ test('missing user is rejected by the shared middleware', async () => {
   });
 });
 
-test('suspended users follow the existing middleware policy unchanged', async () => {
+test('suspended users are rejected by the shared middleware', async () => {
   await withServer({ user: createUser({ status: 'SUSPENDED' }) }, async (base) => {
     const response = await getVerify(base, tokenFor(0));
     const body = await response.json();
 
-    // authenticate currently does not reject suspension; this phase does not
-    // invent a new suspension rule for the verify endpoint.
-    assert.equal(response.status, 200);
-    assert.equal(body.user.status, 'SUSPENDED');
+    assert.equal(response.status, 403);
+    assert.equal(body.code, 'ACCOUNT_SUSPENDED');
+  });
+});
+
+test('reactivating a user restores access for an otherwise valid JWT', async () => {
+  const user = createUser({ status: 'SUSPENDED' });
+  await withServer({ user }, async (base) => {
+    const suspendedResponse = await getVerify(base, tokenFor(0));
+    assert.equal(suspendedResponse.status, 403);
+
+    user.isSuspended = false;
+    user.status = 'ACTIVE';
+
+    const activeResponse = await getVerify(base, tokenFor(0));
+    const body = await activeResponse.json();
+    assert.equal(activeResponse.status, 200);
+    assert.equal(body.success, true);
   });
 });

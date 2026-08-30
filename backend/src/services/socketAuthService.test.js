@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './socketAuthService.js';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom, verifySocketToken } from './socketAuthService.js';
 
 const makeSocket = (auth = {}) => ({ handshake: { auth }, joined: [], join(room) { this.joined.push(room); } });
 
@@ -76,4 +78,28 @@ test('authenticated user cannot join a private user room through a non-string ro
   assert.equal(joinGenericRoom(socket, 42), false);
   assert.equal(joinGenericRoom(socket, { toString: () => privateUserRoom('A') }), false);
   assert.deepEqual(socket.joined, []);
+});
+
+test('suspended users cannot establish an authenticated socket session', async () => {
+  const originalFindById = User.findById;
+  const userId = '507f1f77bcf86cd799439011';
+  process.env.JWT_SECRET = 'socket-auth-test-secret-value-2026';
+  User.findById = () => ({
+    select: async () => ({
+      _id: userId,
+      role: 'WORKER',
+      tokenVersion: 0,
+      isSuspended: true
+    })
+  });
+
+  try {
+    const token = jwt.sign({ userId, role: 'WORKER', tokenVersion: 0 }, process.env.JWT_SECRET);
+    await assert.rejects(
+      () => verifySocketToken(token),
+      { message: 'SOCKET_AUTH_ACCOUNT_SUSPENDED' }
+    );
+  } finally {
+    User.findById = originalFindById;
+  }
 });

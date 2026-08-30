@@ -78,7 +78,7 @@ export const authenticate = async (req, res, next) => {
         // Legacy non-ObjectId user IDs cannot be version-checked; pass
         // through without breaking those sessions.
         if (isValidObjectId(String(req.userId))) {
-          const dbUser = await User.findById(req.userId).select('tokenVersion');
+          const dbUser = await User.findById(req.userId).select('tokenVersion isSuspended');
           if (!dbUser) {
             console.error('❌ Auth middleware: token user no longer exists');
             return res.status(401).json({
@@ -95,6 +95,14 @@ export const authenticate = async (req, res, next) => {
               success: false,
               message: 'Session expired. Please log in again.',
               error: 'JWT_TOKEN_VERSION_MISMATCH'
+            });
+          }
+
+          if (dbUser.isSuspended === true) {
+            return res.status(403).json({
+              success: false,
+              code: 'ACCOUNT_SUSPENDED',
+              message: 'Your account has been suspended. Please contact support if you believe this is a mistake.'
             });
           }
         }

@@ -111,7 +111,7 @@ export default function SocialLogin({ onLoginSuccess }) {
       }
     } catch (error) {
       console.error('Social login error:', error);
-      toast.error(t('socialLoginError'));
+      toast.error(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? t('accountSuspended') : t('socialLoginError'));
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ export default function SocialLogin({ onLoginSuccess }) {
       await processGoogleCredential(credentialResponse.credential);
     } catch (error) {
       console.error('Error decoding Google token:', error);
-      toast.error(t('socialLoginError'));
+      toast.error(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? t('accountSuspended') : t('socialLoginError'));
     }
   };
 
@@ -174,7 +174,7 @@ export default function SocialLogin({ onLoginSuccess }) {
     try {
       await processGoogleCredential(credentialResponse.credential);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Google login failed');
+      toast.error(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? t('accountSuspended') : (error.response?.data?.message || t('socialLoginError')));
     }
   };
 

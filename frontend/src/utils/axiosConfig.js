@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { API_BASE } from '../config/api';
 import { getStoredAuthToken, removeStoredAuthTokens } from './storageMaintenance';
-import { getRuntimeAuthToken } from './runtimeAuthToken';
+import { clearRuntimeAuthToken, getRuntimeAuthToken } from './runtimeAuthToken';
 import { Capacitor } from '@capacitor/core';
 
 const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
@@ -24,6 +24,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.data?.code === 'ACCOUNT_SUSPENDED') {
+      const isLoginOrRegister = window.location.pathname === '/login' || window.location.pathname === '/register';
+      if (!isLoginOrRegister) {
+        sessionStorage.setItem('homelyserv_auth_error', JSON.stringify({ code: 'ACCOUNT_SUSPENDED' }));
+      }
+      localStorage.removeItem('auth-storage');
+      removeStoredAuthTokens();
+      clearRuntimeAuthToken();
+      if (!isLoginOrRegister) {
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       // Don't redirect for public endpoints that don't require authentication
       const publicPaths = ['/verify-email', '/forgot-password', '/reset-password'];

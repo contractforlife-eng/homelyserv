@@ -204,6 +204,14 @@ router.post('/social-login', async (req, res) => {
       await user.save();
     }
 
+    if (user.isSuspended === true) {
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'Your account has been suspended. Please contact support if you believe this is a mistake.'
+      });
+    }
+
     // Generate JWT token (same format as /auth/login)
     const token = jwt.sign(
       { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
