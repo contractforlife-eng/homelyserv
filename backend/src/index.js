@@ -388,6 +388,26 @@ io.on('connection', (socket) => {
   
   joinAuthenticatedUserRoom(socket);
 
+  // PRESENCE-ONLY: track authenticated socket presence (additive, no chat changes)
+  const presenceUserId = socket?.user?.userId;
+  if (presenceUserId) {
+    import('./lib/presence.js').then(({ addPresenceSocket, getAuthorizedObserverIds }) => {
+      const becameOnline = addPresenceSocket(presenceUserId, socket.id);
+      if (becameOnline) {
+        getAuthorizedObserverIds(presenceUserId).then((observerIds) => {
+          for (const observerId of observerIds) {
+            if (String(observerId) !== String(presenceUserId)) {
+              io.to(`user_${observerId}`).emit('presence:update', {
+                userId: String(presenceUserId),
+                isOnline: true,
+              });
+            }
+          }
+        }).catch(() => {});
+      }
+    });
+  }
+
   socket.on('join_room', (roomId) => {
     // Generic room joining is restricted to authenticated sockets with a
     // server-derived socket.user.userId. Unauthenticated public-support guest
@@ -515,6 +535,26 @@ io.on('connection', (socket) => {
   
   socket.on('disconnect', () => {
     console.log('🔌 User disconnected:', socket.id);
+
+    // PRESENCE-ONLY: remove socket from presence registry (additive, no chat changes)
+    const disconnectUserId = socket?.user?.userId;
+    if (disconnectUserId) {
+      import('./lib/presence.js').then(({ removePresenceSocket, getAuthorizedObserverIds }) => {
+        const becameOffline = removePresenceSocket(disconnectUserId, socket.id);
+        if (becameOffline) {
+          getAuthorizedObserverIds(disconnectUserId).then((observerIds) => {
+            for (const observerId of observerIds) {
+              if (String(observerId) !== String(disconnectUserId)) {
+                io.to(`user_${observerId}`).emit('presence:update', {
+                  userId: String(disconnectUserId),
+                  isOnline: false,
+                });
+              }
+            }
+          }).catch(() => {});
+        }
+      });
+    }
   });
 });
 

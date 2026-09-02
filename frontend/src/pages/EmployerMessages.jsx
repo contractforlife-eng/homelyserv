@@ -70,6 +70,7 @@ import {
   markOptimisticMessageFailed
 } from '../utils/chatService';
 import { onSocketEvent, getSocket } from '../utils/socket';
+import usePresence from '../hooks/usePresence';
 
 // ============================================================
 // MAIN EMPLOYER MESSAGES COMPONENT - WITH WORKING NOTIFICATION BELL
@@ -115,6 +116,10 @@ const EmployerMessages = () => {
   const typingStartEmittedRef = useRef(false);
   const typingContextRef = useRef(null);
   const authUserIdRef = useRef(authUser?.id);
+
+  // Real-time presence for counterpart users (additive; does not touch chat logic)
+  const counterpartUserIds = conversations.map((c) => c.otherUserId).filter(Boolean);
+  const presence = usePresence(counterpartUserIds, authUser?.id);
 
   // Keep authUserIdRef in sync with the latest authUser id
   useEffect(() => {
@@ -889,7 +894,11 @@ const EmployerMessages = () => {
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-green-500">{t('employerMessages.online')}</span>
+                            {presence[String(conv.otherUserId)] === true ? (
+                              <span className="text-xs text-green-500">{t('employerMessages.online')}</span>
+                            ) : (
+                              <span className="text-xs text-gray-400">{t('employerMessages.offline')}</span>
+                            )}
                             {conv.unread > 0 && (
                               <span className="px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full">
                                 {conv.unread}
@@ -931,7 +940,11 @@ const EmployerMessages = () => {
                             size="sm"
                             className="text-gray-800 dark:text-white"
                           />
-                          <p className="text-xs text-green-500">{t('employerMessages.online')}</p>
+                          {presence[String(selectedConversation?.otherUserId)] === true ? (
+                      <p className="text-xs text-green-500">{t('employerMessages.online')}</p>
+                    ) : (
+                      <p className="text-xs text-gray-400">{t('employerMessages.offline')}</p>
+                    )}
                           {otherUserTyping && (
                             <p className="text-xs font-medium text-teal-600 dark:text-teal-400">{t('typingIndicator')}</p>
                           )}

@@ -15,6 +15,7 @@ import express from 'express';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import { authenticate } from '../middleware/auth.js';
+import { getOnlineUserIds, getAuthorizedObserverIds } from '../lib/presence.js';
 import { authorizePaidChatRelationship, resolveUserParty } from '../services/paymentAuthService.js';
 import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
@@ -890,6 +891,46 @@ router.get('/staff-directory', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error fetching staff directory:', error);
     return res.status(500).json({ error: 'Failed to fetch staff directory' });
+  }
+});
+
+// ============================================================
+// PRESENCE (presence-only; additive to chat, no message/typing/read changes)
+// ============================================================
+/**
+ * GET /api/chat/presence?userIds=id1,id2,...
+ * Returns online flags ONLY for userIds the caller is already authorized to
+ * observe through an existing conversation relationship. Arbitrary user IDs
+ * that the caller has no authorized relationship with are silently excluded.
+ */
+router.get('/presence', authenticate, async (req, res) => {
+  try {
+    const callerId = String(req.userId);
+    const requestedIds = String(req.query.userIds || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (!requestedIds.length) {
+      return res.json({ success: true, presence: {} });
+    }
+
+    // Only counterparts the caller is authorized to observe (conversation members).
+    const allowedObservers = await getAuthorizedObserverIds(callerId);
+    const allowedSet = new Set(allowedObservers.map(String));
+
+    const authorizedIds = requestedIds.filter((id) => allowedSet.has(String(id)));
+    const onlineIds = getOnlineUserIds(authorizedIds);
+
+    const presence = {};
+    for (const id of authorizedIds) {
+      presence[id] = onlineIds.includes(String(id));
+    }
+
+    return res.json({ success: true, presence });
+  } catch (error) {
+    console.error('Error fetching presence:', error);
+    return res.status(500).json({ error: 'Failed to fetch presence' });
   }
 });
 
