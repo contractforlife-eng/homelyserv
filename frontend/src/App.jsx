@@ -72,6 +72,7 @@ import AdminHires from './pages/AdminHires';
 import AdminProfile from './pages/AdminProfile';
 import AdminUserProfile from './pages/AdminUserProfile';
 import AdminFinancialCenter from './pages/AdminFinancialCenter';
+import AdminAccounting from './pages/AdminAccounting';
 import AdminRegistrationGeography from './pages/AdminRegistrationGeography';
 
 // Support Pages
@@ -606,6 +607,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminFinancialCenter />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/accounting"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminAccounting />
           </ProtectedRoute>
         }
       />

@@ -26,6 +26,7 @@ import {
 } from '../services/paypalRefundService.js';
 import { getFinancialCenterData } from '../services/financialCenterService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
+import { listAccountingEntries, getAccountingSummary, createAccountingEntry, updateAccountingEntry, deleteAccountingEntry } from '../controllers/accountingController.js';
 import { completePaymentTransaction } from '../routes/payment.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
 import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryRequest, isRootRecoveryTarget } from '../security/rootAdmin.js';
@@ -2252,5 +2253,32 @@ router.post('/manual-payments/:paymentId/reject', authenticate, requireAdmin, as
     res.status(500).json({ success: false, error: error.message || 'Failed to reject manual payment' });
   }
 });
+
+// ============================================================
+// ACCOUNTING LEDGER — Root Admin only
+//
+// Every endpoint below is reachable only by the Root Admin. The admin
+// router already enforces requireAdmin (router.use at the top), which
+// turns away unauthenticated (401) and non-ADMIN roles (403). Each
+// handler additionally enforces isRootAdminRequest so a normal ADMIN
+// also receives 403. Backend authorization is authoritative; the
+// sidebar link and /admin/accounting route are UI conveniences only.
+//
+// GET    /api/admin/accounting              list + filters + pagination
+// GET    /api/admin/accounting/summary      server-calculated totals by currency
+// POST   /api/admin/accounting              create entry (createdBy set server-side)
+// PATCH  /api/admin/accounting/:id          update entry (id/createdBy/createdAt immutable)
+// DELETE /api/admin/accounting/:id          hard delete (Phase 1; no audit retention)
+// ============================================================
+// Router-level `router.use(requireAdmin)` (above) already authenticates the
+// JWT and enforces the ADMIN role for every route in this router, including
+// these accounting routes. The handlers additionally assert root-admin
+// identity via isRootAdminRequest, so repeating `authenticate, requireAdmin`
+// here would only be redundant double authentication.
+router.get('/accounting/summary', getAccountingSummary);
+router.get('/accounting', listAccountingEntries);
+router.post('/accounting', createAccountingEntry);
+router.patch('/accounting/:id', updateAccountingEntry);
+router.delete('/accounting/:id', deleteAccountingEntry);
 
 export default router;

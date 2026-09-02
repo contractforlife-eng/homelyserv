@@ -886,3 +886,59 @@ model TicketCounter {
   sequence  Int      @default(0)
   updatedAt DateTime @updatedAt
 }
+
+// ============================================================
+// ACCOUNTING LEDGER - Root-admin-only manual bookkeeping of
+// platform income and expenses. A single unified model stores
+// both EXPENSE and INCOME entries.
+//
+// Money amounts are stored as Float, matching the project's
+// existing financial Prisma models (Payment.amount,
+// Hire.totalDue, Offer.salary). Precise summation is always
+// performed server-side via the BigInt money.js utilities
+// (addMoney) — never by summing raw Floats in application code
+// or trusting frontend-calculated totals.
+//
+// Multi-currency (Phase 1, no FX conversion): totals are grouped
+// by currency only. createdBy is the authenticated server user id
+// and is never trusted from request input.
+// ============================================================
+enum AccountingEntryType {
+  EXPENSE
+  INCOME
+}
+
+enum AccountingPaymentStatus {
+  PAID
+  PENDING
+  CANCELLED
+}
+
+model AccountingEntry {
+  id            String                @id @default(auto()) @map("_id") @db.ObjectId
+  type          AccountingEntryType
+  provider      String?
+  category      String
+  description   String?
+  amount        Float
+  currency      String                @default("USD") @map("currency")
+  paymentDate   DateTime
+  billingPeriod String?
+  paymentStatus AccountingPaymentStatus @default(PAID)
+  invoiceNumber String?
+  receiptNumber String?
+  notes         String?
+  createdBy     String                @db.ObjectId
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([type])
+  @@index([currency])
+  @@index([provider])
+  @@index([category])
+  @@index([paymentStatus])
+  @@index([paymentDate(sort: Desc)])
+  @@index([type, currency])
+  @@index([createdBy])
+  @@map("accounting_entries")
+}

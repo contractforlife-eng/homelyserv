@@ -3,6 +3,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import SidebarBadge from './SidebarBadge';
 import useSidebarCounters from '../hooks/useSidebarCounters';
+import { isCurrentRootAdmin } from '../utils/rootAdminIdentity';
 import {
   Home,
   Users,
@@ -20,8 +21,9 @@ import {
   FileText,
   BarChart3,
   Briefcase,
-  Landmark
-  ,Headphones
+  Landmark,
+  Receipt,
+  Headphones
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -62,6 +64,21 @@ const AdminSidebar = ({
     { id: 'profile', label: t('adminSidebar.profile'), icon: UserIcon, path: '/admin/profile' },
     { id: 'settings', label: t('adminSidebar.settings'), icon: Settings, path: '/admin/settings' },
   ];
+
+  // Root-admin-only navigation. The Accounting ledger is restricted to the
+  // platform Root Admin identity (see rootAdminIdentity). Normal admins must
+  // not see this link; backend authorization remains authoritative.
+  if (isCurrentRootAdmin()) {
+    const financialCenterIdx = menuItems.findIndex((item) => item.id === 'financial-center');
+    if (financialCenterIdx !== -1) {
+      menuItems.splice(financialCenterIdx + 1, 0, {
+        id: 'accounting',
+        label: t('adminSidebar.accounting'),
+        icon: Receipt,
+        path: '/admin/accounting',
+      });
+    }
+  }
 
   const activeUser = authUser || user;
 

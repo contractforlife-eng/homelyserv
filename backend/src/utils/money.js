@@ -42,9 +42,19 @@ const divideRounded = (numerator, denominator) => {
 
 const minorToNumber = (minorAmount, minorUnit) => {
   const factor = 10n ** BigInt(minorUnit);
-  const whole = minorAmount / factor;
-  const fraction = (minorAmount % factor).toString().padStart(minorUnit, '0');
-  return Number(minorUnit ? `${whole}.${fraction}` : String(whole));
+  const negative = minorAmount < 0n;
+  const absoluteAmount = negative ? -minorAmount : minorAmount;
+
+  const whole = absoluteAmount / factor;
+  const fraction = (absoluteAmount % factor)
+    .toString()
+    .padStart(minorUnit, '0');
+
+  const value = minorUnit
+    ? `${whole}.${fraction}`
+    : String(whole);
+
+  return Number(negative ? `-${value}` : value);
 };
 
 export const toMinorUnits = (amount, currency) => {
