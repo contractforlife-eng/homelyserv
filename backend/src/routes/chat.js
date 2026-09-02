@@ -717,6 +717,11 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
       return res.status(404).json({ error: 'Conversation participant not found' });
     }
 
+    // A conversation requires two distinct participants.
+    if (String(user1Id) === String(user2Id)) {
+      return res.status(400).json({ error: 'Cannot create a conversation with yourself' });
+    }
+
     const conversationId = getConversationId(user1Id, user2Id);
     const existing = await Message.findOne({ conversationId });
 
@@ -737,15 +742,14 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
     const user2IsStaff = STAFF_ROLES.has(role2);
 
     if (user1IsStaff && user2IsStaff) {
-      const existingInternal = await Conversation.findOne({
-        conversationId,
-        type: 'INTERNAL',
-        staffIds: authenticatedId,
-      });
-      if (req.userRole === 'SUPPORT' && !existingInternal) {
-        return res.status(403).json({ error: 'Not authorized to create an internal conversation' });
-      }
-      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN)
+      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN).
+      // Approved product requirement: a SUPPORT agent may start (or reopen)
+      // an internal staff conversation with another staff member. Both roles
+      // were resolved server-side from the database above, the caller is one
+      // of the two participants, and self-conversations are rejected earlier,
+      // so no client-provided role/value is trusted here. Duplicate threads
+      // remain impossible: conversationId is deterministic (sorted id pair)
+      // and unique-indexed on the Conversation model.
       conversationType = 'INTERNAL';
       staffIds = [String(user1Id), String(user2Id)];
     } else if (role1 === 'SUPPORT' || role2 === 'SUPPORT') {
@@ -844,6 +848,48 @@ router.post('/conversations/:conversationId/archive', authenticate, async (req, 
   } catch (error) {
     console.error('Error archiving support conversation:', error.message);
     return res.status(500).json({ success: false, message: 'Failed to archive conversation' });
+  }
+});
+
+// ============================================================
+// STAFF DIRECTORY (Support/Admin internal messaging)
+// ============================================================
+/**
+ * GET /api/chat/staff-directory
+ * Authorized staff picker for Support Messages: lists ADMIN/SUPPORT users
+ * (excluding the caller) with minimal safe fields only. Ordinary users
+ * (WORKER/EMPLOYER) are never returned here.
+ */
+router.get('/staff-directory', authenticate, async (req, res) => {
+  try {
+    const callerRole = String(req.userRole || '').toUpperCase();
+    if (callerRole !== 'SUPPORT' && callerRole !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const staff = await prisma.user.findMany({
+      where: {
+        role: { in: ['ADMIN', 'SUPPORT'] },
+        id: { not: String(req.userId) },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        profileImage: true,
+      },
+      orderBy: { fullName: 'asc' },
+    });
+
+    return res.json({
+      success: true,
+      count: staff.length,
+      staff,
+    });
+  } catch (error) {
+    console.error('Error fetching staff directory:', error);
+    return res.status(500).json({ error: 'Failed to fetch staff directory' });
   }
 });
 
