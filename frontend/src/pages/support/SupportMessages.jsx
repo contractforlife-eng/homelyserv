@@ -33,6 +33,7 @@ import {
 } from '../../utils/chatService';
 import { onSocketEvent, getSocket } from '../../utils/socket';
 import { UserAvatar, UserDisplayName } from '../../components/users';
+import usePresence from '../../hooks/usePresence';
 
 const CONVERSATION_TABS = {
   SUPPORT: 'SUPPORT',
@@ -91,6 +92,11 @@ const SupportMessages = () => {
   });
 
   const t = i18nT('supportMessagesPage', { returnObjects: true });
+
+  // Real-time presence for counterpart users (additive; does not touch chat logic).
+  // counterpart user ID is already derived in mapConversation as `otherUserId`.
+  const counterpartUserIds = conversations.map((c) => c.otherUserId).filter(Boolean);
+  const presence = usePresence(counterpartUserIds, authUser?.id);
 
   // ============================================================
   // loadConversations - SECURE: only assigned support conversations
@@ -655,11 +661,18 @@ const emitTypingEvent = (isTyping) => {
             <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{getConversationTime(conv)}</span>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{getConversationPreview(conv)}</p>
-          {conv.unread > 0 && (
-            <span className="inline-flex px-1.5 py-0.5 bg-green-600 text-white text-xs rounded-full font-medium mt-1">
-              {conv.unread}
-            </span>
-          )}
+          <div className="flex items-center gap-2 mt-1">
+            {presence[String(conv.otherUserId)] === true ? (
+              <span className="text-xs text-green-500">{t.online}</span>
+            ) : (
+              <span className="text-xs text-gray-400">{t.offline}</span>
+            )}
+            {conv.unread > 0 && (
+              <span className="inline-flex px-1.5 py-0.5 bg-green-600 text-white text-xs rounded-full font-medium">
+                {conv.unread}
+              </span>
+            )}
+          </div>
         </div>
       </button>
     );
@@ -718,6 +731,11 @@ const renderChatPanel = () => {
                 defaultNameClassName="font-medium text-gray-900 dark:text-white"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">{getTabLabel(selectedConversation.type)}</p>
+              {presence[String(selectedConversation.otherUserId)] === true ? (
+                <p className="text-xs text-green-500">{t.online}</p>
+              ) : (
+                <p className="text-xs text-gray-400">{t.offline}</p>
+              )}
               {otherUserTyping && (
                 <p className="text-xs font-medium text-green-600 dark:text-green-400">{i18nT('typingIndicator')}</p>
               )}

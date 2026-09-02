@@ -46,6 +46,7 @@ import {
 import { getRoleColor } from '../utils/userDisplay';
 import { onSocketEvent, getSocket } from '../utils/socket';
 import { UserAvatar, UserDisplayName } from '../components/users';
+import usePresence from '../hooks/usePresence';
 import api from '../utils/api';
 import PageLoader from '../components/common/PageLoader';
 
@@ -397,6 +398,23 @@ const AdminMessages = () => {
       .find(id => id !== String(authUser?.id));
     return userParticipant || selectedConversation.user?.id || null;
   };
+
+  // Derive the counterpart user ID for any conversation (used for presence in list rows).
+  const getCounterpartUserId = (conv, type) => {
+    if (type === 'INTERNAL') {
+      return conv.otherStaffId || null;
+    }
+    const userParticipant = (conv.participantIds || [])
+      .find(id => id !== String(authUser?.id));
+    return userParticipant || conv.user?.id || null;
+  };
+
+  // Real-time presence for counterpart users (additive; does not touch chat logic).
+  const counterpartUserIds = [
+    ...supportConversations.map((c) => getCounterpartUserId(c, 'INTERNAL')),
+    ...userConversations.map((c) => getCounterpartUserId(c, 'USERS')),
+  ].filter(Boolean);
+  const presence = usePresence(counterpartUserIds, authUser?.id);
 
   const emitTypingEvent = (isTyping) => {
     const recipientId = getOtherUserId();
@@ -906,6 +924,11 @@ const AdminMessages = () => {
           </div>
           <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
           <div className="flex items-center gap-2 mt-1">
+            {presence[String(getCounterpartUserId(conv, type))] === true ? (
+              <span className="text-xs text-green-500">{t.online}</span>
+            ) : (
+              <span className="text-xs text-gray-400">{t.offline}</span>
+            )}
             {conv.unread > 0 && (
               <span className="px-1.5 py-0.5 bg-yellow-500 text-black text-xs rounded-full font-medium">
                 {conv.unread}
@@ -1022,6 +1045,11 @@ const AdminMessages = () => {
                 defaultNameClassName="font-medium text-white"
               />
               <p className="text-xs text-gray-400">{chatSubtitle}</p>
+              {presence[String(getOtherUserId())] === true ? (
+                <p className="text-xs text-green-500">{t.online}</p>
+              ) : (
+                <p className="text-xs text-gray-400">{t.offline}</p>
+              )}
               {otherUserTyping && (
                 <p className="text-xs font-medium text-yellow-500">{i18nT('typingIndicator')}</p>
               )}
