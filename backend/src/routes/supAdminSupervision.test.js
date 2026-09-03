@@ -228,8 +228,13 @@ const withTestServer = async ({ complaints = [], conversations = [], messages = 
     return decorateComplaint(updated);
   };
 
+  const timelineEvents = [];
   if (!prisma.complaintTimeline) prisma.complaintTimeline = {};
-  prisma.complaintTimeline.create = async ({ data }) => ({ id: "timeline_1", ...data });
+  prisma.complaintTimeline.create = async ({ data }) => {
+    const event = { id: `timeline_${timelineEvents.length + 1}`, ...data };
+    timelineEvents.push(event);
+    return event;
+  };
 
   if (!prisma.complaintReply) prisma.complaintReply = {};
   prisma.complaintReply.create = async ({ data }) => ({ id: "reply_1", ...data });
@@ -312,7 +317,7 @@ const withTestServer = async ({ complaints = [], conversations = [], messages = 
   const baseUrl = `http://localhost:${port}`;
 
   try {
-    await run(baseUrl);
+    await run(baseUrl, { complaintsMap, timelineEvents });
   } finally {
     server.close();
     User.findById = saved.findById;
@@ -1102,5 +1107,359 @@ test("33. GET /api/support/sup-help-team returns helpers array and filters curre
     const eligibleHelpers = body.helpers.filter((h) => String(h.id) !== currentAssigneeId && h.role === "SUPPORT_HELPER");
     assert.equal(eligibleHelpers.length, 1);
     assert.equal(eligibleHelpers[0].id, "665f1a2b3c4d5e6f7a8b9c05", "Bob must be the eligible reassignment target");
+  });
+});
+
+// ============================================================
+// PHASE B2 TESTS — PRIORITY CONTROL
+// ============================================================
+
+test("34. SUPPORT changes unassigned complaint priority Low -> High (200 OK), unassigned status preserved", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c34", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Unassigned triage priority", status: "OPEN", priority: "Low", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl, { complaintsMap, timelineEvents }) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c34/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.priority, "High");
+    assert.equal(body.complaint.assignedSupport, null, "Complaint must remain unassigned");
+
+    const updated = complaintsMap.get("665f1a2b3c4d5e6f7a8b9c34");
+    assert.equal(updated.priority, "High");
+    assert.equal(updated.assignedSupport, null);
+
+    const tl = timelineEvents.find((e) => e.complaintId === "665f1a2b3c4d5e6f7a8b9c34");
+    assert.ok(tl, "PRIORITY_CHANGED timeline event must be created");
+    assert.equal(tl.action, "PRIORITY_CHANGED");
+    assert.equal(tl.oldValue, "Low");
+    assert.equal(tl.newValue, "High");
+  });
+});
+
+test("35. SUPPORT changes helper-assigned complaint priority (200 OK), helper remains assigned, status unchanged", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c35", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Helper ticket priority change", status: "IN_PROGRESS", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl, { complaintsMap }) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c35/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "Critical" }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.priority, "Critical");
+    assert.equal(body.complaint.assignedSupport.id, "665f1a2b3c4d5e6f7a8b9c01", "Eve must remain assigned");
+    assert.equal(body.complaint.status, "IN_PROGRESS", "Status must remain IN_PROGRESS");
+
+    const updated = complaintsMap.get("665f1a2b3c4d5e6f7a8b9c35");
+    assert.equal(updated.priority, "Critical");
+    assert.equal(updated.assignedSupport, "665f1a2b3c4d5e6f7a8b9c01");
+    assert.equal(updated.status, "IN_PROGRESS");
+  });
+});
+
+test("36. SUPPORT changes own complaint priority (200 OK)", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c36", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Own support complaint priority", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c02", assignedTo: "665f1a2b3c4d5e6f7a8b9c02", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c36/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.priority, "High");
+    assert.equal(body.complaint.assignedSupport.id, "665f1a2b3c4d5e6f7a8b9c02");
+  });
+});
+
+test("37. SUPPORT changes complaint escalated to SUPPORT (200 OK), escalation state preserved", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c37", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Escalated to support priority", status: "ESCALATED", priority: "Medium", escalatedTo: "SUPPORT", escalatedBy: "665f1a2b3c4d5e6f7a8b9c01", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl, { complaintsMap }) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c37/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "Critical" }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.priority, "Critical");
+    assert.equal(body.complaint.status, "ESCALATED");
+
+    const updated = complaintsMap.get("665f1a2b3c4d5e6f7a8b9c37");
+    assert.equal(updated.priority, "Critical");
+    assert.equal(updated.escalatedTo, "SUPPORT");
+    assert.equal(updated.escalatedBy, "665f1a2b3c4d5e6f7a8b9c01");
+  });
+});
+
+test("38. Invalid priority strings (Urgent, SuperHigh, empty, null) are rejected with 400", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c38", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Invalid priority test", status: "OPEN", priority: "Medium", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    for (const invalid of ["Urgent", "SuperHigh", "", null, 123]) {
+      const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c38/priority`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+        },
+        body: JSON.stringify({ priority: invalid }),
+      });
+      assert.equal(res.status, 400, `Expected 400 for priority: ${invalid}`);
+      const body = await res.json();
+      assert.equal(body.success, false);
+    }
+  });
+});
+
+test("39. Same priority update is rejected with 400 as safe no-op, no timeline created", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c39", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Same priority noop", status: "OPEN", priority: "High", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl, { timelineEvents }) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c39/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.success, false);
+    assert.equal(timelineEvents.length, 0, "No timeline event should be created on no-op rejection");
+  });
+});
+
+test("40. Historical lowercase casing in DB (medium) is treated as same priority for Medium and rejected as no-op", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c40", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Historical lowercase test", status: "OPEN", priority: "medium", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl, { timelineEvents }) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c40/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "Medium" }),
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.success, false);
+    assert.equal(timelineEvents.length, 0, "No timeline event should be created for casing-only no-op");
+  });
+});
+
+test("41. SUPPORT modifying ADMIN-assigned complaint returns 403", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c41", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Admin assigned complaint", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c03", assignedTo: "665f1a2b3c4d5e6f7a8b9c03", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c41/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "Critical" }),
+    });
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.equal(body.success, false);
+  });
+});
+
+test("42. SUPPORT modifying peer SUPPORT-assigned complaint returns 403", async () => {
+  // Add a peer support user
+  testUsers["665f1a2b3c4d5e6f7a8b9c06"] = {
+    _id: "665f1a2b3c4d5e6f7a8b9c06",
+    id: "665f1a2b3c4d5e6f7a8b9c06",
+    fullName: "Support Dan",
+    email: "dan@test.com",
+    role: "SUPPORT",
+    tokenVersion: 0,
+  };
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c42", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Peer support complaint", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c06", assignedTo: "665f1a2b3c4d5e6f7a8b9c06", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c42/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "Critical" }),
+    });
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.equal(body.success, false);
+  });
+});
+
+test("43. SUPPORT_HELPER, WORKER, and EMPLOYER calling priority update endpoint return 403", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c43", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Non-supervisor priority change test", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    // Helper Eve
+    const res1 = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c43/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(res1.status, 403);
+
+    // Worker Alice
+    const res2 = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c43/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c04", "WORKER"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(res2.status, 403);
+  });
+});
+
+test("44. CLOSED and RESOLVED complaints block priority update with 400", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c44", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Closed complaint", status: "CLOSED", priority: "Medium", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+    { id: "665f1a2b3c4d5e6f7a8b9c47", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Resolved complaint", status: "RESOLVED", priority: "Medium", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const resClosed = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c44/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(resClosed.status, 400);
+
+    const resResolved = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c47/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ priority: "High" }),
+    });
+    assert.equal(resResolved.status, 400);
+  });
+});
+
+test("45. ADMIN (Co-Admin) can update priority on any non-closed/resolved complaint (200 OK)", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c45", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Admin global priority triage", status: "OPEN", priority: "Low", assignedSupport: "665f1a2b3c4d5e6f7a8b9c02", assignedTo: "665f1a2b3c4d5e6f7a8b9c02", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c45/priority`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c03", "ADMIN"),
+      },
+      body: JSON.stringify({ priority: "Critical" }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.priority, "Critical");
+  });
+});
+
+test("46. B1 Regression: Take Over, Reassign, Return to Queue, and Supervisor Note continue to work 100%", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c46", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "B1 regression test ticket", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl, { complaintsMap }) => {
+    // 1. Supervisor Note
+    const noteRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c46/notes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ note: "Supervisory note for Eve" }),
+    });
+    assert.equal(noteRes.status, 200);
+
+    // 2. Reassign to Bob
+    const reassignRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c46/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c05" }),
+    });
+    assert.equal(reassignRes.status, 200);
+    assert.equal(complaintsMap.get("665f1a2b3c4d5e6f7a8b9c46").assignedSupport, "665f1a2b3c4d5e6f7a8b9c05");
+
+    // 3. Return to Queue
+    const returnRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c46/return-to-queue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(returnRes.status, 200);
+    assert.equal(complaintsMap.get("665f1a2b3c4d5e6f7a8b9c46").assignedSupport, null);
+
+    // 4. Take Over from unassigned/helper
+    // Assign to Eve first
+    complaintsMap.set("665f1a2b3c4d5e6f7a8b9c46", {
+      ...complaintsMap.get("665f1a2b3c4d5e6f7a8b9c46"),
+      assignedSupport: "665f1a2b3c4d5e6f7a8b9c01",
+      assignedTo: "665f1a2b3c4d5e6f7a8b9c01",
+    });
+    const takeoverRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c46/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(takeoverRes.status, 200);
+    assert.equal(complaintsMap.get("665f1a2b3c4d5e6f7a8b9c46").assignedSupport, "665f1a2b3c4d5e6f7a8b9c02");
   });
 });

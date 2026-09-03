@@ -84,6 +84,12 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
     || String(selectedAssignedSupportId || '') === String(authUser?.id || '')
     || (!isSupHelp && authUser?.role === 'SUPPORT' && isEscalatedToSupport);
 
+  const canChangePriority = (authUser?.role === 'ADMIN' || (authUser?.role === 'SUPPORT' && !isSupHelp && (
+    isMonitoringComplaint ||
+    canWorkSelectedComplaint ||
+    !selectedComplaint?.assignedSupport
+  ))) && !['RESOLVED', 'CLOSED'].includes(selectedComplaint?.status);
+
   const getTimelineActionLabel = (action) =>
     t.timelineActions[String(action || '').toUpperCase()] || t.unknownActivity;
 
@@ -92,6 +98,12 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
       return i18nT('supportComplaintsPage.statusChangeDescription', {
         oldStatus: getStatusLabel(event.oldValue),
         newStatus: getStatusLabel(event.newValue)
+      });
+    }
+    if (event?.action === 'PRIORITY_CHANGED') {
+      return i18nT('supportComplaintsPage.priorityChangeDescription', {
+        oldPriority: getPriorityLabel(event.oldValue),
+        newPriority: getPriorityLabel(event.newValue)
       });
     }
     return getTimelineActionLabel(event?.action);
@@ -361,6 +373,36 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
         }
       },
     });
+  };
+
+  const handlePriorityChange = async (newPriority) => {
+    if (!selectedComplaint || !newPriority) return;
+    const currentNorm = String(selectedComplaint.priority || '').trim().toLowerCase();
+    const newNorm = String(newPriority).trim().toLowerCase();
+    if (currentNorm === newNorm) return;
+
+    setActionLoading(true);
+    try {
+      const response = await complaintsService.supportChangePriority(selectedComplaint.id, newPriority);
+      if (response?.success) {
+        setNotification({ type: 'success', text: t.priorityChanged || 'Priority changed successfully' });
+        setSelectedComplaint(response.complaint);
+        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        if (detail?.success) {
+          setTimeline(detail.timeline || []);
+          setNotes(detail.notes || []);
+        }
+        fetchComplaints();
+      }
+    } catch (error) {
+      console.error('❌ Error changing priority:', error);
+      setNotification({
+        type: 'error',
+        text: error.response?.data?.message || t.priorityChangeFailed || 'Failed to change priority',
+      });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleAddSupervisorNote = async () => {
@@ -914,11 +956,34 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
               {/* Complaint Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.priority}</p>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getPriorityBadgeClass(selectedComplaint.priority)}`}>
-                    <Flag size={12} />
-                    {getPriorityLabel(selectedComplaint.priority)}
-                  </span>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.priority}</p>
+                    {canChangePriority && (
+                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                        {t.changePriority || 'Change Priority'}
+                      </span>
+                    )}
+                  </div>
+                  {canChangePriority ? (
+                    <select
+                      value={selectedComplaint.priority ? complaintsService.COMPLAINT_PRIORITIES.find(p => p.toLowerCase() === String(selectedComplaint.priority).toLowerCase()) || 'Medium' : 'Medium'}
+                      onChange={(e) => handlePriorityChange(e.target.value)}
+                      disabled={actionLoading}
+                      aria-label={t.changePriority || 'Change Priority'}
+                      className="text-xs font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2 py-1 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-0 w-full cursor-pointer"
+                    >
+                      {complaintsService.COMPLAINT_PRIORITIES.map((p) => (
+                        <option key={p} value={p}>
+                          {getPriorityLabel(p)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getPriorityBadgeClass(selectedComplaint.priority)}`}>
+                      <Flag size={12} />
+                      {getPriorityLabel(selectedComplaint.priority)}
+                    </span>
+                  )}
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.category}</p>

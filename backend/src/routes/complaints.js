@@ -24,6 +24,7 @@ import {
   supportTakeoverComplaint,
   supportReassignComplaint,
   supportReturnComplaintToQueue,
+  supportChangePriority,
   supportReply,
   supportAddNote,
   supportChangeStatus,
@@ -138,6 +139,9 @@ router.post('/support/complaints/:id/reply', authenticate, requireSupport, requi
 
 // POST /api/support/complaints/:id/notes - Add internal note (including supervisor note on helper complaints)
 router.post('/support/complaints/:id/notes', authenticate, requireSupport, requireSupportNoteAccess, supportAddNote);
+
+// PUT /api/support/complaints/:id/priority - Change complaint priority (Sup-Admin supervisor control)
+router.put('/support/complaints/:id/priority', authenticate, requireSupport, requireSupportComplaintAccess, supportChangePriority);
 
 // PUT /api/support/complaints/:id/status - Change status
 router.put('/support/complaints/:id/status', authenticate, requireSupport, requireAssignedSupportComplaint, supportChangeStatus);

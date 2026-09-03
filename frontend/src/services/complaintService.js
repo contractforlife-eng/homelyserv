@@ -160,6 +160,14 @@ export const getSupHelpTeam = async () => {
 };
 
 /**
+ * Change complaint priority (Sup-Admin supervisor control).
+ */
+export const supportChangePriority = async (complaintId, priority) => {
+  const response = await api.put(`/api/support/complaints/${complaintId}/priority`, { priority });
+  return response.data;
+};
+
+/**
  * Support replies to a complaint.
  */
 export const supportReplyToComplaint = async (complaintId, message) => {
@@ -434,6 +442,7 @@ const complaintService = {
   supportTakeoverComplaint,
   supportReassignComplaint,
   supportReturnComplaintToQueue,
+  supportChangePriority,
   getSupHelpTeam,
   supportReplyToComplaint,
   addComplaintNote,

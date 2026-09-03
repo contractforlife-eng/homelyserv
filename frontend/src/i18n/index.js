@@ -5242,6 +5242,15 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.en, {
   supervisorNoteAdded: 'Supervisor note added successfully',
   staleAssignmentError: 'Complaint ownership has changed. Please refresh.',
   supervisorActions: 'Supervisor Actions',
+  changePriority: 'Change Priority',
+  selectPriority: 'Select Priority',
+  priorityChanged: 'Priority changed successfully',
+  priorityChangeFailed: 'Failed to change priority',
+  priorityChangeDescription: 'Priority changed from {{oldPriority}} to {{newPriority}}',
+  timelineActions: {
+    ...SUPPORT_COMPLAINTS_COPY.en.timelineActions,
+    PRIORITY_CHANGED: 'Priority Changed',
+  },
 });
 Object.assign(SUPPORT_COMPLAINTS_COPY.ar, {
   views: {
@@ -5273,6 +5282,15 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.ar, {
   supervisorNoteAdded: 'تمت إضافة الملاحظة الإشرافية بنجاح',
   staleAssignmentError: 'تغيرت مسؤولية الشكوى، يرجى التحديث.',
   supervisorActions: 'إجراءات الإشراف',
+  changePriority: 'تغيير الأولوية',
+  selectPriority: 'اختر الأولوية',
+  priorityChanged: 'تم تغيير الأولوية بنجاح',
+  priorityChangeFailed: 'تعذر تغيير الأولوية',
+  priorityChangeDescription: 'تم تغيير الأولوية من {{oldPriority}} إلى {{newPriority}}',
+  timelineActions: {
+    ...SUPPORT_COMPLAINTS_COPY.ar.timelineActions,
+    PRIORITY_CHANGED: 'تغيرت الأولوية',
+  },
 });
 Object.assign(SUPPORT_COMPLAINTS_COPY.fr, {
   views: {
@@ -5304,6 +5322,15 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.fr, {
   supervisorNoteAdded: 'Note de supervision ajoutée avec succès',
   staleAssignmentError: 'L’assignation a changé. Veuillez actualiser.',
   supervisorActions: 'Actions de supervision',
+  changePriority: 'Modifier la priorité',
+  selectPriority: 'Sélectionner la priorité',
+  priorityChanged: 'Priorité modifiée avec succès',
+  priorityChangeFailed: 'Impossible de modifier la priorité',
+  priorityChangeDescription: 'Priorité modifiée de {{oldPriority}} à {{newPriority}}',
+  timelineActions: {
+    ...SUPPORT_COMPLAINTS_COPY.fr.timelineActions,
+    PRIORITY_CHANGED: 'Priorité modifiée',
+  },
 });
 Object.assign(SUPPORT_COMPLAINTS_COPY.ru, {
   views: {
@@ -5335,6 +5362,15 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.ru, {
   supervisorNoteAdded: 'Заметка супервайзера успешно добавлена',
   staleAssignmentError: 'Ответственный по жалобе изменился. Обновите страницу.',
   supervisorActions: 'Действия супервайзера',
+  changePriority: 'Изменить приоритет',
+  selectPriority: 'Выберите приоритет',
+  priorityChanged: 'Приоритет успешно изменён',
+  priorityChangeFailed: 'Не удалось изменить приоритет',
+  priorityChangeDescription: 'Приоритет изменён с «{{oldPriority}}» на «{{newPriority}}»',
+  timelineActions: {
+    ...SUPPORT_COMPLAINTS_COPY.ru.timelineActions,
+    PRIORITY_CHANGED: 'Приоритет изменён',
+  },
 });
 Object.assign(SUPPORT_COMPLAINTS_COPY.tr, {
   views: {
@@ -5366,6 +5402,15 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.tr, {
   supervisorNoteAdded: 'Süpervizör notu başarıyla eklendi',
   staleAssignmentError: 'Şikâyet ataması değişti. Lütfen sayfayı yenileyin.',
   supervisorActions: 'Süpervizör İşlemleri',
+  changePriority: 'Önceliği Değiştir',
+  selectPriority: 'Öncelik Seç',
+  priorityChanged: 'Öncelik başarıyla değiştirildi',
+  priorityChangeFailed: 'Öncelik değiştirilemedi',
+  priorityChangeDescription: 'Öncelik {{oldPriority}} iken {{newPriority}} olarak değiştirildi',
+  timelineActions: {
+    ...SUPPORT_COMPLAINTS_COPY.tr.timelineActions,
+    PRIORITY_CHANGED: 'Öncelik Değişti',
+  },
 });
 Object.assign(SUPPORT_COMPLAINTS_COPY.de, {
   views: {
@@ -5397,6 +5442,15 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.de, {
   supervisorNoteAdded: 'Vorgesetztennotiz erfolgreich hinzugefügt',
   staleAssignmentError: 'Die Zuweisung hat sich geändert. Bitte neu laden.',
   supervisorActions: 'Vorgesetzten-Aktionen',
+  changePriority: 'Priorität ändern',
+  selectPriority: 'Priorität auswählen',
+  priorityChanged: 'Priorität erfolgreich geändert',
+  priorityChangeFailed: 'Priorität konnte nicht geändert werden',
+  priorityChangeDescription: 'Priorität von „{{oldPriority}}“ in „{{newPriority}}“ geändert',
+  timelineActions: {
+    ...SUPPORT_COMPLAINTS_COPY.de.timelineActions,
+    PRIORITY_CHANGED: 'Priorität geändert',
+  },
 });
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.supportComplaintsPage = SUPPORT_COMPLAINTS_COPY[code];
 

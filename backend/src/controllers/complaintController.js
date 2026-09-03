@@ -1502,6 +1502,152 @@ export const supportReturnComplaintToQueue = async (req, res) => {
 };
 
 /**
+ * PUT /api/support/complaints/:id/priority
+ * Support / Admin updates the complaint priority.
+ */
+export const supportChangePriority = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const { priority } = req.body || {};
+    if (!priority || typeof priority !== 'string') {
+      return res.status(400).json({ success: false, message: 'Priority is required' });
+    }
+
+    const trimmedPriority = priority.trim();
+    if (!COMPLAINT_PRIORITIES.includes(trimmedPriority)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid priority. Must be one of: ${COMPLAINT_PRIORITIES.join(', ')}`,
+      });
+    }
+
+    const supportId = String(req.userId);
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, role: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    // Closed and Resolved complaints are immutable historical records
+    if (complaint.status === 'CLOSED' || complaint.status === 'RESOLVED') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot change priority of a ${complaint.status.toLowerCase()} complaint`,
+      });
+    }
+
+    const currentAssigneeId = complaint.assignedSupport || complaint.assignedTo;
+    let currentAssignee = complaint.AssignedSupport;
+    if (!currentAssignee && currentAssigneeId) {
+      currentAssignee = await prisma.user.findUnique({
+        where: { id: currentAssigneeId },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Role-based authorization boundaries for SUPPORT
+    if (req.userRole !== 'ADMIN') {
+      if (currentAssignee?.role === 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot change priority of an Administrator complaint',
+        });
+      }
+      if (currentAssignee?.role === 'SUPPORT' && currentAssignee.id !== supportId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot change priority of another Support Agent complaint',
+        });
+      }
+      // If assigned to a non-helper and not own, block
+      if (currentAssignee && currentAssignee.role !== 'SUPPORT_HELPER' && currentAssignee.id !== supportId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Supervisory priority control is limited to unassigned, helper-assigned, or own complaints',
+        });
+      }
+    }
+
+    // Compare with current priority (case-insensitive to safely handle historical "medium")
+    const currentPriorityRaw = String(complaint.priority || 'Medium').trim();
+    if (currentPriorityRaw.toLowerCase() === trimmedPriority.toLowerCase()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Complaint already has this priority',
+      });
+    }
+
+    // Normalize old priority display for audit
+    const canonicalOldPriority = COMPLAINT_PRIORITIES.find(
+      (p) => p.toLowerCase() === currentPriorityRaw.toLowerCase()
+    ) || currentPriorityRaw;
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        priority: trimmedPriority,
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
+    // Add Timeline audit event
+    await addTimeline(id, {
+      action: 'PRIORITY_CHANGED',
+      description: `Priority changed from ${canonicalOldPriority} to ${trimmedPriority}`,
+      authorId: supportId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      oldValue: canonicalOldPriority,
+      newValue: trimmedPriority,
+    });
+
+    // Support Activity log
+    await logSupportActivity(
+      supportId,
+      'COMPLAINT_PRIORITY_CHANGED',
+      `Changed priority of complaint "${complaint.subject}" from ${canonicalOldPriority} to ${trimmedPriority}`,
+      complaint.userId,
+      id
+    );
+
+    return res.json({
+      success: true,
+      message: 'Priority changed successfully',
+      complaint: serializeComplaint(updated, {
+        includeInternal: req.userRole === 'ADMIN',
+        includeSensitive: req.userRole === 'ADMIN',
+      }),
+    });
+  } catch (error) {
+    console.error('❌ Error changing complaint priority:', error);
+    return res.status(500).json({ success: false, message: 'Failed to change complaint priority' });
+  }
+};
+
+/**
  * POST /api/support/complaints/:id/reply
  * Support replies to a complaint (public reply visible to user).
  */
@@ -4434,6 +4580,7 @@ export default {
   supportTakeoverComplaint,
   supportReassignComplaint,
   supportReturnComplaintToQueue,
+  supportChangePriority,
   supportReply,
   supportAddNote,
   requireSupportNoteAccess,
