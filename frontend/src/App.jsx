@@ -89,6 +89,7 @@ import SupHelpUsers from './pages/sup-help/SupHelpUsers';
 import SupHelpUserProfile from './pages/sup-help/SupHelpUserProfile';
 import SupHelpMessages from './pages/sup-help/SupHelpMessages';
 import SupHelpComplaints from './pages/sup-help/SupHelpComplaints';
+import SupHelpSettings from './pages/sup-help/SupHelpSettings';
 import PublicSupportWidget from './components/public-support/PublicSupportWidget';
 
 import { useAuth } from './context/AuthContext';
@@ -795,6 +796,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="SUPPORT_HELPER">
             <PublicLiveSupport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sup-help/settings"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT_HELPER">
+            <SupHelpSettings />
           </ProtectedRoute>
         }
       />

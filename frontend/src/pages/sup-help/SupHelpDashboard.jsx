@@ -133,13 +133,6 @@ const SupHelpDashboard = () => {
     <SupportLayout
       allowedRoles={['SUPPORT_HELPER', 'ADMIN']}
       role="SUPPORT_HELPER"
-      menuItems={[
-        { id: 'dashboard', label: i18nT('supHelpNavigation.dashboard'), icon: Home, path: '/sup-help' },
-        { id: 'users', label: i18nT('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
-        { id: 'messages', label: i18nT('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
-        { id: 'complaints', label: i18nT('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
-        { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
-      ]}
     >
       <div className="p-6 md:p-8">
         <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-8 text-white">

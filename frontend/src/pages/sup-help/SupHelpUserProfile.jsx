@@ -42,13 +42,6 @@ const SupHelpUserProfile = () => {
     <SupportLayout
       allowedRoles={['SUPPORT_HELPER', 'ADMIN']}
       role="SUPPORT_HELPER"
-      menuItems={[
-        { id: 'dashboard', label: t('supHelpNavigation.dashboard'), icon: Home, path: '/sup-help' },
-        { id: 'users', label: t('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
-        { id: 'messages', label: t('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
-        { id: 'complaints', label: t('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
-        { id: 'live-support', label: t('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
-      ]}
     >
       <UserProfileView
         userId={id}

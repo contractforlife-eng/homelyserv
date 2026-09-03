@@ -87,6 +87,7 @@ const MobileDrawerNav = () => {
     { to: '/sup-help/messages', icon: MessageCircle, label: t('supportNavigation.messages') },
     { to: '/sup-help/complaints', icon: FileText, label: t('supportNavigation.complaints') },
     { to: '/sup-help/live-support', icon: Headphones, label: t('publicSupport.liveSupport') },
+    { to: '/sup-help/settings', icon: Settings, label: t('supHelpNavigation.settings') || t('supportNavigation.settings') },
   ];
 
   const items = isWorker ? workerItems : isEmployer ? employerItems : isSupport ? supportItems : isSupportHelper ? supHelpItems : [];
