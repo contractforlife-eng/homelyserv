@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Clock, Headphones, Send, UserCheck, XCircle } from 'lucide-react';
+import { Clock, Headphones, Send, UserCheck, XCircle, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
@@ -64,10 +64,23 @@ function LiveSupportContent() {
   const selectedRef = useRef(null);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
 
+  const isMonitoringSession = activeRole === 'SUPPORT' && selected?.assignedHelper && selected?.assignedStaffId !== user?.id;
+
   async function loadQueue(status = filter) {
-    const { data } = await api.get('/api/public-support/staff/conversations', { params:{ status } });
-    setConversations(data.conversations || []);
-    setLoading(false);
+    try {
+      const params = status === 'SUP_HELP' ? { status: 'ASSIGNED', view: 'sup_help' } : { status };
+      const { data } = await api.get('/api/public-support/staff/conversations', { params });
+      let list = data.conversations || [];
+      if (status === 'SUP_HELP') {
+        list = list.filter((item) => item.assignedHelper && item.assignedStaffId !== user?.id);
+      }
+      setConversations(list);
+    } catch (e) {
+      console.error('Failed to load live support queue', e);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
   }
   async function openConversation(conversation) {
     const { data } = await api.get(`/api/public-support/staff/conversations/${conversation.id}`);
@@ -77,25 +90,31 @@ function LiveSupportContent() {
   useEffect(() => { loadQueue(); }, [filter]);
   useEffect(() => connectStaffSupportSocket({
     onQueue:(incoming) => {
-      setConversations((current) => [incoming, ...current.filter((item) => item.id !== incoming.id)].filter((item) => filter.split(',').includes(item.status)));
+      setConversations((current) => [incoming, ...current.filter((item) => item.id !== incoming.id)].filter((item) => {
+        if (filter === 'SUP_HELP') return incoming.assignedHelper && incoming.assignedStaffId !== user?.id;
+        return filter.split(',').includes(item.status);
+      }));
       if (selectedRef.current?.id === incoming.id) setSelected((current) => ({ ...current, ...incoming }));
     },
     onStaffMessage:({ conversationId, message }) => { if (selectedRef.current?.id === conversationId) setMessages((current) => mergeMessage(current, message)); },
     onReconnect:() => loadQueue(),
-  }), [filter]);
+  }), [filter, user?.id]);
 
   async function claim() {
+    if (isMonitoringSession) return;
     const { data } = await api.post(`/api/public-support/staff/conversations/${selected.id}/claim`);
     setSelected(data.conversation);
     setConversations((current) => current.map((item) => item.id === data.conversation.id ? data.conversation : item));
   }
   async function closeConversation() {
+    if (isMonitoringSession) return;
     const { data } = await api.post(`/api/public-support/staff/conversations/${selected.id}/close`);
     setSelected(data.conversation);
     setConversations((current) => current.filter((item) => item.id !== data.conversation.id));
   }
   async function send(event) {
     event.preventDefault();
+    if (isMonitoringSession) return;
     const body = draft.trim();
     if (!body || !selected) return;
     const clientMessageId = `staff_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -113,6 +132,14 @@ function LiveSupportContent() {
 
   const waitingLabel = (conversation) => new Intl.RelativeTimeFormat(i18n.language || 'en', { numeric:'auto' }).format(-Math.max(1, Math.floor((Date.now() - new Date(conversation.escalatedAt || conversation.updatedAt).getTime()) / 60000)), 'minute');
 
+  const filterTabs = [
+    ['WAITING_FOR_SUPPORT,ASSIGNED', 'active'],
+    ['WAITING_FOR_SUPPORT', 'waiting'],
+    ['ASSIGNED', 'assigned'],
+    ...(activeRole === 'SUPPORT' ? [['SUP_HELP', 'supHelpTab']] : []),
+    ['CLOSED', 'closedTab']
+  ];
+
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -123,13 +150,8 @@ function LiveSupportContent() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('publicSupport.staffSubtitle')}</p>
         </div>
-        <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
-          {[
-            ['WAITING_FOR_SUPPORT,ASSIGNED', 'active'],
-            ['WAITING_FOR_SUPPORT', 'waiting'],
-            ['ASSIGNED', 'assigned'],
-            ['CLOSED', 'closedTab']
-          ].map(([value, key]) => (
+        <div className="flex flex-wrap rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+          {filterTabs.map(([value, key]) => (
             <button
               key={value}
               onClick={() => setFilter(value)}
@@ -183,6 +205,11 @@ function LiveSupportContent() {
                   >
                     {t(`publicSupport.states.${conversation.status}`)}
                   </span>
+                  {conversation.assignedHelper && conversation.assignedStaffId !== user?.id && (
+                    <span className="rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-[10px] font-medium text-red-700 dark:text-red-300">
+                      Sup-Help: {conversation.assignedHelper.fullName}
+                    </span>
+                  )}
                   {conversation.staffUnreadCount > 0 && (
                     <span className="rounded-full bg-red-500 px-1.5 text-white">
                       {conversation.staffUnreadCount}
@@ -206,24 +233,33 @@ function LiveSupportContent() {
                     {selected.visitorEmail} · {selected.language.toUpperCase()}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  {selected.status === 'WAITING_FOR_SUPPORT' && (
-                    <button
-                      onClick={claim}
-                      className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${theme.claimBtn}`}
-                    >
-                      <UserCheck size={16} />
-                      {t('publicSupport.claim')}
-                    </button>
-                  )}
-                  {selected.status !== 'CLOSED' && (
-                    <button
-                      onClick={closeConversation}
-                      className="flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800/60 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                    >
-                      <XCircle size={16} />
-                      {t('publicSupport.closeConversation')}
-                    </button>
+                <div className="flex items-center gap-2">
+                  {isMonitoringSession ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+                      <Shield size={14} className="text-blue-600 dark:text-blue-400" />
+                      {t('publicSupport.monitoring')} — {selected.assignedHelper?.fullName || 'Sup-Help'}
+                    </span>
+                  ) : (
+                    <>
+                      {selected.status === 'WAITING_FOR_SUPPORT' && (
+                        <button
+                          onClick={claim}
+                          className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${theme.claimBtn}`}
+                        >
+                          <UserCheck size={16} />
+                          {t('publicSupport.claim')}
+                        </button>
+                      )}
+                      {selected.status !== 'CLOSED' && (
+                        <button
+                          onClick={closeConversation}
+                          className="flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800/60 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          <XCircle size={16} />
+                          {t('publicSupport.closeConversation')}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </header>
@@ -252,21 +288,28 @@ function LiveSupportContent() {
               </div>
 
               {selected.status !== 'CLOSED' && (
-                <form onSubmit={send} className="flex gap-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-                  <input
-                    maxLength={2000}
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    placeholder={t('publicSupport.staffPlaceholder')}
-                    className={`min-w-0 flex-1 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none ${theme.focusRing}`}
-                  />
-                  <button
-                    disabled={!draft.trim()}
-                    className={`rounded-xl p-3 text-white transition-colors disabled:opacity-40 ${theme.sendBtn}`}
-                  >
-                    <Send size={18} />
-                  </button>
-                </form>
+                isMonitoringSession ? (
+                  <div className="border-t border-blue-100 bg-blue-50/60 p-3 text-center text-xs font-medium text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-300 flex items-center justify-center gap-2">
+                    <Shield size={14} className="text-blue-600 dark:text-blue-400" />
+                    <span>{t('publicSupport.monitoringBanner', { name: selected.assignedHelper?.fullName || 'Sup-Help' })}</span>
+                  </div>
+                ) : (
+                  <form onSubmit={send} className="flex gap-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+                    <input
+                      maxLength={2000}
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      placeholder={t('publicSupport.staffPlaceholder')}
+                      className={`min-w-0 flex-1 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none ${theme.focusRing}`}
+                    />
+                    <button
+                      disabled={!draft.trim()}
+                      className={`rounded-xl p-3 text-white transition-colors disabled:opacity-40 ${theme.sendBtn}`}
+                    >
+                      <Send size={18} />
+                    </button>
+                  </form>
+                )
               )}
             </>
           ) : (

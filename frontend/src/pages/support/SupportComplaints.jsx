@@ -38,6 +38,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
   const authUser = useAuthStore(state => state.user);
   const isSupHelp = Boolean(propIsSupHelp || location.pathname.startsWith('/sup-help') || authUser?.role === 'SUPPORT_HELPER');
   const [escalationTarget, setEscalationTarget] = useState('SUPPORT');
+  const [viewTab, setViewTab] = useState(searchParams.get('view') || 'all');
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,8 +70,13 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
 
   const selectedAssignedSupportId = selectedComplaint?.assignedSupport?.id
     || selectedComplaint?.assignedSupport;
+  const isHelperAssigned = selectedComplaint?.assignedSupport?.role === 'SUPPORT_HELPER';
+  const isEscalatedToSupport = selectedComplaint?.escalatedTo === 'SUPPORT';
+  const isMonitoringComplaint = !isSupHelp && authUser?.role === 'SUPPORT' && isHelperAssigned && !isEscalatedToSupport;
+
   const canWorkSelectedComplaint = authUser?.role === 'ADMIN'
-    || String(selectedAssignedSupportId || '') === String(authUser?.id || '');
+    || String(selectedAssignedSupportId || '') === String(authUser?.id || '')
+    || (!isSupHelp && authUser?.role === 'SUPPORT' && isEscalatedToSupport);
 
   const getTimelineActionLabel = (action) =>
     t.timelineActions[String(action || '').toUpperCase()] || t.unknownActivity;
@@ -95,6 +101,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
       if (categoryFilter) filters.category = categoryFilter;
       if (userIdFilter) filters.userId = userIdFilter;
       if (assignedToFilter === 'me') filters.assignedTo = authUser?.id;
+      if (!isSupHelp && viewTab && viewTab !== 'all') filters.view = viewTab;
 
       const response = isSupHelp
         ? await complaintsService.getSupHelpComplaints(filters)
@@ -108,7 +115,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, priorityFilter, categoryFilter, userIdFilter, assignedToFilter, authUser?.id, isSupHelp]);
+  }, [searchTerm, statusFilter, priorityFilter, categoryFilter, userIdFilter, assignedToFilter, authUser?.id, isSupHelp, viewTab]);
 
   useEffect(() => {
     fetchComplaints();
@@ -450,7 +457,31 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
         )}
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6 space-y-4">
+          {!isSupHelp && (authUser?.role === 'SUPPORT' || authUser?.role === 'ADMIN') && (
+            <div className="flex flex-wrap gap-2 border-b border-gray-100 dark:border-gray-700 pb-4">
+              {[
+                { id: 'all', label: t.views?.all || 'All Complaints' },
+                { id: 'my', label: t.views?.my || 'My Complaints' },
+                { id: 'unassigned', label: t.views?.unassigned || 'Unassigned Queue' },
+                { id: 'escalated', label: t.views?.escalated || 'Escalated from Sup-Help' },
+                { id: 'sup_help', label: t.views?.sup_help || 'Sup-Help Queue' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setViewTab(tab.id)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    viewTab === tab.id
+                      ? 'bg-green-600 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
               <Search size={18} className="absolute left-3 top-3 text-gray-400" />
@@ -645,6 +676,26 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Supervisory Monitoring Banner */}
+              {isMonitoringComplaint && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 flex items-start gap-3">
+                  <Shield size={20} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <span>{t.monitoringMode || 'Monitoring Mode'}</span>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+                        {selectedComplaint.assignedSupport?.fullName || selectedComplaint.assignedSupport?.name || 'Sup-Help'}
+                      </span>
+                    </h4>
+                    <p className="text-xs mt-1 text-blue-700 dark:text-blue-300">
+                      {i18nT('supportComplaintsPage.monitoringNotice', {
+                        defaultValue: 'This complaint is currently assigned to Sup-Help. You have supervisory read-only visibility.'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Complaint Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
@@ -665,7 +716,9 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.assigned}</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                    {selectedComplaint.assignedSupport ? t.yes : t.no}
+                    {selectedComplaint.assignedSupport ? (
+                      selectedComplaint.assignedSupport?.fullName || selectedComplaint.assignedSupport?.name || t.yes
+                    ) : t.no}
                   </p>
                 </div>
               </div>
@@ -709,7 +762,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                 )}
               </div>
 
-              {/* Assign Button */}
+              {/* Assign Button (Unassigned) */}
               {!selectedComplaint.assignedSupport && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
                 <div>
                   <button
@@ -719,6 +772,20 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                   >
                     <UserCheck size={16} />
                     {t.assign}
+                  </button>
+                </div>
+              )}
+
+              {/* Claim Escalated Button */}
+              {isEscalatedToSupport && String(selectedAssignedSupportId || '') !== String(authUser?.id || '') && !['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+                <div>
+                  <button
+                    onClick={handleAssign}
+                    disabled={actionLoading}
+                    className="px-4 py-2.5 bg-amber-500 text-gray-950 font-semibold hover:bg-amber-400 rounded-lg transition flex items-center gap-2"
+                  >
+                    <UserCheck size={16} />
+                    {t.claimEscalated || 'Claim Escalated Complaint'}
                   </button>
                 </div>
               )}

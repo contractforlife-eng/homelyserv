@@ -20,6 +20,7 @@ import {
   supHelpEscalate,
   supHelpClose,
   supHelpComplaintStats,
+  supHelpDashboard,
 } from '../controllers/complaintController.js';
 
 const router = express.Router();
@@ -704,8 +705,9 @@ const formatMessage = (msg) => {
 };
 
 // ============================================================
-// COMPLAINT WORKFLOW
+// DASHBOARD & COMPLAINT WORKFLOW
 // ============================================================
+router.get('/dashboard', supHelpDashboard);
 router.get('/complaints', supHelpListComplaints);
 router.get('/complaints/stats', supHelpComplaintStats);
 router.get('/complaints/:id', supHelpGetComplaint);

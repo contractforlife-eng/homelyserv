@@ -1,7 +1,7 @@
 // Sup-Help Dashboard - Phase 2A shared Support-style presentation
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import {
@@ -26,14 +26,35 @@ import {
   Home,
   Headphones
 } from 'lucide-react';
+import complaintsService from '../../services/complaintService';
+import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupHelpDashboard = () => {
   const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const t = i18nT('supHelpDashboard', { returnObjects: true });
+
+  const fetchDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await complaintsService.getSupHelpDashboard();
+      if (res?.success) {
+        setData(res);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching sup-help dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   const formatTime = (dateString) => {
     if (!dateString) return t.notAvailable;
@@ -54,69 +75,75 @@ const SupHelpDashboard = () => {
   };
 
   const getPriorityLabel = (priority) =>
-    t.priorityLabels[String(priority || '').toLowerCase()] || t.unknownPriority;
+    t.priorityLabels?.[String(priority || '').toLowerCase()] || priority || t.unknownPriority;
 
   const getStatusLabel = (status) =>
-    t.statusLabels[String(status || '').toUpperCase()] || t.unknownStatus;
+    t.statusLabels?.[String(status || '').toUpperCase()] || status || t.unknownStatus;
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
+  const getTicketNumber = (ticket) => {
+    if (ticket?.ticketNumber) return ticket.ticketNumber;
+    return `HS-${String(ticket?.id || '').slice(-6) || '000000'}`;
+  };
 
   const kpiCards = [
     {
       label: t.openTickets,
-      value: 0,
+      value: data?.stats?.openTickets || 0,
       icon: Inbox,
       color: 'text-blue-600',
       bg: 'bg-blue-50 dark:bg-blue-900/30',
+      link: '/sup-help/complaints',
     },
     {
       label: t.assignedToMe,
-      value: 0,
+      value: data?.stats?.assignedToMe || 0,
       icon: UserCheck,
       color: 'text-green-600',
       bg: 'bg-green-50 dark:bg-green-900/30',
+      link: '/sup-help/complaints?assignedTo=me',
     },
     {
       label: t.waitingForUser,
-      value: 0,
+      value: data?.stats?.waitingForUser || 0,
       icon: Clock,
       color: 'text-purple-600',
       bg: 'bg-purple-50 dark:bg-purple-900/30',
+      link: '/sup-help/complaints?status=WAITING_FOR_USER',
     },
     {
       label: t.criticalTickets,
-      value: 0,
+      value: data?.stats?.criticalTickets || 0,
       icon: AlertTriangle,
       color: 'text-red-600',
       bg: 'bg-red-50 dark:bg-red-900/30',
+      link: '/sup-help/complaints?priority=Critical',
     },
     {
       label: t.escalatedTickets,
-      value: 0,
+      value: data?.stats?.escalatedTickets || 0,
       icon: ArrowUpRight,
       color: 'text-orange-600',
       bg: 'bg-orange-50 dark:bg-orange-900/30',
+      link: '/sup-help/complaints?status=ESCALATED',
     },
     {
       label: t.resolvedToday,
-      value: 0,
+      value: data?.stats?.resolvedToday || 0,
       icon: CheckCircle2,
       color: 'text-green-600',
       bg: 'bg-green-50 dark:bg-green-900/30',
+      link: '/sup-help/complaints?status=RESOLVED',
     },
     {
       label: t.avgFirstResponse,
-      value: '0',
+      value: `${data?.stats?.avgFirstResponse || 0} ${t.hours || 'hrs'}`,
       icon: Timer,
       color: 'text-yellow-600',
       bg: 'bg-yellow-50 dark:bg-yellow-900/30',
     },
     {
       label: t.avgResolution,
-      value: '0',
+      value: `${data?.stats?.avgResolution || 0} ${t.hours || 'hrs'}`,
       icon: History,
       color: 'text-teal-600',
       bg: 'bg-teal-50 dark:bg-teal-900/30',
@@ -127,6 +154,31 @@ const SupHelpDashboard = () => {
     <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-100 dark:border-gray-700">
       <p className="text-gray-500 dark:text-gray-400">{text}</p>
     </div>
+  );
+
+  const renderTicketCard = (ticket) => (
+    <button
+      key={ticket.id}
+      onClick={() => navigate('/sup-help/complaints')}
+      className="w-full text-left p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition"
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-xs font-mono font-semibold text-gray-700 dark:text-gray-200">
+          {getTicketNumber(ticket)}
+        </span>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(ticket.priority)}`}>
+          <Flag size={10} />
+          {getPriorityLabel(ticket.priority)}
+        </span>
+      </div>
+      <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">{ticket.subject}</p>
+      <div className="flex items-center justify-between mt-2">
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(ticket.status)}`}>
+          {getStatusLabel(ticket.status)}
+        </span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{formatTime(ticket.updatedAt || ticket.createdAt)}</span>
+      </div>
+    </button>
   );
 
   return (
@@ -157,55 +209,97 @@ const SupHelpDashboard = () => {
         ) : (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {kpiCards.map((card, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition h-full">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${card.bg}`}>
-                      <card.icon size={22} className={card.color} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{card.label}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {card.value}
-                      </p>
+              {kpiCards.map((card, i) => {
+                const CardContent = (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition h-full">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-lg ${card.bg}`}>
+                        <card.icon size={22} className={card.color} />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{card.label}</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {card.value}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+
+                return card.link ? (
+                  <Link key={i} to={card.link} className="block">
+                    {CardContent}
+                  </Link>
+                ) : (
+                  <div key={i}>{CardContent}</div>
+                );
+              })}
             </div>
 
+            {/* Needs Attention */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <AlertCircle size={18} className="text-red-600" />
                   {t.needsAttention}
                 </h2>
+                <Link to="/sup-help/complaints" className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+                  {t.viewAll || 'View All'} <ChevronRight size={14} />
+                </Link>
               </div>
-              {emptySection(t.noTickets)}
+              {data?.needsAttention?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {data.needsAttention.slice(0, 6).map(renderTicketCard)}
+                </div>
+              ) : (
+                emptySection(t.noTickets)
+              )}
             </div>
 
+            {/* Two Column Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* My Assigned Tickets */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <UserCheck size={18} className="text-green-600" />
                     {t.myAssignedTickets}
                   </h2>
+                  <Link to="/sup-help/complaints?assignedTo=me" className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+                    {t.viewAll || 'View All'} <ChevronRight size={14} />
+                  </Link>
                 </div>
-                {emptySection(t.noTickets)}
+                {data?.myAssignedTickets?.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {data.myAssignedTickets.slice(0, 4).map(renderTicketCard)}
+                  </div>
+                ) : (
+                  emptySection(t.noTickets)
+                )}
               </div>
 
+              {/* Waiting For User */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Clock size={18} className="text-purple-600" />
                     {t.waitingTickets}
                   </h2>
+                  <Link to="/sup-help/complaints?status=WAITING_FOR_USER" className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+                    {t.viewAll || 'View All'} <ChevronRight size={14} />
+                  </Link>
                 </div>
-                {emptySection(t.noTickets)}
+                {data?.waitingTickets?.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {data.waitingTickets.slice(0, 4).map(renderTicketCard)}
+                  </div>
+                ) : (
+                  emptySection(t.noTickets)
+                )}
               </div>
             </div>
 
+            {/* Recent Activity & Conversations */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -215,19 +309,54 @@ const SupHelpDashboard = () => {
                   </h2>
                 </div>
                 <div className="p-4">
-                  {emptySection(t.noActivity)}
+                  {data?.recentActivity?.length > 0 ? (
+                    <div className="space-y-3">
+                      {data.recentActivity.slice(0, 5).map((act) => (
+                        <div key={act.id} className="flex items-start justify-between gap-2 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/40 text-xs">
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{act.description}</span>
+                          <span className="text-gray-400 dark:text-gray-500 whitespace-nowrap">{formatTime(act.createdAt)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    emptySection(t.noActivity)
+                  )}
                 </div>
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <MessageSquare size={18} className="text-blue-600" />
                     {t.recentConversations}
                   </h2>
+                  <Link to="/sup-help/messages" className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+                    {t.viewAll || 'View All'} <ChevronRight size={14} />
+                  </Link>
                 </div>
                 <div className="p-4">
-                  {emptySection(t.noConversations)}
+                  {data?.recentConversations?.length > 0 ? (
+                    <div className="space-y-3">
+                      {data.recentConversations.slice(0, 5).map((conv) => (
+                        <button
+                          key={conv.conversationId}
+                          onClick={() => navigate('/sup-help/messages')}
+                          className="w-full flex items-center justify-between gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/40 hover:bg-gray-100 dark:hover:bg-gray-900/60 transition text-left"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <UserAvatar name={conv.user?.fullName || 'User'} image={conv.user?.profileImage} size="sm" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{conv.user?.fullName || 'User'}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage || 'No messages yet'}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{formatTime(conv.lastMessageAt)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    emptySection(t.noConversations)
+                  )}
                 </div>
               </div>
             </div>

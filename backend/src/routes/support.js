@@ -51,6 +51,113 @@ const logActivity = async (supportId, action, description, targetUserId = null, 
 };
 
 // ============================================================
+// SUP-HELP TEAM OVERVIEW (SUPERVISORY - SUPPORT & ADMIN ONLY)
+// ============================================================
+
+// GET /api/support/sup-help-team
+// Supervisory overview of the Sup-Help team (SUPPORT & ADMIN only)
+router.get('/sup-help-team', async (req, res) => {
+  try {
+    if (req.userRole !== 'SUPPORT' && req.userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Support supervision authorization required' });
+    }
+
+    const helpers = await prisma.user.findMany({
+      where: { role: 'SUPPORT_HELPER' },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        profileImage: true,
+        createdAt: true,
+      },
+      orderBy: { fullName: 'asc' },
+    });
+
+    const helperIds = helpers.map((h) => h.id);
+
+    // Active complaints per helper (assigned and not resolved/closed)
+    const activeComplaintsList = await prisma.complaint.findMany({
+      where: {
+        assignedSupport: { in: helperIds },
+        status: { in: ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'ESCALATED'] },
+      },
+      select: {
+        id: true,
+        assignedSupport: true,
+        status: true,
+      },
+    });
+
+    const helperComplaintCounts = new Map();
+    for (const c of activeComplaintsList) {
+      const hId = String(c.assignedSupport);
+      helperComplaintCounts.set(hId, (helperComplaintCounts.get(hId) || 0) + 1);
+    }
+
+    // Active live support conversations per helper
+    const PublicSupportConversation = (await import('../models/PublicSupportConversation.js')).default;
+    const activeLiveSupportList = await PublicSupportConversation.find({
+      assignedTo: { $in: helperIds },
+      status: { $in: ['WAITING_FOR_SUPPORT', 'ASSIGNED'] },
+    }).select('assignedTo status').lean();
+
+    const helperLiveSupportCounts = new Map();
+    for (const conv of activeLiveSupportList) {
+      const hId = String(conv.assignedTo);
+      helperLiveSupportCounts.set(hId, (helperLiveSupportCounts.get(hId) || 0) + 1);
+    }
+
+    // Complaints escalated to SUPPORT
+    const escalatedToSupportCount = await prisma.complaint.count({
+      where: {
+        status: 'ESCALATED',
+        Timeline: {
+          some: {
+            action: 'ESCALATED',
+            newValue: 'SUPPORT',
+          },
+        },
+      },
+    });
+
+    // Unassigned waiting live support queue
+    const waitingLiveSupportCount = await PublicSupportConversation.countDocuments({
+      status: 'WAITING_FOR_SUPPORT',
+      $or: [{ assignedTo: null }, { assignedTo: { $exists: false } }],
+    });
+
+    const helperDtos = helpers.map((helper) => ({
+      id: helper.id,
+      fullName: helper.fullName,
+      email: helper.email,
+      role: helper.role,
+      profileImage: helper.profileImage || null,
+      createdAt: helper.createdAt,
+      activeComplaints: helperComplaintCounts.get(String(helper.id)) || 0,
+      activeLiveSupport: helperLiveSupportCounts.get(String(helper.id)) || 0,
+    }));
+
+    const totalActiveComplaints = Array.from(helperComplaintCounts.values()).reduce((a, b) => a + b, 0);
+    const totalActiveLiveSupport = Array.from(helperLiveSupportCounts.values()).reduce((a, b) => a + b, 0);
+
+    return res.json({
+      success: true,
+      totalHelpers: helpers.length,
+      totalActiveComplaints,
+      totalActiveLiveSupport,
+      escalatedToSupportCount,
+      waitingLiveSupportCount,
+      helpers: helperDtos,
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Sup-Help team overview:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch Sup-Help team overview' });
+  }
+});
+
+// ============================================================
 // USER MANAGEMENT FOR SUPPORT
 // ============================================================
 

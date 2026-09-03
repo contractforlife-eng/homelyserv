@@ -359,8 +359,8 @@ const loadMessagesForConversation = async (conversationId) => {
     }
   };
 
-  // Deep-link only to conversations already returned by the server's
-  // membership/assignment-scoped list. Unknown IDs remain unselected.
+  // Deep-link to conversations requested via URL searchParams (?conversationId=...)
+  // Handles both existing conversations and newly-ensured staff threads.
   useEffect(() => {
     const targetId = requestedConversationId;
     const targetKey = targetId ? String(targetId) : null;
@@ -368,19 +368,56 @@ const loadMessagesForConversation = async (conversationId) => {
       !targetKey
       || handledRequestedConversationIdRef.current === targetKey
       || selectedConversationId
-      || conversations.length === 0
+      || loading
     ) return;
+
     const conversation = conversations.find(
       (item) => String(item.id) === targetKey
     );
+
     if (conversation) {
       handledRequestedConversationIdRef.current = targetKey;
       if (conversation.type === CONVERSATION_TABS.SUPPORT || conversation.type === CONVERSATION_TABS.INTERNAL) {
         setActiveConversationTab(conversation.type);
       }
       handleSelectConversation(conversation.id);
+    } else if (targetKey.startsWith('conv_') && authUser?.id) {
+      // Resolve counterpart for new/empty staff conversation
+      const rawIds = targetKey.replace(/^conv_/, '').split('_');
+      const otherId = rawIds.find((id) => id !== String(authUser.id));
+      if (otherId) {
+        handledRequestedConversationIdRef.current = targetKey;
+        api.get('/api/chat/staff-directory')
+          .then((res) => {
+            const staffList = Array.isArray(res.data) ? res.data : [];
+            const foundStaff = staffList.find((s) => String(s.id) === String(otherId));
+            const newConv = {
+              id: targetKey,
+              type: CONVERSATION_TABS.SUPPORT,
+              otherUserId: String(otherId),
+              otherUserName: foundStaff?.fullName || 'Staff Member',
+              usesFallbackUserName: !foundStaff?.fullName,
+              otherUserRole: foundStaff?.role || 'SUPPORT_HELPER',
+              otherUserImage: foundStaff?.profileImage || null,
+              lastMessage: t.startConversationHere,
+              unread: 0,
+              role: foundStaff?.role || 'SUPPORT_HELPER',
+              updatedAt: new Date().toISOString(),
+            };
+            setActiveConversationTab(CONVERSATION_TABS.SUPPORT);
+            setConversations((prev) => {
+              if (prev.some((c) => String(c.id) === targetKey)) return prev;
+              return [newConv, ...prev];
+            });
+            handleSelectConversation(targetKey);
+          })
+          .catch((err) => {
+            console.warn('Unable to resolve staff member for deep link:', err);
+            handleSelectConversation(targetKey);
+          });
+      }
     }
-  }, [requestedConversationId, conversations, selectedConversationId]);
+  }, [requestedConversationId, conversations, selectedConversationId, loading, authUser?.id, t.startConversationHere]);
 
   // New conversations from this page reuse the existing authorized
   // ensure-conversation flow (server re-verifies roles from the database and

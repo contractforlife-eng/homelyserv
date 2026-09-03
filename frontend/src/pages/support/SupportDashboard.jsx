@@ -22,17 +22,42 @@ import {
   History,
   FileText,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Headphones
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
+import api from '../../utils/api';
 import { UserAvatar, UserDisplayName } from '../../components/users';
+import { ensureConversationExists, getConversationId } from '../../utils/chatService';
 
 const SupportDashboard = () => {
   const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const [data, setData] = useState(null);
+  const [teamData, setTeamData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const handleMessageHelper = async (helper) => {
+    if (!authUser?.id || !helper?.id) return;
+    try {
+      const ensured = await ensureConversationExists(
+        authUser.id,
+        authUser.fullName || 'Support Admin',
+        authUser.role || 'SUPPORT',
+        helper.id,
+        helper.fullName,
+        helper.role || 'SUPPORT_HELPER'
+      );
+      const convId = typeof ensured === 'string'
+        ? ensured
+        : ensured?.conversationId || ensured?.id || getConversationId(authUser.id, helper.id);
+      navigate(`/support-messages?conversationId=${encodeURIComponent(convId)}`);
+    } catch (err) {
+      console.error('Error opening conversation with helper:', err);
+      navigate('/support-messages');
+    }
+  };
 
   // ============================================================
   // FETCH DASHBOARD DATA
@@ -40,9 +65,15 @@ const SupportDashboard = () => {
   const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await complaintsService.getSupportDashboard();
-      if (response?.success) {
-        setData(response);
+      const [response, teamRes] = await Promise.allSettled([
+        complaintsService.getSupportDashboard(),
+        api.get('/api/support/sup-help-team'),
+      ]);
+      if (response.status === 'fulfilled' && response.value?.success) {
+        setData(response.value);
+      }
+      if (teamRes.status === 'fulfilled' && teamRes.value?.data?.success) {
+        setTeamData(teamRes.value.data);
       }
     } catch (error) {
       console.error('❌ Error fetching support dashboard:', error);
@@ -249,6 +280,91 @@ const SupportDashboard = () => {
                 );
               })}
             </div>
+
+            {/* ============================================
+                SUP-HELP TEAM OVERVIEW (SUPERVISORY)
+                ============================================ */}
+            {teamData && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Users size={20} className="text-red-500" />
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {t.supHelpTeam || 'Sup-Help Team'}
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                      {teamData.totalHelpers || 0}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Link
+                      to="/support-complaints?view=escalated"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition font-medium"
+                    >
+                      <AlertTriangle size={14} />
+                      <span>{t.escalatedToMe || 'Escalated to Me'}:</span>
+                      <strong className="font-bold">{teamData.escalatedToSupportCount || 0}</strong>
+                    </Link>
+                    <Link
+                      to="/support-live-support"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition font-medium"
+                    >
+                      <Headphones size={14} />
+                      <span>{t.waitingQueue || 'Waiting Queue'}:</span>
+                      <strong className="font-bold">{teamData.waitingLiveSupportCount || 0}</strong>
+                    </Link>
+                  </div>
+                </div>
+
+                {teamData.helpers?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {teamData.helpers.map((helper) => (
+                      <div
+                        key={helper.id}
+                        className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-gray-100 dark:border-gray-700/80 bg-gray-50/60 dark:bg-gray-900/40 hover:border-red-200 dark:hover:border-red-900/50 transition"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <UserAvatar
+                            name={helper.fullName}
+                            image={helper.profileImage}
+                            role="SUPPORT_HELPER"
+                            size="md"
+                            className="border border-red-500/30 flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <UserDisplayName user={helper} size="sm" />
+                            <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                                <FileText size={12} />
+                                {helper.activeComplaints} {t.assignedComplaints || 'Complaints'}
+                              </span>
+                              <span>•</span>
+                              <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                                <Headphones size={12} />
+                                {helper.activeLiveSupport} {t.assignedLiveSupport || 'Live'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleMessageHelper(helper)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-1 flex-shrink-0"
+                          title={t.messageHelper || 'Message'}
+                        >
+                          <MessageSquare size={13} className="text-green-600" />
+                          <span className="hidden sm:inline">{t.messageHelper || 'Message'}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                    {t.noHelpers || 'No Sup-Help members found'}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* ============================================
                 NEEDS ATTENTION

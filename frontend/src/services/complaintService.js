@@ -382,6 +382,11 @@ export const getSupHelpComplaintStats = async () => {
   return response.data;
 };
 
+export const getSupHelpDashboard = async () => {
+  const response = await api.get('/api/sup-help/dashboard');
+  return response.data;
+};
+
 const complaintService = {
   uploadComplaintAttachment,
   createComplaint,
@@ -421,6 +426,7 @@ const complaintService = {
   escalateSupHelpComplaint,
   closeSupHelpComplaint,
   getSupHelpComplaintStats,
+  getSupHelpDashboard,
   COMPLAINT_STATUSES,
   COMPLAINT_CATEGORIES,
   COMPLAINT_PRIORITIES,

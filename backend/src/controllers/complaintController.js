@@ -390,32 +390,6 @@ export const requireAssignedSupportComplaint = async (req, res, next) => {
   if (req.userRole === 'ADMIN') return next();
   const complaint = await prisma.complaint.findUnique({
     where: { id: req.params.id },
-    select: { id: true, assignedSupport: true, assignedTo: true },
-  });
-  if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
-  const supportId = String(req.userId);
-  const modernAssignment = complaint.assignedSupport ? String(complaint.assignedSupport) : null;
-  const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
-  if (modernAssignment !== supportId && legacyAssignment !== supportId) {
-    return res.status(403).json({ success: false, message: 'Complaint is not assigned to you' });
-  }
-  if ((modernAssignment && modernAssignment !== supportId) || (legacyAssignment && legacyAssignment !== supportId)) {
-    return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
-  }
-  return next();
-};
-
-// Support may inspect an unassigned ticket in the queue, or an assigned ticket
-// belonging to them. All mutating support routes continue using the stricter
-// requireAssignedSupportComplaint middleware.
-export const requireSupportComplaintAccess = async (req, res, next) => {
-  if (req.userRole === 'ADMIN') return next();
-  const { id } = req.params;
-  if (!isValidObjectId(id)) {
-    return res.status(404).json({ success: false, message: 'Complaint not found' });
-  }
-  const complaint = await prisma.complaint.findUnique({
-    where: { id },
     select: {
       id: true,
       assignedSupport: true,
@@ -432,9 +406,64 @@ export const requireSupportComplaintAccess = async (req, res, next) => {
   const supportId = String(req.userId);
   const modernAssignment = complaint.assignedSupport ? String(complaint.assignedSupport) : null;
   const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
-  if ((modernAssignment && modernAssignment !== supportId) || (legacyAssignment && legacyAssignment !== supportId)) {
-    return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
+  const isAssignedToMe = modernAssignment === supportId || legacyAssignment === supportId;
+
+  // If complaint is explicitly escalated to SUPPORT, Support agent can handle it per canonical escalation flow!
+  const isEscalatedToSupport = complaint.status === 'ESCALATED' && (
+    complaint.Timeline?.[0]?.newValue === 'SUPPORT' || !complaint.Timeline?.[0]?.newValue
+  ) && req.userRole === 'SUPPORT';
+
+  if (!isAssignedToMe && !isEscalatedToSupport) {
+    if (modernAssignment || legacyAssignment) {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
+    }
+    return res.status(403).json({ success: false, message: 'Complaint is not assigned to you' });
   }
+  return next();
+};
+
+// Support may inspect an unassigned ticket in the queue, an assigned ticket
+// belonging to them, or (for Sup-Admin) tickets assigned to Sup-Help for monitoring.
+export const requireSupportComplaintAccess = async (req, res, next) => {
+  if (req.userRole === 'ADMIN') return next();
+  const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(404).json({ success: false, message: 'Complaint not found' });
+  }
+  const complaint = await prisma.complaint.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      assignedSupport: true,
+      assignedTo: true,
+      status: true,
+      AssignedSupport: {
+        select: { id: true, role: true },
+      },
+      Timeline: {
+        where: { action: 'ESCALATED' },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+  });
+  if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
+  const supportId = String(req.userId);
+  const modernAssignment = complaint.assignedSupport ? String(complaint.assignedSupport) : null;
+  const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
+  const assignedAgentId = modernAssignment || legacyAssignment;
+
+  if (assignedAgentId && assignedAgentId !== supportId) {
+    // Phase A: If calling user is SUPPORT (Sup-Admin), allow supervisory view if assigned to a SUPPORT_HELPER or escalated to SUPPORT
+    const isSupHelpAssigned = complaint.AssignedSupport?.role === 'SUPPORT_HELPER';
+    const isEscalatedToSupport = complaint.status === 'ESCALATED' && complaint.Timeline?.[0]?.newValue === 'SUPPORT';
+    if (req.userRole === 'SUPPORT' && (isSupHelpAssigned || isEscalatedToSupport)) {
+      // Allowed for supervisory view
+    } else {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
+    }
+  }
+
   // Block Support from accessing complaints escalated to ADMIN
   if (complaint.status === 'ESCALATED' && complaint.Timeline?.[0]?.newValue === 'ADMIN' && modernAssignment !== supportId) {
     return res.status(403).json({ success: false, message: 'This complaint has been escalated to administration' });
@@ -709,7 +738,7 @@ export const userReply = async (req, res) => {
  */
 export const supportListComplaints = async (req, res) => {
   try {
-    const { status, priority, category, assignedTo, userId, search, page = 1, limit = 50 } = req.query;
+    const { status, priority, category, assignedTo, userId, search, view, page = 1, limit = 50 } = req.query;
     const supportId = String(req.userId);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -738,29 +767,63 @@ export const supportListComplaints = async (req, res) => {
     }
 
     if (req.userRole === 'SUPPORT') {
-      // Treat only records with no modern or legacy assignment as queue items.
-      // Prisma's `null` filter does not match MongoDB fields that are missing,
-      // so both explicit-null and legacy-missing shapes are covered here.
-      where.AND = [
-        ...(where.AND || []),
-        {
-          OR: [
-            { assignedSupport: supportId },
-            {
-              assignedSupport: null,
-              OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
-            },
-            {
-              assignedSupport: { isSet: false },
-              OR: [
-                { assignedTo: supportId },
-                { assignedTo: null },
-                { assignedTo: { isSet: false } },
-              ],
-            },
-          ],
-        },
-      ];
+      const helperUsers = await prisma.user.findMany({
+        where: { role: 'SUPPORT_HELPER' },
+        select: { id: true },
+      });
+      const helperIds = helperUsers.map((h) => h.id);
+
+      if (view === 'my') {
+        where.assignedSupport = supportId;
+      } else if (view === 'unassigned') {
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              {
+                assignedSupport: null,
+                OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+              },
+              {
+                assignedSupport: { isSet: false },
+                OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+              },
+            ],
+          },
+        ];
+      } else if (view === 'sup_help') {
+        where.assignedSupport = { in: helperIds };
+      } else if (view === 'escalated') {
+        where.status = 'ESCALATED';
+      } else {
+        // Default: Support sees:
+        // 1. My complaints
+        // 2. Unassigned complaints
+        // 3. Complaints assigned to ANY SUPPORT_HELPER (Supervisory Queue)
+        // 4. Escalated complaints
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              { assignedSupport: supportId },
+              { assignedSupport: { in: helperIds } },
+              {
+                assignedSupport: null,
+                OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+              },
+              {
+                assignedSupport: { isSet: false },
+                OR: [
+                  { assignedTo: supportId },
+                  { assignedTo: { in: helperIds } },
+                  { assignedTo: null },
+                  { assignedTo: { isSet: false } },
+                ],
+              },
+            ],
+          },
+        ];
+      }
     }
 
     if (search && search.trim()) {
@@ -906,12 +969,14 @@ export const supportAssignComplaint = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    // Do not treat a populated legacy assignment as unassigned when the
-    // canonical support assignment field is absent.
-    if (
+    const isEscalatedToSupport = complaint.status === 'ESCALATED' && req.userRole === 'SUPPORT';
+
+    const isAssignedToOther = (
       (complaint.assignedSupport && complaint.assignedSupport !== supportId)
-      || (!complaint.assignedSupport && complaint.assignedTo)
-    ) {
+      || (!complaint.assignedSupport && complaint.assignedTo && complaint.assignedTo !== supportId)
+    );
+
+    if (isAssignedToOther && !isEscalatedToSupport && req.userRole !== 'ADMIN') {
       return res.status(400).json({
         success: false,
         message: 'This complaint is already assigned to another support agent',
@@ -3504,7 +3569,7 @@ export const supHelpComplaintStats = async (req, res) => {
   try {
     const helperId = String(req.userId);
 
-    const [unassignedCount, assignedToMeCount, inProgressCount, resolvedCount, escalatedCount] = await Promise.all([
+    const [unassignedCount, activeAssignedCount, inProgressCount, resolvedCount, escalatedCount] = await Promise.all([
       prisma.complaint.count({
         where: {
           status: { in: ['NEW', 'OPEN'] },
@@ -3514,6 +3579,7 @@ export const supHelpComplaintStats = async (req, res) => {
       }),
       prisma.complaint.count({
         where: {
+          status: { in: ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER'] },
           OR: [
             { assignedSupport: helperId },
             { assignedTo: helperId },
@@ -3548,8 +3614,8 @@ export const supHelpComplaintStats = async (req, res) => {
     return res.json({
       success: true,
       stats: {
-        openTickets: unassignedCount,
-        assignedToMe: assignedToMeCount,
+        openTickets: unassignedCount + activeAssignedCount,
+        assignedToMe: activeAssignedCount,
         inProgress: inProgressCount,
         resolved: resolvedCount,
         escalated: escalatedCount,
@@ -3558,6 +3624,343 @@ export const supHelpComplaintStats = async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching complaint stats for sup-help:', error);
     return res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+  }
+};
+
+/**
+ * GET /api/sup-help/dashboard
+ * Full dashboard payload for Support Helper:
+ * KPI counts, needs-attention tickets, my assigned tickets,
+ * waiting-for-user tickets, recent activity, and recent conversations.
+ */
+export const supHelpDashboard = async (req, res) => {
+  try {
+    const helperId = String(req.userId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // ============================================================
+    // KPI COUNTS
+    // ============================================================
+
+    // Open tickets = Permitted unassigned claimable (NEW + OPEN) + active assigned to this helper
+    const [unassignedOpenCount, assignedOpenCount] = await Promise.all([
+      prisma.complaint.count({
+        where: {
+          status: { in: ['NEW', 'OPEN'] },
+          assignedSupport: null,
+          OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          status: { in: ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER'] },
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+        },
+      }),
+    ]);
+    const openTickets = unassignedOpenCount + assignedOpenCount;
+
+    // Assigned to me (active, not resolved/closed)
+    const assignedToMe = await prisma.complaint.count({
+      where: {
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+        OR: [
+          { assignedSupport: helperId },
+          { assignedTo: helperId },
+        ],
+      },
+    });
+
+    // Waiting for user (assigned to me)
+    const waitingForUser = await prisma.complaint.count({
+      where: {
+        status: 'WAITING_FOR_USER',
+        OR: [
+          { assignedSupport: helperId },
+          { assignedTo: helperId },
+        ],
+      },
+    });
+
+    // Critical tickets (claimable unassigned critical OR assigned to me critical)
+    const [unassignedCritical, assignedCritical] = await Promise.all([
+      prisma.complaint.count({
+        where: {
+          priority: 'Critical',
+          status: { in: ['NEW', 'OPEN'] },
+          assignedSupport: null,
+          OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          priority: 'Critical',
+          status: { notIn: ['RESOLVED', 'CLOSED'] },
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+        },
+      }),
+    ]);
+    const criticalTickets = unassignedCritical + assignedCritical;
+
+    // Escalated tickets (escalated by this helper)
+    const escalatedTickets = await prisma.complaint.count({
+      where: {
+        escalatedBy: helperId,
+      },
+    });
+
+    // Resolved today (assigned to this helper and resolved today)
+    const resolvedToday = await prisma.complaint.count({
+      where: {
+        status: 'RESOLVED',
+        resolvedAt: { gte: today },
+        OR: [
+          { assignedSupport: helperId },
+          { assignedTo: helperId },
+        ],
+      },
+    });
+
+    // ============================================================
+    // AVERAGE FIRST RESPONSE TIME (for this helper's complaints)
+    // ============================================================
+    let avgFirstResponseHours = 0;
+    try {
+      const complaintsWithReplies = await prisma.complaint.findMany({
+        where: {
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+          Timeline: {
+            some: { action: 'SUPPORT_REPLIED' },
+          },
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          Timeline: {
+            where: { action: 'SUPPORT_REPLIED' },
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            select: { createdAt: true },
+          },
+        },
+      });
+
+      if (complaintsWithReplies.length > 0) {
+        const totalMs = complaintsWithReplies.reduce((sum, c) => {
+          const firstReply = c.Timeline[0];
+          if (!firstReply) return sum;
+          return sum + (new Date(firstReply.createdAt) - new Date(c.createdAt));
+        }, 0);
+        avgFirstResponseHours = Math.round((totalMs / complaintsWithReplies.length) / (1000 * 60 * 60) * 10) / 10;
+      }
+    } catch (e) {
+      console.error('❌ Error computing avg first response time for sup-help:', e.message);
+    }
+
+    // ============================================================
+    // AVERAGE RESOLUTION TIME (for this helper's complaints)
+    // ============================================================
+    let avgResolutionHours = 0;
+    try {
+      const resolvedComplaints = await prisma.complaint.findMany({
+        where: {
+          status: 'RESOLVED',
+          resolvedAt: { not: null },
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+        },
+        select: { createdAt: true, resolvedAt: true },
+      });
+
+      if (resolvedComplaints.length > 0) {
+        const totalMs = resolvedComplaints.reduce((sum, c) => {
+          return sum + (new Date(c.resolvedAt) - new Date(c.createdAt));
+        }, 0);
+        avgResolutionHours = Math.round((totalMs / resolvedComplaints.length) / (1000 * 60 * 60) * 10) / 10;
+      }
+    } catch (e) {
+      console.error('❌ Error computing avg resolution time for sup-help:', e.message);
+    }
+
+    // ============================================================
+    // NEEDS ATTENTION (claimable unassigned OR helper assigned active)
+    // ============================================================
+    const needsAttentionRaw = await prisma.complaint.findMany({
+      where: {
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+        OR: [
+          // Assigned to this helper
+          { assignedSupport: helperId },
+          { assignedTo: helperId },
+          // Unassigned claimable
+          {
+            status: { in: ['NEW', 'OPEN'] },
+            assignedSupport: null,
+            OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+          },
+        ],
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+      orderBy: [
+        { priority: 'desc' },
+        { status: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      take: 10,
+    });
+
+    const priorityWeight = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    const statusWeight = { ESCALATED: 0, WAITING_FOR_USER: 1, NEW: 2, OPEN: 3, IN_PROGRESS: 4 };
+    needsAttentionRaw.sort((a, b) => {
+      const aW = (priorityWeight[a.priority] ?? 4) * 10 + (statusWeight[a.status] ?? 5);
+      const bW = (priorityWeight[b.priority] ?? 4) * 10 + (statusWeight[b.status] ?? 5);
+      return aW - bW;
+    });
+
+    // ============================================================
+    // MY ASSIGNED TICKETS
+    // ============================================================
+    const myAssignedTicketsRaw = await prisma.complaint.findMany({
+      where: {
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+        OR: [
+          { assignedSupport: helperId },
+          { assignedTo: helperId },
+        ],
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+
+    // ============================================================
+    // WAITING FOR USER TICKETS
+    // ============================================================
+    const waitingTicketsRaw = await prisma.complaint.findMany({
+      where: {
+        status: 'WAITING_FOR_USER',
+        OR: [
+          { assignedSupport: helperId },
+          { assignedTo: helperId },
+        ],
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+
+    // ============================================================
+    // RECENT ACTIVITY (activities by this helper)
+    // ============================================================
+    let recentActivity = [];
+    try {
+      recentActivity = await prisma.supportActivity.findMany({
+        where: { supportId: helperId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      });
+    } catch (e) {
+      console.error('❌ Error fetching recent activity for sup-help:', e.message);
+    }
+
+    // ============================================================
+    // RECENT CONVERSATIONS
+    // ============================================================
+    let recentConversations = [];
+    try {
+      const conversationsMeta = await Conversation.find({
+        $or: [
+          { type: 'INTERNAL', $or: [{ staffIds: helperId }, { participantIds: helperId }] },
+          { type: 'SUPPORT', $or: [{ supportAgentId: helperId }, { participantIds: helperId }, { staffIds: helperId }] },
+        ],
+      })
+        .sort({ lastMessageAt: -1 })
+        .limit(10)
+        .lean();
+
+      for (const conv of conversationsMeta) {
+        const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+          .sort({ createdAt: -1 })
+          .lean();
+
+        const otherUserId = (conv.participantIds || []).find((id) => String(id) !== helperId)
+          || (conv.staffIds || []).find((id) => String(id) !== helperId);
+
+        let otherUser = null;
+        if (otherUserId) {
+          otherUser = await prisma.user.findUnique({
+            where: { id: String(otherUserId) },
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+          });
+        }
+
+        recentConversations.push({
+          conversationId: conv.conversationId,
+          type: conv.type,
+          status: conv.status,
+          user: otherUser,
+          lastMessage: lastMsg ? lastMsg.text : conv.lastMessage || '',
+          lastMessageAt: lastMsg ? lastMsg.createdAt : conv.lastMessageAt || conv.updatedAt,
+        });
+      }
+    } catch (e) {
+      console.error('❌ Error fetching recent conversations for sup-help:', e.message);
+    }
+
+    return res.json({
+      success: true,
+      stats: {
+        openTickets,
+        assignedToMe,
+        waitingForUser,
+        criticalTickets,
+        escalatedTickets,
+        resolvedToday,
+        avgFirstResponse: avgFirstResponseHours,
+        avgResolution: avgResolutionHours,
+      },
+      needsAttention: needsAttentionRaw.map((c) => serializeComplaint(c, { includeInternal: true, includeSensitive: false })),
+      myAssignedTickets: myAssignedTicketsRaw.map((c) => serializeComplaint(c, { includeInternal: true, includeSensitive: false })),
+      waitingTickets: waitingTicketsRaw.map((c) => serializeComplaint(c, { includeInternal: true, includeSensitive: false })),
+      recentActivity,
+      recentConversations,
+    });
+  } catch (error) {
+    console.error('❌ Error generating sup-help dashboard:', error);
+    return res.status(500).json({ success: false, message: 'Failed to generate dashboard' });
   }
 };
 
@@ -3596,4 +3999,5 @@ export default {
   supHelpEscalate,
   supHelpClose,
   supHelpComplaintStats,
+  supHelpDashboard,
 };

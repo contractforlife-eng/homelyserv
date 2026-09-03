@@ -18,7 +18,7 @@ const clean = (value, max) => String(value || '').replace(/[<>]/g, '').replace(/
 const safeLanguage = (value) => LANGUAGES.has(value) ? value : 'en';
 const tokenFrom = (req) => req.get('X-Guest-Token') || '';
 const messageDto = (message) => ({ id:String(message._id), clientMessageId:message.clientMessageId || null, senderType:message.senderType, senderRole:message.senderRole || null, body:message.body, createdAt:message.createdAt });
-const conversationDto = (conversation) => ({ id:String(conversation._id), publicId:conversation.publicId, visitorName:conversation.visitorName || '', visitorEmail:conversation.visitorEmail || '', language:conversation.language, status:conversation.status, assignedTo:conversation.assignedTo ? String(conversation.assignedTo) : null, assignedRole:conversation.assignedRole || null, escalationReason:conversation.escalationReason || '', escalatedAt:conversation.escalatedAt || null, lastMessage:conversation.lastMessage, lastMessageAt:conversation.lastMessageAt, lastActivityAt:conversation.lastActivityAt, guestUnreadCount:conversation.guestUnreadCount, staffUnreadCount:conversation.staffUnreadCount, closeReason:conversation.closeReason || null, closedAt:conversation.closedAt || null, createdAt:conversation.createdAt, updatedAt:conversation.updatedAt });
+const conversationDto = (conversation, assignedHelper = null) => ({ id:String(conversation._id), publicId:conversation.publicId, visitorName:conversation.visitorName || '', visitorEmail:conversation.visitorEmail || '', language:conversation.language, status:conversation.status, assignedTo:conversation.assignedTo ? String(conversation.assignedTo) : null, assignedRole:conversation.assignedRole || null, assignedHelper:assignedHelper || conversation.assignedHelper || null, escalationReason:conversation.escalationReason || '', escalatedAt:conversation.escalatedAt || null, lastMessage:conversation.lastMessage, lastMessageAt:conversation.lastMessageAt, lastActivityAt:conversation.lastActivityAt, guestUnreadCount:conversation.guestUnreadCount, staffUnreadCount:conversation.staffUnreadCount, closeReason:conversation.closeReason || null, closedAt:conversation.closedAt || null, createdAt:conversation.createdAt, updatedAt:conversation.updatedAt });
 
 function limit(windowMs, maximum) {
   return (req, res, next) => {
@@ -148,12 +148,28 @@ router.post('/session/:publicId/escalate', limit(60_000, 10), requireGuest, asyn
 router.get('/staff/conversations', requireLiveSupportStaff, async (req, res) => {
   const statuses = clean(req.query.status, 50).split(',').filter((status) => ['WAITING_FOR_SUPPORT','ASSIGNED','CLOSED'].includes(status));
   const statusFilter = statuses.length ? { status:{ $in:statuses } } : { status:{ $ne:'BOT' } };
-  const ownershipFilter = req.userRole === 'ADMIN'
-    ? {}
-    : { $or:[{ assignedTo:String(req.userId) }, { assignedTo:null }, { assignedTo:{ $exists:false } }] };
+  let ownershipFilter;
+  if (req.userRole === 'ADMIN') {
+    ownershipFilter = {};
+  } else if (req.userRole === 'SUPPORT') {
+    ownershipFilter = { $or:[{ assignedTo:String(req.userId) }, { assignedTo:null }, { assignedTo:{ $exists:false } }, { assignedRole:'SUPPORT_HELPER' }] };
+  } else {
+    ownershipFilter = { $or:[{ assignedTo:String(req.userId) }, { assignedTo:null }, { assignedTo:{ $exists:false } }] };
+  }
   const filter = req.userRole === 'ADMIN' ? statusFilter : { $and:[statusFilter, ownershipFilter] };
   const conversations = await PublicSupportConversation.find(filter).sort({ lastMessageAt:-1 }).limit(100).lean();
-  res.json({ success:true, conversations:conversations.map(conversationDto) });
+  const helperIds = [...new Set(conversations.map((c) => c.assignedTo).filter(Boolean))];
+  let helperMap = new Map();
+  if (helperIds.length > 0) {
+    const prisma = (await import('../lib/prisma.js')).default;
+    const helpers = await prisma.user.findMany({ where:{ id:{ in:helperIds } }, select:{ id:true, fullName:true, email:true, profileImage:true, role:true } });
+    helperMap = new Map(helpers.map((h) => [String(h.id), h]));
+  }
+  const dtos = conversations.map((c) => {
+    const helper = c.assignedTo ? helperMap.get(String(c.assignedTo)) : null;
+    return conversationDto(c, helper);
+  });
+  res.json({ success:true, conversations:dtos });
 });
 
 router.get('/staff/conversations/:id', requireLiveSupportStaff, async (req, res) => {
@@ -162,13 +178,23 @@ router.get('/staff/conversations/:id', requireLiveSupportStaff, async (req, res)
     PublicSupportMessage.find({ conversationId:req.params.id }).sort({ createdAt:1 }).limit(500).lean(),
   ]);
   if (!conversation) return res.status(404).json({ success:false, message:'Conversation not found.' });
-  if (req.userRole !== 'ADMIN' && conversation.assignedTo && String(conversation.assignedTo) !== String(req.userId)) {
+  const isAssignedToMe = conversation.assignedTo && String(conversation.assignedTo) === String(req.userId);
+  const isSupHelpAssigned = conversation.assignedRole === 'SUPPORT_HELPER';
+  const isSupportSupervisor = req.userRole === 'SUPPORT' && isSupHelpAssigned;
+  if (req.userRole !== 'ADMIN' && !isAssignedToMe && !isSupportSupervisor && conversation.assignedTo) {
     return res.status(403).json({ success:false, message:'Conversation is assigned to another staff member.' });
   }
   conversation = await expireConversationIfInactive(conversation);
-  conversation.staffUnreadCount = 0;
-  await conversation.save();
-  res.json({ success:true, conversation:conversationDto(conversation), messages:messages.map(messageDto) });
+  if (isAssignedToMe || req.userRole === 'ADMIN') {
+    conversation.staffUnreadCount = 0;
+    await conversation.save();
+  }
+  let assignedHelper = null;
+  if (conversation.assignedTo) {
+    const prisma = (await import('../lib/prisma.js')).default;
+    assignedHelper = await prisma.user.findUnique({ where:{ id:String(conversation.assignedTo) }, select:{ id:true, fullName:true, email:true, profileImage:true, role:true } });
+  }
+  res.json({ success:true, conversation:conversationDto(conversation, assignedHelper), messages:messages.map(messageDto) });
 });
 
 router.post('/staff/conversations/:id/claim', requireLiveSupportStaff, async (req, res) => {

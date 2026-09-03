@@ -5038,6 +5038,78 @@ const SUPPORT_DASHBOARD_COPY = {
   de:{title:'Support-Dashboard',welcome:'Willkommen',supportAgent:'Support-Mitarbeiter',subtitle:'Benutzersupport überwachen und verwalten',loading:'Wird geladen...',noData:'Keine Daten verfügbar',notAvailable:'Nicht verfügbar',openTickets:'Offene Tickets',assignedToMe:'Mir zugewiesen',waitingForUser:'Wartet auf Benutzer',criticalTickets:'Kritische Tickets',escalatedTickets:'Eskalierte Tickets',resolvedToday:'Heute gelöst',avgFirstResponse:'Durchschn. erste Antwort',avgResolution:'Durchschn. Lösungszeit',hours:'Std.',needsAttention:'Erfordern Aufmerksamkeit',myAssignedTickets:'Meine zugewiesenen Tickets',waitingTickets:'Wartet auf Benutzer',recentActivity:'Letzte Aktivität',recentConversations:'Letzte Unterhaltungen',quickActions:'Schnellaktionen',users:'Benutzer',complaints:'Beschwerden',messages:'Nachrichten',startConversation:'Unterhaltung starten',manageUsers:'Benutzerkonten verwalten',manageComplaints:'Beschwerdeablauf verwalten',respondInquiries:'Benutzeranfragen beantworten',openSupportChat:'Neuen Support-Chat öffnen',viewAll:'Alle anzeigen',noTickets:'Keine Tickets',noActivity:'Keine neue Aktivität',noConversations:'Keine Unterhaltungen',ticket:'Ticket',priority:'Priorität',status:'Status',time:'Zeit',user:'Benutzer',unknownStatus:'Unbekannter Status',unknownPriority:'Unbekannte Priorität',unknownActivity:'Aktivität',statusLabels:{NEW:'Neu',OPEN:'Offen',PENDING:'Ausstehend',IN_PROGRESS:'In Bearbeitung',WAITING_FOR_USER:'Wartet auf Benutzer',ESCALATED:'Eskaliert',RESOLVED:'Gelöst',CLOSED:'Geschlossen'},priorityLabels:{low:'Niedrig',medium:'Mittel',high:'Hoch',urgent:'Dringend',critical:'Kritisch'},activityLabels:{CREATED:'Erstellt',ASSIGNED:'Zugewiesen',REASSIGNED:'Neu zugewiesen',USER_REPLIED:'Benutzerantwort',SUPPORT_REPLIED:'Support-Antwort',ADMIN_REPLIED:'Administrator-Antwort',REPLIED:'Antwort hinzugefügt',NOTE_ADDED:'Notiz hinzugefügt',STATUS_CHANGED:'Status geändert',RETURNED_TO_SUPPORT:'An Support zurückgegeben',ESCALATED:'Eskaliert',RESOLVED:'Gelöst',CLOSED:'Geschlossen'}}
 };
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.supportDashboardPage = SUPPORT_DASHBOARD_COPY[code];
+Object.assign(SUPPORT_DASHBOARD_COPY.en, {
+  supHelpTeam: 'Sup-Help Team',
+  totalHelpers: 'Total Helpers',
+  activeComplaints: 'Active Complaints',
+  activeLiveSupport: 'Active Live Support',
+  escalatedToMe: 'Escalated to Me',
+  waitingQueue: 'Waiting Visitor Queue',
+  noHelpers: 'No Sup-Help members found',
+  messageHelper: 'Message',
+  assignedComplaints: 'Complaints',
+  assignedLiveSupport: 'Live Support',
+});
+Object.assign(SUPPORT_DASHBOARD_COPY.ar, {
+  supHelpTeam: 'فريق مشرفي الدعم المساعد (Sup-Help)',
+  totalHelpers: 'إجمالي المساعدين',
+  activeComplaints: 'الشكاوى النشطة',
+  activeLiveSupport: 'الدعم المباشر النشط',
+  escalatedToMe: 'المصعّدة إليّ',
+  waitingQueue: 'قائمة الزوار بالانتظار',
+  noHelpers: 'لم يتم العثور على أعضاء في فريق Sup-Help',
+  messageHelper: 'مراسلة',
+  assignedComplaints: 'شكاوى',
+  assignedLiveSupport: 'دعم مباشر',
+});
+Object.assign(SUPPORT_DASHBOARD_COPY.fr, {
+  supHelpTeam: 'Équipe Sup-Help',
+  totalHelpers: 'Total des assistants',
+  activeComplaints: 'Réclamations actives',
+  activeLiveSupport: 'Support en direct actif',
+  escalatedToMe: 'Transféré à moi',
+  waitingQueue: 'File d’attente des visiteurs',
+  noHelpers: 'Aucun membre Sup-Help trouvé',
+  messageHelper: 'Message',
+  assignedComplaints: 'Réclamations',
+  assignedLiveSupport: 'Support direct',
+});
+Object.assign(SUPPORT_DASHBOARD_COPY.ru, {
+  supHelpTeam: 'Команда Sup-Help',
+  totalHelpers: 'Всего помощников',
+  activeComplaints: 'Активные жалобы',
+  activeLiveSupport: 'Активный живой чат',
+  escalatedToMe: 'Эскалировано мне',
+  waitingQueue: 'Очередь посетителей',
+  noHelpers: 'Помощники Sup-Help не найдены',
+  messageHelper: 'Написать',
+  assignedComplaints: 'Жалобы',
+  assignedLiveSupport: 'Живой чат',
+});
+Object.assign(SUPPORT_DASHBOARD_COPY.tr, {
+  supHelpTeam: 'Sup-Help Ekibi',
+  totalHelpers: 'Toplam Yardımcı',
+  activeComplaints: 'Aktif Şikâyetler',
+  activeLiveSupport: 'Aktif Canlı Destek',
+  escalatedToMe: 'Bana Yükseltilenler',
+  waitingQueue: 'Bekleyen Ziyaretçi Kuyruğu',
+  noHelpers: 'Sup-Help üyesi bulunamadı',
+  messageHelper: 'Mesaj',
+  assignedComplaints: 'Şikâyetler',
+  assignedLiveSupport: 'Canlı Destek',
+});
+Object.assign(SUPPORT_DASHBOARD_COPY.de, {
+  supHelpTeam: 'Sup-Help-Team',
+  totalHelpers: 'Assistenten insgesamt',
+  activeComplaints: 'Aktive Beschwerden',
+  activeLiveSupport: 'Aktiver Live-Support',
+  escalatedToMe: 'An mich eskaliert',
+  waitingQueue: 'Warteschlange der Besucher',
+  noHelpers: 'Keine Sup-Help-Mitglieder gefunden',
+  messageHelper: 'Nachricht',
+  assignedComplaints: 'Beschwerden',
+  assignedLiveSupport: 'Live-Support',
+});
 
 const SUPPORT_USERS_COPY = {
   en:{title:'Users',subtitle:'View and search users',searchPlaceholder:'Search users...',filterByRole:'Filter by role',allRoles:'All Roles',workers:'Workers',employers:'Employers',support:'Support',admin:'Admin',name:'Name',email:'Email',role:'Role',status:'Status',joined:'Joined',verified:'Verified',suspended:'Suspended',active:'Active',loading:'Loading...',noUsers:'No users found',totalUsers:'Total Users',suspend:'Suspend',reactivate:'Reactivate',resetPassword:'Reset Password',viewProfile:'View Profile',resetReason:'Reason (optional)',resetReasonPlaceholder:'Enter reason for password reset...',confirmReset:'Reset Password',cancel:'Cancel',actions:'Actions',premium:'Premium',notAvailable:'Not available',userSuspendedSuccess:'User suspended successfully',userReactivatedSuccess:'User reactivated successfully',updateStatusError:'Failed to update user status',resetLinkSuccess:'Password reset link sent successfully',resetLinkError:'Failed to send reset link',roleLabels:{EMPLOYER:'Employer',WORKER:'Worker',ADMIN:'Admin',SUPPORT:'Support',USER:'User'}},
@@ -5139,6 +5211,84 @@ Object.assign(SUPPORT_COMPLAINTS_COPY.de,{
     escalatedToSupAdmin:'Beschwerde an Sup-Admin eskaliert',
     escalatedToCoAdmin:'Beschwerde an Co-Admin eskaliert',
   },
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.en, {
+  views: {
+    all: 'All Complaints',
+    my: 'My Complaints',
+    unassigned: 'Unassigned Queue',
+    escalated: 'Escalated from Sup-Help',
+    sup_help: 'Sup-Help Queue',
+  },
+  monitoringMode: 'Monitoring Mode',
+  assignedToSupHelp: 'Assigned to Sup-Help',
+  escalatedFromSupHelp: 'Escalated from Sup-Help',
+  claimEscalated: 'Claim Escalated Complaint',
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.ar, {
+  views: {
+    all: 'جميع الشكاوى',
+    my: 'شكاواي',
+    unassigned: 'قائمة غير المعيّنة',
+    escalated: 'المصعّدة من Sup-Help',
+    sup_help: 'قائمة Sup-Help',
+  },
+  monitoringMode: 'وضع المراقبة',
+  assignedToSupHelp: 'معيّنة لـ Sup-Help',
+  escalatedFromSupHelp: 'مصعّدة من Sup-Help',
+  claimEscalated: 'استلام الشكوى المصعّدة',
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.fr, {
+  views: {
+    all: 'Toutes les réclamations',
+    my: 'Mes réclamations',
+    unassigned: 'Non assignées',
+    escalated: 'Transférées de Sup-Help',
+    sup_help: 'File Sup-Help',
+  },
+  monitoringMode: 'Mode surveillance',
+  assignedToSupHelp: 'Assignée à Sup-Help',
+  escalatedFromSupHelp: 'Transférée depuis Sup-Help',
+  claimEscalated: 'Prendre en charge la réclamation',
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.ru, {
+  views: {
+    all: 'Все жалобы',
+    my: 'Мои жалобы',
+    unassigned: 'Неназначенные',
+    escalated: 'Эскалировано из Sup-Help',
+    sup_help: 'Очередь Sup-Help',
+  },
+  monitoringMode: 'Режим мониторинга',
+  assignedToSupHelp: 'Назначена Sup-Help',
+  escalatedFromSupHelp: 'Эскалирована от Sup-Help',
+  claimEscalated: 'Принять эскалированную жалобу',
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.tr, {
+  views: {
+    all: 'Tüm Şikâyetler',
+    my: 'Benim Şikâyetlerim',
+    unassigned: 'Atanmamış Kuyruk',
+    escalated: 'Sup-Help’ten Yükseltilenler',
+    sup_help: 'Sup-Help Kuyruğu',
+  },
+  monitoringMode: 'İzleme Modu',
+  assignedToSupHelp: 'Sup-Help’e Atandı',
+  escalatedFromSupHelp: 'Sup-Help’ten Yükseltildi',
+  claimEscalated: 'Yükseltilen Şikâyeti Üstlen',
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.de, {
+  views: {
+    all: 'Alle Beschwerden',
+    my: 'Meine Beschwerden',
+    unassigned: 'Nicht zugewiesen',
+    escalated: 'Von Sup-Help eskaliert',
+    sup_help: 'Sup-Help-Warteschlange',
+  },
+  monitoringMode: 'Überwachungsmodus',
+  assignedToSupHelp: 'Sup-Help zugewiesen',
+  escalatedFromSupHelp: 'Eskaliert von Sup-Help',
+  claimEscalated: 'Eskalierte Beschwerde übernehmen',
 });
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.supportComplaintsPage = SUPPORT_COMPLAINTS_COPY[code];
 
@@ -5275,6 +5425,36 @@ const PUBLIC_SUPPORT_INACTIVITY_COPY = {
   de:{closedInactivity:'Die Unterhaltung wurde wegen Inaktivität geschlossen.',startNewConversation:'Neue Unterhaltung starten'},
 };
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.publicSupport = { ...PUBLIC_SUPPORT_COPY[code], ...PUBLIC_SUPPORT_INACTIVITY_COPY[code] };
+Object.assign(PUBLIC_SUPPORT_COPY.en, {
+  monitoring: 'Monitoring',
+  monitoringBanner: 'Monitoring mode: this conversation is handled by {{name}}',
+  supHelpTab: 'Sup-Help (Monitoring)',
+});
+Object.assign(PUBLIC_SUPPORT_COPY.ar, {
+  monitoring: 'مراقبة',
+  monitoringBanner: 'وضع المراقبة: هذه المحادثة يديرها {{name}}',
+  supHelpTab: 'مراقبة Sup-Help',
+});
+Object.assign(PUBLIC_SUPPORT_COPY.fr, {
+  monitoring: 'Surveillance',
+  monitoringBanner: 'Mode surveillance : cette conversation est gérée par {{name}}',
+  supHelpTab: 'Surveillance Sup-Help',
+});
+Object.assign(PUBLIC_SUPPORT_COPY.ru, {
+  monitoring: 'Мониторинг',
+  monitoringBanner: 'Режим мониторинга: эту беседу ведёт {{name}}',
+  supHelpTab: 'Мониторинг Sup-Help',
+});
+Object.assign(PUBLIC_SUPPORT_COPY.tr, {
+  monitoring: 'İzleme',
+  monitoringBanner: 'İzleme modu: Bu görüşme {{name}} tarafından yürütülüyor',
+  supHelpTab: 'Sup-Help İzleme',
+});
+Object.assign(PUBLIC_SUPPORT_COPY.de, {
+  monitoring: 'Überwachung',
+  monitoringBanner: 'Überwachungsmodus: Diese Unterhaltung wird von {{name}} geführt',
+  supHelpTab: 'Sup-Help-Überwachung',
+});
 
 const BIOMETRIC_UNLOCK_COPY = {
   en: { title:'Biometric Unlock', description:'Use fingerprint or supported device biometrics to unlock HomelyServ.', enable:'Enable', enabled:'Enabled', disable:'Disable', noEnrollment:'Enroll a supported biometric in Android device settings to enable this feature.', enableFailed:'Biometric unlock could not be enabled.', disableFailed:'Biometric unlock could not be disabled.', lockedTitle:'HomelyServ is locked', lockedDescription:'Authenticate with your device biometric to restore your existing HomelyServ session.', awaitingPrompt:'Waiting for biometric authentication…', useNormalLogin:'Use normal login' },
