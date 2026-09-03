@@ -9,7 +9,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
-import { UserDisplayName } from '../components/users';
+import { UserDisplayName, UserAvatar } from '../components/users';
 import {
   Search,
   Shield,
@@ -728,13 +728,12 @@ const AdminUsers = () => {
                     <tr key={u._id || u.id || u.email} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 text-white font-semibold overflow-hidden">
-                            {u.profileImage ? (
-                              <img src={u.profileImage} alt={u.fullName} className="w-full h-full object-cover" />
-                            ) : (
-                              u.fullName?.charAt(0) || 'U'
-                            )}
-                          </div>
+                          <UserAvatar
+                            name={u.fullName}
+                            image={u.profileImage}
+                            role={u.role}
+                            size="md"
+                          />
                           <div>
                             <UserDisplayName user={u} size="lg" />
                             {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
@@ -970,13 +969,12 @@ const AdminUsers = () => {
             <div className="p-6 space-y-4">
               {/* User info */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 text-white font-semibold overflow-hidden">
-                  {selectedUserForRole.profileImage ? (
-                    <img src={selectedUserForRole.profileImage} alt={selectedUserForRole.fullName} className="w-full h-full object-cover" />
-                  ) : (
-                    selectedUserForRole.fullName?.charAt(0) || 'U'
-                  )}
-                </div>
+                <UserAvatar
+                  name={selectedUserForRole.fullName}
+                  image={selectedUserForRole.profileImage}
+                  role={selectedUserForRole.role}
+                  size="md"
+                />
                 <div className="min-w-0">
                   <UserDisplayName user={selectedUserForRole} />
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 break-all">

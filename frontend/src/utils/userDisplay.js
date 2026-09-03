@@ -221,6 +221,8 @@ export const getOfficialBadgeClass = (role) => {
   return getRoleBadgeClasses(role);
 };
 
+export { resolveAvatarUrl } from './avatarUtils.js';
+
 // ============================================================
 // DEFAULT EXPORT
 // ============================================================

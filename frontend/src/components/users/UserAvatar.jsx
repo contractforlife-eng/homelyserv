@@ -1,9 +1,19 @@
 // frontend/src/components/users/UserAvatar.jsx
 // Shared avatar component for user displays (support & admin).
-import React from 'react';
-import { getRoleColor } from '../../utils/userDisplay';
+import React, { useState, useEffect } from 'react';
+import { getRoleColor, resolveAvatarUrl } from '../../utils/userDisplay';
+
+export { resolveAvatarUrl };
 
 const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', className = '', isPremium = false }) => {
+  const [hasError, setHasError] = useState(false);
+  const resolvedSrc = resolveAvatarUrl(image);
+
+  // Reset error state when the incoming image prop changes
+  useEffect(() => {
+    setHasError(false);
+  }, [image]);
+
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
@@ -26,10 +36,15 @@ const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', c
     ? 'ring-2 ring-[#F5C542] shadow-[0_0_8px_rgba(245,197,66,0.55),0_0_16px_rgba(245,197,66,0.25)]'
     : '';
 
-  if (image) {
+  if (resolvedSrc && !hasError) {
     return (
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden flex-shrink-0 ${premiumGlowClass} ${className}`}>
-        <img src={image} alt={name} className="w-full h-full object-cover" />
+      <div className={`${sizeClasses[size] || sizeClasses.md} rounded-full overflow-hidden flex-shrink-0 ${premiumGlowClass} ${className}`}>
+        <img
+          src={resolvedSrc}
+          alt={name || 'User'}
+          className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
+        />
       </div>
     );
   }
@@ -43,7 +58,7 @@ const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', c
     .toUpperCase();
 
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-semibold flex-shrink-0 ${premiumGlowClass} ${className}`}>
+    <div className={`${sizeClasses[size] || sizeClasses.md} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-semibold flex-shrink-0 ${premiumGlowClass} ${className}`}>
       {initials || 'U'}
     </div>
   );
