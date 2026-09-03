@@ -45,7 +45,7 @@ const CONVERSATION_TABS = {
 //                                   (ADMIN/SUPPORT) INTERNAL conversations
 //   "Internal Conversations" tab -> ordinary WORKER / EMPLOYER user
 //                                   conversations handled by Support
-const STAFF_TARGET_ROLES = new Set(['ADMIN', 'SUPPORT']);
+const STAFF_TARGET_ROLES = new Set(['ADMIN', 'SUPPORT', 'SUPPORT_HELPER']);
 const USER_TARGET_ROLES = new Set(['WORKER', 'EMPLOYER']);
 
 const SUPPORT_TAB_META = {
@@ -107,24 +107,30 @@ const SupportMessages = () => {
   const mapConversation = (conv, source = 'USER') => {
     const isStaffSource = source === 'STAFF';
     const other = isStaffSource ? conv.otherStaff : conv.user;
+    const counterpartRole = String(other?.role || conv.otherUserRole || conv.role || '').toUpperCase();
+    const isStaffCounterpart = STAFF_TARGET_ROLES.has(counterpartRole);
+    const assignedTab = isStaffSource || isStaffCounterpart
+      ? CONVERSATION_TABS.SUPPORT
+      : CONVERSATION_TABS.INTERNAL;
+
     return {
       id: conv.id,
-      // Tab mapping: staff-side conversations appear under the
-      // "Support Conversations" tab; ordinary user conversations appear
-      // under the "Internal Conversations" tab.
-      type: isStaffSource ? CONVERSATION_TABS.SUPPORT : CONVERSATION_TABS.INTERNAL,
-      otherUserId: isStaffSource ? conv.otherStaffId : conv.userId,
-      otherUserName: other?.fullName || 'User',
-      otherUserEmail: other?.email || '',
-      isPremium: other?.isPremium === true,
-      usesFallbackUserName: !other?.fullName,
-      otherUserRole: other?.role || 'USER',
-      otherUserImage: other?.profileImage || other?.image || null,
+      // Tab mapping: staff-side conversations (ADMIN/SUPPORT/SUPPORT_HELPER)
+      // appear under the "Support Conversations" tab; ordinary user
+      // conversations (WORKER/EMPLOYER) appear under the "Internal Conversations" tab.
+      type: assignedTab,
+      otherUserId: isStaffSource ? (conv.otherStaffId || conv.userId) : (conv.userId || conv.otherStaffId),
+      otherUserName: other?.fullName || conv.otherUserName || 'User',
+      otherUserEmail: other?.email || conv.otherUserEmail || '',
+      isPremium: other?.isPremium === true || conv.isPremium === true,
+      usesFallbackUserName: !other?.fullName && !conv.otherUserName,
+      otherUserRole: counterpartRole || 'USER',
+      otherUserImage: other?.profileImage || other?.image || conv.otherUserImage || null,
       lastMessage: conv.lastMessage,
       lastMessageTime: conv.lastMessageTime,
       time: conv.time,
       unread: conv.unread,
-      role: other?.role || 'USER',
+      role: counterpartRole || 'USER',
       updatedAt: conv.updatedAt,
       escalated: conv.type === 'ESCALATED',
       complaintId: conv.complaintId || null,
@@ -135,16 +141,26 @@ const SupportMessages = () => {
     // Data source -> tab mapping (do not swap):
     //   /api/support/conversations       -> WORKER/EMPLOYER user conversations
     //                                       -> "Internal Conversations" tab
-    //   /api/chat/internal/conversations -> ADMIN/SUPPORT staff conversations
+    //   /api/chat/internal/conversations -> ADMIN/SUPPORT/SUPPORT_HELPER staff conversations
     //                                       -> "Support Conversations" tab
     const [userConversations, staffConversations] = await Promise.all([
       getSupportConversations(),
       getInternalConversations(),
     ]);
-    return [
-      ...userConversations.map((conv) => mapConversation(conv, 'USER')),
+    const all = [
       ...staffConversations.map((conv) => mapConversation(conv, 'STAFF')),
+      ...userConversations.map((conv) => mapConversation(conv, 'USER')),
     ];
+    // Deduplicate by conversation ID
+    const seen = new Set();
+    const unique = [];
+    for (const conv of all) {
+      if (!seen.has(String(conv.id))) {
+        seen.add(String(conv.id));
+        unique.push(conv);
+      }
+    }
+    return unique;
   };
 
   const loadConversations = async () => {

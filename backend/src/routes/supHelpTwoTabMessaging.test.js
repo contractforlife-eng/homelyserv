@@ -176,13 +176,20 @@ const withSupHelpServer = async ({ users = {} } = {}, run) => {
                 return c.status === clause.status || (clause.status.$exists === false && !c.status);
               }
               if (clause.type === 'INTERNAL') {
-                return c.type === 'INTERNAL' && c.staffIds && c.staffIds.includes(clause.staffIds);
+                if (clause.$or) {
+                  return c.type === 'INTERNAL' && clause.$or.some(sub => {
+                    return (sub.staffIds && c.staffIds && c.staffIds.map(String).includes(String(sub.staffIds))) ||
+                           (sub.participantIds && c.participantIds && c.participantIds.map(String).includes(String(sub.participantIds)));
+                  });
+                }
+                return c.type === 'INTERNAL' && c.staffIds && c.staffIds.map(String).includes(String(clause.staffIds));
               }
               if (clause.type === 'SUPPORT') {
                 if (clause.$or) {
                   return c.type === 'SUPPORT' && clause.$or.some(sub => {
-                    return (sub.supportAgentId && c.supportAgentId === sub.supportAgentId) ||
-                           (sub.participantIds && c.participantIds && c.participantIds.includes(sub.participantIds));
+                    return (sub.supportAgentId && String(c.supportAgentId) === String(sub.supportAgentId)) ||
+                           (sub.participantIds && c.participantIds && c.participantIds.map(String).includes(String(sub.participantIds))) ||
+                           (sub.staffIds && c.staffIds && c.staffIds.map(String).includes(String(sub.staffIds)));
                   });
                 }
                 return c.type === 'SUPPORT';
@@ -909,5 +916,173 @@ test('11. Admin Messages GET /api/admin/internal-messages discovers conversation
     assert.equal(startRes.status, 200);
     assert.equal(startBody.success, true);
     assert.equal(startBody.conversation.type, 'INTERNAL');
+  });
+});
+
+test('12. Support staff directory GET /api/chat/staff-directory includes SUPPORT_HELPER for SUPPORT caller', async () => {
+  await withSupHelpServer({ users: testUsers }, async (base) => {
+    const supportId = '665f1a2b3c4d5e6f7a8b9c02'; // SUPPORT
+    const helperId = '665f1a2b3c4d5e6f7a8b9c01';  // SUPPORT_HELPER
+
+    const { response, body } = await fetchJson(`${base}/api/chat/staff-directory`, {
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(body.success, true);
+    assert.ok(Array.isArray(body.staff));
+
+    const helperEntry = body.staff.find(s => s.id === helperId);
+    assert.ok(helperEntry, 'SUPPORT_HELPER must be returned in staff directory for SUPPORT caller');
+    assert.equal(helperEntry.role, 'SUPPORT_HELPER');
+    assert.equal(helperEntry.fullName, 'Test Support Helper');
+  });
+});
+
+test('13. Bidirectional Support <-> Sup-Help messaging: discovery, reading, and replies on same canonical conversation', async () => {
+  await withSupHelpServer({ users: testUsers }, async (base) => {
+    const helperId = '665f1a2b3c4d5e6f7a8b9c01';  // SUPPORT_HELPER (Olivia)
+    const supportId = '665f1a2b3c4d5e6f7a8b9c02'; // SUPPORT (Arwa)
+
+    // 1. Olivia (Sup-Help) ensures conversation with Arwa (Sup-Admin)
+    const { response: ensureRes, body: ensureBody } = await fetchJson(`${base}/api/sup-help/messages/ensure`, {
+      method: 'POST',
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+      body: JSON.stringify({ targetUserId: supportId, tab: 'SUPPORT' }),
+    });
+    assert.equal(ensureRes.status, 200);
+    const convId = ensureBody.conversationId;
+
+    // 2. Olivia sends a message to Arwa
+    const { response: sendRes1, body: sendBody1 } = await fetchJson(`${base}/api/sup-help/messages`, {
+      method: 'POST',
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+      body: JSON.stringify({
+        conversationId: convId,
+        recipientId: supportId,
+        text: 'Hi Arwa, this is Olivia from Sup-Help',
+      }),
+    });
+    assert.equal(sendRes1.status, 201);
+    assert.equal(sendBody1.senderRole, 'SUPPORT_HELPER');
+
+    // 3. Arwa (SUPPORT) calls GET /api/chat/internal/conversations
+    const { response: getConvRes, body: getConvBody } = await fetchJson(`${base}/api/chat/internal/conversations`, {
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+    });
+    assert.equal(getConvRes.status, 200);
+    assert.ok(Array.isArray(getConvBody));
+    const convForSupport = getConvBody.find(c => c.id === convId);
+    assert.ok(convForSupport, 'Arwa (SUPPORT) must see the internal conversation with Olivia (SUPPORT_HELPER)');
+    assert.equal(convForSupport.otherStaffId, helperId);
+    assert.equal(convForSupport.otherStaff?.role, 'SUPPORT_HELPER');
+    assert.equal(convForSupport.lastMessage, 'Hi Arwa, this is Olivia from Sup-Help');
+
+    // 4. Arwa reads conversation messages via GET /api/chat/messages/:convId
+    const { response: getMsgsRes, body: getMsgsBody } = await fetchJson(`${base}/api/chat/messages/${convId}`, {
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+    });
+    assert.equal(getMsgsRes.status, 200);
+    assert.ok(Array.isArray(getMsgsBody));
+    assert.ok(getMsgsBody.some(m => m.text === 'Hi Arwa, this is Olivia from Sup-Help'));
+
+    // 5. Arwa replies to Olivia via POST /api/chat/send
+    const { response: sendRes2, body: sendBody2 } = await fetchJson(`${base}/api/chat/send`, {
+      method: 'POST',
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+      body: JSON.stringify({
+        senderId: supportId,
+        senderName: 'Test Support Agent',
+        senderRole: 'SUPPORT',
+        recipientId: helperId,
+        recipientName: 'Test Support Helper',
+        text: 'Hello Olivia! Received your message loud and clear.',
+      }),
+    });
+    assert.equal(sendRes2.status, 201);
+    assert.equal(sendBody2.conversationId, convId, 'Must use the exact same canonical conversationId');
+
+    // 6. Olivia reads conversation messages via GET /api/sup-help/messages/:convId
+    const { response: helperGetRes, body: helperGetBody } = await fetchJson(`${base}/api/sup-help/messages/${convId}`, {
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+    });
+    assert.equal(helperGetRes.status, 200);
+    assert.equal(helperGetBody.success, true);
+    assert.ok(helperGetBody.messages.some(m => m.text === 'Hello Olivia! Received your message loud and clear.'));
+
+    // 7. Arwa starts new conversation with Olivia via POST /api/chat/ensure-conversation
+    const { response: ensureConvRes, body: ensureConvBody } = await fetchJson(`${base}/api/chat/ensure-conversation`, {
+      method: 'POST',
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+      body: JSON.stringify({
+        user1Id: supportId,
+        user1Name: 'Test Support Agent',
+        user1Role: 'SUPPORT',
+        user2Id: helperId,
+        user2Name: 'Test Support Helper',
+        user2Role: 'SUPPORT_HELPER',
+      }),
+    });
+    assert.equal(ensureConvRes.status, 200);
+    assert.equal(ensureConvBody.conversationId, convId, 'Must reuse same deterministic conversation ID');
+  });
+});
+
+test('14. Full reload/navigation cycle: fresh conversation-list requests return persisted SUPPORT <-> SUPPORT_HELPER thread for both parties', async () => {
+  await withSupHelpServer({ users: testUsers }, async (base) => {
+    const helperId = '665f1a2b3c4d5e6f7a8b9c01';  // SUPPORT_HELPER (Olivia)
+    const supportId = '665f1a2b3c4d5e6f7a8b9c02'; // SUPPORT (Arwa)
+
+    // Step 1: Initialize and persist a conversation with a message
+    const { body: ensureBody } = await fetchJson(`${base}/api/sup-help/messages/ensure`, {
+      method: 'POST',
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+      body: JSON.stringify({ targetUserId: supportId, tab: 'SUPPORT' }),
+    });
+    const convId = ensureBody.conversationId;
+
+    await fetchJson(`${base}/api/sup-help/messages`, {
+      method: 'POST',
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+      body: JSON.stringify({
+        conversationId: convId,
+        recipientId: supportId,
+        text: 'Initial message for persistence verification',
+      }),
+    });
+
+    // Step 2: Simulate FRESH reload on SUPPORT side (Arwa opens /support-messages without prior in-memory state)
+    const { response: supportReloadRes, body: supportReloadBody } = await fetchJson(`${base}/api/chat/internal/conversations`, {
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+    });
+    assert.equal(supportReloadRes.status, 200);
+    const supportThread = supportReloadBody.find(c => c.id === convId);
+    assert.ok(supportThread, 'SUPPORT must discover the persisted Sup-Help conversation after full reload');
+    assert.equal(supportThread.otherStaffId, helperId);
+    assert.equal(supportThread.otherStaff?.role, 'SUPPORT_HELPER');
+    assert.equal(supportThread.otherStaff?.fullName, 'Test Support Helper');
+    assert.equal(supportThread.lastMessage, 'Initial message for persistence verification');
+
+    // Step 3: Simulate FRESH reload on SUPPORT_HELPER side (Olivia opens /sup-help/messages without prior in-memory state)
+    const { response: helperReloadRes, body: helperReloadBody } = await fetchJson(`${base}/api/sup-help/messages`, {
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+    });
+    assert.equal(helperReloadRes.status, 200);
+    const helperThread = helperReloadBody.conversations.find(c => c.id === convId);
+    assert.ok(helperThread, 'SUPPORT_HELPER must discover the persisted Support conversation after full reload');
+    assert.equal(helperThread.otherUserId, supportId);
+    assert.equal(helperThread.otherUserRole, 'SUPPORT');
+    assert.equal(helperThread.tab, 'SUPPORT');
+    assert.equal(helperThread.lastMessage, 'Initial message for persistence verification');
+
+    // Step 4: Both parties can fetch full thread messages on reload
+    const { body: supportMessages } = await fetchJson(`${base}/api/chat/messages/${convId}`, {
+      headers: { authorization: createAuthHeader(supportId, 'SUPPORT') },
+    });
+    assert.ok(supportMessages.some(m => m.text === 'Initial message for persistence verification'));
+
+    const { body: helperMessages } = await fetchJson(`${base}/api/sup-help/messages/${convId}`, {
+      headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
+    });
+    assert.ok(helperMessages.messages.some(m => m.text === 'Initial message for persistence verification'));
   });
 });

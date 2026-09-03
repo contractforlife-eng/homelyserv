@@ -168,7 +168,8 @@ export const canAccessConversation = async (conversationId, userId, userRole) =>
 
     case 'INTERNAL':
       // Only internal staff members
-      return conversation.staffIds.includes(uid);
+      return (conversation.staffIds && conversation.staffIds.includes(uid)) ||
+             (conversation.participantIds && conversation.participantIds.includes(uid));
 
     case 'ESCALATED':
       // User participant, assigned support, or admin after escalation
@@ -193,7 +194,7 @@ const requireConversationAccess = async (req, res, next) => {
     const userRole = req.userRole;
 
     if (!conversationId) {
-      return res.status(400).json({ error: 'Missing conversationId' });
+      return res.status(400).json({ error: 'Conversation ID is required' });
     }
 
     const allowed = await canAccessConversation(conversationId, userId, userRole);
@@ -203,26 +204,36 @@ const requireConversationAccess = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Conversation auth error:', error);
+    console.error('Conversation access check error:', error);
     return res.status(500).json({ error: 'Failed to verify conversation access' });
   }
 };
 
 /**
- * Ensure Conversation metadata exists for a conversation.
- * Creates it if missing (backwards-compatible with existing chat history).
- * If the conversation exists but was created as PRIVATE and is now being
+ * Ensure Conversation metadata exists for a given conversationId.
+ * Sets the correct type and participants. If the conversation already exists
+ * as PRIVATE (e.g. from a legacy direct chat) but is now legitimately being
  * used by SUPPORT or ADMIN, upgrade the type accordingly.
  */
 const ensureConversationMetadata = async (conversationId, { type = 'PRIVATE', participantIds = [], supportAgentId = null, staffIds = [] } = {}) => {
   try {
     const existing = await Conversation.findOne({ conversationId });
     if (existing) {
+      const updates = {};
       // Upgrade legacy PRIVATE conversations when support/admin start using them
       if (existing.type === 'PRIVATE' && type !== 'PRIVATE') {
-        const updates = { type };
-        if (supportAgentId) updates.supportAgentId = supportAgentId;
-        if (staffIds.length > 0) updates.staffIds = staffIds;
+        updates.type = type;
+      }
+      if (supportAgentId && existing.supportAgentId !== supportAgentId) {
+        updates.supportAgentId = supportAgentId;
+      }
+      if (staffIds.length > 0 && (!existing.staffIds || existing.staffIds.length === 0)) {
+        updates.staffIds = staffIds;
+      }
+      if (participantIds.length > 0 && (!existing.participantIds || existing.participantIds.length === 0)) {
+        updates.participantIds = participantIds;
+      }
+      if (Object.keys(updates).length > 0) {
         await Conversation.updateOne({ conversationId }, updates);
         return await Conversation.findOne({ conversationId });
       }
@@ -1131,45 +1142,75 @@ router.get('/internal/conversations', authenticate, async (req, res) => {
     }
 
     const conversationsMeta = await Conversation.find({
-      type: 'INTERNAL',
-      staffIds: userId
+      $or: [
+        { type: 'INTERNAL', $or: [{ staffIds: userId }, { participantIds: userId }] },
+        { staffIds: userId },
+        { participantIds: userId }
+      ]
     }).sort({ lastMessageAt: -1 });
 
-    const conversations = [];
+    const candidateRows = [];
+    const counterpartIds = new Set();
+
     for (const conv of conversationsMeta) {
       const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
         .sort({ createdAt: -1 });
 
       if (!lastMsg) continue;
 
-      // Find the other staff member
-      const otherStaffId = conv.staffIds.find(id => id !== userId);
+      // Find the other member
+      const otherStaffId = conv.staffIds?.find(id => String(id) !== String(userId)) ||
+        conv.participantIds?.find(id => String(id) !== String(userId));
 
-      const unread = await Message.countDocuments({
-        conversationId: conv.conversationId,
-        recipientId: userId,
-        read: false
-      });
-
-      conversations.push({
-        id: conv.conversationId,
-        type: conv.type,
-        otherStaffId: otherStaffId || null,
-        lastMessage: lastMsg.text,
-        lastMessageTime: lastMsg.createdAt,
-        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread,
-        updatedAt: conv.lastMessageAt || lastMsg.createdAt
-      });
+      if (otherStaffId) {
+        counterpartIds.add(String(otherStaffId));
+        candidateRows.push({ conv, lastMsg, otherStaffId: String(otherStaffId) });
+      }
     }
 
     // DYNAMIC STAFF IDENTITY: attach live staff info from the database
-    const identityMap = await getUserIdentities(conversations.map((c) => c.otherStaffId));
-    for (const conv of conversations) {
-      const staffIdentity = conv.otherStaffId ? identityMap.get(String(conv.otherStaffId)) : null;
-      conv.otherStaff = staffIdentity
-        ? { id: staffIdentity.id, fullName: staffIdentity.name, role: staffIdentity.role, image: staffIdentity.image, email: staffIdentity.email }
-        : null;
+    const identityMap = await getUserIdentities([...counterpartIds]);
+    const STAFF_ROLES_SET = new Set(['ADMIN', 'SUPPORT', 'SUP_ADMIN', 'SUPPORT_HELPER']);
+
+    const conversations = [];
+    for (const { conv, lastMsg, otherStaffId } of candidateRows) {
+      const staffIdentity = identityMap.get(otherStaffId);
+      const isStaffCounterpart = staffIdentity && STAFF_ROLES_SET.has(String(staffIdentity.role || '').toUpperCase());
+
+      // Include if conversation is marked INTERNAL or counterpart is staff
+      if (conv.type === 'INTERNAL' || isStaffCounterpart) {
+        if (conv.type !== 'INTERNAL' && isStaffCounterpart) {
+          Conversation.updateOne(
+            { conversationId: conv.conversationId },
+            {
+              $set: {
+                type: 'INTERNAL',
+                staffIds: [userId, otherStaffId]
+              }
+            }
+          ).catch(() => {});
+        }
+
+        const unread = await Message.countDocuments({
+          conversationId: conv.conversationId,
+          recipientId: userId,
+          read: false
+        });
+
+        conversations.push({
+          id: conv.conversationId,
+          type: 'INTERNAL',
+          otherStaffId,
+          otherStaff: staffIdentity
+            ? { id: staffIdentity.id, fullName: staffIdentity.name, role: staffIdentity.role, image: staffIdentity.image, email: staffIdentity.email }
+            : null,
+          lastMessage: lastMsg.text,
+          lastMessageTime: lastMsg.createdAt,
+          time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unread,
+          updatedAt: conv.lastMessageAt || lastMsg.createdAt
+        });
+      }
     }
 
     return res.json(conversations);

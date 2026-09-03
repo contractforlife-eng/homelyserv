@@ -284,14 +284,14 @@ router.get('/messages', async (req, res) => {
     const roleCondition = userRole === 'ADMIN'
       ? {
           $or: [
-            { type: 'INTERNAL', staffIds: userId },
+            { type: 'INTERNAL', $or: [{ staffIds: userId }, { participantIds: userId }] },
             { type: 'SUPPORT' }
           ]
         }
       : {
           $or: [
-            { type: 'INTERNAL', staffIds: userId },
-            { type: 'SUPPORT', $or: [{ supportAgentId: userId }, { participantIds: userId }] }
+            { type: 'INTERNAL', $or: [{ staffIds: userId }, { participantIds: userId }] },
+            { type: 'SUPPORT', $or: [{ supportAgentId: userId }, { participantIds: userId }, { staffIds: userId }] }
           ]
         };
 
