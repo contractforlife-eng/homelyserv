@@ -422,6 +422,58 @@ export const requireAssignedSupportComplaint = async (req, res, next) => {
   return next();
 };
 
+// Authorization for adding internal notes to a complaint.
+// Supports:
+// 1. Assigned Support Agent / Admin
+// 2. Escalated to SUPPORT
+// 3. Phase B1: Sup-Admin supervisor notes on complaints assigned to SUPPORT_HELPER
+export const requireSupportNoteAccess = async (req, res, next) => {
+  if (req.userRole === 'ADMIN') return next();
+  const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(404).json({ success: false, message: 'Complaint not found' });
+  }
+  const complaint = await prisma.complaint.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      assignedSupport: true,
+      assignedTo: true,
+      status: true,
+      Timeline: {
+        where: { action: 'ESCALATED' },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+  });
+  if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
+  const supportId = String(req.userId);
+  const modernAssignment = complaint.assignedSupport ? String(complaint.assignedSupport) : null;
+  const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
+  const isAssignedToMe = modernAssignment === supportId || legacyAssignment === supportId;
+
+  const isEscalatedToSupport = complaint.status === 'ESCALATED' && (
+    complaint.Timeline?.[0]?.newValue === 'SUPPORT' || !complaint.Timeline?.[0]?.newValue
+  ) && req.userRole === 'SUPPORT';
+
+  if (isAssignedToMe || isEscalatedToSupport) return next();
+
+  // Phase B1 supervisor note on monitored helper complaint
+  if (req.userRole === 'SUPPORT' && (modernAssignment || legacyAssignment)) {
+    const assigneeId = modernAssignment || legacyAssignment;
+    const assignee = await prisma.user.findUnique({
+      where: { id: assigneeId },
+      select: { id: true, role: true },
+    });
+    if (assignee?.role === 'SUPPORT_HELPER') {
+      return next();
+    }
+  }
+
+  return res.status(403).json({ success: false, message: 'Not authorized to add notes to this complaint' });
+};
+
 // Support may inspect an unassigned ticket in the queue, an assigned ticket
 // belonging to them, or (for Sup-Admin) tickets assigned to Sup-Help for monitoring.
 export const requireSupportComplaintAccess = async (req, res, next) => {
@@ -1039,6 +1091,413 @@ export const supportAssignComplaint = async (req, res) => {
   } catch (error) {
     console.error('❌ Error assigning complaint:', error);
     return res.status(500).json({ success: false, message: 'Failed to assign complaint' });
+  }
+};
+
+/**
+ * POST /api/support/complaints/:id/takeover
+ * Sup-Admin takes over a complaint assigned to a SUPPORT_HELPER.
+ */
+export const supportTakeoverComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+    const { expectedAssignee } = req.body || {};
+    const supportId = String(req.userId);
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, role: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (complaint.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Cannot take over a closed complaint' });
+    }
+
+    const currentAssigneeId = complaint.assignedSupport || complaint.assignedTo;
+    let currentAssignee = complaint.AssignedSupport;
+    if (!currentAssignee && currentAssigneeId) {
+      currentAssignee = await prisma.user.findUnique({
+        where: { id: currentAssigneeId },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Security check: SUPPORT cannot take over ADMIN or peer SUPPORT complaints
+    if (req.userRole !== 'ADMIN') {
+      if (currentAssignee?.role === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Cannot take over a complaint assigned to an Administrator' });
+      }
+      if (currentAssignee?.role === 'SUPPORT' && currentAssignee.id !== supportId) {
+        return res.status(403).json({ success: false, message: 'Cannot take over a complaint assigned to another Support Agent' });
+      }
+      if (currentAssignee && currentAssignee.role !== 'SUPPORT_HELPER' && currentAssignee.id !== supportId) {
+        return res.status(403).json({ success: false, message: 'Only complaints assigned to Support Helpers can be supervised' });
+      }
+    }
+
+    // Stale assignment / Concurrency protection
+    if (expectedAssignee && currentAssigneeId && String(currentAssigneeId) !== String(expectedAssignee)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Complaint assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        assignedSupport: supportId,
+        assignedTo: supportId,
+        status: complaint.status === 'NEW' ? 'OPEN' : complaint.status,
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
+    // Timeline entry
+    await addTimeline(id, {
+      action: 'REASSIGNED',
+      description: currentAssignee
+        ? `Complaint taken over from ${currentAssignee.fullName || 'support helper'}`
+        : 'Complaint taken over by supervisor',
+      authorId: supportId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      oldValue: currentAssigneeId || null,
+      newValue: supportId,
+    });
+
+    // Activity log
+    await logSupportActivity(
+      supportId,
+      'COMPLAINT_TAKEOVER',
+      `Took over complaint "${complaint.subject}"`,
+      complaint.userId,
+      id
+    );
+
+    // Notify previous helper
+    if (currentAssigneeId && currentAssigneeId !== supportId && currentAssignee?.role === 'SUPPORT_HELPER') {
+      await createUserNotification(currentAssigneeId, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Complaint Taken Over',
+        message: `Complaint "${complaint.subject}" was taken over by supervisor ${actor.name}`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.NORMAL,
+        link: '/sup-help/complaints',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Complaint taken over successfully',
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
+    });
+  } catch (error) {
+    console.error('❌ Error taking over complaint:', error);
+    return res.status(500).json({ success: false, message: 'Failed to take over complaint' });
+  }
+};
+
+/**
+ * POST /api/support/complaints/:id/reassign
+ * Sup-Admin reassigns a complaint from one SUPPORT_HELPER to another SUPPORT_HELPER.
+ */
+export const supportReassignComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+    const { targetHelperId, expectedAssignee } = req.body || {};
+    const supportId = String(req.userId);
+
+    if (!targetHelperId) {
+      return res.status(400).json({ success: false, message: 'Target support helper ID is required' });
+    }
+
+    // Validate target is explicitly SUPPORT_HELPER
+    const targetHelper = await prisma.user.findUnique({
+      where: { id: String(targetHelperId) },
+      select: { id: true, fullName: true, role: true },
+    });
+
+    if (!targetHelper || targetHelper.role !== 'SUPPORT_HELPER') {
+      return res.status(400).json({ success: false, message: 'Target user must be a Support Helper' });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, role: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (complaint.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Cannot reassign a closed complaint' });
+    }
+
+    const currentAssigneeId = complaint.assignedSupport || complaint.assignedTo;
+    let currentAssignee = complaint.AssignedSupport;
+    if (!currentAssignee && currentAssigneeId) {
+      currentAssignee = await prisma.user.findUnique({
+        where: { id: currentAssigneeId },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Security check: SUPPORT cannot reassign ADMIN or peer SUPPORT complaints
+    if (req.userRole !== 'ADMIN') {
+      if (currentAssignee?.role === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Cannot reassign a complaint assigned to an Administrator' });
+      }
+      if (currentAssignee?.role === 'SUPPORT' && currentAssignee.id !== supportId) {
+        return res.status(403).json({ success: false, message: 'Cannot reassign a complaint assigned to another Support Agent' });
+      }
+      if (currentAssignee && currentAssignee.role !== 'SUPPORT_HELPER' && currentAssignee.id !== supportId) {
+        return res.status(403).json({ success: false, message: 'Only complaints assigned to Support Helpers can be supervised' });
+      }
+    }
+
+    // Cannot reassign to the exact same current assignee
+    if (currentAssigneeId && String(targetHelper.id) === String(currentAssigneeId)) {
+      return res.status(400).json({ success: false, message: 'Complaint is already assigned to this Support Helper' });
+    }
+
+    // Stale assignment / Concurrency protection
+    if (expectedAssignee && currentAssigneeId && String(currentAssigneeId) !== String(expectedAssignee)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Complaint assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        assignedSupport: targetHelper.id,
+        assignedTo: targetHelper.id,
+        status: complaint.status === 'NEW' ? 'OPEN' : complaint.status,
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
+    // Timeline
+    await addTimeline(id, {
+      action: 'REASSIGNED',
+      description: `Complaint reassigned to ${targetHelper.fullName || 'support helper'}`,
+      authorId: supportId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      oldValue: currentAssigneeId || null,
+      newValue: targetHelper.id,
+    });
+
+    // Activity log
+    await logSupportActivity(
+      supportId,
+      'COMPLAINT_REASSIGNED',
+      `Reassigned complaint "${complaint.subject}" to ${targetHelper.fullName}`,
+      complaint.userId,
+      id
+    );
+
+    // Notify previous helper
+    if (currentAssigneeId && currentAssigneeId !== targetHelper.id && currentAssignee?.role === 'SUPPORT_HELPER') {
+      await createUserNotification(currentAssigneeId, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Complaint Reassigned',
+        message: `Complaint "${complaint.subject}" was reassigned by supervisor`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.NORMAL,
+        link: '/sup-help/complaints',
+      });
+    }
+
+    // Notify new helper
+    await createUserNotification(targetHelper.id, {
+      type: NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
+      title: 'Complaint Assigned',
+      message: `Complaint "${complaint.subject}" has been assigned to you`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
+      link: '/sup-help/complaints',
+    });
+
+    return res.json({
+      success: true,
+      message: 'Complaint reassigned successfully',
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
+    });
+  } catch (error) {
+    console.error('❌ Error reassigning complaint:', error);
+    return res.status(500).json({ success: false, message: 'Failed to reassign complaint' });
+  }
+};
+
+/**
+ * POST /api/support/complaints/:id/return-to-queue
+ * Sup-Admin returns a helper-assigned complaint to the frontline unassigned queue.
+ */
+export const supportReturnComplaintToQueue = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+    const { expectedAssignee } = req.body || {};
+    const supportId = String(req.userId);
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, role: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (complaint.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Cannot return a closed complaint to queue' });
+    }
+
+    const currentAssigneeId = complaint.assignedSupport || complaint.assignedTo;
+    let currentAssignee = complaint.AssignedSupport;
+    if (!currentAssignee && currentAssigneeId) {
+      currentAssignee = await prisma.user.findUnique({
+        where: { id: currentAssigneeId },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Security check: SUPPORT cannot return ADMIN or peer SUPPORT complaints
+    if (req.userRole !== 'ADMIN') {
+      if (currentAssignee?.role === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Cannot return an Admin complaint to queue' });
+      }
+      if (currentAssignee?.role === 'SUPPORT' && currentAssignee.id !== supportId) {
+        return res.status(403).json({ success: false, message: 'Cannot return another Support Agent complaint to queue' });
+      }
+      if (currentAssignee && currentAssignee.role !== 'SUPPORT_HELPER' && currentAssignee.id !== supportId) {
+        return res.status(403).json({ success: false, message: 'Only complaints assigned to Support Helpers can be supervised' });
+      }
+    }
+
+    // Stale assignment / Concurrency protection
+    if (expectedAssignee && currentAssigneeId && String(currentAssigneeId) !== String(expectedAssignee)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Complaint assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        assignedSupport: null,
+        assignedTo: null,
+        status: complaint.status === 'NEW' ? 'NEW' : 'OPEN',
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
+    // Timeline
+    await addTimeline(id, {
+      action: 'RETURNED_TO_SUPPORT',
+      description: 'Complaint returned to frontline queue by supervisor',
+      authorId: supportId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      oldValue: currentAssigneeId || null,
+      newValue: null,
+    });
+
+    // Activity log
+    await logSupportActivity(
+      supportId,
+      'COMPLAINT_RETURNED_TO_QUEUE',
+      `Returned complaint "${complaint.subject}" to queue`,
+      complaint.userId,
+      id
+    );
+
+    // Notify previous helper
+    if (currentAssigneeId && currentAssignee?.role === 'SUPPORT_HELPER') {
+      await createUserNotification(currentAssigneeId, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Complaint Returned to Queue',
+        message: `Complaint "${complaint.subject}" was returned to the queue by supervisor`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.NORMAL,
+        link: '/sup-help/complaints',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Complaint returned to queue successfully',
+      complaint: serializeComplaint(updated, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }),
+    });
+  } catch (error) {
+    console.error('❌ Error returning complaint to queue:', error);
+    return res.status(500).json({ success: false, message: 'Failed to return complaint to queue' });
   }
 };
 
@@ -3972,8 +4431,12 @@ export default {
   supportListComplaints,
   supportGetComplaint,
   supportAssignComplaint,
+  supportTakeoverComplaint,
+  supportReassignComplaint,
+  supportReturnComplaintToQueue,
   supportReply,
   supportAddNote,
+  requireSupportNoteAccess,
   supportChangeStatus,
   supportEscalate,
   supportClose,

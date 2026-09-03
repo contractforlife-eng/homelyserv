@@ -449,7 +449,7 @@ test("6. POST /api/support/complaints/:id/reply as SUPPORT is BLOCKED (403) for 
   });
 });
 
-test("7. POST /api/support/complaints/:id/notes as SUPPORT is BLOCKED (403) for non-escalated helper complaints", async () => {
+test("7. POST /api/support/complaints/:id/notes as SUPPORT is PERMITTED (200) for helper complaints as supervisor note", async () => {
   const complaints = [
     { id: "665f1a2b3c4d5e6f7a8b9c21", userId: "665f1a2b3c4d5e6f7a8b9c04", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", status: "IN_PROGRESS", subject: "Helper Issue" },
   ];
@@ -460,9 +460,12 @@ test("7. POST /api/support/complaints/:id/notes as SUPPORT is BLOCKED (403) for 
         "Content-Type": "application/json",
         Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
       },
-      body: JSON.stringify({ note: "Sup admin note" }),
+      body: JSON.stringify({ note: "Sup admin supervisor note" }),
     });
-    assert.equal(res.status, 403);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.assignedSupport?.id || body.complaint.assignedSupport, "665f1a2b3c4d5e6f7a8b9c01");
   });
 });
 
@@ -727,5 +730,377 @@ test("19. POST /api/chat/ensure-conversation between SUPPORT and SUPPORT_HELPER 
     assert.equal(res2.status, 200);
     const body2 = await res2.json();
     assert.equal(body2.conversationId, body.conversationId);
+  });
+});
+
+test("20. Sup-Admin takes over Helper A complaint: ownership updates, Helper A loses write, Sup-Admin gains write", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c21", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Helper ticket", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    // Sup-Admin Carol takes over Eve's complaint
+    const takeoverRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c21/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+    assert.equal(takeoverRes.status, 200);
+    const takeoverBody = await takeoverRes.json();
+    assert.equal(takeoverBody.success, true);
+    assert.equal(takeoverBody.complaint.assignedSupport?.id || takeoverBody.complaint.assignedSupport, "665f1a2b3c4d5e6f7a8b9c02");
+    assert.equal(takeoverBody.complaint.assignedTo, "665f1a2b3c4d5e6f7a8b9c02");
+
+    // Helper Eve attempts to reply -> 403 Forbidden
+    const eveReplyRes = await fetch(`${baseUrl}/api/sup-help/complaints/665f1a2b3c4d5e6f7a8b9c21/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({ message: "Should be blocked" }),
+    });
+    assert.equal(eveReplyRes.status, 403);
+
+    // Sup-Admin Carol replies -> 200 OK
+    const carolReplyRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c21/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ message: "Supervisor taking over resolution." }),
+    });
+    assert.equal(carolReplyRes.status, 200);
+  });
+});
+
+test("21. Sup-Admin reassigns Helper A complaint to Helper B: Helper A loses write, Helper B gains write", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c22", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Helper reassignment ticket", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    // Sup-Admin Carol reassigns from Eve to Bob
+    const reassignRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c22/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({
+        targetHelperId: "665f1a2b3c4d5e6f7a8b9c05",
+        expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01",
+      }),
+    });
+    assert.equal(reassignRes.status, 200);
+    const reassignBody = await reassignRes.json();
+    assert.equal(reassignBody.success, true);
+    assert.equal(reassignBody.complaint.assignedSupport?.id || reassignBody.complaint.assignedSupport, "665f1a2b3c4d5e6f7a8b9c05");
+    assert.equal(reassignBody.complaint.assignedTo, "665f1a2b3c4d5e6f7a8b9c05");
+
+    // Eve attempts reply -> 403 Forbidden
+    const eveReplyRes = await fetch(`${baseUrl}/api/sup-help/complaints/665f1a2b3c4d5e6f7a8b9c22/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({ message: "Eve reply blocked" }),
+    });
+    assert.equal(eveReplyRes.status, 403);
+
+    // Bob attempts reply -> 200 OK
+    const bobReplyRes = await fetch(`${baseUrl}/api/sup-help/complaints/665f1a2b3c4d5e6f7a8b9c22/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c05", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({ message: "Bob handling now." }),
+    });
+    assert.equal(bobReplyRes.status, 200);
+  });
+});
+
+test("22. Sup-Admin reassign with invalid non-helper target is rejected with 400", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c23", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Invalid reassign", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    // Attempt reassign to Worker Alice
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c23/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c04" }),
+    });
+    assert.equal(res.status, 400);
+  });
+});
+
+test("23. Sup-Admin returns Helper complaint to queue: unassigned and claimable by frontline helpers", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c24", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Return to queue ticket", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const returnRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c24/return-to-queue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+    assert.equal(returnRes.status, 200);
+    const returnBody = await returnRes.json();
+    assert.equal(returnBody.success, true);
+    assert.equal(returnBody.complaint.assignedSupport, null);
+    assert.equal(returnBody.complaint.assignedTo, null);
+
+    // Frontline Helper Bob claims it from queue -> 200 OK
+    const claimRes = await fetch(`${baseUrl}/api/sup-help/complaints/665f1a2b3c4d5e6f7a8b9c24/assign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c05", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(claimRes.status, 200);
+  });
+});
+
+test("24. Sup-Admin adds supervisor note to helper complaint: ownership and status remain unchanged", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c25", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Note test ticket", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const noteRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c25/notes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ note: "Please follow up on employer receipt." }),
+    });
+    assert.equal(noteRes.status, 200);
+    const noteBody = await noteRes.json();
+    assert.equal(noteBody.success, true);
+    assert.equal(noteBody.complaint.assignedSupport?.id || noteBody.complaint.assignedSupport, "665f1a2b3c4d5e6f7a8b9c01", "Ownership must remain with Helper Eve");
+    assert.equal(noteBody.complaint.status, "OPEN", "Status must remain unchanged");
+  });
+});
+
+test("25. Sup-Admin takeover of ADMIN complaint is strictly rejected with 403", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c26", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Admin owned ticket", status: "IN_PROGRESS", priority: "Critical", assignedSupport: "665f1a2b3c4d5e6f7a8b9c03", assignedTo: "665f1a2b3c4d5e6f7a8b9c03", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c26/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(res.status, 403);
+  });
+});
+
+test("26. Sup-Admin takeover of peer SUPPORT complaint is strictly rejected with 403", async () => {
+  const otherSupport = "665f1a2b3c4d5e6f7a8b9c99";
+  testUsers[otherSupport] = { id: otherSupport, _id: otherSupport, fullName: "Support Frank", role: "SUPPORT", email: "frank@test.com" };
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c27", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Peer support ticket", status: "IN_PROGRESS", priority: "High", assignedSupport: otherSupport, assignedTo: otherSupport, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c27/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(res.status, 403);
+  });
+});
+
+test("27. SUPPORT_HELPER cannot call supervisor endpoints (takeover/reassign/return-to-queue)", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c28", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Helper forbidden test", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const tRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c28/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(tRes.status, 403);
+
+    const rRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c28/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c05" }),
+    });
+    assert.equal(rRes.status, 403);
+
+    const qRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c28/return-to-queue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(qRes.status, 403);
+  });
+});
+
+test("28. WORKER and EMPLOYER cannot call supervisor endpoints", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c29", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Worker forbidden test", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c29/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c04", "WORKER"),
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(res.status, 403);
+  });
+});
+
+test("29. Stale expected-assignee takeover and reassignment is rejected with 409 Conflict", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c30", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Stale concurrency test", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c05", assignedTo: "665f1a2b3c4d5e6f7a8b9c05", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    // Sup-Admin attempts takeover expecting Eve ("665f1a2b3c4d5e6f7a8b9c01"), but it's currently Bob ("665f1a2b3c4d5e6f7a8b9c05")
+    const takeoverRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c30/takeover`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+    assert.equal(takeoverRes.status, 409);
+
+    // Sup-Admin attempts reassign expecting Eve, but it's currently Bob
+    const reassignRes = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c30/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c01", expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+    assert.equal(reassignRes.status, 409);
+  });
+});
+
+test("30. Admin existing reassignment authority preserved", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c31", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Admin reassign test", status: "ESCALATED", priority: "High", assignedSupport: null, assignedTo: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/admin/complaints/665f1a2b3c4d5e6f7a8b9c31/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c03", "ADMIN"),
+      },
+      body: JSON.stringify({ supportId: "665f1a2b3c4d5e6f7a8b9c02" }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.complaint.assignedSupport?.id || body.complaint.assignedSupport, "665f1a2b3c4d5e6f7a8b9c02");
+  });
+});
+
+test("31. Frontend regression check: all JSX tags and Lucide icons in SupportComplaints.jsx are properly imported", async () => {
+  const fs = await import("fs");
+  const path = await import("path");
+  const filePath = path.resolve(process.cwd(), "frontend/src/pages/support/SupportComplaints.jsx");
+  assert.ok(fs.existsSync(filePath), "SupportComplaints.jsx must exist");
+
+  const content = fs.readFileSync(filePath, "utf8");
+  const tags = new Set([...content.matchAll(/<([A-Z][A-Za-z0-9]*)/g)].map((m) => m[1]));
+
+  const imports = new Set();
+  const importMatches = content.matchAll(/import\s+(?:\{([^}]+)\}|([A-Za-z0-9_]+))/g);
+  for (const m of importMatches) {
+    if (m[1]) {
+      m[1].split(",").forEach((item) => imports.add(item.trim().split(/\s+as\s+/)[0].trim()));
+    }
+    if (m[2]) {
+      imports.add(m[2].trim());
+    }
+  }
+
+  const missing = Array.from(tags).filter((tag) => !imports.has(tag) && tag !== "SupportComplaints");
+  assert.deepEqual(missing, [], `Missing imports in SupportComplaints.jsx: ${missing.join(", ")}`);
+});
+
+test("32. Reassigning a complaint to the exact same current helper is rejected with 400", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c32", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Same helper reassign test", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    // Attempt reassign Eve -> Eve
+    const res = await fetch(`${baseUrl}/api/support/complaints/665f1a2b3c4d5e6f7a8b9c32/reassign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT"),
+      },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.success, false);
+  });
+});
+
+test("33. GET /api/support/sup-help-team returns helpers array and filters current assignee for reassign modal", async () => {
+  const complaints = [
+    { id: "665f1a2b3c4d5e6f7a8b9c33", userId: "665f1a2b3c4d5e6f7a8b9c04", subject: "Reassign modal filter test", status: "OPEN", priority: "Medium", assignedSupport: "665f1a2b3c4d5e6f7a8b9c01", assignedTo: "665f1a2b3c4d5e6f7a8b9c01", createdAt: new Date(), updatedAt: new Date() },
+  ];
+  await withTestServer({ complaints }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/support/sup-help-team`, {
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.ok(Array.isArray(body.helpers), "Response must contain helpers array");
+
+    // Eve (665f1a2b3c4d5e6f7a8b9c01) and Bob (665f1a2b3c4d5e6f7a8b9c05) are both present
+    const eve = body.helpers.find((h) => h.id === "665f1a2b3c4d5e6f7a8b9c01");
+    const bob = body.helpers.find((h) => h.id === "665f1a2b3c4d5e6f7a8b9c05");
+    assert.ok(eve, "Eve must be in helpers");
+    assert.ok(bob, "Bob must be in helpers");
+
+    // Modal filtering simulation: currentAssignee is Eve
+    const currentAssigneeId = "665f1a2b3c4d5e6f7a8b9c01";
+    const eligibleHelpers = body.helpers.filter((h) => String(h.id) !== currentAssigneeId && h.role === "SUPPORT_HELPER");
+    assert.equal(eligibleHelpers.length, 1);
+    assert.equal(eligibleHelpers[0].id, "665f1a2b3c4d5e6f7a8b9c05", "Bob must be the eligible reassignment target");
   });
 });

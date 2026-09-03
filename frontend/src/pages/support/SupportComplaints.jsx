@@ -16,6 +16,7 @@ import {
   FileText,
   Send,
   StickyNote,
+  Shield,
   ShieldAlert,
   UserCheck,
   History,
@@ -25,7 +26,8 @@ import {
   Home,
   Users,
   MessageCircle,
-  Headphones
+  Headphones,
+  RotateCcw
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
 import { UserAvatar, UserDisplayName } from '../../components/users';
@@ -52,6 +54,10 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
   const [notes, setNotes] = useState([]);
   const [replyText, setReplyText] = useState('');
   const [noteText, setNoteText] = useState('');
+  const [supervisorNoteText, setSupervisorNoteText] = useState('');
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [supHelpTeam, setSupHelpTeam] = useState([]);
+  const [selectedTargetHelperId, setSelectedTargetHelperId] = useState('');
   const [escalationReason, setEscalationReason] = useState('');
   const [showEscalateModal, setShowEscalateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -231,6 +237,149 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
     } catch (error) {
       console.error('❌ Error adding note:', error);
       setNotification({ type: 'error', text: t.notifications.noteFailed });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // ============================================================
+  // SUPERVISOR ACTIONS (PHASE B1)
+  // ============================================================
+  const handleTakeover = () => {
+    if (!selectedComplaint) return;
+    const helperName = selectedComplaint.assignedSupport?.fullName || selectedComplaint.assignedSupport?.name || 'Sup-Help';
+    setConfirmDialog({
+      title: t.takeOverComplaint || 'Take Over Complaint',
+      message: i18nT('supportComplaintsPage.confirmTakeover', { name: helperName }),
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          const expectedAssignee = selectedAssignedSupportId;
+          const response = await complaintsService.supportTakeoverComplaint(selectedComplaint.id, expectedAssignee);
+          if (response?.success) {
+            setNotification({ type: 'success', text: t.complaintTakenOver || 'Complaint taken over successfully' });
+            setSelectedComplaint(response.complaint);
+            const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+            if (detail?.success) {
+              setTimeline(detail.timeline || []);
+              setNotes(detail.notes || []);
+            }
+            fetchComplaints();
+          }
+        } catch (error) {
+          console.error('❌ Error taking over complaint:', error);
+          setNotification({
+            type: 'error',
+            text: error.response?.data?.message || t.staleAssignmentError || 'Failed to take over complaint',
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      },
+    });
+  };
+
+  const openReassignModal = async () => {
+    setSelectedTargetHelperId('');
+    setShowReassignModal(true);
+    try {
+      const teamData = await complaintsService.getSupHelpTeam();
+      if (teamData?.success) {
+        const helpersList = Array.isArray(teamData.helpers)
+          ? teamData.helpers
+          : Array.isArray(teamData.team)
+            ? teamData.team
+            : [];
+        setSupHelpTeam(helpersList);
+      }
+    } catch (error) {
+      console.error('❌ Error loading Sup-Help team:', error);
+    }
+  };
+
+  const handleReassign = async () => {
+    if (!selectedTargetHelperId || !selectedComplaint) return;
+    setActionLoading(true);
+    try {
+      const expectedAssignee = selectedAssignedSupportId;
+      const response = await complaintsService.supportReassignComplaint(
+        selectedComplaint.id,
+        selectedTargetHelperId,
+        expectedAssignee
+      );
+      if (response?.success) {
+        setNotification({ type: 'success', text: t.complaintReassigned || 'Complaint reassigned successfully' });
+        setShowReassignModal(false);
+        setSelectedTargetHelperId('');
+        setSelectedComplaint(response.complaint);
+        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        if (detail?.success) {
+          setTimeline(detail.timeline || []);
+          setNotes(detail.notes || []);
+        }
+        fetchComplaints();
+      }
+    } catch (error) {
+      console.error('❌ Error reassigning complaint:', error);
+      setNotification({
+        type: 'error',
+        text: error.response?.data?.message || t.staleAssignmentError || 'Failed to reassign complaint',
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReturnToQueue = () => {
+    if (!selectedComplaint) return;
+    setConfirmDialog({
+      title: t.returnToQueue || 'Return to Queue',
+      message: t.confirmReturnToQueue || 'Are you sure you want to return this complaint to the frontline queue? It will become claimable by all helpers.',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          const expectedAssignee = selectedAssignedSupportId;
+          const response = await complaintsService.supportReturnComplaintToQueue(selectedComplaint.id, expectedAssignee);
+          if (response?.success) {
+            setNotification({ type: 'success', text: t.returnedToQueue || 'Complaint returned to queue successfully' });
+            setSelectedComplaint(response.complaint);
+            const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+            if (detail?.success) {
+              setTimeline(detail.timeline || []);
+              setNotes(detail.notes || []);
+            }
+            fetchComplaints();
+          }
+        } catch (error) {
+          console.error('❌ Error returning complaint to queue:', error);
+          setNotification({
+            type: 'error',
+            text: error.response?.data?.message || t.staleAssignmentError || 'Failed to return complaint to queue',
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleAddSupervisorNote = async () => {
+    if (!supervisorNoteText.trim() || !selectedComplaint) return;
+    setActionLoading(true);
+    try {
+      const response = await complaintsService.addComplaintNote(selectedComplaint.id, supervisorNoteText.trim());
+      if (response?.success) {
+        setNotification({ type: 'success', text: t.supervisorNoteAdded || 'Supervisor note added successfully' });
+        setSupervisorNoteText('');
+        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        if (detail?.success) {
+          setTimeline(detail.timeline || []);
+          setNotes(detail.notes || []);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error adding supervisor note:', error);
+      setNotification({ type: 'error', text: error.response?.data?.message || 'Failed to add supervisor note' });
     } finally {
       setActionLoading(false);
     }
@@ -676,22 +825,88 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Supervisory Monitoring Banner */}
+              {/* Supervisory Monitoring Banner & Control Area (Phase B1) */}
               {isMonitoringComplaint && (
-                <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 flex items-start gap-3">
-                  <Shield size={20} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-sm flex items-center gap-2">
-                      <span>{t.monitoringMode || 'Monitoring Mode'}</span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-                        {selectedComplaint.assignedSupport?.fullName || selectedComplaint.assignedSupport?.name || 'Sup-Help'}
-                      </span>
-                    </h4>
-                    <p className="text-xs mt-1 text-blue-700 dark:text-blue-300">
-                      {i18nT('supportComplaintsPage.monitoringNotice', {
-                        defaultValue: 'This complaint is currently assigned to Sup-Help. You have supervisory read-only visibility.'
-                      })}
-                    </p>
+                <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-5 dark:border-blue-900/60 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 space-y-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <Shield size={22} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-sm flex items-center gap-2 flex-wrap">
+                          <span>{t.monitoringMode || 'Monitoring Mode'}</span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            {selectedComplaint.assignedSupport?.fullName || selectedComplaint.assignedSupport?.name || 'Sup-Help'}
+                          </span>
+                        </h4>
+                        <p className="text-xs mt-1 text-blue-700 dark:text-blue-300">
+                          {i18nT('supportComplaintsPage.monitoringNotice', {
+                            defaultValue: 'This complaint is currently assigned to Sup-Help. You can take over, reassign, return to queue, or add a supervisor note.'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Supervisor Action Buttons */}
+                  {!['RESOLVED', 'CLOSED'].includes(selectedComplaint.status) && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-blue-800 dark:text-blue-200 mb-2">
+                        {t.supervisorActions || 'Supervisor Actions'}
+                      </p>
+                      <div className="flex flex-wrap gap-2.5">
+                        <button
+                          onClick={handleTakeover}
+                          disabled={actionLoading}
+                          className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <UserCheck size={15} />
+                          {t.takeOver || 'Take Over'}
+                        </button>
+                        <button
+                          onClick={openReassignModal}
+                          disabled={actionLoading}
+                          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <Users size={15} />
+                          {t.reassignToSupHelp || 'Reassign to Sup-Help'}
+                        </button>
+                        <button
+                          onClick={handleReturnToQueue}
+                          disabled={actionLoading}
+                          className="px-3.5 py-2 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 hover:bg-blue-100/50 dark:hover:bg-blue-900/50 rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <RotateCcw size={15} />
+                          {t.returnToQueue || 'Return to Queue'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Supervisor Internal Note Composer */}
+                  <div className="pt-3 border-t border-blue-200/80 dark:border-blue-900/60">
+                    <h5 className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-1.5">
+                      <StickyNote size={14} className="text-blue-600 dark:text-blue-400" />
+                      {t.supervisorInternalNote || 'Supervisor Internal Note'}
+                    </h5>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={supervisorNoteText}
+                        onChange={(e) => setSupervisorNoteText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddSupervisorNote(); } }}
+                        placeholder={t.supervisorNotePlaceholder || 'Write an internal supervisor note (visible only to staff)...'}
+                        className="flex-1 min-w-0 px-3.5 py-2 text-xs bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                      />
+                      <button
+                        onClick={handleAddSupervisorNote}
+                        disabled={actionLoading || !supervisorNoteText.trim()}
+                        className="px-3.5 py-2 bg-blue-700 text-white text-xs font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-1.5 flex-shrink-0"
+                      >
+                        <StickyNote size={14} />
+                        {t.addSupervisorNote || 'Add Supervisor Note'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -866,15 +1081,21 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
               </div>}
 
               {/* Internal Notes Display */}
-              {canWorkSelectedComplaint && notes.length > 0 && (
+              {(canWorkSelectedComplaint || isMonitoringComplaint) && notes.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.internalNotes}</h4>
                   <div className="space-y-2">
                     {notes.map((note) => (
-                      <div key={note.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                      <div key={note.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-100 dark:border-gray-600/50">
                         <p className="text-sm text-gray-600 dark:text-gray-400">{note.note}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {note.authorName} • {formatDate(note.createdAt)}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">{note.authorName}</span>
+                          {note.authorRole && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
+                              {note.authorRole === 'ADMIN' ? 'Co-Admin' : note.authorRole === 'SUPPORT' ? 'Sup-Admin' : 'Sup-Help'}
+                            </span>
+                          )}
+                          <span>• {formatDate(note.createdAt)}</span>
                         </p>
                       </div>
                     ))}
@@ -966,6 +1187,141 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign Modal (Phase B1) */}
+      {showReassignModal && selectedComplaint && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md max-h-[90dvh] flex flex-col">
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Users size={20} className="text-blue-500" />
+                {t.reassignToSupHelp || 'Reassign to Sup-Help'}
+              </h3>
+              <button
+                onClick={() => setShowReassignModal(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  {t.currentAssignee || 'Current Assignee'}
+                </p>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <UserAvatar
+                    name={selectedComplaint.assignedSupport?.fullName || 'Sup-Help'}
+                    image={selectedComplaint.assignedSupport?.profileImage || selectedComplaint.assignedSupport?.image}
+                    role="SUPPORT_HELPER"
+                    size="sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {selectedComplaint.assignedSupport?.fullName || 'Sup-Help'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {selectedComplaint.assignedSupport?.email || ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  {t.selectHelper || 'Select Support Helper'}
+                </p>
+                {(() => {
+                  const currentAssigneeId = String(
+                    selectedComplaint?.assignedSupport?.id
+                    || selectedComplaint?.assignedSupport?._id
+                    || (typeof selectedComplaint?.assignedSupport === 'string' ? selectedComplaint.assignedSupport : '')
+                    || selectedComplaint?.assignedTo
+                    || ''
+                  );
+                  const eligibleHelpers = (supHelpTeam || []).filter((helper) => {
+                    const helperId = String(helper?.id || helper?._id || '');
+                    return helperId && helperId !== currentAssigneeId && (!helper.role || helper.role === 'SUPPORT_HELPER');
+                  });
+
+                  if (eligibleHelpers.length === 0) {
+                    return (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                        {t.noOtherHelpers || 'No other support helpers available'}
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {eligibleHelpers.map((helper) => {
+                        const helperId = String(helper.id || helper._id);
+                        const isSelected = String(selectedTargetHelperId) === helperId;
+                        const openCount = helper.activeComplaints ?? helper.workload?.openComplaints ?? helper.openTickets ?? 0;
+                        return (
+                          <div
+                            key={helperId}
+                            onClick={() => setSelectedTargetHelperId(helperId)}
+                            className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
+                              isSelected
+                                ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-900/30 ring-2 ring-blue-500/20'
+                                : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <UserAvatar
+                                name={helper.fullName || 'Helper'}
+                                image={helper.profileImage || helper.image}
+                                role="SUPPORT_HELPER"
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                  {helper.fullName}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {helper.email}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+                                {openCount} {t.open || 'open'}
+                              </span>
+                              <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-300 dark:border-gray-600'
+                              }`}>
+                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+              <button
+                onClick={() => setShowReassignModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+              >
+                {t.cancel}
+              </button>
+              <button
+                onClick={handleReassign}
+                disabled={actionLoading || !selectedTargetHelperId}
+                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+              >
+                {t.reassignToSupHelp || 'Reassign'}
+              </button>
             </div>
           </div>
         </div>

@@ -19,7 +19,11 @@ import {
   supportGetComplaint,
   requireSupportComplaintAccess,
   requireAssignedSupportComplaint,
+  requireSupportNoteAccess,
   supportAssignComplaint,
+  supportTakeoverComplaint,
+  supportReassignComplaint,
+  supportReturnComplaintToQueue,
   supportReply,
   supportAddNote,
   supportChangeStatus,
@@ -120,11 +124,20 @@ router.get('/support/complaints/:id', authenticate, requireSupport, requireSuppo
 // POST /api/support/complaints/:id/assign - Assign to self
 router.post('/support/complaints/:id/assign', authenticate, requireSupport, supportAssignComplaint);
 
+// POST /api/support/complaints/:id/takeover - Take over Sup-Help complaint
+router.post('/support/complaints/:id/takeover', authenticate, requireSupport, supportTakeoverComplaint);
+
+// POST /api/support/complaints/:id/reassign - Reassign Sup-Help complaint to another Sup-Help
+router.post('/support/complaints/:id/reassign', authenticate, requireSupport, supportReassignComplaint);
+
+// POST /api/support/complaints/:id/return-to-queue - Return Sup-Help complaint to queue
+router.post('/support/complaints/:id/return-to-queue', authenticate, requireSupport, supportReturnComplaintToQueue);
+
 // POST /api/support/complaints/:id/reply - Support reply
 router.post('/support/complaints/:id/reply', authenticate, requireSupport, requireAssignedSupportComplaint, supportReply);
 
-// POST /api/support/complaints/:id/notes - Add internal note
-router.post('/support/complaints/:id/notes', authenticate, requireSupport, requireAssignedSupportComplaint, supportAddNote);
+// POST /api/support/complaints/:id/notes - Add internal note (including supervisor note on helper complaints)
+router.post('/support/complaints/:id/notes', authenticate, requireSupport, requireSupportNoteAccess, supportAddNote);
 
 // PUT /api/support/complaints/:id/status - Change status
 router.put('/support/complaints/:id/status', authenticate, requireSupport, requireAssignedSupportComplaint, supportChangeStatus);

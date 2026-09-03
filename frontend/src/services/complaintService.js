@@ -128,6 +128,38 @@ export const assignComplaint = async (complaintId) => {
 };
 
 /**
+ * Sup-Admin takes over a complaint assigned to a Sup-Help.
+ */
+export const supportTakeoverComplaint = async (complaintId, expectedAssignee = null) => {
+  const response = await api.post(`/api/support/complaints/${complaintId}/takeover`, { expectedAssignee });
+  return response.data;
+};
+
+/**
+ * Sup-Admin reassigns a complaint to another Sup-Help.
+ */
+export const supportReassignComplaint = async (complaintId, targetHelperId, expectedAssignee = null) => {
+  const response = await api.post(`/api/support/complaints/${complaintId}/reassign`, { targetHelperId, expectedAssignee });
+  return response.data;
+};
+
+/**
+ * Sup-Admin returns a helper complaint to the queue.
+ */
+export const supportReturnComplaintToQueue = async (complaintId, expectedAssignee = null) => {
+  const response = await api.post(`/api/support/complaints/${complaintId}/return-to-queue`, { expectedAssignee });
+  return response.data;
+};
+
+/**
+ * Get the Sup-Help team directory for reassignment.
+ */
+export const getSupHelpTeam = async () => {
+  const response = await api.get('/api/support/sup-help-team');
+  return response.data;
+};
+
+/**
  * Support replies to a complaint.
  */
 export const supportReplyToComplaint = async (complaintId, message) => {
@@ -399,6 +431,10 @@ const complaintService = {
   getSupportComplaints,
   getSupportComplaint,
   assignComplaint,
+  supportTakeoverComplaint,
+  supportReassignComplaint,
+  supportReturnComplaintToQueue,
+  getSupHelpTeam,
   supportReplyToComplaint,
   addComplaintNote,
   changeComplaintStatus,
