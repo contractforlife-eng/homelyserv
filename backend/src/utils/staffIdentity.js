@@ -15,6 +15,7 @@
 //      with zero code changes.
 // ============================================================
 import prisma from '../lib/prisma.js';
+import User from '../models/User.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 // Roles considered "staff" (support / admin family).
@@ -92,6 +93,26 @@ export const getUserIdentities = async (userIds = []) => {
   } catch (error) {
     console.error('❌ staffIdentity: failed to batch-resolve identities:', error.message);
   }
+
+  const missingIds = uniqueIds.filter(id => !map.has(id));
+  if (missingIds.length > 0) {
+    try {
+      const mongooseUsers = await User.find({ _id: { $in: missingIds } })
+        .select('fullName role profileImage email');
+      for (const u of mongooseUsers) {
+        map.set(String(u._id), toIdentityObject({
+          id: String(u._id),
+          fullName: u.fullName,
+          role: u.role,
+          profileImage: u.profileImage,
+          email: u.email
+        }));
+      }
+    } catch (e) {
+      // safe fallback
+    }
+  }
+
   return map;
 };
 
@@ -151,11 +172,12 @@ export const enrichMessageIdentities = async (messages = []) => {
       senderName: sender?.name || msg.senderName || 'User',
       senderRole: sender?.role || msg.senderRole || 'USER',
       senderIsPremium: sender?.isPremium === true,
+      senderImage: sender?.image || msg.senderImage || null,
       recipientName: recipient?.name || msg.recipientName || 'User',
       sender: sender
-        ? { id: sender.id, name: sender.name, role: sender.role, image: sender.image, isPremium: sender.isPremium }
+        ? { id: sender.id, name: sender.name, role: sender.role, image: sender.image, profileImage: sender.image, isPremium: sender.isPremium }
         : msg.senderId
-          ? { id: String(msg.senderId), name: msg.senderName || 'User', role: msg.senderRole || 'USER' }
+          ? { id: String(msg.senderId), name: msg.senderName || 'User', role: msg.senderRole || 'USER', image: msg.senderImage || null, profileImage: msg.senderImage || null }
           : undefined,
     };
   });

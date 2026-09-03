@@ -1078,10 +1078,24 @@ const AdminMessages = () => {
             </div>
           ) : (
             messages.map((msg, idx) => {
-              const isSelf = msg.senderId === authUser?.id;
+              const isSelf = String(msg.senderId) === String(authUser?.id);
               const prev = messages[idx - 1];
-              const isFirstInGroup = idx === 0 || prev?.senderId !== msg.senderId;
-              const senderImage = msg.sender?.image || msg.sender?.profileImage || null;
+              const isFirstInGroup = idx === 0 || String(prev?.senderId) !== String(msg.senderId);
+              const counterpartId = getOtherUserId();
+              const isCounterpart = !isSelf && (
+                !msg.senderId ||
+                String(msg.senderId) === String(counterpartId) ||
+                String(msg.senderId) === String(selectedConversation?.otherStaffId || selectedConversation?.otherStaff?.id) ||
+                String(msg.senderId) === String(selectedConversation?.userId || selectedConversation?.user?.id) ||
+                String(msg.senderId) === String(selectedConversation?.supportAgentId || selectedConversation?.supportAgent?.id)
+              );
+              const senderImage = msg.sender?.image ||
+                msg.sender?.profileImage ||
+                msg.senderImage ||
+                msg.avatar ||
+                msg.profileImage ||
+                msg.image ||
+                (isCounterpart ? chatAvatarImage : null);
               const senderName = msg.senderName || msg.sender?.name || t.user;
               const senderRole = msg.senderRole || msg.sender?.role || 'USER';
 

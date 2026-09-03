@@ -803,7 +803,18 @@ const renderChatPanel = () => {
               const isSelf = String(msg.senderId) === String(authUser?.id);
               const prev = messages[idx - 1];
               const isFirstInGroup = idx === 0 || String(prev?.senderId) !== String(msg.senderId);
-              const senderImage = msg.sender?.image || msg.sender?.profileImage || null;
+              const counterpartId = selectedConversation?.otherUserId;
+              const isCounterpart = !isSelf && (
+                !msg.senderId ||
+                String(msg.senderId) === String(counterpartId)
+              );
+              const senderImage = msg.sender?.image ||
+                msg.sender?.profileImage ||
+                msg.senderImage ||
+                msg.avatar ||
+                msg.profileImage ||
+                msg.image ||
+                (isCounterpart ? (selectedConversation?.otherUserImage || null) : null);
               const senderName = msg.senderName || msg.sender?.name || displayName;
               const senderRole = msg.senderRole || msg.sender?.role || selectedConversation?.role || 'USER';
 

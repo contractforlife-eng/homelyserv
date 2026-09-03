@@ -412,6 +412,17 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     ]);
 
     const formatted = formatMessage(message);
+    if (senderIdentity) {
+      formatted.sender = {
+        id: senderIdentity.id,
+        name: senderIdentity.name,
+        role: senderIdentity.role,
+        image: senderIdentity.image,
+        profileImage: senderIdentity.image,
+        isPremium: senderIdentity.isPremium,
+      };
+      formatted.senderImage = senderIdentity.image;
+    }
 
     emitToUser(recipientId, 'message:new', formatted);
 
