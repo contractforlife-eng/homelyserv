@@ -790,6 +790,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/sup-help/live-support"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT_HELPER">
+            <PublicLiveSupport />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ========== FALLBACK ========== */}
       <Route path="*" element={<Navigate to="/login" />} />

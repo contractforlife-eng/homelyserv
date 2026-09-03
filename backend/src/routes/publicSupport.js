@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import PublicSupportConversation from '../models/PublicSupportConversation.js';
 import PublicSupportMessage from '../models/PublicSupportMessage.js';
-import { requireSupport } from '../middleware/supportAuth.js';
+import { requireLiveSupportStaff } from '../middleware/liveSupportAuth.js';
 import { getIo } from '../lib/socket.js';
 import { answerFaq, welcomeFaq, transferredFaq } from '../services/publicSupportFaqService.js';
 import { createGuestToken, hashGuestToken, verifyGuestConversation } from '../services/publicSupportAccessService.js';
@@ -145,7 +145,7 @@ router.post('/session/:publicId/escalate', limit(60_000, 10), requireGuest, asyn
   res.json({ success:true, conversation:dto, message:messageDto(transfer) });
 });
 
-router.get('/staff/conversations', requireSupport, async (req, res) => {
+router.get('/staff/conversations', requireLiveSupportStaff, async (req, res) => {
   const statuses = clean(req.query.status, 50).split(',').filter((status) => ['WAITING_FOR_SUPPORT','ASSIGNED','CLOSED'].includes(status));
   const statusFilter = statuses.length ? { status:{ $in:statuses } } : { status:{ $ne:'BOT' } };
   const ownershipFilter = req.userRole === 'ADMIN'
@@ -156,7 +156,7 @@ router.get('/staff/conversations', requireSupport, async (req, res) => {
   res.json({ success:true, conversations:conversations.map(conversationDto) });
 });
 
-router.get('/staff/conversations/:id', requireSupport, async (req, res) => {
+router.get('/staff/conversations/:id', requireLiveSupportStaff, async (req, res) => {
   let [conversation, messages] = await Promise.all([
     PublicSupportConversation.findById(req.params.id),
     PublicSupportMessage.find({ conversationId:req.params.id }).sort({ createdAt:1 }).limit(500).lean(),
@@ -171,7 +171,7 @@ router.get('/staff/conversations/:id', requireSupport, async (req, res) => {
   res.json({ success:true, conversation:conversationDto(conversation), messages:messages.map(messageDto) });
 });
 
-router.post('/staff/conversations/:id/claim', requireSupport, async (req, res) => {
+router.post('/staff/conversations/:id/claim', requireLiveSupportStaff, async (req, res) => {
   let conversation = await PublicSupportConversation.findById(req.params.id);
   if (!conversation) return res.status(404).json({ success:false, message:'Conversation not found.' });
   conversation = await expireConversationIfInactive(conversation);
@@ -188,7 +188,7 @@ router.post('/staff/conversations/:id/claim', requireSupport, async (req, res) =
   res.json({ success:true, conversation:dto });
 });
 
-router.post('/staff/conversations/:id/messages', requireSupport, async (req, res) => {
+router.post('/staff/conversations/:id/messages', requireLiveSupportStaff, async (req, res) => {
   let conversation = await PublicSupportConversation.findById(req.params.id);
   if (!conversation) return res.status(404).json({ success:false, message:'Conversation not found.' });
   conversation = await expireConversationIfInactive(conversation);
@@ -213,7 +213,7 @@ router.post('/staff/conversations/:id/messages', requireSupport, async (req, res
   res.status(201).json({ success:true, message:messageDto(message), conversation:conversationDto(conversation) });
 });
 
-router.post('/staff/conversations/:id/close', requireSupport, async (req, res) => {
+router.post('/staff/conversations/:id/close', requireLiveSupportStaff, async (req, res) => {
   const existing = await PublicSupportConversation.findById(req.params.id);
   if (!existing) return res.status(404).json({ success:false, message:'Conversation not found.' });
   if (req.userRole !== 'ADMIN' && String(existing.assignedTo || '') !== String(req.userId)) {

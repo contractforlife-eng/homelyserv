@@ -5,7 +5,7 @@ const publicSupportMessageSchema = new mongoose.Schema({
   clientMessageId: { type: String, maxlength: 100 },
   senderType: { type: String, enum: ['VISITOR', 'BOT', 'STAFF'], required: true },
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  senderRole: { type: String, enum: ['ADMIN', 'SUPPORT'], default: null },
+  senderRole: { type: String, enum: ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'], default: null },
   body: { type: String, required: true, maxlength: 2000 },
 }, { timestamps: true });
 

@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import UserProfileView from '../../components/users/UserProfileView';
-import { Home, Users, MessageCircle, FileText } from 'lucide-react';
+import { Home, Users, MessageCircle, FileText, Headphones } from 'lucide-react';
 
 const SupHelpUserProfile = () => {
   const { t } = useTranslation();
@@ -47,6 +47,7 @@ const SupHelpUserProfile = () => {
         { id: 'users', label: t('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
         { id: 'messages', label: t('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
         { id: 'complaints', label: t('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
+        { id: 'live-support', label: t('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
       ]}
     >
       <UserProfileView

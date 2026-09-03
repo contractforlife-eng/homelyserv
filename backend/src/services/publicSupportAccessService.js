@@ -17,7 +17,7 @@ export async function verifyStaffToken(token) {
     const decoded = jwt.verify(token, getJwtSecret());
     const userId = decoded.userId || decoded.id;
     const user = await User.findById(userId).select('role tokenVersion');
-    if (!user || !['ADMIN', 'SUPPORT'].includes(user.role)) return null;
+    if (!user || !['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'].includes(user.role)) return null;
     if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) return null;
     return { userId: String(user._id), role: user.role };
   } catch {

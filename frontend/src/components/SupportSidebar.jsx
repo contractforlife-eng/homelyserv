@@ -42,9 +42,16 @@ const SupportSidebar = ({
     messages: 'messages',
   };
 
-  const t = i18nT('supportNavigation', { returnObjects: true });
+  const t = i18nT('supportNavigation', { returnObjects: true }) || {};
+  const activeRole = role || (authUser || user)?.role?.toUpperCase();
 
-  const defaultMenuItems = [
+  const defaultMenuItems = activeRole === 'SUPPORT_HELPER' ? [
+    { id: 'dashboard', label: i18nT('supHelpNavigation.dashboard') || t.dashboard, icon: Home, path: '/sup-help' },
+    { id: 'users', label: t.users, icon: Users, path: '/sup-help/users' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/sup-help/messages' },
+    { id: 'complaints', label: t.complaints, icon: FileText, path: '/sup-help/complaints' },
+    { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
+  ] : [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },
     { id: 'users', label: t.users, icon: Users, path: '/support-users' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/support-complaints' },
@@ -55,7 +62,6 @@ const SupportSidebar = ({
   ];
 
   const menuItems = propMenuItems || defaultMenuItems;
-  const activeRole = role || (authUser || user)?.role?.toUpperCase();
 
   const activeUser = authUser || user;
 

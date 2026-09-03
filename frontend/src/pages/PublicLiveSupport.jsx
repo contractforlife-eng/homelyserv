@@ -85,5 +85,20 @@ function LiveSupportContent() {
 
 export default function PublicLiveSupport() {
   const role = useAuthStore((state) => state.user?.role);
-  return role === 'SUPPORT' ? <SupportLayout><LiveSupportContent/></SupportLayout> : <DashboardLayout requiredRole="ADMIN"><LiveSupportContent/></DashboardLayout>;
+  if (role === 'SUPPORT_HELPER') {
+    return (
+      <SupportLayout allowedRoles={['SUPPORT_HELPER', 'ADMIN']} role="SUPPORT_HELPER">
+        <LiveSupportContent />
+      </SupportLayout>
+    );
+  }
+  return role === 'SUPPORT' ? (
+    <SupportLayout>
+      <LiveSupportContent />
+    </SupportLayout>
+  ) : (
+    <DashboardLayout requiredRole="ADMIN">
+      <LiveSupportContent />
+    </DashboardLayout>
+  );
 }

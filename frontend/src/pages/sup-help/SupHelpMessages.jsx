@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   Home,
   MessageCircle,
-  FileText
+  FileText,
+  Headphones
 } from 'lucide-react';
 import {
   createOptimisticMessage,
@@ -1000,6 +1001,7 @@ const SupHelpMessages = () => {
         { id: 'users', label: i18nT('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
         { id: 'messages', label: i18nT('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
         { id: 'complaints', label: i18nT('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
+        { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
       ]}
     >
       <div className="h-[calc(100vh-64px)] flex flex-col">

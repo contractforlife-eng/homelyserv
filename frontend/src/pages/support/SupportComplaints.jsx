@@ -24,7 +24,8 @@ import {
   Paperclip,
   Home,
   Users,
-  MessageCircle
+  MessageCircle,
+  Headphones
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
 import { UserAvatar, UserDisplayName } from '../../components/users';
@@ -426,6 +427,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
     { id: 'users', label: i18nT('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
     { id: 'messages', label: i18nT('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
     { id: 'complaints', label: i18nT('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
+    { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
   ];
 
   return (

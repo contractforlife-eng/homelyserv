@@ -8,7 +8,7 @@ const publicSupportConversationSchema = new mongoose.Schema({
   language: { type: String, enum: ['en', 'ar', 'fr', 'ru', 'tr', 'de'], default: 'en' },
   status: { type: String, enum: ['BOT', 'WAITING_FOR_SUPPORT', 'ASSIGNED', 'CLOSED'], default: 'BOT', index: true },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  assignedRole: { type: String, enum: ['ADMIN', 'SUPPORT'], default: null },
+  assignedRole: { type: String, enum: ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'], default: null },
   escalationReason: { type: String, maxlength: 500 },
   escalatedAt: { type: Date, default: null },
   lastActivityAt: { type: Date, default: Date.now },

@@ -25,5 +25,6 @@ export function connectStaffSupportSocket(handlers = {}) {
   socket.on('connect', join);
   if (handlers.onQueue) socket.on('public-support:queue', handlers.onQueue);
   if (handlers.onMessage) socket.on('public-support:message', handlers.onMessage);
+  if (handlers.onStaffMessage) socket.on('public-support:staff-message', handlers.onStaffMessage);
   return () => socket.disconnect();
 }
