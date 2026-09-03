@@ -329,6 +329,59 @@ export const formatComplaintDate = (dateString) => {
   });
 };
 
+// ============================================================
+// SUP-HELP COMPLAINT API
+// ============================================================
+
+export const getSupHelpComplaints = async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.append(key, value);
+  });
+  const response = await api.get(`/api/sup-help/complaints?${params.toString()}`);
+  return response.data;
+};
+
+export const getSupHelpComplaint = async (complaintId) => {
+  const response = await api.get(`/api/sup-help/complaints/${complaintId}`);
+  return response.data;
+};
+
+export const assignSupHelpComplaint = async (complaintId) => {
+  const response = await api.post(`/api/sup-help/complaints/${complaintId}/assign`);
+  return response.data;
+};
+
+export const supHelpReplyToComplaint = async (complaintId, message) => {
+  const response = await api.post(`/api/sup-help/complaints/${complaintId}/reply`, { message });
+  return response.data;
+};
+
+export const addSupHelpComplaintNote = async (complaintId, note) => {
+  const response = await api.post(`/api/sup-help/complaints/${complaintId}/notes`, { note });
+  return response.data;
+};
+
+export const changeSupHelpComplaintStatus = async (complaintId, status) => {
+  const response = await api.put(`/api/sup-help/complaints/${complaintId}/status`, { status });
+  return response.data;
+};
+
+export const escalateSupHelpComplaint = async (complaintId, reason, targetRole) => {
+  const response = await api.post(`/api/sup-help/complaints/${complaintId}/escalate`, { reason, targetRole });
+  return response.data;
+};
+
+export const closeSupHelpComplaint = async (complaintId) => {
+  const response = await api.post(`/api/sup-help/complaints/${complaintId}/close`);
+  return response.data;
+};
+
+export const getSupHelpComplaintStats = async () => {
+  const response = await api.get('/api/sup-help/complaints/stats');
+  return response.data;
+};
+
 const complaintService = {
   uploadComplaintAttachment,
   createComplaint,
@@ -359,6 +412,15 @@ const complaintService = {
   adminRejectSuspensionRequest,
   getEscalatedComplaints,
   getAdminComplaintStats,
+  getSupHelpComplaints,
+  getSupHelpComplaint,
+  assignSupHelpComplaint,
+  supHelpReplyToComplaint,
+  addSupHelpComplaintNote,
+  changeSupHelpComplaintStatus,
+  escalateSupHelpComplaint,
+  closeSupHelpComplaint,
+  getSupHelpComplaintStats,
   COMPLAINT_STATUSES,
   COMPLAINT_CATEGORIES,
   COMPLAINT_PRIORITIES,

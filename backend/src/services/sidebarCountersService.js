@@ -252,9 +252,9 @@ export const getSidebarCounters = async (userId, role) => {
   }
 
   // ============================================================
-  // SUPPORT
+  // SUPPORT & SUPPORT_HELPER
   // ============================================================
-  if (userRole === 'SUPPORT') {
+  if (userRole === 'SUPPORT' || userRole === 'SUPPORT_HELPER') {
     counters.complaints = await safeCount('complaints', prisma.complaint.count({
       where: buildSupportComplaintsCounterWhere(uid),
     }));

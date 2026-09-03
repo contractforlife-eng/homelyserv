@@ -19,7 +19,8 @@ import {
   MessageSquare,
   AlertTriangle,
   Home,
-  MessageCircle
+  MessageCircle,
+  FileText
 } from 'lucide-react';
 import {
   createOptimisticMessage,
@@ -998,6 +999,7 @@ const SupHelpMessages = () => {
         { id: 'dashboard', label: i18nT('supHelpNavigation.dashboard'), icon: Home, path: '/sup-help' },
         { id: 'users', label: i18nT('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
         { id: 'messages', label: i18nT('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
+        { id: 'complaints', label: i18nT('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
       ]}
     >
       <div className="h-[calc(100vh-64px)] flex flex-col">

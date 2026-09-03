@@ -1,7 +1,7 @@
 // Support Complaints Page - Production complaint workflow management
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import {
@@ -21,16 +21,22 @@ import {
   History,
   Lock,
   Flag,
-  Paperclip
+  Paperclip,
+  Home,
+  Users,
+  MessageCircle
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
 import { UserAvatar, UserDisplayName } from '../../components/users';
 
-const SupportComplaints = () => {
+const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
   const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const authUser = useAuthStore(state => state.user);
+  const isSupHelp = Boolean(propIsSupHelp || location.pathname.startsWith('/sup-help') || authUser?.role === 'SUPPORT_HELPER');
+  const [escalationTarget, setEscalationTarget] = useState('SUPPORT');
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,7 +95,9 @@ const SupportComplaints = () => {
       if (userIdFilter) filters.userId = userIdFilter;
       if (assignedToFilter === 'me') filters.assignedTo = authUser?.id;
 
-      const response = await complaintsService.getSupportComplaints(filters);
+      const response = isSupHelp
+        ? await complaintsService.getSupHelpComplaints(filters)
+        : await complaintsService.getSupportComplaints(filters);
       if (response?.success) {
         setComplaints(response.complaints || []);
       }
@@ -99,7 +107,7 @@ const SupportComplaints = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, priorityFilter, categoryFilter, userIdFilter, assignedToFilter, authUser?.id]);
+  }, [searchTerm, statusFilter, priorityFilter, categoryFilter, userIdFilter, assignedToFilter, authUser?.id, isSupHelp]);
 
   useEffect(() => {
     fetchComplaints();
@@ -113,8 +121,11 @@ const SupportComplaints = () => {
     setReplyText('');
     setNoteText('');
     setEscalationReason('');
+    setEscalationTarget('SUPPORT');
     try {
-      const data = await complaintsService.getSupportComplaint(complaint.id);
+      const data = isSupHelp
+        ? await complaintsService.getSupHelpComplaint(complaint.id)
+        : await complaintsService.getSupportComplaint(complaint.id);
       if (data?.success) {
         setSelectedComplaint(data.complaint);
         setTimeline(data.timeline || []);
@@ -134,11 +145,15 @@ const SupportComplaints = () => {
     if (!selectedComplaint) return;
     setActionLoading(true);
     try {
-      const response = await complaintsService.assignComplaint(selectedComplaint.id);
+      const response = isSupHelp
+        ? await complaintsService.assignSupHelpComplaint(selectedComplaint.id)
+        : await complaintsService.assignComplaint(selectedComplaint.id);
       if (response?.success) {
         setNotification({ type: 'success', text: t.notifications.assigned });
         setSelectedComplaint(response.complaint);
-        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        const detail = isSupHelp
+          ? await complaintsService.getSupHelpComplaint(selectedComplaint.id)
+          : await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
           setSelectedComplaint(detail.complaint);
           setTimeline(detail.timeline || []);
@@ -160,12 +175,16 @@ const SupportComplaints = () => {
     if (!replyText.trim() || !selectedComplaint) return;
     setActionLoading(true);
     try {
-      const response = await complaintsService.supportReplyToComplaint(selectedComplaint.id, replyText);
+      const response = isSupHelp
+        ? await complaintsService.supHelpReplyToComplaint(selectedComplaint.id, replyText)
+        : await complaintsService.supportReplyToComplaint(selectedComplaint.id, replyText);
       if (response?.success) {
         setNotification({ type: 'success', text: t.notifications.replySent });
         setReplyText('');
         setSelectedComplaint(response.complaint);
-        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        const detail = isSupHelp
+          ? await complaintsService.getSupHelpComplaint(selectedComplaint.id)
+          : await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
           setSelectedComplaint(detail.complaint);
           setTimeline(detail.timeline || []);
@@ -187,11 +206,15 @@ const SupportComplaints = () => {
     if (!noteText.trim() || !selectedComplaint) return;
     setActionLoading(true);
     try {
-      const response = await complaintsService.addComplaintNote(selectedComplaint.id, noteText);
+      const response = isSupHelp
+        ? await complaintsService.addSupHelpComplaintNote(selectedComplaint.id, noteText)
+        : await complaintsService.addComplaintNote(selectedComplaint.id, noteText);
       if (response?.success) {
         setNotification({ type: 'success', text: t.notifications.noteAdded });
         setNoteText('');
-        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        const detail = isSupHelp
+          ? await complaintsService.getSupHelpComplaint(selectedComplaint.id)
+          : await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
           setNotes(detail.notes || []);
           setTimeline(detail.timeline || []);
@@ -212,11 +235,15 @@ const SupportComplaints = () => {
     if (!selectedComplaint) return;
     setActionLoading(true);
     try {
-      const response = await complaintsService.changeComplaintStatus(selectedComplaint.id, status);
+      const response = isSupHelp
+        ? await complaintsService.changeSupHelpComplaintStatus(selectedComplaint.id, status)
+        : await complaintsService.changeComplaintStatus(selectedComplaint.id, status);
       if (response?.success) {
         setNotification({ type: 'success', text: i18nT('supportComplaintsPage.notifications.statusChanged', { status: getStatusLabel(status) }) });
         setSelectedComplaint(response.complaint);
-        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        const detail = isSupHelp
+          ? await complaintsService.getSupHelpComplaint(selectedComplaint.id)
+          : await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
           setTimeline(detail.timeline || []);
         }
@@ -237,13 +264,20 @@ const SupportComplaints = () => {
     if (!escalationReason.trim() || !selectedComplaint) return;
     setActionLoading(true);
     try {
-      const response = await complaintsService.escalateComplaint(selectedComplaint.id, escalationReason);
+      const response = isSupHelp
+        ? await complaintsService.escalateSupHelpComplaint(selectedComplaint.id, escalationReason, escalationTarget)
+        : await complaintsService.escalateComplaint(selectedComplaint.id, escalationReason);
       if (response?.success) {
-        setNotification({ type: 'success', text: t.notifications.escalated });
+        const notifText = isSupHelp && escalationTarget === 'SUPPORT'
+          ? (t.notifications?.escalatedToSupAdmin || 'Complaint escalated to Sup-Admin')
+          : (t.notifications?.escalatedToCoAdmin || t.notifications?.escalated || 'Complaint escalated to admin');
+        setNotification({ type: 'success', text: notifText });
         setShowEscalateModal(false);
         setEscalationReason('');
         setSelectedComplaint(response.complaint);
-        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        const detail = isSupHelp
+          ? await complaintsService.getSupHelpComplaint(selectedComplaint.id)
+          : await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
           setTimeline(detail.timeline || []);
         }
@@ -264,11 +298,15 @@ const SupportComplaints = () => {
     if (!selectedComplaint) return;
     setActionLoading(true);
     try {
-      const response = await complaintsService.closeComplaint(selectedComplaint.id);
+      const response = isSupHelp
+        ? await complaintsService.closeSupHelpComplaint(selectedComplaint.id)
+        : await complaintsService.closeComplaint(selectedComplaint.id);
       if (response?.success) {
         setNotification({ type: 'success', text: t.notifications.closed });
         setSelectedComplaint(response.complaint);
-        const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
+        const detail = isSupHelp
+          ? await complaintsService.getSupHelpComplaint(selectedComplaint.id)
+          : await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
           setTimeline(detail.timeline || []);
         }
@@ -383,8 +421,20 @@ const SupportComplaints = () => {
     );
   };
 
+  const supHelpMenuItems = [
+    { id: 'dashboard', label: i18nT('supHelpNavigation.dashboard'), icon: Home, path: '/sup-help' },
+    { id: 'users', label: i18nT('supportNavigation.users'), icon: Users, path: '/sup-help/users' },
+    { id: 'messages', label: i18nT('supportNavigation.messages'), icon: MessageCircle, path: '/sup-help/messages' },
+    { id: 'complaints', label: i18nT('supportNavigation.complaints'), icon: FileText, path: '/sup-help/complaints' },
+  ];
+
   return (
-    <SupportLayout>
+    <SupportLayout
+      allowedRoles={isSupHelp ? ['SUPPORT_HELPER', 'ADMIN'] : ['SUPPORT', 'ADMIN']}
+      role={isSupHelp ? 'SUPPORT_HELPER' : undefined}
+      headerTitle={isSupHelp ? 'supportNavigation.complaints' : undefined}
+      menuItems={isSupHelp ? supHelpMenuItems : undefined}
+    >
       <div className="p-6 md:p-8">
         {/* Header */}
         <div className="mb-8">
@@ -868,7 +918,9 @@ const SupportComplaints = () => {
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <ArrowUpRight size={20} className="text-red-500" />
-                {t.escalate}
+                {isSupHelp
+                  ? (escalationTarget === 'SUPPORT' ? (t.escalateToSupAdmin || 'Escalate to Sup-Admin') : (t.escalateToCoAdmin || 'Escalate to Co-Admin'))
+                  : t.escalate}
               </h3>
               <button
                 onClick={() => setShowEscalateModal(false)}
@@ -878,6 +930,39 @@ const SupportComplaints = () => {
               </button>
             </div>
             <div className="p-6 space-y-4">
+              {isSupHelp && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t.escalateTarget || 'Escalation Target'} *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setEscalationTarget('SUPPORT')}
+                      className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition flex flex-col items-center gap-1 ${
+                        escalationTarget === 'SUPPORT'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 ring-2 ring-green-500/20'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <span className="font-semibold text-xs md:text-sm">{t.escalateToSupAdmin || 'Escalate to Sup-Admin'}</span>
+                      <span className="text-[11px] opacity-75">{t.supAdmin || 'Sup-Admin'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEscalationTarget('ADMIN')}
+                      className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition flex flex-col items-center gap-1 ${
+                        escalationTarget === 'ADMIN'
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 ring-2 ring-red-500/20'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <span className="font-semibold text-xs md:text-sm">{t.escalateToCoAdmin || 'Escalate to Co-Admin'}</span>
+                      <span className="text-[11px] opacity-75">{t.coAdmin || 'Co-Admin'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t.escalateReason} *

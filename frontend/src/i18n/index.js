@@ -5062,12 +5062,84 @@ const SUPPORT_COMPLAINTS_COPY = {
   tr:{title:'Şikâyetler',subtitle:'Şikâyet iş akışını yönetin',searchPlaceholder:'Şikâyetlerde ara...',filterByStatus:'Duruma göre filtrele',filterByPriority:'Önceliğe göre filtrele',filterByCategory:'Kategoriye göre filtrele',allStatuses:'Tüm Durumlar',allPriorities:'Tüm Öncelikler',allCategories:'Tüm Kategoriler',subject:'Konu',user:'Kullanıcı',unknownUser:'Bilinmeyen kullanıcı',status:'Durum',priority:'Öncelik',date:'Tarih',noComplaints:'Şikâyet bulunamadı',loading:'Yükleniyor...',reply:'Yanıtla',replyPlaceholder:'Yanıtınızı yazın...',addNote:'Dahili Not Ekle',notePlaceholder:'Dahili bir not ekleyin...',escalate:'Yöneticiye Yükselt',escalateReason:'Yükseltme Nedeni',escalationPlaceholder:'Bu şikâyetin neden yönetici ilgisi gerektirdiğini açıklayın...',confirmEscalate:'Yükseltmeyi Onayla',cancel:'İptal',send:'Gönder',internalNotes:'Dahili Notlar',description:'Açıklama',category:'Kategori',escalatedBy:'Yükselten',escalatedAt:'Yükseltme Zamanı',changeStatus:'Durumu Değiştir',actions:'İşlemler',assign:'Bana Ata',close:'Şikâyeti Kapat',timeline:'Zaman Çizelgesi',noTimelineEvents:'Zaman çizelgesi etkinliği yok',conversation:'Konuşma',attachments:'Ekler',attachmentAlt:'Ek {{number}}',noAttachments:'Ek yok',confirmClose:'Bu şikâyeti kapatmak istediğinizden emin misiniz?',confirm:'Onayla',assigned:'Atandı',yes:'Evet',no:'Hayır',notAvailable:'Mevcut değil',new:'Yeni',open:'Açık',inProgress:'İşlemde',waitingForUser:'Kullanıcı Bekleniyor',escalated:'Yükseltildi',resolved:'Çözüldü',closed:'Kapalı',unknownStatus:'Bilinmeyen durum',unknownPriority:'Bilinmeyen öncelik',unknownCategory:'Bilinmeyen kategori',unknownActivity:'Etkinlik',statusLabels:{NEW:'Yeni',OPEN:'Açık',IN_PROGRESS:'İşlemde',WAITING_FOR_USER:'Kullanıcı Bekleniyor',ESCALATED:'Yükseltildi',RESOLVED:'Çözüldü',CLOSED:'Kapalı'},priorityLabels:{low:'Düşük',medium:'Orta',high:'Yüksek',critical:'Kritik'},categoryLabels:{payments:'Ödemeler',account:'Hesap',hiring:'İşe Alım',messages:'Mesajlar',technical_issue:'Teknik Sorun',abuse:'Kötüye Kullanım',fraud:'Dolandırıcılık',other:'Diğer'},timelineActions:{CREATED:'Oluşturuldu',ASSIGNED:'Atandı',REASSIGNED:'Yeniden Atandı',USER_REPLIED:'Kullanıcı Yanıtladı',SUPPORT_REPLIED:'Destek Yanıtladı',ADMIN_REPLIED:'Yönetici Yanıtladı',NOTE_ADDED:'Not Eklendi',STATUS_CHANGED:'Durum Değişti',ESCALATED:'Yükseltildi',RESOLVED:'Çözüldü',CLOSED:'Kapatıldı',RETURNED_TO_SUPPORT:'Desteğe Geri Gönderildi'},notifications:{assigned:'Şikâyet size atandı',assignFailed:'Şikâyet atanamadı',replySent:'Yanıt başarıyla gönderildi',replyFailed:'Yanıt gönderilemedi',noteAdded:'Dahili not eklendi',noteFailed:'Not eklenemedi',statusChanged:'Durum {{status}} olarak değiştirildi',statusFailed:'Durum değiştirilemedi',escalated:'Şikâyet yöneticiye yükseltildi',escalateFailed:'Şikâyet yükseltilemedi',closed:'Şikâyet kapatıldı',closeFailed:'Şikâyet kapatılamadı'}},
   de:{title:'Beschwerden',subtitle:'Beschwerdeablauf verwalten',searchPlaceholder:'Beschwerden suchen...',filterByStatus:'Nach Status filtern',filterByPriority:'Nach Priorität filtern',filterByCategory:'Nach Kategorie filtern',allStatuses:'Alle Status',allPriorities:'Alle Prioritäten',allCategories:'Alle Kategorien',subject:'Betreff',user:'Benutzer',unknownUser:'Unbekannter Benutzer',status:'Status',priority:'Priorität',date:'Datum',noComplaints:'Keine Beschwerden gefunden',loading:'Wird geladen...',reply:'Antworten',replyPlaceholder:'Antwort eingeben...',addNote:'Interne Notiz hinzufügen',notePlaceholder:'Interne Notiz hinzufügen...',escalate:'An Administrator eskalieren',escalateReason:'Eskalationsgrund',escalationPlaceholder:'Erklären Sie, warum diese Beschwerde die Aufmerksamkeit eines Administrators erfordert...',confirmEscalate:'Eskalation bestätigen',cancel:'Abbrechen',send:'Senden',internalNotes:'Interne Notizen',description:'Beschreibung',category:'Kategorie',escalatedBy:'Eskaliert von',escalatedAt:'Eskaliert am',changeStatus:'Status ändern',actions:'Aktionen',assign:'Mir zuweisen',close:'Beschwerde schließen',timeline:'Zeitleiste',noTimelineEvents:'Keine Aktivität in der Zeitleiste',conversation:'Unterhaltung',attachments:'Anhänge',attachmentAlt:'Anhang {{number}}',noAttachments:'Keine Anhänge',confirmClose:'Möchten Sie diese Beschwerde wirklich schließen?',confirm:'Bestätigen',assigned:'Zugewiesen',yes:'Ja',no:'Nein',notAvailable:'Nicht verfügbar',new:'Neu',open:'Offen',inProgress:'In Bearbeitung',waitingForUser:'Wartet auf Benutzer',escalated:'Eskaliert',resolved:'Gelöst',closed:'Geschlossen',unknownStatus:'Unbekannter Status',unknownPriority:'Unbekannte Priorität',unknownCategory:'Unbekannte Kategorie',unknownActivity:'Aktivität',statusLabels:{NEW:'Neu',OPEN:'Offen',IN_PROGRESS:'In Bearbeitung',WAITING_FOR_USER:'Wartet auf Benutzer',ESCALATED:'Eskaliert',RESOLVED:'Gelöst',CLOSED:'Geschlossen'},priorityLabels:{low:'Niedrig',medium:'Mittel',high:'Hoch',critical:'Kritisch'},categoryLabels:{payments:'Zahlungen',account:'Konto',hiring:'Einstellung',messages:'Nachrichten',technical_issue:'Technisches Problem',abuse:'Missbrauch',fraud:'Betrug',other:'Sonstiges'},timelineActions:{CREATED:'Erstellt',ASSIGNED:'Zugewiesen',REASSIGNED:'Neu zugewiesen',USER_REPLIED:'Benutzerantwort',SUPPORT_REPLIED:'Support-Antwort',ADMIN_REPLIED:'Administrator-Antwort',NOTE_ADDED:'Notiz hinzugefügt',STATUS_CHANGED:'Status geändert',ESCALATED:'Eskaliert',RESOLVED:'Gelöst',CLOSED:'Geschlossen',RETURNED_TO_SUPPORT:'An Support zurückgegeben'},notifications:{assigned:'Beschwerde wurde Ihnen zugewiesen',assignFailed:'Beschwerde konnte nicht zugewiesen werden',replySent:'Antwort erfolgreich gesendet',replyFailed:'Antwort konnte nicht gesendet werden',noteAdded:'Interne Notiz hinzugefügt',noteFailed:'Notiz konnte nicht hinzugefügt werden',statusChanged:'Status in „{{status}}“ geändert',statusFailed:'Status konnte nicht geändert werden',escalated:'Beschwerde an Administrator eskaliert',escalateFailed:'Beschwerde konnte nicht eskaliert werden',closed:'Beschwerde geschlossen',closeFailed:'Beschwerde konnte nicht geschlossen werden'}}
 };
-Object.assign(SUPPORT_COMPLAINTS_COPY.en,{statusChangeDescription:'Status changed from {{oldStatus}} to {{newStatus}}'});
-Object.assign(SUPPORT_COMPLAINTS_COPY.ar,{statusChangeDescription:'تم تغيير الحالة من {{oldStatus}} إلى {{newStatus}}'});
-Object.assign(SUPPORT_COMPLAINTS_COPY.fr,{statusChangeDescription:'Statut modifié de {{oldStatus}} à {{newStatus}}'});
-Object.assign(SUPPORT_COMPLAINTS_COPY.ru,{statusChangeDescription:'Статус изменён с «{{oldStatus}}» на «{{newStatus}}»'});
-Object.assign(SUPPORT_COMPLAINTS_COPY.tr,{statusChangeDescription:'Durum {{oldStatus}} iken {{newStatus}} olarak değiştirildi'});
-Object.assign(SUPPORT_COMPLAINTS_COPY.de,{statusChangeDescription:'Status von „{{oldStatus}}“ in „{{newStatus}}“ geändert'});
+Object.assign(SUPPORT_COMPLAINTS_COPY.en,{
+  statusChangeDescription:'Status changed from {{oldStatus}} to {{newStatus}}',
+  escalateToSupAdmin:'Escalate to Sup-Admin',
+  escalateToCoAdmin:'Escalate to Co-Admin',
+  escalateTarget:'Escalation Target',
+  supAdmin:'Sup-Admin',
+  coAdmin:'Co-Admin',
+  notifications:{
+    ...SUPPORT_COMPLAINTS_COPY.en.notifications,
+    escalatedToSupAdmin:'Complaint escalated to Sup-Admin',
+    escalatedToCoAdmin:'Complaint escalated to Co-Admin',
+  },
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.ar,{
+  statusChangeDescription:'تم تغيير الحالة من {{oldStatus}} إلى {{newStatus}}',
+  escalateToSupAdmin:'تصعيد إلى مشرف الدعم',
+  escalateToCoAdmin:'تصعيد إلى المشرف المساعد',
+  escalateTarget:'جهة التصعيد',
+  supAdmin:'مشرف الدعم',
+  coAdmin:'المشرف المساعد',
+  notifications:{
+    ...SUPPORT_COMPLAINTS_COPY.ar.notifications,
+    escalatedToSupAdmin:'تم تصعيد الشكوى إلى مشرف الدعم',
+    escalatedToCoAdmin:'تم تصعيد الشكوى إلى المشرف المساعد',
+  },
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.fr,{
+  statusChangeDescription:'Statut modifié de {{oldStatus}} à {{newStatus}}',
+  escalateToSupAdmin:'Transférer à Sup-Admin',
+  escalateToCoAdmin:'Transférer à Co-Admin',
+  escalateTarget:'Cible du transfert',
+  supAdmin:'Sup-Admin',
+  coAdmin:'Co-Admin',
+  notifications:{
+    ...SUPPORT_COMPLAINTS_COPY.fr.notifications,
+    escalatedToSupAdmin:'Réclamation transférée à Sup-Admin',
+    escalatedToCoAdmin:'Réclamation transférée à Co-Admin',
+  },
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.ru,{
+  statusChangeDescription:'Статус изменён с «{{oldStatus}}» на «{{newStatus}}»',
+  escalateToSupAdmin:'Эскалировать в Sup-Admin',
+  escalateToCoAdmin:'Эскалировать в Co-Admin',
+  escalateTarget:'Уровень эскалации',
+  supAdmin:'Sup-Admin',
+  coAdmin:'Co-Admin',
+  notifications:{
+    ...SUPPORT_COMPLAINTS_COPY.ru.notifications,
+    escalatedToSupAdmin:'Жалоба эскалирована в Sup-Admin',
+    escalatedToCoAdmin:'Жалоба эскалирована в Co-Admin',
+  },
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.tr,{
+  statusChangeDescription:'Durum {{oldStatus}} iken {{newStatus}} olarak değiştirildi',
+  escalateToSupAdmin:'Sup-Admin’e Yükselt',
+  escalateToCoAdmin:'Co-Admin’e Yükselt',
+  escalateTarget:'Yükseltme Hedefi',
+  supAdmin:'Sup-Admin',
+  coAdmin:'Co-Admin',
+  notifications:{
+    ...SUPPORT_COMPLAINTS_COPY.tr.notifications,
+    escalatedToSupAdmin:'Şikâyet Sup-Admin’e yükseltildi',
+    escalatedToCoAdmin:'Şikâyet Co-Admin’e yükseltildi',
+  },
+});
+Object.assign(SUPPORT_COMPLAINTS_COPY.de,{
+  statusChangeDescription:'Status von „{{oldStatus}}“ in „{{newStatus}}“ geändert',
+  escalateToSupAdmin:'An Sup-Admin eskalieren',
+  escalateToCoAdmin:'An Co-Admin eskalieren',
+  escalateTarget:'Eskalationsziel',
+  supAdmin:'Sup-Admin',
+  coAdmin:'Co-Admin',
+  notifications:{
+    ...SUPPORT_COMPLAINTS_COPY.de.notifications,
+    escalatedToSupAdmin:'Beschwerde an Sup-Admin eskaliert',
+    escalatedToCoAdmin:'Beschwerde an Co-Admin eskaliert',
+  },
+});
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.supportComplaintsPage = SUPPORT_COMPLAINTS_COPY[code];
 
 const SUPPORT_MESSAGES_COPY = {
@@ -5146,12 +5218,12 @@ const SUPPORT_NAVIGATION_COPY = {
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.supportNavigation = SUPPORT_NAVIGATION_COPY[code];
 
 const SUP_HELP_NAVIGATION_COPY = {
-  en:{dashboard:'Dashboard',supportDashboard:'Sup-Help Dashboard',profile:'My Profile',users:'Users',settings:'Settings',logout:'Logout',overview:'Overview',support:'Sup-Help',loading:'Loading...',expandSidebar:'Expand sidebar',collapseSidebar:'Collapse sidebar',closeMenu:'Close menu'},
-  ar:{dashboard:'لوحة التحكم',supportDashboard:'لوحة تحكم مساعد الدعم',profile:'ملفي الشخصي',users:'المستخدمون',settings:'الإعدادات',logout:'تسجيل الخروج',overview:'نظرة عامة',support:'مساعد الدعم',loading:'جارٍ التحميل...',expandSidebar:'توسيع الشريط الجانبي',collapseSidebar:'طي الشريط الجانبي',closeMenu:'إغلاق القائمة'},
-  fr:{dashboard:'Tableau de bord',supportDashboard:'Tableau de bord de l\'assistant support',profile:'Mon profil',users:'Utilisateurs',settings:'Paramètres',logout:'Déconnexion',overview:'Vue d\'ensemble',support:'Assistant Support',loading:'Chargement...',expandSidebar:'Développer la barre latérale',collapseSidebar:'Réduire la barre latérale',closeMenu:'Fermer le menu'},
-  ru:{dashboard:'Панель управления',supportDashboard:'Панель помощника поддержки',profile:'Мой профиль',users:'Пользователи',settings:'Настройки',logout:'Выйти',overview:'Обзор',support:'Помощник поддержки',loading:'Загрузка...',expandSidebar:'Развернуть боковую панель',collapseSidebar:'Свернуть боковую панель',closeMenu:'Закрыть меню'},
-  tr:{dashboard:'Kontrol Paneli',supportDashboard:'Destek Yardımcısı Kontrol Paneli',profile:'Profilim',users:'Kullanıcılar',settings:'Ayarlar',logout:'Çıkış Yap',overview:'Genel Bakış',support:'Destek Yardımcısı',loading:'Yükleniyor...',expandSidebar:'Kenar çubuğunu genişlet',collapseSidebar:'Kenar çubuğunu daralt',closeMenu:'Menüyü kapat'},
-  de:{dashboard:'Dashboard',supportDashboard:'Support-Hilfe-Dashboard',profile:'Mein Profil',users:'Benutzer',settings:'Einstellungen',logout:'Abmelden',overview:'Übersicht',support:'Support-Hilfe',loading:'Wird geladen...',expandSidebar:'Seitenleiste erweitern',collapseSidebar:'Seitenleiste reduzieren',closeMenu:'Menü schließen'}
+  en:{dashboard:'Dashboard',supportDashboard:'Sup-Help Dashboard',profile:'My Profile',users:'Users',messages:'Messages',complaints:'Complaints',settings:'Settings',logout:'Logout',overview:'Overview',support:'Sup-Help',loading:'Loading...',expandSidebar:'Expand sidebar',collapseSidebar:'Collapse sidebar',closeMenu:'Close menu'},
+  ar:{dashboard:'لوحة التحكم',supportDashboard:'لوحة تحكم مساعد الدعم',profile:'ملفي الشخصي',users:'المستخدمون',messages:'الرسائل',complaints:'الشكاوى',settings:'الإعدادات',logout:'تسجيل الخروج',overview:'نظرة عامة',support:'مساعد الدعم',loading:'جارٍ التحميل...',expandSidebar:'توسيع الشريط الجانبي',collapseSidebar:'طي الشريط الجانبي',closeMenu:'إغلاق القائمة'},
+  fr:{dashboard:'Tableau de bord',supportDashboard:'Tableau de bord de l\'assistant support',profile:'Mon profil',users:'Utilisateurs',messages:'Messages',complaints:'Réclamations',settings:'Paramètres',logout:'Déconnexion',overview:'Vue d\'ensemble',support:'Assistant Support',loading:'Chargement...',expandSidebar:'Développer la barre latérale',collapseSidebar:'Réduire la barre latérale',closeMenu:'Fermer le menu'},
+  ru:{dashboard:'Панель управления',supportDashboard:'Панель помощника поддержки',profile:'Мой профиль',users:'Пользователи',messages:'Сообщения',complaints:'Жалобы',settings:'Настройки',logout:'Выйти',overview:'Обзор',support:'Помощник поддержки',loading:'Загрузка...',expandSidebar:'Развернуть боковую панель',collapseSidebar:'Свернуть боковую панель',closeMenu:'Закрыть меню'},
+  tr:{dashboard:'Kontrol Paneli',supportDashboard:'Destek Yardımcısı Kontrol Paneli',profile:'Profilim',users:'Kullanıcılar',messages:'Mesajlar',complaints:'Şikâyetler',settings:'Ayarlar',logout:'Çıkış Yap',overview:'Genel Bakış',support:'Destek Yardımcısı',loading:'Yükleniyor...',expandSidebar:'Kenar çubuğunu genişlet',collapseSidebar:'Kenar çubuğunu daralt',closeMenu:'Menüyü kapat'},
+  de:{dashboard:'Dashboard',supportDashboard:'Support-Hilfe-Dashboard',profile:'Mein Profil',users:'Benutzer',messages:'Nachrichten',complaints:'Beschwerden',settings:'Einstellungen',logout:'Abmelden',overview:'Übersicht',support:'Support-Hilfe',loading:'Wird geladen...',expandSidebar:'Seitenleiste erweitern',collapseSidebar:'Seitenleiste reduzieren',closeMenu:'Menü schließen'}
 };
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.supHelpNavigation = SUP_HELP_NAVIGATION_COPY[code];
 

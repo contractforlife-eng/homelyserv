@@ -10,6 +10,17 @@ import { emitToUser } from '../lib/socket.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { sendPushToUser } from '../services/fcmService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
+import {
+  supHelpListComplaints,
+  supHelpGetComplaint,
+  supHelpAssignComplaint,
+  supHelpReply,
+  supHelpAddNote,
+  supHelpChangeStatus,
+  supHelpEscalate,
+  supHelpClose,
+  supHelpComplaintStats,
+} from '../controllers/complaintController.js';
 
 const router = express.Router();
 
@@ -691,5 +702,18 @@ const formatMessage = (msg) => {
   };
   return base;
 };
+
+// ============================================================
+// COMPLAINT WORKFLOW
+// ============================================================
+router.get('/complaints', supHelpListComplaints);
+router.get('/complaints/stats', supHelpComplaintStats);
+router.get('/complaints/:id', supHelpGetComplaint);
+router.post('/complaints/:id/assign', supHelpAssignComplaint);
+router.post('/complaints/:id/reply', supHelpReply);
+router.post('/complaints/:id/notes', supHelpAddNote);
+router.put('/complaints/:id/status', supHelpChangeStatus);
+router.post('/complaints/:id/escalate', supHelpEscalate);
+router.post('/complaints/:id/close', supHelpClose);
 
 export default router;

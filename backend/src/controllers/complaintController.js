@@ -23,6 +23,7 @@ import {
 import {
   resolveRequestIdentity,
   enrichAuthorIdentities,
+  isValidObjectId,
 } from '../utils/staffIdentity.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 
@@ -228,6 +229,9 @@ export const serializeComplaint = (complaint, {
     escalatedBy: complaint.escalatedBy,
     escalatedAt: complaint.escalatedAt,
     escalationReason: complaint.escalationReason,
+    escalatedToRole: (
+      complaint.Timeline?.slice().reverse().find((t) => t.action === 'ESCALATED')?.newValue
+    ) || (complaint.status === 'ESCALATED' ? 'ADMIN' : null),
     attachments: includeAttachments ? complaint.attachments || [] : [],
     resolvedAt: complaint.resolvedAt,
     closedAt: complaint.closedAt,
@@ -406,9 +410,23 @@ export const requireAssignedSupportComplaint = async (req, res, next) => {
 // requireAssignedSupportComplaint middleware.
 export const requireSupportComplaintAccess = async (req, res, next) => {
   if (req.userRole === 'ADMIN') return next();
+  const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(404).json({ success: false, message: 'Complaint not found' });
+  }
   const complaint = await prisma.complaint.findUnique({
-    where: { id: req.params.id },
-    select: { id: true, assignedSupport: true, assignedTo: true },
+    where: { id },
+    select: {
+      id: true,
+      assignedSupport: true,
+      assignedTo: true,
+      status: true,
+      Timeline: {
+        where: { action: 'ESCALATED' },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
   });
   if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found' });
   const supportId = String(req.userId);
@@ -416,6 +434,10 @@ export const requireSupportComplaintAccess = async (req, res, next) => {
   const legacyAssignment = complaint.assignedTo ? String(complaint.assignedTo) : null;
   if ((modernAssignment && modernAssignment !== supportId) || (legacyAssignment && legacyAssignment !== supportId)) {
     return res.status(403).json({ success: false, message: 'Complaint is assigned to another support agent' });
+  }
+  // Block Support from accessing complaints escalated to ADMIN
+  if (complaint.status === 'ESCALATED' && complaint.Timeline?.[0]?.newValue === 'ADMIN' && modernAssignment !== supportId) {
+    return res.status(403).json({ success: false, message: 'This complaint has been escalated to administration' });
   }
   return next();
 };
@@ -763,19 +785,40 @@ export const supportListComplaints = async (req, res) => {
         AssignedSupport: {
           select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
+        Timeline: {
+          where: { action: 'ESCALATED' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
       skip,
       take,
       orderBy: { createdAt: 'desc' },
     });
 
+    let finalComplaints = complaints;
+    if (req.userRole === 'SUPPORT') {
+      finalComplaints = complaints.filter((c) => {
+        if (c.status === 'ESCALATED') {
+          if (c.assignedSupport === supportId || c.assignedTo === supportId) return true;
+          return c.Timeline?.[0]?.newValue === 'SUPPORT';
+        }
+        return true;
+      });
+    }
+
     const total = await prisma.complaint.count({ where });
 
-    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: req.userRole === 'ADMIN', includeSensitive: req.userRole === 'ADMIN' }));
+    const serializedComplaints = finalComplaints.map((c) =>
+      serializeComplaint(c, {
+        includeInternal: req.userRole === 'ADMIN',
+        includeSensitive: req.userRole === 'ADMIN',
+      })
+    );
 
     return res.json({
       success: true,
-      count: complaints.length,
+      count: finalComplaints.length,
       total,
       page: parseInt(page),
       limit: take,
@@ -794,6 +837,9 @@ export const supportListComplaints = async (req, res) => {
 export const supportGetComplaint = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -842,6 +888,9 @@ export const supportGetComplaint = async (req, res) => {
 export const supportAssignComplaint = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
     const supportId = String(req.userId);
 
     const complaint = await prisma.complaint.findUnique({
@@ -935,6 +984,9 @@ export const supportAssignComplaint = async (req, res) => {
 export const supportReply = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
     const { message } = req.body;
     const supportId = String(req.userId);
 
@@ -1040,6 +1092,9 @@ export const supportReply = async (req, res) => {
 export const supportAddNote = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
     const { note } = req.body;
     const supportId = String(req.userId);
 
@@ -1122,6 +1177,9 @@ export const supportAddNote = async (req, res) => {
 export const supportChangeStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
     const { status } = req.body;
     const supportId = String(req.userId);
 
@@ -1223,6 +1281,9 @@ export const supportChangeStatus = async (req, res) => {
 export const supportEscalate = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
     const { reason } = req.body;
     const supportId = String(req.userId);
 
@@ -1269,6 +1330,8 @@ export const supportEscalate = async (req, res) => {
       authorId: supportId,
       authorName: actor.name,
       authorRole: actor.role,
+      oldValue: complaint.status,
+      newValue: 'ADMIN',
     });
 
     // Log support activity
@@ -1327,6 +1390,9 @@ export const supportEscalate = async (req, res) => {
 export const supportClose = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
     const supportId = String(req.userId);
 
     const complaint = await prisma.complaint.findUnique({
@@ -2605,6 +2671,896 @@ export const adminComplaintStats = async (req, res) => {
   }
 };
 
+// ============================================================
+// SUP-HELP COMPLAINT CONTROLLERS
+// Frontline support complaint handling with end-to-end capabilities:
+// - List permitted complaints (unassigned queue, assigned to self, escalated by self)
+// - View full details & timeline
+// - Claim/assign permitted complaints
+// - Reply in conversation thread
+// - Add internal notes
+// - Update status (IN_PROGRESS, WAITING_FOR_USER, RESOLVED)
+// - Escalate with structured target (SUPPORT => Sup-Admin, ADMIN => Co-Admin)
+// - Close complaints
+// - Complaint stats
+// ============================================================
+
+/**
+ * GET /api/sup-help/complaints
+ * List complaints visible to Support Helper (or Admin).
+ */
+export const supHelpListComplaints = async (req, res) => {
+  try {
+    const { status, priority, category, assignedTo, userId, search, page = 1, limit = 50 } = req.query;
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const take = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+    const skip = (pageNum - 1) * take;
+
+    const where = {};
+
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+    if (category) where.category = category;
+    if (userId) where.userId = userId;
+
+    if (!isAdmin) {
+      if (assignedTo === helperId || assignedTo === 'me') {
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              { assignedSupport: helperId },
+              { assignedTo: helperId },
+            ],
+          },
+        ];
+      } else {
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              // 1) Assigned to this helper
+              { assignedSupport: helperId },
+              { assignedTo: helperId },
+              // 2) Escalated by this helper
+              { escalatedBy: helperId },
+              // 3) Permitted unassigned queue items (NEW or OPEN)
+              {
+                status: { in: ['NEW', 'OPEN'] },
+                assignedSupport: null,
+                OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+              },
+              {
+                status: { in: ['NEW', 'OPEN'] },
+                assignedSupport: { isSet: false },
+                OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+              },
+            ],
+          },
+        ];
+      }
+    } else if (assignedTo) {
+      where.assignedSupport = assignedTo;
+    }
+
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { subject: { contains: searchTerm, mode: 'insensitive' } },
+            { description: { contains: searchTerm, mode: 'insensitive' } },
+          ],
+        },
+      ];
+    }
+
+    const [complaints, total] = await Promise.all([
+      prisma.complaint.findMany({
+        where,
+        include: {
+          User: {
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+          },
+          AssignedSupport: {
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+          },
+          Timeline: {
+            where: { action: 'ESCALATED' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.complaint.count({ where }),
+    ]);
+
+    const serializedComplaints = complaints.map((c) =>
+      serializeComplaint(c, {
+        includeInternal: true,
+        includeSensitive: isAdmin,
+        includeAttachments: false,
+      })
+    );
+
+    return res.json({
+      success: true,
+      count: serializedComplaints.length,
+      total,
+      page: pageNum,
+      limit: take,
+      complaints: serializedComplaints,
+    });
+  } catch (error) {
+    console.error('❌ Error listing complaints for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch complaints' });
+  }
+};
+
+/**
+ * GET /api/sup-help/complaints/:id
+ * Get a single complaint with full details, notes, and timeline for sup-help.
+ */
+export const supHelpGetComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        Notes: NOTES_WITH_AUTHOR,
+        Timeline: TIMELINE_WITH_AUTHOR,
+        Replies: REPLIES_WITH_AUTHOR,
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!isAdmin) {
+      const isAssigned = complaint.assignedSupport === helperId || complaint.assignedTo === helperId;
+      const isEscalatedByMe = complaint.escalatedBy === helperId;
+      const isUnassignedClaimable =
+        !complaint.assignedSupport &&
+        !complaint.assignedTo &&
+        ['NEW', 'OPEN'].includes(complaint.status);
+
+      if (!isAssigned && !isEscalatedByMe && !isUnassignedClaimable) {
+        return res.status(403).json({ success: false, message: 'Not authorized to view this complaint' });
+      }
+    }
+
+    const serializedComplaint = serializeComplaint(complaint, {
+      includeInternal: true,
+      includeSensitive: isAdmin,
+      includeAttachments: true,
+    });
+    serializedComplaint.replies = await enrichAuthorIdentities(serializedComplaint.replies);
+
+    return res.json({
+      success: true,
+      complaint: serializedComplaint,
+      notes: (complaint.Notes || []).map(serializeAuthorRecord),
+      timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
+    });
+  } catch (error) {
+    console.error('❌ Error fetching complaint for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch complaint' });
+  }
+};
+
+/**
+ * POST /api/sup-help/complaints/:id/assign
+ * Claim a complaint for this support helper.
+ */
+export const supHelpAssignComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const helperId = String(req.userId);
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (
+      (complaint.assignedSupport && complaint.assignedSupport !== helperId) ||
+      (!complaint.assignedSupport && complaint.assignedTo && complaint.assignedTo !== helperId)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'This complaint is already assigned to another staff member',
+      });
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        assignedSupport: helperId,
+        assignedTo: helperId,
+        status: complaint.status === 'NEW' ? 'OPEN' : complaint.status,
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Helper');
+
+    await addTimeline(id, {
+      action: 'ASSIGNED',
+      description: 'Support helper assigned to complaint',
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      newValue: helperId,
+    });
+
+    await logSupportActivity(
+      helperId,
+      'COMPLAINT_ASSIGNED',
+      `Claimed complaint "${complaint.subject}"`,
+      complaint.userId,
+      id
+    );
+
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
+      title: 'Complaint Assigned',
+      message: `A support agent has been assigned to your complaint "${complaint.subject}"`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
+      link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+    });
+
+    return res.json({
+      success: true,
+      message: 'Complaint assigned successfully',
+      complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: req.userRole === 'ADMIN' }),
+    });
+  } catch (error) {
+    console.error('❌ Error assigning complaint for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to assign complaint' });
+  }
+};
+
+/**
+ * POST /api/sup-help/complaints/:id/reply
+ * Sup-Help replies to a complaint (visible to user).
+ */
+export const supHelpReply = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const { message } = req.body;
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    let assignedSupport = complaint.assignedSupport;
+    if (!assignedSupport) {
+      assignedSupport = helperId;
+    } else if (!isAdmin && assignedSupport !== helperId && complaint.assignedTo !== helperId) {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another staff member' });
+    }
+
+    let newStatus = complaint.status;
+    if (complaint.status === 'NEW' || complaint.status === 'OPEN') {
+      newStatus = 'IN_PROGRESS';
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        status: newStatus,
+        assignedSupport,
+        assignedTo: assignedSupport,
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Helper');
+
+    await addComplaintReply(id, {
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      message: message.trim(),
+    });
+
+    await addTimeline(id, {
+      action: 'SUPPORT_REPLIED',
+      description: 'Support helper replied to the complaint',
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+    });
+
+    await logSupportActivity(
+      helperId,
+      'COMPLAINT_REPLIED',
+      `Replied to complaint "${complaint.subject}"`,
+      complaint.userId,
+      id
+    );
+
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_REPLY,
+      title: 'Support Response',
+      message: `Support responded to your complaint "${complaint.subject}"`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
+      link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+    });
+
+    return res.json({
+      success: true,
+      message: 'Reply sent successfully',
+      complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: isAdmin }),
+    });
+  } catch (error) {
+    console.error('❌ Error replying to complaint for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to send reply' });
+  }
+};
+
+/**
+ * POST /api/sup-help/complaints/:id/notes
+ * Add internal staff note to complaint.
+ */
+export const supHelpAddNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const { note } = req.body;
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!note || !note.trim()) {
+      return res.status(400).json({ success: false, message: 'Note is required' });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      select: { id: true, subject: true, userId: true, internalNotes: true, assignedSupport: true, assignedTo: true },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (!isAdmin && complaint.assignedSupport && complaint.assignedSupport !== helperId && complaint.assignedTo !== helperId) {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another staff member' });
+    }
+
+    const updatedNotes = complaint.internalNotes
+      ? `${complaint.internalNotes}\n\n[Internal Note - ${new Date().toISOString()}] ${note.trim()}`
+      : `[Internal Note - ${new Date().toISOString()}] ${note.trim()}`;
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: { internalNotes: updatedNotes },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Helper');
+
+    await prisma.complaintNote.create({
+      data: {
+        complaintId: id,
+        authorId: helperId,
+        authorName: actor.name,
+        authorRole: actor.role,
+        note: note.trim(),
+        isInternal: true,
+      },
+    });
+
+    await addTimeline(id, {
+      action: 'NOTE_ADDED',
+      description: 'Internal note added',
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+    });
+
+    await logSupportActivity(
+      helperId,
+      'COMPLAINT_NOTED',
+      `Added internal note to complaint "${complaint.subject}"`,
+      complaint.userId,
+      id
+    );
+
+    return res.json({
+      success: true,
+      message: 'Internal note added successfully',
+      complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: isAdmin }),
+    });
+  } catch (error) {
+    console.error('❌ Error adding internal note for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to add note' });
+  }
+};
+
+/**
+ * PUT /api/sup-help/complaints/:id/status
+ * Change complaint status through normal frontline workflow.
+ */
+export const supHelpChangeStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const { status } = req.body;
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    const allowedStatuses = ['IN_PROGRESS', 'WAITING_FOR_USER', 'RESOLVED', 'CLOSED'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status for frontline support. Must be one of: ${allowedStatuses.join(', ')}. Use dedicated escalation to escalate.`,
+      });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (!isAdmin && complaint.assignedSupport && complaint.assignedSupport !== helperId && complaint.assignedTo !== helperId) {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another staff member' });
+    }
+
+    const data = { status };
+    if (status === 'RESOLVED') data.resolvedAt = new Date();
+    if (status === 'CLOSED') data.closedAt = new Date();
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data,
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Helper');
+
+    await addTimeline(id, {
+      action: 'STATUS_CHANGED',
+      description: `Status changed from ${complaint.status} to ${status}`,
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      oldValue: complaint.status,
+      newValue: status,
+    });
+
+    await logSupportActivity(
+      helperId,
+      'COMPLAINT_STATUS_CHANGED',
+      `Changed complaint "${complaint.subject}" status from ${complaint.status} to ${status}`,
+      complaint.userId,
+      id
+    );
+
+    await createUserNotification(complaint.userId, {
+      type: status === 'RESOLVED' ? NOTIFICATION_TYPES.COMPLAINT_RESOLVED : NOTIFICATION_TYPES.SYSTEM,
+      title: 'Complaint Status Updated',
+      message: `Your complaint "${complaint.subject}" is now ${status.replace(/_/g, ' ')}`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
+      link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+    });
+
+    return res.json({
+      success: true,
+      message: 'Complaint status updated successfully',
+      complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: isAdmin }),
+    });
+  } catch (error) {
+    console.error('❌ Error changing complaint status for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update status' });
+  }
+};
+
+/**
+ * POST /api/sup-help/complaints/:id/escalate
+ * Escalate complaint with structured target:
+ *   SUPPORT => Sup-Admin
+ *   ADMIN   => Co-Admin
+ */
+export const supHelpEscalate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const { reason, targetRole } = req.body;
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Escalation reason is required' });
+    }
+
+    const target = String(targetRole || '').toUpperCase();
+    if (target !== 'SUPPORT' && target !== 'ADMIN') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid escalation target. Must be SUPPORT (Sup-Admin) or ADMIN (Co-Admin)',
+      });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (!isAdmin && complaint.assignedSupport && complaint.assignedSupport !== helperId && complaint.assignedTo !== helperId) {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another staff member' });
+    }
+
+    const actor = await resolveRequestIdentity(req, 'Support Helper');
+    const targetLabel = target === 'ADMIN' ? 'Co-Admin' : 'Sup-Admin';
+
+    const updatedData = {
+      status: 'ESCALATED',
+      escalatedBy: helperId,
+      escalatedAt: new Date(),
+      escalationReason: reason.trim(),
+      assignedSupport: null, // cleared so higher tier can claim and handle
+      assignedTo: null,
+      internalNotes: complaint.internalNotes
+        ? `${complaint.internalNotes}\n\n[Escalated to ${targetLabel} by ${actor.name} - ${new Date().toISOString()}]: ${reason.trim()}`
+        : `[Escalated to ${targetLabel} by ${actor.name} - ${new Date().toISOString()}]: ${reason.trim()}`,
+    };
+
+    if (target === 'ADMIN') {
+      updatedData.adminNotes = complaint.adminNotes
+        ? `${complaint.adminNotes}\n\n[Escalated to Co-Admin by ${actor.name} - ${new Date().toISOString()}]: ${reason.trim()}`
+        : `[Escalated to Co-Admin by ${actor.name} - ${new Date().toISOString()}]: ${reason.trim()}`;
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: updatedData,
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    // Server-authoritative structured target recorded in timeline
+    await addTimeline(id, {
+      action: 'ESCALATED',
+      description: `Complaint escalated to ${targetLabel}. Reason: ${reason.trim()}`,
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+      oldValue: complaint.status,
+      newValue: target, // 'SUPPORT' or 'ADMIN'
+    });
+
+    await logSupportActivity(
+      helperId,
+      'COMPLAINT_ESCALATED',
+      `Escalated complaint "${complaint.subject}" to ${targetLabel}. Reason: ${reason.trim()}`,
+      complaint.userId,
+      id
+    );
+
+    if (target === 'SUPPORT') {
+      const supportUsers = await prisma.user.findMany({
+        where: { role: 'SUPPORT' },
+        select: { id: true },
+      });
+      for (const s of supportUsers) {
+        await createUserNotification(s.id, {
+          type: NOTIFICATION_TYPES.COMPLAINT_ESCALATED,
+          title: 'Complaint Escalated to Sup-Admin',
+          message: `Complaint "${complaint.subject}" was escalated by ${actor.name}`,
+          entityType: 'COMPLAINT',
+          entityId: id,
+          priority: PRIORITIES.HIGH,
+          link: '/support-complaints',
+        });
+      }
+    } else {
+      const adminUsers = await prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+      });
+      for (const a of adminUsers) {
+        await createUserNotification(a.id, {
+          type: NOTIFICATION_TYPES.COMPLAINT_ESCALATED,
+          title: 'Complaint Escalated to Co-Admin',
+          message: `Complaint "${complaint.subject}" was escalated by ${actor.name}`,
+          entityType: 'COMPLAINT',
+          entityId: id,
+          priority: PRIORITIES.HIGH,
+          link: '/admin/complaints',
+        });
+      }
+    }
+
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_ESCALATED,
+      title: 'Complaint Escalated',
+      message: `Your complaint "${complaint.subject}" has been escalated to our senior team`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.HIGH,
+      link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+    });
+
+    return res.json({
+      success: true,
+      message: `Complaint escalated to ${targetLabel} successfully`,
+      complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: isAdmin }),
+    });
+  } catch (error) {
+    console.error('❌ Error escalating complaint for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to escalate complaint' });
+  }
+};
+
+/**
+ * POST /api/sup-help/complaints/:id/close
+ * Close a complaint from frontline workspace.
+ */
+export const supHelpClose = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const helperId = String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (!isAdmin && complaint.assignedSupport && complaint.assignedSupport !== helperId && complaint.assignedTo !== helperId) {
+      return res.status(403).json({ success: false, message: 'Complaint is assigned to another staff member' });
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: {
+        status: 'CLOSED',
+        closedAt: new Date(),
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+        },
+      },
+    });
+
+    const actor = await resolveRequestIdentity(req, 'Support Helper');
+
+    await addTimeline(id, {
+      action: 'CLOSED',
+      description: 'Complaint closed by support helper',
+      authorId: helperId,
+      authorName: actor.name,
+      authorRole: actor.role,
+    });
+
+    await logSupportActivity(
+      helperId,
+      'COMPLAINT_CLOSED',
+      `Closed complaint "${complaint.subject}"`,
+      complaint.userId,
+      id
+    );
+
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.SYSTEM,
+      title: 'Complaint Closed',
+      message: `Your complaint "${complaint.subject}" has been closed`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
+      link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+    });
+
+    return res.json({
+      success: true,
+      message: 'Complaint closed successfully',
+      complaint: serializeComplaint(updated, { includeInternal: true, includeSensitive: isAdmin }),
+    });
+  } catch (error) {
+    console.error('❌ Error closing complaint for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to close complaint' });
+  }
+};
+
+/**
+ * GET /api/sup-help/complaints/stats
+ * Complaint statistics for Sup-Help dashboard.
+ */
+export const supHelpComplaintStats = async (req, res) => {
+  try {
+    const helperId = String(req.userId);
+
+    const [unassignedCount, assignedToMeCount, inProgressCount, resolvedCount, escalatedCount] = await Promise.all([
+      prisma.complaint.count({
+        where: {
+          status: { in: ['NEW', 'OPEN'] },
+          assignedSupport: null,
+          OR: [{ assignedTo: null }, { assignedTo: { isSet: false } }],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          status: 'IN_PROGRESS',
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          status: 'RESOLVED',
+          OR: [
+            { assignedSupport: helperId },
+            { assignedTo: helperId },
+          ],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          escalatedBy: helperId,
+        },
+      }),
+    ]);
+
+    return res.json({
+      success: true,
+      stats: {
+        openTickets: unassignedCount,
+        assignedToMe: assignedToMeCount,
+        inProgress: inProgressCount,
+        resolved: resolvedCount,
+        escalated: escalatedCount,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching complaint stats for sup-help:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+  }
+};
+
 export default {
   createComplaint,
   getMyComplaints,
@@ -2631,4 +3587,13 @@ export default {
   supportStats,
   supportDashboard,
   adminComplaintStats,
+  supHelpListComplaints,
+  supHelpGetComplaint,
+  supHelpAssignComplaint,
+  supHelpReply,
+  supHelpAddNote,
+  supHelpChangeStatus,
+  supHelpEscalate,
+  supHelpClose,
+  supHelpComplaintStats,
 };
