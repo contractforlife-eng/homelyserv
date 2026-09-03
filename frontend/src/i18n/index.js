@@ -5101,7 +5101,17 @@ for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) {
     ...SUPPORT_MESSAGES_TAB_COPY[code],
   };
   resource.translation.supHelpMessagesPage = {
+    ...SUPPORT_MESSAGES_COPY[code],
+    ...SUPPORT_MESSAGES_TAB_COPY[code],
     ...SUP_HELP_MESSAGES_COPY[code],
+    supportConversations: SUPPORT_MESSAGES_TAB_COPY[code].supportConversations,
+    internalConversations: SUPPORT_MESSAGES_TAB_COPY[code].internalConversations,
+    noSupportConversations: SUPPORT_MESSAGES_TAB_COPY[code].noSupportConversations,
+    noSupportConversationsDesc: SUPPORT_MESSAGES_TAB_COPY[code].noSupportConversationsDesc,
+    noInternalConversations: SUPPORT_MESSAGES_TAB_COPY[code].noInternalConversations,
+    noInternalConversationsDesc: SUPPORT_MESSAGES_TAB_COPY[code].noInternalConversationsDesc,
+    noSupportTargets: SUPPORT_MESSAGES_TAB_COPY[code].noSupportTargets,
+    noStaffTargets: SUPPORT_MESSAGES_TAB_COPY[code].noStaffTargets,
   };
 }
 

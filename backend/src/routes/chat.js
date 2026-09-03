@@ -353,10 +353,10 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
       // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN/Support-Helper)
       conversationType = 'INTERNAL';
       staffIds = [String(senderId), String(recipientId)];
-    } else if (senderRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT') {
-      // User <-> Support conversation (exactly one SUPPORT, other is a normal user)
+    } else if (senderRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT_HELPER') {
+      // User <-> Support conversation (Support staff, other is a normal user)
       conversationType = 'SUPPORT';
-      const supportId = senderRoleUpper === 'SUPPORT' ? String(senderId) : String(recipientId);
+      const supportId = (senderRoleUpper === 'SUPPORT' || senderRoleUpper === 'SUPPORT_HELPER') ? String(senderId) : String(recipientId);
       supportAgentId = supportId;
     }
 
@@ -748,7 +748,7 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
 
     if (role1 === 'SUPPORT_HELPER' || role2 === 'SUPPORT_HELPER') {
       const otherRole = role1 === 'SUPPORT_HELPER' ? role2 : role1;
-      if (!['ADMIN', 'SUPPORT', 'SUP_ADMIN'].includes(otherRole)) {
+      if (!['ADMIN', 'SUPPORT', 'SUP_ADMIN', 'WORKER', 'EMPLOYER'].includes(otherRole)) {
         return res.status(403).json({ error: 'Invalid target role for staff conversation' });
       }
     }
@@ -764,10 +764,10 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
       // and unique-indexed on the Conversation model.
       conversationType = 'INTERNAL';
       staffIds = [String(user1Id), String(user2Id)];
-    } else if (role1 === 'SUPPORT' || role2 === 'SUPPORT') {
-      // User <-> Support conversation (exactly one SUPPORT, other is a normal user)
+    } else if (role1 === 'SUPPORT' || role2 === 'SUPPORT' || role1 === 'SUPPORT_HELPER' || role2 === 'SUPPORT_HELPER') {
+      // User <-> Support conversation (Support staff, other is a normal user)
       conversationType = 'SUPPORT';
-      supportAgentId = role1 === 'SUPPORT' ? String(user1Id) : String(user2Id);
+      supportAgentId = (role1 === 'SUPPORT' || role1 === 'SUPPORT_HELPER') ? String(user1Id) : String(user2Id);
     }
 
     await ensureConversationMetadata(conversationId, {

@@ -1129,7 +1129,7 @@ router.post('/start-conversation', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (scope === 'STAFF' && targetUser.role !== 'SUPPORT') {
+    if (scope === 'STAFF' && !['SUPPORT', 'SUPPORT_HELPER'].includes(targetUser.role)) {
       return res.status(403).json({ error: 'Target is not an approved staff participant' });
     }
     if (scope === 'USERS' && !['EMPLOYER', 'WORKER'].includes(targetUser.role)) {
@@ -1138,13 +1138,13 @@ router.post('/start-conversation', async (req, res) => {
 
     // Determine conversation type:
     //   WORKER/EMPLOYER/USER -> SUPPORT (admin acts as support agent)
-    //   SUPPORT/ADMIN        -> INTERNAL (staff-to-staff)
+    //   SUPPORT/SUPPORT_HELPER/ADMIN -> INTERNAL (staff-to-staff)
     const targetRole = targetUser.role;
     let conversationType = 'SUPPORT';
     let supportAgentId = adminId;
     let staffIds = [];
 
-    if (targetRole === 'SUPPORT' || targetRole === 'ADMIN') {
+    if (['SUPPORT', 'SUPPORT_HELPER', 'ADMIN'].includes(targetRole)) {
       conversationType = 'INTERNAL';
       staffIds = [adminId, String(targetUser.id)];
       supportAgentId = null;
@@ -1332,7 +1332,7 @@ router.get('/escalated-conversations', async (req, res) => {
 // shows only real member conversations.
 router.get('/support-conversations', async (req, res) => {
   try {
-    const STAFF_ROLES = new Set(['SUPPORT']);
+    const STAFF_ROLES = new Set(['SUPPORT', 'SUPPORT_HELPER']);
 
     const conversationsMeta = await Conversation.find({
       type: 'SUPPORT',
@@ -1346,13 +1346,13 @@ router.get('/support-conversations', async (req, res) => {
     // staff-to-staff conversations without touching the database.
     const allParticipantIds = new Set();
     for (const conv of conversationsMeta) {
-      for (const id of conv.participantIds || []) allParticipantIds.add(id);
+      for (const id of conv.participantIds || []) allParticipantIds.add(String(id));
     }
     const validIds = [...allParticipantIds].filter(isValidObjectId);
     const staffUserMap = new Map();
     if (validIds.length > 0) {
       const staffUsers = await prisma.user.findMany({
-        where: { id: { in: validIds }, role: { in: ['ADMIN', 'SUPPORT'] } },
+        where: { id: { in: validIds }, role: { in: ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'] } },
         select: { id: true, role: true }
       });
       for (const u of staffUsers) staffUserMap.set(u.id, u.role);
@@ -1532,7 +1532,7 @@ router.get('/user-conversations', async (req, res) => {
 //      here READ-ONLY (no database records modified) so they remain visible.
 router.get('/internal-messages', async (req, res) => {
   try {
-    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
+    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT', 'SUPPORT_HELPER']);
     const userId = String(req.userId);
 
     const internalMeta = await Conversation.find({
@@ -1560,10 +1560,10 @@ router.get('/internal-messages', async (req, res) => {
     // conversation type/metadata is not an inbox classification authority.
     const allParticipantIds = new Set();
     for (const conv of internalMeta) {
-      for (const id of conv.staffIds || []) allParticipantIds.add(id);
+      for (const id of conv.staffIds || []) allParticipantIds.add(String(id));
     }
     for (const conv of legacySupportMeta) {
-      for (const id of conv.participantIds || []) allParticipantIds.add(id);
+      for (const id of conv.participantIds || []) allParticipantIds.add(String(id));
     }
     const validIds = [...allParticipantIds].filter(isValidObjectId);
     const roleMap = new Map();
@@ -1577,7 +1577,8 @@ router.get('/internal-messages', async (req, res) => {
 
     const getOtherStaffId = (conv) => {
       const ids = conv.type === 'INTERNAL' ? (conv.staffIds || []) : (conv.participantIds || []);
-      return ids.find(id => id !== userId) || null;
+      const found = ids.find(id => String(id) !== String(userId));
+      return found ? String(found) : null;
     };
 
     const isDirectSupportConversation = (conv) => {
@@ -1626,8 +1627,8 @@ router.get('/internal-messages', async (req, res) => {
     const otherStaffIds = mergedMeta
       .map(conv =>
         conv.type === 'INTERNAL'
-          ? conv.staffIds?.find(id => id !== userId)
-          : conv.participantIds?.find(id => id !== userId)
+          ? conv.staffIds?.find(id => String(id) !== String(userId))
+          : conv.participantIds?.find(id => String(id) !== String(userId))
       )
       .filter(id => id);
 
@@ -1646,8 +1647,8 @@ router.get('/internal-messages', async (req, res) => {
       if (!lastMsg) continue;
 
       const otherStaffId = conv.type === 'INTERNAL'
-        ? conv.staffIds?.find(id => id !== userId)
-        : conv.participantIds?.find(id => id !== userId);
+        ? conv.staffIds?.find(id => String(id) !== String(userId))
+        : conv.participantIds?.find(id => String(id) !== String(userId));
       const otherStaffInfo = otherStaffId ? staffMap.get(otherStaffId) || null : null;
 
       conversations.push({
@@ -1697,7 +1698,7 @@ router.get('/conversations/:conversationId/messages', async (req, res) => {
       allowed = true;
     } else if (conv.type === 'SUPPORT') {
       allowed = true;
-    } else if (conv.type === 'INTERNAL' && conv.staffIds.includes(userId)) {
+    } else if (conv.type === 'INTERNAL' && conv.staffIds?.some(id => String(id) === String(userId))) {
       allowed = true;
     }
 

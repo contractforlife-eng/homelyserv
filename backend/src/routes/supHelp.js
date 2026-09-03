@@ -9,6 +9,7 @@ import { getUserIdentity, getUserIdentities, enrichMessageIdentities } from '../
 import { emitToUser } from '../lib/socket.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { sendPushToUser } from '../services/fcmService.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 const router = express.Router();
 
@@ -179,14 +180,15 @@ router.get('/users/:id', async (req, res) => {
 const INTERNAL_TARGET_ROLES = new Set(['SUPPORT', 'ADMIN']);
 
 // POST /api/sup-help/messages/ensure
-// Ensure an INTERNAL conversation exists between the authenticated user
-// and a valid staff target (SUPPORT or ADMIN).
-// Reuses the existing INTERNAL conversation model with staffIds membership.
+// Tab-aware conversation initiation/retrieval for Sup-Help workspace:
+// - Support Conversations tab (SUPPORT): targets must be staff (SUPPORT or ADMIN). Creates/ensures type: 'INTERNAL'.
+// - Internal Conversations tab (INTERNAL): targets must be users (WORKER or EMPLOYER). Creates/ensures type: 'SUPPORT'.
+// Server-side authorization strictly validates target roles for each tab/type.
 router.post('/messages/ensure', async (req, res) => {
   try {
     const callerId = String(req.userId);
     const callerRole = String(req.userRole || '').toUpperCase();
-    const { targetUserId } = req.body || {};
+    const { targetUserId, tab } = req.body || {};
 
     if (!targetUserId) {
       return res.status(400).json({ error: 'targetUserId is required' });
@@ -206,26 +208,46 @@ router.post('/messages/ensure', async (req, res) => {
     }
 
     const targetRole = String(targetUser.role || '').toUpperCase();
+    const normalizedTab = tab ? String(tab).toUpperCase() : 'SUPPORT';
 
-    // Validate target role based on caller role
-    if (callerRole === 'SUPPORT_HELPER') {
-      if (!INTERNAL_TARGET_ROLES.has(targetRole)) {
-        return res.status(403).json({ error: 'Invalid target role for Sup-Help internal messaging' });
-      }
-    } else if (callerRole === 'ADMIN') {
+    // Strict tab-aware target validation
+    if (normalizedTab === 'SUPPORT') {
+      // Support Conversations tab: staff communication only (SUPPORT, ADMIN)
       if (!INTERNAL_TARGET_ROLES.has(targetRole) && targetRole !== 'SUPPORT_HELPER') {
-        return res.status(403).json({ error: 'Invalid target role for internal messaging' });
+        return res.status(403).json({ error: 'Invalid target role for Support Conversations tab' });
       }
+      if (callerRole === 'SUPPORT_HELPER' && targetRole === 'SUPPORT_HELPER') {
+        return res.status(403).json({ error: 'Invalid target role for Support Conversations tab' });
+      }
+    } else if (normalizedTab === 'INTERNAL') {
+      // Internal Conversations tab: platform users only (WORKER or EMPLOYER)
+      if (!['WORKER', 'EMPLOYER'].includes(targetRole)) {
+        return res.status(403).json({ error: 'Invalid target role for Internal Conversations tab' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Invalid tab specified' });
     }
 
     const conversationId = getConversationId(callerId, String(targetUserId));
-    const staffIds = [callerId, String(targetUserId)];
+    let conversation;
 
-    const conversation = await ensureConversationMetadata(conversationId, {
-      type: 'INTERNAL',
-      participantIds: staffIds,
-      staffIds,
-    });
+    if (INTERNAL_TARGET_ROLES.has(targetRole) || targetRole === 'SUPPORT_HELPER') {
+      // Staff <-> Staff internal conversation
+      const staffIds = [callerId, String(targetUserId)];
+      conversation = await ensureConversationMetadata(conversationId, {
+        type: 'INTERNAL',
+        participantIds: staffIds,
+        staffIds,
+      });
+    } else {
+      // Staff <-> User support conversation (WORKER or EMPLOYER)
+      const participantIds = [callerId, String(targetUserId)];
+      conversation = await ensureConversationMetadata(conversationId, {
+        type: 'SUPPORT',
+        participantIds,
+        supportAgentId: callerId,
+      });
+    }
 
     if (!conversation) {
       return res.status(500).json({ error: 'Failed to ensure conversation' });
@@ -239,18 +261,38 @@ router.post('/messages/ensure', async (req, res) => {
 });
 
 // GET /api/sup-help/messages
-// List internal staff conversations where the authenticated user is a staff member.
+// List authorized conversations for the authenticated user:
+// - INTERNAL conversations with staff (SUPPORT, ADMIN)
+// - SUPPORT conversations with users (WORKER, EMPLOYER)
+// Admin can supervise all or their own.
 router.get('/messages', async (req, res) => {
   try {
     const userId = String(req.userId);
+    const userRole = String(req.userRole || '').toUpperCase();
 
-    const conversationsMeta = await Conversation.find({
-      type: 'INTERNAL',
-      staffIds: userId,
+    const roleCondition = userRole === 'ADMIN'
+      ? {
+          $or: [
+            { type: 'INTERNAL', staffIds: userId },
+            { type: 'SUPPORT' }
+          ]
+        }
+      : {
+          $or: [
+            { type: 'INTERNAL', staffIds: userId },
+            { type: 'SUPPORT', $or: [{ supportAgentId: userId }, { participantIds: userId }] }
+          ]
+        };
+
+    const statusCondition = {
       $or: [
         { status: 'ACTIVE' },
         { status: { $exists: false } }
       ]
+    };
+
+    const conversationsMeta = await Conversation.find({
+      $and: [roleCondition, statusCondition]
     }).sort({ lastMessageAt: -1 });
 
     if (!conversationsMeta.length) {
@@ -259,46 +301,96 @@ router.get('/messages', async (req, res) => {
 
     const conversationIds = conversationsMeta.map(c => c.conversationId);
 
-    const lastMessages = await Message.find({ conversationId: { $in: conversationIds } })
-      .sort({ createdAt: -1 });
+    const [lastMessages, unreadAgg] = await Promise.all([
+      Message.find({ conversationId: { $in: conversationIds } }).sort({ createdAt: -1 }),
+      Message.aggregate([
+        { $match: { conversationId: { $in: conversationIds }, recipientId: userId, read: false } },
+        { $group: { _id: '$conversationId', count: { $sum: 1 } } }
+      ])
+    ]);
+
     const lastMessageMap = new Map();
     for (const msg of lastMessages) {
       if (!lastMessageMap.has(msg.conversationId)) {
         lastMessageMap.set(msg.conversationId, msg);
       }
     }
-
-    const unreadAgg = await Message.aggregate([
-      { $match: { conversationId: { $in: conversationIds }, recipientId: userId, read: false } },
-      { $group: { _id: '$conversationId', count: { $sum: 1 } } }
-    ]);
     const unreadMap = new Map(unreadAgg.map(item => [item._id, item.count]));
 
-    const otherStaffIds = conversationsMeta
-      .map(conv => conv.staffIds.find(id => id !== userId))
-      .filter(id => id);
+    const otherUserIds = [];
+    for (const conv of conversationsMeta) {
+      let otherId = null;
+      if (conv.type === 'INTERNAL') {
+        const otherStaff = conv.staffIds?.find(id => String(id) !== String(userId));
+        otherId = otherStaff ? String(otherStaff) : null;
+      } else if (conv.type === 'SUPPORT') {
+        const otherParticipant = conv.participantIds?.find(id => String(id) !== String(userId));
+        if (otherParticipant) {
+          otherId = String(otherParticipant);
+        } else if (conv.supportAgentId && String(conv.supportAgentId) !== String(userId)) {
+          otherId = String(conv.supportAgentId);
+        }
+      }
+      if (otherId && /^[0-9a-fA-F]{24}$/.test(otherId)) {
+        otherUserIds.push(otherId);
+      }
+    }
 
-    const validStaffIds = otherStaffIds.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
-    const staffUsers = validStaffIds.length > 0
-      ? await prisma.user.findMany({
-          where: { id: { in: validStaffIds } },
-          select: { id: true, fullName: true, email: true, role: true, profileImage: true }
-        })
-      : [];
-    const staffMap = new Map(staffUsers.map(u => [u.id, u]));
+    const validOtherUserIds = [...new Set(otherUserIds)];
+    const [users, activePremiumIds] = await Promise.all([
+      validOtherUserIds.length > 0
+        ? prisma.user.findMany({
+            where: { id: { in: validOtherUserIds } },
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
+          })
+        : [],
+      getActivePremiumUserIds(validOtherUserIds)
+    ]);
+    const userMap = new Map(users.map(u => [u.id, u]));
 
     const conversations = [];
     for (const conv of conversationsMeta) {
-      const otherStaffId = conv.staffIds.find(id => id !== userId);
-      const otherStaff = otherStaffId ? staffMap.get(otherStaffId) || null : null;
+      let otherUserId = null;
+      if (conv.type === 'INTERNAL') {
+        const otherStaff = conv.staffIds?.find(id => String(id) !== String(userId));
+        otherUserId = otherStaff ? String(otherStaff) : null;
+      } else if (conv.type === 'SUPPORT') {
+        const otherParticipant = conv.participantIds?.find(id => String(id) !== String(userId));
+        if (otherParticipant) {
+          otherUserId = String(otherParticipant);
+        } else if (conv.supportAgentId && String(conv.supportAgentId) !== String(userId)) {
+          otherUserId = String(conv.supportAgentId);
+        }
+      }
+
+      const otherUser = otherUserId ? userMap.get(otherUserId) || null : null;
       const lastMsg = lastMessageMap.get(conv.conversationId);
+
+      let tab = null;
+      const counterpartRole = (otherUser?.role || '').toUpperCase();
+      if (counterpartRole === 'SUPPORT' || counterpartRole === 'ADMIN') {
+        tab = 'SUPPORT';
+      } else if (counterpartRole === 'WORKER' || counterpartRole === 'EMPLOYER') {
+        tab = 'INTERNAL';
+      } else if (conv.type === 'INTERNAL') {
+        tab = 'SUPPORT';
+      } else if (conv.type === 'SUPPORT') {
+        tab = 'INTERNAL';
+      }
 
       conversations.push({
         id: conv.conversationId,
         type: conv.type,
+        tab,
         status: conv.status,
-        otherStaffId: otherStaffId || null,
-        otherStaff,
+        otherUserId: otherUserId || null,
+        otherStaffId: conv.type === 'INTERNAL' ? otherUserId : null,
+        otherStaff: conv.type === 'INTERNAL' ? otherUser : null,
+        otherUserName: otherUser?.fullName || 'User',
+        otherUserEmail: otherUser?.email || '',
+        otherUserRole: otherUser?.role || 'USER',
+        otherUserImage: otherUser?.profileImage || null,
+        isPremium: activePremiumIds.has(String(otherUserId)),
         lastMessage: lastMsg ? lastMsg.text : '',
         lastMessageTime: lastMsg ? lastMsg.createdAt : null,
         time: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
@@ -315,18 +407,32 @@ router.get('/messages', async (req, res) => {
 });
 
 // GET /api/sup-help/messages/:conversationId
-// Get a single authorized internal conversation with its messages.
+// Get a single authorized conversation with its messages.
+// Strictly forbids PRIVATE conversations.
 router.get('/messages/:conversationId', async (req, res) => {
   try {
     const { conversationId } = req.params;
     const userId = String(req.userId);
+    const userRole = String(req.userRole || '').toUpperCase();
 
     const conv = await Conversation.findOne({ conversationId });
     if (!conv) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    if (conv.type !== 'INTERNAL' || !conv.staffIds.includes(userId)) {
+    // Strictly forbid PRIVATE conversations
+    if (conv.type === 'PRIVATE') {
+      return res.status(403).json({ error: 'Not authorized to access private conversations' });
+    }
+
+    let isAuthorized = false;
+    if (conv.type === 'INTERNAL') {
+      isAuthorized = conv.staffIds?.includes(userId) || userRole === 'ADMIN';
+    } else if (conv.type === 'SUPPORT') {
+      isAuthorized = conv.participantIds?.includes(userId) || conv.supportAgentId === userId || userRole === 'ADMIN';
+    }
+
+    if (!isAuthorized) {
       return res.status(403).json({ error: 'Not authorized to access this conversation' });
     }
 
@@ -339,6 +445,7 @@ router.get('/messages/:conversationId', async (req, res) => {
         id: conv.conversationId,
         type: conv.type,
         status: conv.status,
+        participantIds: conv.participantIds,
         staffIds: conv.staffIds,
         closedAt: conv.closedAt,
         closedBy: conv.closedBy,
@@ -352,7 +459,8 @@ router.get('/messages/:conversationId', async (req, res) => {
 });
 
 // POST /api/sup-help/messages
-// Send a message within an existing authorized INTERNAL conversation.
+// Send a message within an existing authorized conversation (INTERNAL or SUPPORT).
+// Strictly forbids PRIVATE conversations.
 router.post('/messages', async (req, res) => {
   try {
     const senderId = String(req.userId);
@@ -364,11 +472,24 @@ router.post('/messages', async (req, res) => {
     }
 
     const conv = await Conversation.findOne({ conversationId });
-    if (!conv || conv.type !== 'INTERNAL') {
-      return res.status(403).json({ error: 'Not authorized to access this conversation' });
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    if (!conv.staffIds.includes(senderId) || !conv.staffIds.includes(String(recipientId))) {
+    // Strictly forbid sending to PRIVATE conversations
+    if (conv.type === 'PRIVATE') {
+      return res.status(403).json({ error: 'Not authorized to send to private conversations' });
+    }
+
+    let isAuthorized = false;
+    if (conv.type === 'INTERNAL') {
+      isAuthorized = conv.staffIds?.includes(senderId) && conv.staffIds?.includes(String(recipientId));
+    } else if (conv.type === 'SUPPORT') {
+      isAuthorized = (conv.participantIds?.includes(senderId) || conv.supportAgentId === senderId) &&
+                     conv.participantIds?.includes(String(recipientId));
+    }
+
+    if (!isAuthorized) {
       return res.status(403).json({ error: 'Not authorized to send to this conversation' });
     }
 
@@ -446,14 +567,22 @@ router.post('/messages', async (req, res) => {
 });
 
 // POST /api/sup-help/messages/:conversationId/read
-// Mark messages as read for the authenticated user in an INTERNAL conversation.
+// Mark messages as read for the authenticated user in an authorized conversation.
 router.post('/messages/:conversationId/read', async (req, res) => {
   try {
     const { conversationId } = req.params;
     const userId = String(req.userId);
 
     const conv = await Conversation.findOne({ conversationId });
-    if (!conv || conv.type !== 'INTERNAL' || !conv.staffIds.includes(userId)) {
+    if (!conv || conv.type === 'PRIVATE') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const isAuthorized = conv.type === 'INTERNAL'
+      ? conv.staffIds?.includes(userId)
+      : (conv.type === 'SUPPORT' && (conv.participantIds?.includes(userId) || conv.supportAgentId === userId));
+
+    if (!isAuthorized) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -470,14 +599,22 @@ router.post('/messages/:conversationId/read', async (req, res) => {
 });
 
 // POST /api/sup-help/messages/:conversationId/close
-// Soft-close an INTERNAL conversation for the authenticated staff member.
+// Soft-close an authorized conversation for the authenticated staff member.
 router.post('/messages/:conversationId/close', async (req, res) => {
   try {
     const { conversationId } = req.params;
     const userId = String(req.userId);
 
     const conv = await Conversation.findOne({ conversationId });
-    if (!conv || conv.type !== 'INTERNAL' || !conv.staffIds.includes(userId)) {
+    if (!conv || conv.type === 'PRIVATE') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const isAuthorized = conv.type === 'INTERNAL'
+      ? (conv.staffIds?.includes(userId) || req.userRole === 'ADMIN')
+      : (conv.type === 'SUPPORT' && (conv.participantIds?.includes(userId) || conv.supportAgentId === userId || req.userRole === 'ADMIN'));
+
+    if (!isAuthorized) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 

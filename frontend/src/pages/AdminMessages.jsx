@@ -57,7 +57,7 @@ const SECTIONS = {
   SUPPORT: 'support',
   USERS: 'users'
 };
-const STAFF_TARGET_ROLES = ['SUPPORT'];
+const STAFF_TARGET_ROLES = ['SUPPORT', 'SUPPORT_HELPER'];
 const USER_TARGET_ROLES = ['EMPLOYER', 'WORKER'];
 
 // ============================================================
@@ -120,7 +120,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser, allowedRoles = 
   const getRoleIcon = (role) => {
     if (role === 'WORKER') return <Wrench size={16} />;
     if (role === 'EMPLOYER') return <Briefcase size={16} />;
-    if (role === 'SUPPORT') return <Headphones size={16} />;
+    if (role === 'SUPPORT' || role === 'SUPPORT_HELPER') return <Headphones size={16} />;
     return <Users size={16} />;
   };
 
