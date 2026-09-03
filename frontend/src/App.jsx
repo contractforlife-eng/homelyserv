@@ -84,6 +84,10 @@ import SupportSettings from './pages/support/SupportSettings';
 import SupportComplaints from './pages/support/SupportComplaints';
 import SupportProfile from './pages/support/SupportProfile';
 import PublicLiveSupport from './pages/PublicLiveSupport';
+import SupHelpDashboard from './pages/sup-help/SupHelpDashboard';
+import SupHelpUsers from './pages/sup-help/SupHelpUsers';
+import SupHelpUserProfile from './pages/sup-help/SupHelpUserProfile';
+import SupHelpMessages from './pages/sup-help/SupHelpMessages';
 import PublicSupportWidget from './components/public-support/PublicSupportWidget';
 
 import { useAuth } from './context/AuthContext';
@@ -166,11 +170,14 @@ if (!isAuthenticated) {
 
    const userRole = user.role?.toUpperCase();
 
-   if (requiredRole && userRole !== requiredRole.toUpperCase()) {
-     // Allow ADMIN to access SUPPORT routes
-     if (requiredRole.toUpperCase() === 'SUPPORT' && userRole === 'ADMIN') {
-       return children;
-     }
+    if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+      // Allow ADMIN to access SUPPORT and SUPPORT_HELPER routes
+      if (
+        (requiredRole.toUpperCase() === 'SUPPORT' || requiredRole.toUpperCase() === 'SUPPORT_HELPER') &&
+        userRole === 'ADMIN'
+      ) {
+        return children;
+      }
      
      if (userRole === 'WORKER') {
        return <Navigate to="/worker-dashboard" replace />;
@@ -737,6 +744,40 @@ function App() {
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <PublicLiveSupport />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========== SUPPORT HELPER LANDING (Phase 1) ========== */}
+      <Route
+        path="/sup-help"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT_HELPER">
+            <SupHelpDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sup-help/users"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT_HELPER">
+            <SupHelpUsers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sup-help/users/:id"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT_HELPER">
+            <SupHelpUserProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sup-help/messages"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT_HELPER">
+            <SupHelpMessages />
           </ProtectedRoute>
         }
       />

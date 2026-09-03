@@ -9,13 +9,13 @@ const messageSchema = new mongoose.Schema(
     senderRole: {
       type: String,
       required: true,
-      enum: ['WORKER', 'EMPLOYER', 'ADMIN', 'SUPPORT', 'SYSTEM']
+      enum: ['WORKER', 'EMPLOYER', 'ADMIN', 'SUPPORT', 'SUPPORT_HELPER', 'SYSTEM']
     },
     recipientId: { type: String, required: true, index: true },
     recipientName: { type: String, required: true },
     recipientRole: {
       type: String,
-      enum: ['WORKER', 'EMPLOYER', 'ADMIN', 'SUPPORT', 'USER'],
+      enum: ['WORKER', 'EMPLOYER', 'ADMIN', 'SUPPORT', 'SUPPORT_HELPER', 'USER'],
       default: 'USER'
     },
     text: { type: String, required: true, trim: true },

@@ -18,7 +18,11 @@ import prisma from '../lib/prisma.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 // Roles considered "staff" (support / admin family).
-export const STAFF_ROLES = ['SUPPORT', 'ADMIN', 'SUP_ADMIN'];
+// SUPPORT_HELPER is a support-tier staff member used for display/identity
+// resolution only. It is intentionally NOT present in the authorization
+// STAFF_ROLES sets (chat.js, paymentAuthService, publicSupportAccessService,
+// employerProfileAuthorization) which gate SUPPORT/ADMIN-only operations.
+export const STAFF_ROLES = ['SUPPORT', 'ADMIN', 'SUP_ADMIN', 'SUPPORT_HELPER'];
 
 // MongoDB ObjectId guard. Legacy records may contain non-ObjectId
 // ids (e.g. "user_1784367005840") which crash Prisma with P2023.

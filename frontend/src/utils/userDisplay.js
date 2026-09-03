@@ -18,6 +18,7 @@ const ROLE_LABEL_KEYS = {
   ADMIN: 'sharedUserDisplay.roles.coAdmin',
   SUPPORT: 'sharedUserDisplay.roles.supportAdmin',
   SUP_ADMIN: 'sharedUserDisplay.roles.supportAdmin',
+  SUPPORT_HELPER: 'sharedUserDisplay.roles.supportHelper',
   EMPLOYER: 'sharedUserDisplay.roles.employer',
   WORKER: 'sharedUserDisplay.roles.worker',
   USER: 'sharedUserDisplay.roles.user',
@@ -32,6 +33,7 @@ const getUserFallback = () => i18n.t('sharedUserDisplay.fallbacks.user');
 const ROLE_COLORS = {
   ADMIN: 'purple',
   SUPPORT: 'green',
+  SUPPORT_HELPER: 'red',
   EMPLOYER: 'blue',
   WORKER: 'orange'
 };
@@ -42,6 +44,7 @@ const ROLE_COLORS = {
 const ROLE_BADGE_CLASSES = {
   ADMIN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
   SUPPORT: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  SUPPORT_HELPER: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   EMPLOYER: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   WORKER: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
 };
@@ -49,12 +52,16 @@ const ROLE_BADGE_CLASSES = {
 // ============================================================
 // OFFICIAL STAFF - Admin & Support visual distinction
 // ============================================================
-const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUP_ADMIN'];
+// Offical staff - Admin, Support & support-helper tier.
+// SUPPORT_HELPER is display/identity staff only (see backend staffIdentity.js);
+// it is intentionally absent from authorization STAFF_ROLES sets.
+const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUP_ADMIN', 'SUPPORT_HELPER'];
 
 const STAFF_IDENTITY_TITLES = {
   ADMIN: 'Co-Admin',
   SUPPORT: 'Sup-Admin',
-  SUP_ADMIN: 'Sup-Admin'
+  SUP_ADMIN: 'Sup-Admin',
+  SUPPORT_HELPER: 'Sup-Help'
 };
 
 // ============================================================

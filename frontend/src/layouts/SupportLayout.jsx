@@ -13,8 +13,10 @@ import LegalFooter from '../components/common/LegalFooter';
 
 const SupportLayout = ({ 
   children, 
-  requiredRole = 'SUPPORT',
-  headerTitle
+  allowedRoles = ['SUPPORT', 'ADMIN'],
+  headerTitle,
+  role,
+  menuItems,
 }) => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
@@ -23,20 +25,18 @@ const SupportLayout = ({
   const { logout: authLogout } = useAuthStore();
 
   const { t, i18n } = useTranslation();
-  // Language is synced with the global i18n instance (single source of truth).
-  // i18n initializes from the same localStorage key via its language detector.
   const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem('homelyserv_language') || 'en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Keep context language in sync whenever i18n changes (from any page)
+  const activeRole = role || authUser?.role?.toUpperCase();
+
   useEffect(() => {
     const onLanguageChanged = (lng) => setLanguage(lng);
     i18n.on('languageChanged', onLanguageChanged);
     return () => i18n.off('languageChanged', onLanguageChanged);
   }, [i18n]);
 
-  // Load saved sidebar state
   useEffect(() => {
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
@@ -44,7 +44,6 @@ const SupportLayout = ({
     }
   }, []);
 
-  // Authentication check - redirect to login if not authenticated or wrong role
   useEffect(() => {
     if (authLoading) return;
 
@@ -53,13 +52,12 @@ const SupportLayout = ({
       return;
     }
 
-    // Only SUPPORT and ADMIN can access support area
     const userRole = authUser.role?.toUpperCase();
-    if (userRole !== 'SUPPORT' && userRole !== 'ADMIN') {
+    if (!allowedRoles.includes(userRole)) {
       navigate('/login');
       return;
     }
-  }, [authUser, isAuthenticated, authLoading, navigate, requiredRole]);
+  }, [authUser, isAuthenticated, authLoading, navigate, allowedRoles]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
@@ -78,8 +76,6 @@ const SupportLayout = ({
     navigate('/login');
   };
 
-  // Only block during initial unresolved authentication
-  // Once user is loaded, never show full-page loader during SPA navigation
   if (authLoading && !authUser) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -91,7 +87,6 @@ const SupportLayout = ({
     );
   }
 
-  // Provide layout state to children
   const contextValue = useMemo(() => ({
     language,
     toggleMobileMenu,
@@ -100,7 +95,10 @@ const SupportLayout = ({
     mobileMenuOpen,
     authUser,
     handleLogout,
-  }), [language, sidebarCollapsed, mobileMenuOpen, authUser]);
+    role: activeRole,
+  }), [language, sidebarCollapsed, mobileMenuOpen, authUser, activeRole]);
+
+  const headerTitleKey = headerTitle || (activeRole === 'SUPPORT_HELPER' ? 'supHelpNavigation.supportDashboard' : 'supportNavigation.supportDashboard');
 
   return (
     <DashboardContext.Provider value={contextValue}>
@@ -114,6 +112,8 @@ const SupportLayout = ({
           authUser={authUser}
           user={authUser}
           handleLogout={handleLogout}
+          role={activeRole}
+          menuItems={menuItems}
         />
 
         <MobileHeader />
@@ -124,7 +124,7 @@ const SupportLayout = ({
         } ml-0 pt-14 lg:pt-0`}>
           <VerificationBanner />
           <DashboardHeader
-            title={headerTitle || t('supportNavigation.supportDashboard')}
+            title={t(headerTitleKey)}
             notificationUserId={authUser?.id || authUser?.email}
           />
           {children}

@@ -534,6 +534,7 @@ enum Role {
   EMPLOYER
   ADMIN
   SUPPORT
+  SUPPORT_HELPER
 }
 
 model Offer {

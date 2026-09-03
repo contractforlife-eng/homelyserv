@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT'],
+    enum: ['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT', 'SUPPORT_HELPER'],
     default: 'WORKER'
   },
   isSuspended: {

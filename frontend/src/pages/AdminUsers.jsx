@@ -64,6 +64,7 @@ const RoleBadge = ({ role, label }) => {
   const colors = {
     ADMIN: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700',
     SUPPORT: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700',
+    SUPPORT_HELPER: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700',
     EMPLOYER: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700',
     WORKER: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700',
   };
@@ -71,6 +72,7 @@ const RoleBadge = ({ role, label }) => {
   const icons = {
     ADMIN: Shield,
     SUPPORT: UserCheck,
+    SUPPORT_HELPER: Shield,
     EMPLOYER: Briefcase,
     WORKER: HardHat,
   };
@@ -125,7 +127,8 @@ const UserActionsMenu = ({ user, currentAdminId, isRootAdmin, onViewProfile, onC
   const userId = user.id || user._id;
   const isSelf = String(userId) === String(currentAdminId);
   const isProtectedRoot = String(user.email || '').trim().toLowerCase() === 'emad@homelyserv.com';
-  const canChangeRole = !isSelf && !isProtectedRoot && (user.role !== 'ADMIN' || isRootAdmin);
+  const normalizedUserRole = String(user.role || '').trim().toUpperCase();
+  const canChangeRole = !isSelf && !isProtectedRoot && (normalizedUserRole !== 'ADMIN' || isRootAdmin);
 
   const closeMenu = () => setIsOpen(false);
 
@@ -320,13 +323,13 @@ const AdminUsers = () => {
   };
 
   const updateUserRole = (userId, newRole) => {
-    const updatedUsers = users.map(u => {
-      if (u.id === userId) {
+    const targetId = String(userId);
+    setUsers(prevUsers => prevUsers.map(u => {
+      if (String(u.id || u._id) === targetId) {
         return { ...u, role: newRole };
       }
       return u;
-    });
-    setUsers(updatedUsers);
+    }));
   };
 
   const updateUserStatus = (userId, suspended, reason = null) => {
@@ -381,7 +384,8 @@ const AdminUsers = () => {
 
   const openRoleChangeModal = (user) => {
     setSelectedUserForRole(user);
-    setSelectedRole('');
+    const initialRole = String(user?.role || '').trim().toUpperCase();
+    setSelectedRole(initialRole);
     setRoleChangeError('');
     setRoleModalOpen(true);
   };
@@ -397,23 +401,31 @@ const AdminUsers = () => {
     if (!selectedUserForRole) return;
 
     const userId = selectedUserForRole._id || selectedUserForRole.id;
+    const currentRole = String(selectedUserForRole?.role || '').trim().toUpperCase();
+    const nextRole = String(selectedRole || '').trim().toUpperCase();
 
-    if (!selectedRole) {
+    if (!nextRole) {
       setRoleChangeError(t.changeRole.selectRoleError);
+      return;
+    }
+
+    if (nextRole === currentRole) {
       return;
     }
 
     setIsChangingRole(true);
     setRoleChangeError('');
     try {
-      const response = await api.put(`/api/admin/users/${userId}/role`, { newRole: selectedRole });
+      const response = await api.put(`/api/admin/users/${userId}/role`, { newRole: nextRole });
       if (response.data.success) {
-        const newRole = selectedRole;
+        const newRole = String(response.data.newRole || nextRole).toUpperCase();
         const changedName = selectedUserForRole.fullName || 'User';
         updateUserRole(userId, newRole);
         closeRoleChangeModal();
-        setRoleChangeSuccess(`${t.changeRole.success} ${t.roles[newRole]} (${changedName})`);
+        setRoleChangeSuccess(`${t.changeRole.success} ${t.roles[newRole] || newRole} (${changedName})`);
         setTimeout(() => setRoleChangeSuccess(''), 5000);
+      } else {
+        setRoleChangeError(response.data.message || t.changeRole.error);
       }
     } catch (error) {
       const message = error.response?.data?.message || t.changeRole.error;
@@ -509,6 +521,7 @@ const AdminUsers = () => {
     workers: users.filter(u => u.role === 'WORKER').length,
     employers: users.filter(u => u.role === 'EMPLOYER').length,
     support: users.filter(u => u.role === 'SUPPORT').length,
+    supportHelper: users.filter(u => u.role === 'SUPPORT_HELPER').length,
     admins: users.filter(u => u.role === 'ADMIN').length,
     active: users.filter(u => !isSuspendedAccount(u)).length,
     suspended: users.filter(isSuspendedAccount).length,
@@ -587,6 +600,13 @@ const AdminUsers = () => {
           />
           <StatCard
             icon={Shield}
+            label={t.stats.supportHelper}
+            value={stats.supportHelper}
+            color="text-red-600"
+            bgColor="bg-red-50 dark:bg-red-900/20"
+          />
+          <StatCard
+            icon={Shield}
             label={t.stats.admins}
             value={stats.admins}
             color="text-purple-600"
@@ -634,6 +654,7 @@ const AdminUsers = () => {
                 <option value="worker">{t.filters.worker}</option>
                 <option value="employer">{t.filters.employer}</option>
                 <option value="support">{t.filters.support}</option>
+                <option value="support_helper">{t.filters.supportHelper}</option>
                 <option value="admin">{t.filters.admin}</option>
               </select>
               <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -751,7 +772,7 @@ const AdminUsers = () => {
                       <td className="px-6 py-4 text-right">
                         <UserActionsMenu
                           user={u}
-                          currentAdminId={user?.id || user?._id}
+                          currentAdminId={user?.id || user?._id || authUser?.id || authUser?._id}
                           isRootAdmin={isRootAdmin}
                           onViewProfile={handleViewProfile}
                           onChangeRole={openRoleChangeModal}
@@ -979,30 +1000,35 @@ const AdminUsers = () => {
                   {t.changeRole.newRole}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {(isRootAdmin ? ['ADMIN', 'WORKER', 'EMPLOYER', 'SUPPORT'] : ['WORKER', 'EMPLOYER', 'SUPPORT']).map((roleOption) => {
-                    const isCurrent = roleOption === selectedUserForRole.role;
-                    const isSelected = roleOption === selectedRole;
-                    return (
-                      <button
-                        key={roleOption}
-                        type="button"
-                        disabled={isCurrent}
-                        onClick={() => {
-                          setSelectedRole(roleOption);
-                          setRoleChangeError('');
-                        }}
-                        className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
-                          isCurrent
-                            ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                            : isSelected
-                              ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 text-yellow-700 dark:text-yellow-300'
+                  {(() => {
+                    const currentRole = String(selectedUserForRole?.role || '').trim().toUpperCase();
+                    const normalizedSelectedRole = String(selectedRole || '').trim().toUpperCase();
+                    const roleOptions = isRootAdmin
+                      ? ['ADMIN', 'SUPPORT_HELPER', 'WORKER', 'EMPLOYER', 'SUPPORT']
+                      : ['SUPPORT_HELPER', 'WORKER', 'EMPLOYER', 'SUPPORT'];
+
+                    return roleOptions.map((roleOption) => {
+                      const isSelected = roleOption === normalizedSelectedRole;
+                      return (
+                        <button
+                          key={roleOption}
+                          type="button"
+                          disabled={isChangingRole}
+                          onClick={() => {
+                            setSelectedRole(roleOption);
+                            setRoleChangeError('');
+                          }}
+                          className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 text-yellow-700 dark:text-yellow-300 ring-2 ring-yellow-400/20'
                               : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
-                        }`}
-                      >
-                        {t.roles[roleOption]}
-                      </button>
-                    );
-                  })}
+                          }`}
+                        >
+                          {t.roles[roleOption] || roleOption}
+                        </button>
+                      );
+                    });
+                  })()}
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                   {t.changeRole.changingFor} {selectedUserForRole.fullName}
@@ -1025,7 +1051,7 @@ const AdminUsers = () => {
               </div>
 
               {/* Worker note */}
-              {selectedRole === 'WORKER' && (
+              {String(selectedRole || '').trim().toUpperCase() === 'WORKER' && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                   <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
                     <UserCog size={14} className="mt-0.5 flex-shrink-0" />
@@ -1037,6 +1063,7 @@ const AdminUsers = () => {
 
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={closeRoleChangeModal}
                 disabled={isChangingRole}
                 className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium disabled:opacity-50"
@@ -1044,9 +1071,14 @@ const AdminUsers = () => {
                 {t.modal.cancel}
               </button>
               <button
+                type="button"
                 onClick={handleChangeRole}
-                disabled={isChangingRole || !selectedRole}
-                className="px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                disabled={
+                  isChangingRole ||
+                  !selectedRole ||
+                  String(selectedRole).trim().toUpperCase() === String(selectedUserForRole?.role || '').trim().toUpperCase()
+                }
+                className="px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isChangingRole ? (
                   <>

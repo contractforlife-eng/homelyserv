@@ -47,7 +47,9 @@ export const AuthProvider = ({ children }) => {
               ? '/worker-dashboard'
               : role === 'SUPPORT'
                 ? '/support-dashboard'
-                : '/login';
+                : role === 'SUPPORT_HELPER'
+                  ? '/sup-help'
+                  : '/login';
         navigate(destination, { replace: true });
       }
     };

@@ -322,7 +322,7 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
 
     // Determine conversation type based on roles.
     // Classification order matters:
-    //   1. Staff-to-staff (ADMIN/SUPPORT/SUP_ADMIN) -> INTERNAL
+    //   1. Staff-to-staff (ADMIN/SUPPORT/SUP_ADMIN/SUPPORT_HELPER) -> INTERNAL
     //   2. Exactly one SUPPORT + one normal user -> SUPPORT
     //   3. Otherwise -> PRIVATE
     const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
@@ -331,6 +331,10 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
 
     // Support may reply only within an existing conversation that already
     // authorizes the agent. Admins retain the ability to initiate staff chat.
+    // Support Helpers must use the dedicated /api/sup-help/messages flow.
+    if (senderRoleUpper === 'SUPPORT_HELPER') {
+      return res.status(403).json({ error: 'Support Helpers must use the dedicated /api/sup-help/messages flow' });
+    }
     if (senderRoleUpper === 'SUPPORT') {
       const existingConversation = await Conversation.findOne({ conversationId });
       if (!existingConversation || !(await canAccessConversation(conversationId, senderId, senderRoleUpper))) {
@@ -342,11 +346,11 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     let supportAgentId = null;
     let staffIds = [];
 
-    const senderIsStaff = STAFF_ROLES.has(senderRoleUpper);
-    const recipientIsStaff = STAFF_ROLES.has(recipientRoleUpper);
+    const senderIsStaff = STAFF_ROLES.has(senderRoleUpper) || senderRoleUpper === 'SUPPORT_HELPER';
+    const recipientIsStaff = STAFF_ROLES.has(recipientRoleUpper) || recipientRoleUpper === 'SUPPORT_HELPER';
 
     if (senderIsStaff && recipientIsStaff) {
-      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN)
+      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN/Support-Helper)
       conversationType = 'INTERNAL';
       staffIds = [String(senderId), String(recipientId)];
     } else if (senderRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT') {
@@ -728,7 +732,7 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
 
     // Determine conversation type.
     // Classification order matters:
-    //   1. Staff-to-staff (ADMIN/SUPPORT/SUP_ADMIN) -> INTERNAL
+    //   1. Staff-to-staff (ADMIN/SUPPORT/SUP_ADMIN/SUPPORT_HELPER) -> INTERNAL
     //   2. Exactly one SUPPORT + one normal user -> SUPPORT
     //   3. Otherwise -> PRIVATE
     const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
@@ -739,11 +743,18 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
     const role1 = String(requestedRoles.get(String(user1Id))).toUpperCase();
     const role2 = String(requestedRoles.get(String(user2Id))).toUpperCase();
 
-    const user1IsStaff = STAFF_ROLES.has(role1);
-    const user2IsStaff = STAFF_ROLES.has(role2);
+    const user1IsStaff = STAFF_ROLES.has(role1) || role1 === 'SUPPORT_HELPER';
+    const user2IsStaff = STAFF_ROLES.has(role2) || role2 === 'SUPPORT_HELPER';
+
+    if (role1 === 'SUPPORT_HELPER' || role2 === 'SUPPORT_HELPER') {
+      const otherRole = role1 === 'SUPPORT_HELPER' ? role2 : role1;
+      if (!['ADMIN', 'SUPPORT', 'SUP_ADMIN'].includes(otherRole)) {
+        return res.status(403).json({ error: 'Invalid target role for staff conversation' });
+      }
+    }
 
     if (user1IsStaff && user2IsStaff) {
-      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN).
+      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN/Support-Helper).
       // Approved product requirement: a SUPPORT agent may start (or reopen)
       // an internal staff conversation with another staff member. Both roles
       // were resolved server-side from the database above, the caller is one
@@ -864,13 +875,17 @@ router.post('/conversations/:conversationId/archive', authenticate, async (req, 
 router.get('/staff-directory', authenticate, async (req, res) => {
   try {
     const callerRole = String(req.userRole || '').toUpperCase();
-    if (callerRole !== 'SUPPORT' && callerRole !== 'ADMIN') {
+    if (!['SUPPORT', 'ADMIN', 'SUPPORT_HELPER'].includes(callerRole)) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    const allowedStaffRoles = callerRole === 'SUPPORT_HELPER'
+      ? ['ADMIN', 'SUPPORT']
+      : ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
+
     const staff = await prisma.user.findMany({
       where: {
-        role: { in: ['ADMIN', 'SUPPORT'] },
+        role: { in: allowedStaffRoles },
         id: { not: String(req.userId) },
       },
       select: {
@@ -1100,7 +1115,7 @@ router.get('/internal/conversations', authenticate, async (req, res) => {
     const userId = String(req.userId);
     const userRole = req.userRole;
 
-    if (userRole !== 'SUPPORT' && userRole !== 'ADMIN') {
+    if (!['SUPPORT', 'ADMIN', 'SUPPORT_HELPER'].includes(userRole)) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1165,7 +1180,7 @@ router.get('/escalated/conversations', authenticate, async (req, res) => {
   try {
     const userRole = req.userRole;
 
-    if (userRole !== 'ADMIN') {
+    if (!['SUPPORT', 'ADMIN', 'SUPPORT_HELPER'].includes(userRole)) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -1230,5 +1245,7 @@ router.get('/escalated/conversations', authenticate, async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch escalated conversations' });
   }
 });
+
+export { ensureConversationMetadata, touchConversation, getConversationId };
 
 export default router;

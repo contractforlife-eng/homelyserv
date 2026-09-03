@@ -63,13 +63,14 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const paymentT = i18nT('paymentHistory', { returnObjects: true });
 
   const isAdmin = variant === 'admin';
+  const isSupHelp = variant === 'supHelp';
 
   const routes = {
     complaints: isAdmin ? '/admin/complaints' : '/support-complaints',
     messages: isAdmin ? '/admin/messages' : '/support-messages',
   };
 
-  const apiBase = isAdmin ? '/api/admin' : '/api/support';
+  const apiBase = isAdmin ? '/api/admin' : isSupHelp ? '/api/sup-help' : '/api/support';
 
   // The VIEWED profile — completely separate from the authenticated session.
   const [profileUser, setProfileUser] = useState(null);
@@ -503,7 +504,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         className={`mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 transition ${
           isAdmin
             ? 'hover:text-yellow-600 dark:hover:text-yellow-400'
-            : 'hover:text-green-600 dark:hover:text-green-400'
+            : isSupHelp
+              ? 'hover:text-red-600 dark:hover:text-red-400'
+              : 'hover:text-green-600 dark:hover:text-green-400'
         }`}
       >
         <ArrowLeft size={16} />
@@ -538,7 +541,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           <div className={`rounded-2xl p-6 text-white ${
             isAdmin
               ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-              : 'bg-gradient-to-r from-green-600 to-green-700'
+              : isSupHelp
+                ? 'bg-gradient-to-r from-red-600 to-red-700'
+                : 'bg-gradient-to-r from-green-600 to-green-700'
           }`}>
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <UserAvatar
@@ -898,7 +903,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               {t.quickActions}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {profileUser.role !== 'ADMIN' && (
+              {profileUser.role !== 'ADMIN' && !isSupHelp && (
                 <button
                   onClick={() => setShowResetModal(true)}
                   disabled={actionLoading}
@@ -948,7 +953,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 )
               )}
 
-              {!isAdmin && !profileUser.isSuspended && (
+              {!isAdmin && !profileUser.isSuspended && !isSupHelp && (
                 <button
                   onClick={() => setShowSuspensionRequestModal(true)}
                   disabled={actionLoading}
@@ -959,32 +964,36 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </button>
               )}
 
-              <button
-                onClick={handleStartConversation}
-                disabled={actionLoading}
-                className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-blue-500/40 hover:shadow-md transition disabled:opacity-50"
-              >
-                <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                  <MessageSquare size={20} className="text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-gray-900 dark:text-white">{t.startConversation}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.startConversation}</p>
-                </div>
-              </button>
+              {!isSupHelp && (
+                <button
+                  onClick={handleStartConversation}
+                  disabled={actionLoading}
+                  className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-blue-500/40 hover:shadow-md transition disabled:opacity-50"
+                >
+                  <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                    <MessageSquare size={20} className="text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-gray-900 dark:text-white">{t.startConversation}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.startConversation}</p>
+                  </div>
+                </button>
+              )}
 
-              <Link
-                to={`${routes.complaints}?userId=${profileUser.id}`}
-                className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition"
-              >
-                <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
-                  <AlertTriangle size={20} className="text-red-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-gray-900 dark:text-white">{t.openComplaints}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.openComplaints}</p>
-                </div>
-              </Link>
+              {!isSupHelp && (
+                <Link
+                  to={`${routes.complaints}?userId=${profileUser.id}`}
+                  className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition"
+                >
+                  <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
+                    <AlertTriangle size={20} className="text-red-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-gray-900 dark:text-white">{t.openComplaints}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.openComplaints}</p>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
 

@@ -88,17 +88,19 @@ function Login() {
   const redirectUser = (user) => {
      const role = user?.role?.toUpperCase();
 
-     if (role === 'ADMIN') {
-       navigate('/admin');
-     } else if (role === 'EMPLOYER') {
-       navigate('/employer-dashboard');
-     } else if (role === 'WORKER') {
-       navigate('/worker-dashboard');
-     } else if (role === 'SUPPORT') {
-       navigate('/support-dashboard');
-     } else {
-       navigate('/login');
-     }
+      if (role === 'ADMIN') {
+        navigate('/admin');
+      } else if (role === 'EMPLOYER') {
+        navigate('/employer-dashboard');
+      } else if (role === 'WORKER') {
+        navigate('/worker-dashboard');
+      } else if (role === 'SUPPORT') {
+        navigate('/support-dashboard');
+      } else if (role === 'SUPPORT_HELPER') {
+        navigate('/sup-help');
+      } else {
+        navigate('/login');
+      }
    };
 
   // A new tab can render Login before AuthProvider finishes validating the

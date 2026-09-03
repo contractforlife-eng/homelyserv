@@ -13,6 +13,7 @@ const MobileHeader = ({ title }) => {
   const role = (authUser?.role || '').toUpperCase();
   const isWorker = role === 'WORKER';
   const isEmployer = role === 'EMPLOYER';
+  const isSupportHelper = role === 'SUPPORT_HELPER';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-[#273449] border-b border-gray-200 dark:border-gray-700 lg:hidden">
@@ -24,13 +25,14 @@ const MobileHeader = ({ title }) => {
             className={`p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center ${
               isWorker ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300' :
               isEmployer ? 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-600 dark:text-gray-300' :
+              isSupportHelper ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300' :
               'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}
           >
             <Menu size={22} />
           </button>
           <h1 className={`text-lg font-bold ${
-            isWorker ? 'text-red-600' : isEmployer ? 'text-teal-600' : 'text-gray-800 dark:text-white'
+            isWorker ? 'text-red-600' : isEmployer ? 'text-teal-600' : isSupportHelper ? 'text-red-600' : 'text-gray-800 dark:text-white'
           }`}>
             {title || t('appName')}
           </h1>
