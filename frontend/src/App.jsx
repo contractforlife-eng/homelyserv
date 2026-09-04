@@ -749,6 +749,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/support-registration-geography"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <AdminRegistrationGeography />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ========== SUPPORT HELPER LANDING (Phase 1) ========== */}
       <Route

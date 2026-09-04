@@ -58,6 +58,7 @@ const SupportSidebar = ({
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/support-complaints' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },
     { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/support-live-support' },
+    { id: 'registration-geography', label: t.registrationGeography || i18nT('adminSidebar.registrationGeography'), icon: Globe, path: '/support-registration-geography' },
     { id: 'profile', label: t.profile, icon: UserIcon, path: '/support-profile' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/support-settings' },
   ];

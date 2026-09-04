@@ -19,7 +19,8 @@ import {
   PlusCircle,
   Briefcase,
   Users,
-  Headphones
+  Headphones,
+  Globe
 } from 'lucide-react';
 
 const MobileDrawerNav = () => {
@@ -77,6 +78,7 @@ const MobileDrawerNav = () => {
     { to: '/support-complaints', icon: FileText, label: t('supportNavigation.complaints') },
     { to: '/support-messages', icon: MessageCircle, label: t('supportNavigation.messages') },
     { to: '/support-live-support', icon: Headphones, label: t('publicSupport.liveSupport') },
+    { to: '/support-registration-geography', icon: Globe, label: t('supportNavigation.registrationGeography') || t('adminSidebar.registrationGeography') },
     { to: '/support-profile', icon: User, label: t('supportNavigation.profile') },
     { to: '/support-settings', icon: Settings, label: t('supportNavigation.settings') },
   ];

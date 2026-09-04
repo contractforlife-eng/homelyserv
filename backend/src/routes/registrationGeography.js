@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireSupport } from '../middleware/supportAuth.js';
 import {
   getRegistrationGeographySummary,
   getRegistrationGeographyUsers,
@@ -10,7 +10,7 @@ export const createRegistrationGeographyRouter = ({
   getUsers = getRegistrationGeographyUsers,
 } = {}) => {
   const router = express.Router();
-  router.use(requireAdmin);
+  router.use(requireSupport);
 
   router.get('/summary', async (_req, res) => {
     try {
