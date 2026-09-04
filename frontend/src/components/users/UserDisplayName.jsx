@@ -1,12 +1,13 @@
 // frontend/src/components/users/UserDisplayName.jsx
 // Shared component for displaying a user's name with official
 // staff styling. ADMIN and SUPPORT names are always red and
-// rendered as "{Name} ({FriendlyRole})" — e.g. "Emad (Co-Admin)".
+// rendered as "{FirstName} ({FriendlyRole})" — e.g. "Emad (Co-Admin)".
 // Staff names use font-semibold with a subtle lighter role suffix.
 // Other roles use default styling.
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  getFirstDisplayName,
   getStaffIdentityTitle,
   isActivePremiumCustomer,
   isStaffRole,
@@ -27,7 +28,10 @@ const UserDisplayName = ({
   const premiumCustomer = isActivePremiumCustomer(user || { role: roleValue }, isPremium);
 
   // Base name (without role suffix)
-  const baseName = user ? (user.fullName || user.name || t('sharedUserDisplay.fallbacks.user')) : (name || t('sharedUserDisplay.fallbacks.user'));
+  const rawBaseName = user ? (user.fullName || user.name || t('sharedUserDisplay.fallbacks.user')) : (name || t('sharedUserDisplay.fallbacks.user'));
+  const displayNameText = staff
+    ? getFirstDisplayName(rawBaseName, t('sharedUserDisplay.fallbacks.user'))
+    : rawBaseName;
   const staffIdentityTitle = getStaffIdentityTitle(roleValue);
 
   const sizeClasses = {
@@ -48,7 +52,7 @@ const UserDisplayName = ({
             : defaultNameClassName
         }`}
       >
-        {baseName}
+        {displayNameText}
         {staff && (
           <span className="text-red-500 dark:text-red-300">
             {' '}({staffIdentityTitle})

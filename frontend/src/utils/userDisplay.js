@@ -69,29 +69,48 @@ const STAFF_IDENTITY_TITLES = {
 // ============================================================
 
 /**
+ * Extract the first display name token for compact staff identity display.
+ * Trims whitespace, splits on whitespace sequence /\s+/, and returns the first token.
+ * Single-word names, non-Latin, Arabic, Cyrillic, Turkish, and hyphenated names are safely preserved.
+ *
+ * @param {string} rawName - Raw name string
+ * @param {string} [fallback] - Fallback string if rawName is empty or invalid
+ * @returns {string} First display name token or fallback
+ */
+export const getFirstDisplayName = (rawName, fallback = getUserFallback()) => {
+  if (rawName === null || rawName === undefined) return fallback;
+  const str = String(rawName).trim();
+  if (!str) return fallback;
+  const tokens = str.split(/\s+/);
+  return tokens[0] || fallback;
+};
+
+/**
  * Get the display name for a user.
  *
  * ADMIN   -> "Emad (Co-Admin)"
  * SUPPORT -> "Ahmed (Sup-Admin)"
- * EMPLOYER -> "Rania"
- * WORKER  -> "Ali"
+ * SUPPORT_HELPER -> "Olivia (Sup-Help)"
+ * EMPLOYER -> "Rania Mohamed"
+ * WORKER  -> "Ali Hassan"
  *
  * @param {Object} user - User object with fullName and role
  * @returns {string} Formatted display name
  */
 export const getDisplayName = (user) => {
   if (!user) return getUserFallback();
-  const name = user.fullName || user.name || getUserFallback();
+  const rawName = user.fullName || user.name || getUserFallback();
   const role = (user.role || '').toUpperCase();
 
   if (STAFF_ROLES.includes(role)) {
-    return `${name} (${getStaffIdentityTitle(role)})`;
+    const compactName = getFirstDisplayName(rawName);
+    return `${compactName} (${getStaffIdentityTitle(role)})`;
   }
-  return name;
+  return rawName;
 };
 
 /**
- * Format a staff identity as "{name} ({RoleLabel})".
+ * Format a staff identity as "{firstName} ({RoleLabel})".
  * Universal renderer for any place a staff member appears:
  * complaint replies, chat messages, support conversations, etc.
  *
@@ -101,8 +120,8 @@ export const getDisplayName = (user) => {
  * API data.
  *
  * Examples:
- *   formatStaffIdentity('Rania', 'SUPPORT')   -> "Rania (Sup-Admin)"
- *   formatStaffIdentity({ name: 'Sara', role: 'ADMIN' }) -> "Sara (Co-Admin)"
+ *   formatStaffIdentity('Rania Mohamed', 'SUPPORT')   -> "Rania (Sup-Admin)"
+ *   formatStaffIdentity({ name: 'Sara Ali', role: 'ADMIN' }) -> "Sara (Co-Admin)"
  *
  * @param {Object|string} userOrName - identity object or raw name
  * @param {string} [roleArg] - role when first arg is a raw name
@@ -227,6 +246,7 @@ export { resolveAvatarUrl } from './avatarUtils.js';
 // DEFAULT EXPORT
 // ============================================================
 export default {
+  getFirstDisplayName,
   getDisplayName,
   formatStaffIdentity,
   getRoleLabel,
