@@ -253,4 +253,437 @@ router.post('/staff/conversations/:id/close', requireLiveSupportStaff, async (re
   res.json({ success:true, conversation:dto });
 });
 
+// ============================================================
+// PHASE B3 — SUPERVISOR LIVE SUPPORT TAKEOVER & TRANSFER
+// ============================================================
+
+// POST /api/public-support/staff/conversations/:id/takeover
+router.post('/staff/conversations/:id/takeover', requireLiveSupportStaff, async (req, res) => {
+  try {
+    if (req.userRole !== 'SUPPORT' && req.userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Support supervision authorization required' });
+    }
+
+    const { id } = req.params;
+    const { expectedAssignee } = req.body || {};
+    const supportId = String(req.userId);
+
+    const existing = await PublicSupportConversation.findById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Conversation not found.' });
+    }
+
+    if (existing.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Cannot take over a closed conversation.' });
+    }
+
+    // Role Hierarchy Guards
+    if (req.userRole !== 'ADMIN') {
+      if (existing.assignedRole === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Cannot take over a conversation assigned to an Administrator' });
+      }
+      if (existing.assignedRole === 'SUPPORT' && String(existing.assignedTo || '') !== supportId) {
+        return res.status(403).json({ success: false, message: 'Cannot take over a conversation assigned to another Support Agent' });
+      }
+      if (existing.assignedRole && existing.assignedRole !== 'SUPPORT_HELPER' && String(existing.assignedTo || '') !== supportId) {
+        return res.status(403).json({ success: false, message: 'Only conversations assigned to Support Helpers can be supervised' });
+      }
+    }
+
+    // Concurrency / Stale expectation check
+    const currentAssigneeStr = existing.assignedTo ? String(existing.assignedTo) : null;
+    if (expectedAssignee && currentAssigneeStr && currentAssigneeStr !== String(expectedAssignee)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Conversation assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    // Atomic Mongoose findOneAndUpdate with expected state condition
+    const atomicFilter = {
+      _id: existing._id,
+      status: 'ASSIGNED',
+    };
+    if (currentAssigneeStr) {
+      atomicFilter.assignedTo = existing.assignedTo;
+    }
+
+    const updated = await PublicSupportConversation.findOneAndUpdate(
+      atomicFilter,
+      {
+        $set: {
+          assignedTo: req.userId,
+          assignedRole: req.userRole,
+          status: 'ASSIGNED',
+          lastActivityAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(409).json({
+        success: false,
+        message: 'Conversation assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    const prisma = (await import('../lib/prisma.js')).default;
+    const actorUser = await prisma.user.findUnique({
+      where: { id: supportId },
+      select: { fullName: true, role: true, email: true, profileImage: true },
+    });
+
+    let oldHelper = null;
+    if (currentAssigneeStr && currentAssigneeStr !== supportId) {
+      oldHelper = await prisma.user.findUnique({
+        where: { id: currentAssigneeStr },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Audit Log
+    try {
+      await prisma.supportActivity.create({
+        data: {
+          supportId,
+          action: 'LIVE_SUPPORT_TAKEOVER',
+          description: oldHelper
+            ? `Live support taken over from ${oldHelper.fullName || 'support helper'}`
+            : 'Live support taken over by supervisor',
+          targetUserId: oldHelper?.id || undefined,
+        },
+      });
+    } catch (auditErr) {
+      console.error('Failed to log live support takeover activity:', auditErr.message);
+    }
+
+    // Notification to old helper
+    if (oldHelper && oldHelper.role === 'SUPPORT_HELPER') {
+      try {
+        const { createNotification, NOTIFICATION_TYPES, PRIORITIES } = await import('../services/notificationService.js');
+        await createNotification(oldHelper.id, {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Live Support Taken Over',
+          message: `Live support conversation with ${existing.visitorName || 'visitor'} was taken over by supervisor ${actorUser?.fullName || 'Support Agent'}`,
+          entityType: 'LIVE_SUPPORT',
+          entityId: String(updated._id),
+          priority: PRIORITIES.NORMAL,
+          link: '/sup-help/live-support',
+        });
+      } catch (notifErr) {
+        console.error('Failed to create takeover notification:', notifErr.message);
+      }
+    }
+
+    const dto = conversationDto(updated, actorUser ? { id: supportId, ...actorUser } : null);
+    emitGuest(updated, 'public-support:conversation', dto);
+    emitStaff('public-support:queue', dto);
+
+    return res.json({
+      success: true,
+      message: 'Conversation taken over successfully',
+      conversation: dto,
+    });
+  } catch (error) {
+    console.error('❌ Error taking over live support conversation:', error);
+    return res.status(500).json({ success: false, message: 'Failed to take over conversation' });
+  }
+});
+
+// POST /api/public-support/staff/conversations/:id/reassign
+router.post('/staff/conversations/:id/reassign', requireLiveSupportStaff, async (req, res) => {
+  try {
+    if (req.userRole !== 'SUPPORT' && req.userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Support supervision authorization required' });
+    }
+
+    const { id } = req.params;
+    const { targetHelperId, expectedAssignee } = req.body || {};
+    const supportId = String(req.userId);
+
+    if (!targetHelperId) {
+      return res.status(400).json({ success: false, message: 'Target support helper ID is required' });
+    }
+
+    const prisma = (await import('../lib/prisma.js')).default;
+    const targetHelper = await prisma.user.findUnique({
+      where: { id: String(targetHelperId) },
+      select: { id: true, fullName: true, role: true, email: true, profileImage: true, isSuspended: true },
+    });
+
+    if (!targetHelper || targetHelper.role !== 'SUPPORT_HELPER' || targetHelper.isSuspended) {
+      return res.status(400).json({ success: false, message: 'Target user must be an active Support Helper' });
+    }
+
+    const existing = await PublicSupportConversation.findById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Conversation not found.' });
+    }
+
+    if (existing.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Cannot reassign a closed conversation.' });
+    }
+
+    const currentAssigneeStr = existing.assignedTo ? String(existing.assignedTo) : null;
+
+    // Reject transfer to the same current assignee
+    if (currentAssigneeStr && String(targetHelper.id) === currentAssigneeStr) {
+      return res.status(400).json({ success: false, message: 'Conversation is already assigned to this Support Helper' });
+    }
+
+    // Role Hierarchy Guards
+    if (req.userRole !== 'ADMIN') {
+      if (existing.assignedRole === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Cannot reassign a conversation assigned to an Administrator' });
+      }
+      if (existing.assignedRole === 'SUPPORT' && currentAssigneeStr !== supportId) {
+        return res.status(403).json({ success: false, message: 'Cannot reassign a conversation assigned to another Support Agent' });
+      }
+      if (existing.assignedRole && existing.assignedRole !== 'SUPPORT_HELPER' && currentAssigneeStr !== supportId) {
+        return res.status(403).json({ success: false, message: 'Only conversations assigned to Support Helpers can be supervised' });
+      }
+    }
+
+    // Concurrency / Stale expectation check
+    if (expectedAssignee && currentAssigneeStr && currentAssigneeStr !== String(expectedAssignee)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Conversation assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    // Atomic Mongoose findOneAndUpdate with expected state condition
+    const atomicFilter = {
+      _id: existing._id,
+      status: 'ASSIGNED',
+    };
+    if (currentAssigneeStr) {
+      atomicFilter.assignedTo = existing.assignedTo;
+    }
+
+    const updated = await PublicSupportConversation.findOneAndUpdate(
+      atomicFilter,
+      {
+        $set: {
+          assignedTo: targetHelper.id,
+          assignedRole: 'SUPPORT_HELPER',
+          status: 'ASSIGNED',
+          lastActivityAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(409).json({
+        success: false,
+        message: 'Conversation assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    const actorUser = await prisma.user.findUnique({
+      where: { id: supportId },
+      select: { fullName: true, role: true },
+    });
+
+    let oldHelper = null;
+    if (currentAssigneeStr && currentAssigneeStr !== String(targetHelper.id)) {
+      oldHelper = await prisma.user.findUnique({
+        where: { id: currentAssigneeStr },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Audit Log
+    try {
+      await prisma.supportActivity.create({
+        data: {
+          supportId,
+          action: 'LIVE_SUPPORT_TRANSFER',
+          description: `Live support reassigned to ${targetHelper.fullName || 'support helper'}`,
+          targetUserId: targetHelper.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error('Failed to log live support transfer activity:', auditErr.message);
+    }
+
+    // In-app notifications
+    try {
+      const { createNotification, NOTIFICATION_TYPES, PRIORITIES } = await import('../services/notificationService.js');
+      // Notify displaced helper
+      if (oldHelper && oldHelper.role === 'SUPPORT_HELPER') {
+        await createNotification(oldHelper.id, {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Live Support Reassigned',
+          message: `Live support conversation with ${existing.visitorName || 'visitor'} was reassigned by supervisor ${actorUser?.fullName || 'Support Agent'}`,
+          entityType: 'LIVE_SUPPORT',
+          entityId: String(updated._id),
+          priority: PRIORITIES.NORMAL,
+          link: '/sup-help/live-support',
+        });
+      }
+      // Notify new helper
+      await createNotification(targetHelper.id, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Live Support Assigned',
+        message: `New live support conversation with ${existing.visitorName || 'visitor'} was assigned to you by supervisor ${actorUser?.fullName || 'Support Agent'}`,
+        entityType: 'LIVE_SUPPORT',
+        entityId: String(updated._id),
+        priority: PRIORITIES.NORMAL,
+        link: '/sup-help/live-support',
+      });
+    } catch (notifErr) {
+      console.error('Failed to create transfer notifications:', notifErr.message);
+    }
+
+    const dto = conversationDto(updated, targetHelper);
+    emitGuest(updated, 'public-support:conversation', dto);
+    emitStaff('public-support:queue', dto);
+
+    return res.json({
+      success: true,
+      message: 'Conversation reassigned successfully',
+      conversation: dto,
+    });
+  } catch (error) {
+    console.error('❌ Error reassigning live support conversation:', error);
+    return res.status(500).json({ success: false, message: 'Failed to reassign conversation' });
+  }
+});
+
+// POST /api/public-support/staff/conversations/:id/return-to-queue
+router.post('/staff/conversations/:id/return-to-queue', requireLiveSupportStaff, async (req, res) => {
+  try {
+    if (req.userRole !== 'SUPPORT' && req.userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Support supervision authorization required' });
+    }
+
+    const { id } = req.params;
+    const { expectedAssignee } = req.body || {};
+    const supportId = String(req.userId);
+
+    const existing = await PublicSupportConversation.findById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Conversation not found.' });
+    }
+
+    if (existing.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Cannot return a closed conversation to queue.' });
+    }
+
+    const currentAssigneeStr = existing.assignedTo ? String(existing.assignedTo) : null;
+
+    // Role Hierarchy Guards
+    if (req.userRole !== 'ADMIN') {
+      if (existing.assignedRole === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Cannot return an Administrator conversation to queue' });
+      }
+      if (existing.assignedRole === 'SUPPORT' && currentAssigneeStr !== supportId) {
+        return res.status(403).json({ success: false, message: 'Cannot return another Support Agent conversation to queue' });
+      }
+      if (existing.assignedRole && existing.assignedRole !== 'SUPPORT_HELPER' && currentAssigneeStr !== supportId) {
+        return res.status(403).json({ success: false, message: 'Only conversations assigned to Support Helpers can be supervised' });
+      }
+    }
+
+    // Concurrency / Stale expectation check
+    if (expectedAssignee && currentAssigneeStr && currentAssigneeStr !== String(expectedAssignee)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Conversation assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    // Atomic Mongoose findOneAndUpdate with expected state condition
+    const atomicFilter = {
+      _id: existing._id,
+      status: 'ASSIGNED',
+    };
+    if (currentAssigneeStr) {
+      atomicFilter.assignedTo = existing.assignedTo;
+    }
+
+    const updated = await PublicSupportConversation.findOneAndUpdate(
+      atomicFilter,
+      {
+        $set: {
+          assignedTo: null,
+          assignedRole: null,
+          status: 'WAITING_FOR_SUPPORT',
+          lastActivityAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(409).json({
+        success: false,
+        message: 'Conversation assignment has changed. Please refresh and try again.',
+      });
+    }
+
+    const prisma = (await import('../lib/prisma.js')).default;
+    const actorUser = await prisma.user.findUnique({
+      where: { id: supportId },
+      select: { fullName: true, role: true },
+    });
+
+    let oldHelper = null;
+    if (currentAssigneeStr) {
+      oldHelper = await prisma.user.findUnique({
+        where: { id: currentAssigneeStr },
+        select: { id: true, fullName: true, role: true },
+      });
+    }
+
+    // Audit Log
+    try {
+      await prisma.supportActivity.create({
+        data: {
+          supportId,
+          action: 'LIVE_SUPPORT_RETURNED_TO_QUEUE',
+          description: 'Live support conversation returned to waiting queue by supervisor',
+          targetUserId: oldHelper?.id || undefined,
+        },
+      });
+    } catch (auditErr) {
+      console.error('Failed to log live support return-to-queue activity:', auditErr.message);
+    }
+
+    // Notification to displaced helper
+    if (oldHelper && oldHelper.role === 'SUPPORT_HELPER') {
+      try {
+        const { createNotification, NOTIFICATION_TYPES, PRIORITIES } = await import('../services/notificationService.js');
+        await createNotification(oldHelper.id, {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Live Support Returned to Queue',
+          message: `Live support conversation with ${existing.visitorName || 'visitor'} was returned to the waiting queue by supervisor ${actorUser?.fullName || 'Support Agent'}`,
+          entityType: 'LIVE_SUPPORT',
+          entityId: String(updated._id),
+          priority: PRIORITIES.NORMAL,
+          link: '/sup-help/live-support',
+        });
+      } catch (notifErr) {
+        console.error('Failed to create return notification:', notifErr.message);
+      }
+    }
+
+    const dto = conversationDto(updated, null);
+    emitGuest(updated, 'public-support:conversation', dto);
+    emitStaff('public-support:queue', dto);
+
+    return res.json({
+      success: true,
+      message: 'Conversation returned to queue successfully',
+      conversation: dto,
+    });
+  } catch (error) {
+    console.error('❌ Error returning live support conversation to queue:', error);
+    return res.status(500).json({ success: false, message: 'Failed to return conversation to queue' });
+  }
+});
+
 export default router;

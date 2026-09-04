@@ -1,4 +1,4 @@
-﻿// backend/src/routes/supHelpLiveSupport.test.js
+// backend/src/routes/supHelpLiveSupport.test.js
 // ============================================================
 // Full Live Support verification test suite for SUPPORT_HELPER.
 // Uses node:test with in-memory test mocks.
@@ -44,6 +44,7 @@ const withTestServer = async ({ conversations = [], messages = [] }, run) => {
     convFind: PublicSupportConversation.find,
     convFindById: PublicSupportConversation.findById,
     convFindByIdAndUpdate: PublicSupportConversation.findByIdAndUpdate,
+    convFindOneAndUpdate: PublicSupportConversation.findOneAndUpdate,
     convCreate: PublicSupportConversation.create,
     convFindOne: PublicSupportConversation.findOne,
     msgFind: PublicSupportMessage.find,
@@ -51,12 +52,47 @@ const withTestServer = async ({ conversations = [], messages = [] }, run) => {
     msgFindOne: PublicSupportMessage.findOne,
   };
 
+  const prisma = (await import('../lib/prisma.js')).default;
+  const savedPrismaUserFindUnique = prisma.user.findUnique;
+  const savedPrismaUserFindMany = prisma.user.findMany;
+  const savedPrismaSupportActivityCreate = prisma.supportActivity?.create;
+
   User.findById = (id) => ({
     select: async () => {
       const u = testUsers[String(id)];
       return u ? { ...u } : null;
     },
   });
+
+  prisma.user.findUnique = async ({ where }) => {
+    const u = testUsers[String(where.id)];
+    return u ? { ...u } : null;
+  };
+  prisma.user.findMany = async ({ where } = {}) => {
+    let users = Object.values(testUsers);
+    if (where?.id?.in) users = users.filter((u) => where.id.in.includes(String(u.id)));
+    if (where?.role) users = users.filter((u) => u.role === where.role);
+    return users.map((u) => ({ ...u }));
+  };
+  if (prisma.supportActivity) {
+    prisma.supportActivity.create = async () => ({ id: 'act_1' });
+  }
+
+  PublicSupportConversation.findOneAndUpdate = async (filter, update) => {
+    const id = String(filter._id);
+    const c = convMap.get(id);
+    if (!c) return null;
+    if (filter.status && c.status !== filter.status) return null;
+    if (filter.assignedTo !== undefined && String(c.assignedTo || "") !== String(filter.assignedTo || "")) return null;
+
+    const updates = update.$set || update;
+    Object.assign(c, updates);
+    convMap.set(id, c);
+    return {
+      ...c,
+      save: async function () { return this; },
+    };
+  };
 
   PublicSupportConversation.find = (filter = {}) => {
     let items = Array.from(convMap.values());
@@ -204,11 +240,15 @@ const withTestServer = async ({ conversations = [], messages = [] }, run) => {
     PublicSupportConversation.find = saved.convFind;
     PublicSupportConversation.findById = saved.convFindById;
     PublicSupportConversation.findByIdAndUpdate = saved.convFindByIdAndUpdate;
+    PublicSupportConversation.findOneAndUpdate = saved.convFindOneAndUpdate;
     PublicSupportConversation.create = saved.convCreate;
     PublicSupportConversation.findOne = saved.convFindOne;
     PublicSupportMessage.find = saved.msgFind;
     PublicSupportMessage.create = saved.msgCreate;
     PublicSupportMessage.findOne = saved.msgFindOne;
+    prisma.user.findUnique = savedPrismaUserFindUnique;
+    prisma.user.findMany = savedPrismaUserFindMany;
+    if (prisma.supportActivity) prisma.supportActivity.create = savedPrismaSupportActivityCreate;
     await new Promise((resolve) => server.close(resolve));
   }
 };
@@ -433,4 +473,294 @@ test("8. verifyStaffToken authorizes SUPPORT_HELPER, SUPPORT, ADMIN, and rejects
   } finally {
     User.findById = savedFindById;
   }
+});
+
+// ============================================================
+// PHASE B3 — SUPERVISOR TAKEOVER & TRANSFER TESTS
+// ============================================================
+
+test("9. B3: SUPPORT takes over SUPPORT_HELPER session successfully", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c10";
+  const initialConversation = {
+    _id: convId,
+    publicId: "pub-takeover-1",
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c01", // Helper Eve
+    assignedRole: "SUPPORT_HELPER",
+    visitorName: "Visitor John",
+    lastMessage: "Need help",
+  };
+  const initialMessages = [
+    { _id: "m1", conversationId: convId, senderType: "VISITOR", body: "Hello" },
+    { _id: "m2", conversationId: convId, senderType: "STAFF", senderId: "665f1a2b3c4d5e6f7a8b9c01", senderRole: "SUPPORT_HELPER", body: "Hi I am Eve" },
+  ];
+
+  await withTestServer({ conversations: [initialConversation], messages: initialMessages }, async ({ request, convMap }) => {
+    const res = await request(`/api/public-support/staff/conversations/${convId}/takeover`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") }, // Carol
+      body: JSON.stringify({ expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.data.success, true);
+    assert.equal(res.data.conversation.assignedTo, "665f1a2b3c4d5e6f7a8b9c02");
+    assert.equal(res.data.conversation.assignedRole, "SUPPORT");
+    assert.equal(res.data.conversation.status, "ASSIGNED");
+
+    // Verify DB state
+    const updated = convMap.get(convId);
+    assert.equal(String(updated.assignedTo), "665f1a2b3c4d5e6f7a8b9c02");
+    assert.equal(updated.assignedRole, "SUPPORT");
+    assert.equal(updated.publicId, "pub-takeover-1");
+
+    // Old helper send blocked (403)
+    const oldHelperSend = await request(`/api/public-support/staff/conversations/${convId}/messages`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER") },
+      body: JSON.stringify({ body: "Eve trying to reply after takeover" }),
+    });
+    assert.equal(oldHelperSend.status, 403);
+
+    // Old helper close blocked (403)
+    const oldHelperClose = await request(`/api/public-support/staff/conversations/${convId}/close`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER") },
+    });
+    assert.equal(oldHelperClose.status, 403);
+
+    // New owner Carol send allowed (201)
+    const carolSend = await request(`/api/public-support/staff/conversations/${convId}/messages`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({ body: "Hello, supervisor Carol taking over." }),
+    });
+    assert.equal(carolSend.status, 201);
+
+    // New owner Carol close allowed (200)
+    const carolClose = await request(`/api/public-support/staff/conversations/${convId}/close`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+    });
+    assert.equal(carolClose.status, 200);
+  });
+});
+
+test("10. B3: SUPPORT transfers session from Helper A to Helper B successfully", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c11";
+  const initialConversation = {
+    _id: convId,
+    publicId: "pub-transfer-1",
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c01", // Helper Eve
+    assignedRole: "SUPPORT_HELPER",
+    visitorName: "Visitor Sarah",
+  };
+
+  await withTestServer({ conversations: [initialConversation] }, async ({ request }) => {
+    const res = await request(`/api/public-support/staff/conversations/${convId}/reassign`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({
+        targetHelperId: "665f1a2b3c4d5e6f7a8b9c05", // Helper Bob
+        expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01",
+      }),
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.data.success, true);
+    assert.equal(res.data.conversation.assignedTo, "665f1a2b3c4d5e6f7a8b9c05");
+    assert.equal(res.data.conversation.assignedRole, "SUPPORT_HELPER");
+
+    // Helper A Eve loses mutation
+    const eveSend = await request(`/api/public-support/staff/conversations/${convId}/messages`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER") },
+      body: JSON.stringify({ body: "Eve message" }),
+    });
+    assert.equal(eveSend.status, 403);
+
+    // Helper B Bob gains mutation
+    const bobSend = await request(`/api/public-support/staff/conversations/${convId}/messages`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c05", "SUPPORT_HELPER") },
+      body: JSON.stringify({ body: "Bob message" }),
+    });
+    assert.equal(bobSend.status, 201);
+  });
+});
+
+test("11. B3: Transfer rejects non-helper targets and same current assignee", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c12";
+  const initialConversation = {
+    _id: convId,
+    publicId: "pub-transfer-2",
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c01", // Helper Eve
+    assignedRole: "SUPPORT_HELPER",
+  };
+
+  await withTestServer({ conversations: [initialConversation] }, async ({ request }) => {
+    // Target is WORKER -> 400
+    const resWorker = await request(`/api/public-support/staff/conversations/${convId}/reassign`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c04" }), // Worker Alice
+    });
+    assert.equal(resWorker.status, 400);
+
+    // Target is ADMIN -> 400
+    const resAdmin = await request(`/api/public-support/staff/conversations/${convId}/reassign`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c03" }), // Admin Dave
+    });
+    assert.equal(resAdmin.status, 400);
+
+    // Target is same current assignee Eve -> 400
+    const resSame = await request(`/api/public-support/staff/conversations/${convId}/reassign`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+    assert.equal(resSame.status, 400);
+  });
+});
+
+test("12. B3: SUPPORT returns helper session to waiting queue", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c13";
+  const initialConversation = {
+    _id: convId,
+    publicId: "pub-return-1",
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c01", // Helper Eve
+    assignedRole: "SUPPORT_HELPER",
+  };
+
+  await withTestServer({ conversations: [initialConversation] }, async ({ request, convMap }) => {
+    const res = await request(`/api/public-support/staff/conversations/${convId}/return-to-queue`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({ expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }),
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.data.success, true);
+    assert.equal(res.data.conversation.status, "WAITING_FOR_SUPPORT");
+    assert.equal(res.data.conversation.assignedTo, null);
+    assert.equal(res.data.conversation.assignedRole, null);
+
+    const inDb = convMap.get(convId);
+    assert.equal(inDb.status, "WAITING_FOR_SUPPORT");
+    assert.equal(inDb.assignedTo, null);
+    assert.equal(inDb.assignedRole, null);
+  });
+});
+
+test("13. B3: SUPPORT takeover of ADMIN or peer SUPPORT session is blocked (403)", async () => {
+  const adminConvId = "665f1a2b3c4d5e6f7a8b9c14";
+  const peerConvId = "665f1a2b3c4d5e6f7a8b9c15";
+  const conversations = [
+    {
+      _id: adminConvId,
+      status: "ASSIGNED",
+      assignedTo: "665f1a2b3c4d5e6f7a8b9c03", // Admin Dave
+      assignedRole: "ADMIN",
+    },
+    {
+      _id: peerConvId,
+      status: "ASSIGNED",
+      assignedTo: "665f1a2b3c4d5e6f7a8b9c06", // Support Frank
+      assignedRole: "SUPPORT",
+    },
+  ];
+
+  await withTestServer({ conversations }, async ({ request }) => {
+    // SUPPORT Carol tries to take over Admin Dave's session -> 403
+    const resAdminTakeover = await request(`/api/public-support/staff/conversations/${adminConvId}/takeover`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+    });
+    assert.equal(resAdminTakeover.status, 403);
+
+    // SUPPORT Carol tries to take over peer Support Frank's session -> 403
+    const resPeerTakeover = await request(`/api/public-support/staff/conversations/${peerConvId}/takeover`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+    });
+    assert.equal(resPeerTakeover.status, 403);
+  });
+});
+
+test("14. B3: SUPPORT_HELPER calling supervisor endpoints is blocked (403)", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c16";
+  const initialConversation = {
+    _id: convId,
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c05", // Bob
+    assignedRole: "SUPPORT_HELPER",
+  };
+
+  await withTestServer({ conversations: [initialConversation] }, async ({ request }) => {
+    const resTakeover = await request(`/api/public-support/staff/conversations/${convId}/takeover`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER") },
+    });
+    assert.equal(resTakeover.status, 403);
+
+    const resReassign = await request(`/api/public-support/staff/conversations/${convId}/reassign`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER") },
+      body: JSON.stringify({ targetHelperId: "665f1a2b3c4d5e6f7a8b9c05" }),
+    });
+    assert.equal(resReassign.status, 403);
+
+    const resReturn = await request(`/api/public-support/staff/conversations/${convId}/return-to-queue`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c01", "SUPPORT_HELPER") },
+    });
+    assert.equal(resReturn.status, 403);
+  });
+});
+
+test("15. B3: Stale expectedAssignee returns 409 Conflict", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c17";
+  const initialConversation = {
+    _id: convId,
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c05", // Bob
+    assignedRole: "SUPPORT_HELPER",
+  };
+
+  await withTestServer({ conversations: [initialConversation] }, async ({ request }) => {
+    // Supervisor Carol expects Eve to own the session, but Bob actually owns it
+    const res = await request(`/api/public-support/staff/conversations/${convId}/takeover`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c02", "SUPPORT") },
+      body: JSON.stringify({ expectedAssignee: "665f1a2b3c4d5e6f7a8b9c01" }), // Eve
+    });
+    assert.equal(res.status, 409);
+    assert.equal(res.data.success, false);
+  });
+});
+
+test("16. B3: ADMIN preserves global supervisor takeover authority", async () => {
+  const convId = "665f1a2b3c4d5e6f7a8b9c18";
+  const initialConversation = {
+    _id: convId,
+    status: "ASSIGNED",
+    assignedTo: "665f1a2b3c4d5e6f7a8b9c02", // Support Carol
+    assignedRole: "SUPPORT",
+  };
+
+  await withTestServer({ conversations: [initialConversation] }, async ({ request }) => {
+    // Admin Dave takes over Support Carol's session -> allowed
+    const res = await request(`/api/public-support/staff/conversations/${convId}/takeover`, {
+      method: "POST",
+      headers: { Authorization: createAuthHeader("665f1a2b3c4d5e6f7a8b9c03", "ADMIN") },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.data.conversation.assignedTo, "665f1a2b3c4d5e6f7a8b9c03");
+    assert.equal(res.data.conversation.assignedRole, "ADMIN");
+  });
 });
