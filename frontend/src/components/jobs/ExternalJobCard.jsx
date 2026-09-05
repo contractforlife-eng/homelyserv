@@ -1,20 +1,22 @@
 ﻿// frontend/src/components/jobs/ExternalJobCard.jsx
 // ============================================================
-// EXPERIMENTAL EXTERNAL JOB CARD — Phase 1B Hardening
-// Clearly visually distinguishes external Adzuna jobs from HomelyServ posts.
+// EXPERIMENTAL EXTERNAL JOB CARD — Provider-Aware
+// Renders both Adzuna and Jooble external job opportunities.
 // Action button ONLY navigates to verified external redirect URL.
-// Incorporates compliant Adzuna attribution and disclaimer.
 // ============================================================
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, MapPin, Building, Calendar, Globe } from 'lucide-react';
 import AdzunaAttribution from './AdzunaAttribution';
+import JoobleAttribution from './JoobleAttribution';
 
 const ExternalJobCard = ({ job, country }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.resolvedLanguage === 'ar';
 
   if (!job) return null;
+
+  const isJooble = job.source === 'jooble' || job.provider === 'jooble';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -28,6 +30,9 @@ const ExternalJobCard = ({ job, country }) => {
   };
 
   const formatSalary = () => {
+    if (job.salaryDisplay) {
+      return job.salaryDisplay;
+    }
     const symbol = job.currencySymbol || (job.currency ? `${job.currency} ` : '');
     if (job.salaryMin !== null && job.salaryMax !== null) {
       if (job.salaryMin === job.salaryMax) {
@@ -60,8 +65,17 @@ const ExternalJobCard = ({ job, country }) => {
               {job.category}
             </span>
           )}
+          {isJooble && (
+            <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              Jooble TR
+            </span>
+          )}
         </div>
-        <AdzunaAttribution country={country} />
+        {isJooble ? (
+          <JoobleAttribution />
+        ) : (
+          <AdzunaAttribution country={country} />
+        )}
       </div>
 
       {/* Job Title & Company */}
@@ -108,7 +122,9 @@ const ExternalJobCard = ({ job, country }) => {
       {/* Action and Disclaimer */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-gray-700/60">
         <span className="text-xs text-gray-500 dark:text-gray-400 italic">
-          {t('externalJobs.disclaimer', 'Opens external partner application on Adzuna')}
+          {isJooble
+            ? t('externalJobs.disclaimerJooble', 'Opens external partner application on Jooble')
+            : t('externalJobs.disclaimer', 'Opens external partner application on Adzuna')}
         </span>
         <a
           href={job.redirectUrl}

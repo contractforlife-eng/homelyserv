@@ -1,4 +1,4 @@
-﻿// src/pages/WorkerJobs.jsx — Find Jobs
+// src/pages/WorkerJobs.jsx — Find Jobs
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import jobService from '../services/jobService';
 import externalJobService from '../services/externalJobService';
 import ExternalJobCard from '../components/jobs/ExternalJobCard';
 import AdzunaAttribution from '../components/jobs/AdzunaAttribution';
+import JoobleAttribution from '../components/jobs/JoobleAttribution';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 const TYPE_LABELS = {
@@ -48,8 +49,11 @@ const WorkerJobs = () => {
   const [externalLocation, setExternalLocation] = useState('');
   const [externalCountryUnsupported, setExternalCountryUnsupported] = useState(false);
   const [externalCredentialsMissing, setExternalCredentialsMissing] = useState(false);
+  const [externalCredentialsMissingMsg, setExternalCredentialsMissingMsg] = useState('');
+  const [externalSearchTermRequired, setExternalSearchTermRequired] = useState(false);
   const [externalHasLoaded, setExternalHasLoaded] = useState(false);
   const [externalCountry, setExternalCountry] = useState(null);
+  const [externalProvider, setExternalProvider] = useState(null);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -80,6 +84,7 @@ const WorkerJobs = () => {
     setExternalError('');
     setExternalCountryUnsupported(false);
     setExternalCredentialsMissing(false);
+    setExternalSearchTermRequired(false);
     try {
       const whatParam = customWhat !== undefined ? customWhat : (externalQuery || authUser?.desiredJob || authUser?.profession || '');
       const whereParam = customWhere !== undefined ? customWhere : externalLocation;
@@ -92,21 +97,32 @@ const WorkerJobs = () => {
       if (data?.country) {
         setExternalCountry(data.country);
       }
+      if (data?.provider) {
+        setExternalProvider(data.provider);
+      }
 
       if (data?.success) {
         if (data.reason === 'COUNTRY_NOT_SUPPORTED' || data.supported === false) {
           setExternalCountryUnsupported(true);
           setExternalJobs([]);
+        } else if (data.reason === 'SEARCH_TERM_REQUIRED') {
+          setExternalSearchTermRequired(true);
+          setExternalJobs([]);
+        } else if (data.reason === 'JOOBLE_NOT_CONFIGURED') {
+          setExternalCredentialsMissing(true);
+          setExternalCredentialsMissingMsg(t('externalJobs.joobleSetupRequired', 'External job search requires local JOOBLE_TR_API_KEY configuration in the server environment.'));
+          setExternalJobs([]);
         } else if (data.reason === 'ADZUNA_NOT_CONFIGURED' || data.reason === 'ADZUNA_CREDENTIALS_MISSING' || data.configured === false) {
           setExternalCredentialsMissing(true);
+          setExternalCredentialsMissingMsg(t('externalJobs.setupRequiredDesc', 'External job search requires local ADZUNA_APP_ID and ADZUNA_APP_KEY configuration in the server environment.'));
           setExternalJobs([]);
-        } else if (data.error === 'ADZUNA_RATE_LIMITED') {
+        } else if (data.error === 'ADZUNA_RATE_LIMITED' || data.error === 'JOOBLE_RATE_LIMITED') {
           setExternalError(t('externalJobs.rateLimited', 'External job search is currently rate-limited. Please wait a moment and try again.'));
           setExternalJobs([]);
-        } else if (data.error === 'ADZUNA_TIMEOUT') {
+        } else if (data.error === 'ADZUNA_TIMEOUT' || data.error === 'JOOBLE_TIMEOUT') {
           setExternalError(t('externalJobs.timeout', 'External job search timed out. Please try again shortly.'));
           setExternalJobs([]);
-        } else if (data.error === 'ADZUNA_UPSTREAM_ERROR') {
+        } else if (data.error === 'ADZUNA_UPSTREAM_ERROR' || data.error === 'JOOBLE_UPSTREAM_ERROR') {
           setExternalError(t('externalJobs.upstreamError', 'Unable to load external opportunities due to a temporary provider issue. Internal HomelyServ jobs remain available.'));
           setExternalJobs([]);
         } else {
@@ -183,6 +199,8 @@ const WorkerJobs = () => {
     return '';
   };
 
+  const isJoobleProvider = externalProvider === 'jooble';
+
   return (
     <DashboardLayout role="worker">
       <DashboardHeader />
@@ -194,7 +212,7 @@ const WorkerJobs = () => {
             subtitle={t('workerJobs.subtitle')}
           />
 
-          {/* TAB SELECTOR: Internal HomelyServ Jobs vs External Adzuna Opportunities */}
+          {/* TAB SELECTOR: Internal HomelyServ Jobs vs External Opportunities */}
           <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
             <button
               type="button"
@@ -219,9 +237,11 @@ const WorkerJobs = () => {
             >
               <Globe size={16} />
               <span>{t('externalJobs.externalOpportunities', 'External Opportunities')}</span>
-              <span className="text-2xs uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">
-                {t('externalJobs.partnerBadge', 'Adzuna')}
-              </span>
+              {externalProvider && (
+                <span className="text-2xs uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">
+                  {externalProvider === 'jooble' ? 'Jooble' : (externalProvider === 'adzuna' ? t('externalJobs.partnerBadge', 'Adzuna') : externalProvider.toUpperCase())}
+                </span>
+              )}
             </button>
           </div>
 
@@ -365,11 +385,15 @@ const WorkerJobs = () => {
             </>
           )}
 
-          {/* TAB 2: External Opportunities (Adzuna) */}
+          {/* TAB 2: External Opportunities (Adzuna / Jooble) */}
           {activeTab === 'external' && (
             <>
               {/* External Banner Attribution & Disclaimer */}
-              <AdzunaAttribution country={externalCountry} variant="banner" className="mb-6" />
+              {isJoobleProvider ? (
+                <JoobleAttribution variant="banner" className="mb-6" />
+              ) : (
+                <AdzunaAttribution country={externalCountry} variant="banner" className="mb-6" />
+              )}
 
               {/* External Search Bar */}
               <form onSubmit={handleExternalSearch} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-900/40 p-4 mb-6">
@@ -413,11 +437,24 @@ const WorkerJobs = () => {
                       </button>
                     )}
                   </div>
-                  <AdzunaAttribution country={externalCountry} />
+                  {isJoobleProvider ? (
+                    <JoobleAttribution />
+                  ) : (
+                    <AdzunaAttribution country={externalCountry} />
+                  )}
                 </div>
               </form>
 
               {/* State handling */}
+              {externalSearchTermRequired && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
+                  <Search size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                    {t('externalJobs.searchTermRequired', 'Please enter a search keyword with at least 2 characters to view external opportunities.')}
+                  </h3>
+                </div>
+              )}
+
               {externalCountryUnsupported && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center mb-6">
                   <Globe size={32} className="text-amber-600 dark:text-amber-400 mx-auto mb-2" />
@@ -425,7 +462,7 @@ const WorkerJobs = () => {
                     {t('externalJobs.unsupportedCountryTitle', 'External Listings Unavailable in Your Country')}
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300 max-w-md mx-auto">
-                    {t('externalJobs.unsupportedCountryDesc', 'Adzuna job aggregation is currently available in select regions (e.g. GB, US, CA, AU, FR, DE, ZA, etc.). You can continue applying for direct internal opportunities on HomelyServ.')}
+                    {t('externalJobs.unsupportedCountryDesc', 'External job aggregation is currently available in select regions (e.g. TR, GB, US, CA, AU, FR, DE, ZA, etc.). You can continue applying for direct internal opportunities on HomelyServ.')}
                   </p>
                 </div>
               )}
@@ -434,10 +471,10 @@ const WorkerJobs = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
                   <AlertCircle size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                   <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
-                    {t('externalJobs.setupRequiredTitle', 'Adzuna Integration Pending')}
+                    {t('externalJobs.setupRequiredTitle', 'Integration Pending')}
                   </h3>
                   <p className="text-sm text-blue-700 dark:text-blue-300 max-w-md mx-auto">
-                    {t('externalJobs.setupRequiredDesc', 'External job search requires local ADZUNA_APP_ID and ADZUNA_APP_KEY configuration in the server environment.')}
+                    {externalCredentialsMissingMsg || t('externalJobs.setupRequiredDesc', 'External job search requires local credentials configuration in the server environment.')}
                   </p>
                 </div>
               )}
@@ -452,7 +489,7 @@ const WorkerJobs = () => {
                 <div className="flex items-center justify-center py-16">
                   <Loader2 size={32} className="animate-spin text-indigo-600 mx-auto" />
                 </div>
-              ) : externalHasLoaded && !externalCountryUnsupported && !externalCredentialsMissing && !externalError && externalJobs.length === 0 ? (
+              ) : externalHasLoaded && !externalCountryUnsupported && !externalCredentialsMissing && !externalSearchTermRequired && !externalError && externalJobs.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
                   <div className="text-5xl mb-4">🌐</div>
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
@@ -462,7 +499,7 @@ const WorkerJobs = () => {
                     {t('externalJobs.emptyDesc', 'Try searching for different keywords or broadening your location.')}
                   </p>
                 </div>
-              ) : !externalCountryUnsupported && !externalCredentialsMissing && !externalError && externalJobs.length > 0 ? (
+              ) : !externalCountryUnsupported && !externalCredentialsMissing && !externalSearchTermRequired && !externalError && externalJobs.length > 0 ? (
                 <div className="space-y-4">
                   {externalJobs.map((job) => (
                     <ExternalJobCard key={job.id} job={job} country={externalCountry} />
