@@ -35,6 +35,7 @@ import supHelpRoutes from './routes/supHelp.js';
 import complaintRoutes from './routes/complaints.js';
 import sidebarRoutes from './routes/sidebar.js';
 import publicSupportRoutes from './routes/publicSupport.js';
+import externalJobRoutes from './routes/externalJobs.js';
 import registrationGeographyRoutes from './routes/registrationGeography.js';
 import analyticsRoutes from './routes/analytics.js';
 import { requireAdmin } from './middleware/auth.js';
@@ -378,6 +379,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/sup-help', supHelpRoutes);
 app.use('/api/sidebar', sidebarRoutes);
 app.use('/api/public-support', publicSupportRoutes);
+app.use('/api/external-jobs', externalJobRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
