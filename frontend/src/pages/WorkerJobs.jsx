@@ -12,6 +12,7 @@ import externalJobService from '../services/externalJobService';
 import ExternalJobCard from '../components/jobs/ExternalJobCard';
 import AdzunaAttribution from '../components/jobs/AdzunaAttribution';
 import JoobleAttribution from '../components/jobs/JoobleAttribution';
+import UsajobsAttribution from '../components/jobs/UsajobsAttribution';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 const TYPE_LABELS = {
@@ -97,9 +98,15 @@ const WorkerJobs = () => {
       if (data?.country) {
         setExternalCountry(data.country);
       }
-      if (data?.provider) {
-        setExternalProvider(data.provider);
+
+      const jobsList = Array.isArray(data?.jobs) ? data.jobs : [];
+      const distinctProviders = new Set(jobsList.map(j => j.provider || j.source).filter(Boolean));
+
+      let resolvedProvider = data?.provider || null;
+      if (data?.country === 'us' || resolvedProvider === 'multi' || distinctProviders.size > 1) {
+        resolvedProvider = 'multi';
       }
+      setExternalProvider(resolvedProvider);
 
       if (data?.success) {
         if (data.reason === 'COUNTRY_NOT_SUPPORTED' || data.supported === false) {
@@ -237,9 +244,9 @@ const WorkerJobs = () => {
             >
               <Globe size={16} />
               <span>{t('externalJobs.externalOpportunities', 'External Opportunities')}</span>
-              {externalProvider && (
+              {externalProvider && externalProvider !== 'multi' && (
                 <span className="text-2xs uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">
-                  {externalProvider === 'jooble' ? 'Jooble' : (externalProvider === 'adzuna' ? t('externalJobs.partnerBadge', 'Adzuna') : externalProvider.toUpperCase())}
+                  {externalProvider === 'jooble' ? 'Jooble' : (externalProvider === 'adzuna' ? t('externalJobs.partnerBadge', 'Adzuna') : externalProvider === 'usajobs' ? 'USAJOBS' : externalProvider.toUpperCase())}
                 </span>
               )}
             </button>
@@ -393,6 +400,8 @@ const WorkerJobs = () => {
                 <JoobleAttribution country={externalCountry} variant="banner" className="mb-6" />
               ) : externalProvider === 'adzuna' ? (
                 <AdzunaAttribution country={externalCountry} variant="banner" className="mb-6" />
+              ) : externalProvider === 'usajobs' ? (
+                <UsajobsAttribution variant="banner" className="mb-6" />
               ) : (
                 <div className="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-xs text-gray-600 dark:text-gray-300 mb-6">
                   <span className="font-semibold text-indigo-800 dark:text-indigo-300">
@@ -447,6 +456,8 @@ const WorkerJobs = () => {
                     <JoobleAttribution country={externalCountry} />
                   ) : externalProvider === 'adzuna' ? (
                     <AdzunaAttribution country={externalCountry} />
+                  ) : externalProvider === 'usajobs' ? (
+                    <UsajobsAttribution />
                   ) : null}
                 </div>
               </form>

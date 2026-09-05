@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ExternalLink, MapPin, Building, Calendar, Globe } from 'lucide-react';
 import AdzunaAttribution from './AdzunaAttribution';
 import JoobleAttribution from './JoobleAttribution';
+import UsajobsAttribution from './UsajobsAttribution';
 
 const ExternalJobCard = ({ job, country }) => {
   const { t, i18n } = useTranslation();
@@ -17,6 +18,7 @@ const ExternalJobCard = ({ job, country }) => {
   if (!job) return null;
 
   const isJooble = job.source === 'jooble' || job.provider === 'jooble';
+  const isUsajobs = job.source === 'usajobs' || job.provider === 'usajobs';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -70,9 +72,16 @@ const ExternalJobCard = ({ job, country }) => {
               {job.market === 'eg' ? 'Jooble EG' : 'Jooble TR'}
             </span>
           )}
+          {isUsajobs && (
+            <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              {t('externalJobs.federalJob', 'Federal Job')}
+            </span>
+          )}
         </div>
         {isJooble ? (
           <JoobleAttribution country={job.market || country} />
+        ) : isUsajobs ? (
+          <UsajobsAttribution />
         ) : (
           <AdzunaAttribution country={country} />
         )}
@@ -124,6 +133,8 @@ const ExternalJobCard = ({ job, country }) => {
         <span className="text-xs text-gray-500 dark:text-gray-400 italic">
           {isJooble
             ? t('externalJobs.disclaimerJooble', 'Opens external partner application on Jooble')
+            : isUsajobs
+            ? t('externalJobs.disclaimerUsajobs', 'Opens official Federal job application on USAJOBS')
             : t('externalJobs.disclaimer', 'Opens external partner application on Adzuna')}
         </span>
         <a
