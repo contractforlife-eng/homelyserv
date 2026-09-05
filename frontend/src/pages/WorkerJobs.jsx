@@ -108,13 +108,13 @@ const WorkerJobs = () => {
         } else if (data.reason === 'SEARCH_TERM_REQUIRED') {
           setExternalSearchTermRequired(true);
           setExternalJobs([]);
-        } else if (data.reason === 'JOOBLE_NOT_CONFIGURED') {
+        } else if (data.reason === 'JOOBLE_NOT_CONFIGURED' || data.reason === 'JOOBLE_EG_NOT_CONFIGURED' || (data.provider === 'jooble' && (data.reason === 'CREDENTIALS_MISSING' || data.configured === false))) {
           setExternalCredentialsMissing(true);
-          setExternalCredentialsMissingMsg(t('externalJobs.joobleSetupRequired', 'External job search requires local JOOBLE_TR_API_KEY configuration in the server environment.'));
+          setExternalCredentialsMissingMsg(t('externalJobs.joobleSetupRequired', 'External job search for this market is not currently configured.'));
           setExternalJobs([]);
-        } else if (data.reason === 'ADZUNA_NOT_CONFIGURED' || data.reason === 'ADZUNA_CREDENTIALS_MISSING' || data.configured === false) {
+        } else if (data.reason === 'ADZUNA_NOT_CONFIGURED' || data.reason === 'ADZUNA_CREDENTIALS_MISSING' || (data.provider === 'adzuna' && data.configured === false) || data.configured === false) {
           setExternalCredentialsMissing(true);
-          setExternalCredentialsMissingMsg(t('externalJobs.setupRequiredDesc', 'External job search requires local ADZUNA_APP_ID and ADZUNA_APP_KEY configuration in the server environment.'));
+          setExternalCredentialsMissingMsg(t('externalJobs.setupRequiredDesc', 'External job search is not currently configured in the server environment.'));
           setExternalJobs([]);
         } else if (data.error === 'ADZUNA_RATE_LIMITED' || data.error === 'JOOBLE_RATE_LIMITED') {
           setExternalError(t('externalJobs.rateLimited', 'External job search is currently rate-limited. Please wait a moment and try again.'));
@@ -389,10 +389,16 @@ const WorkerJobs = () => {
           {activeTab === 'external' && (
             <>
               {/* External Banner Attribution & Disclaimer */}
-              {isJoobleProvider ? (
-                <JoobleAttribution variant="banner" className="mb-6" />
-              ) : (
+              {externalProvider === 'jooble' ? (
+                <JoobleAttribution country={externalCountry} variant="banner" className="mb-6" />
+              ) : externalProvider === 'adzuna' ? (
                 <AdzunaAttribution country={externalCountry} variant="banner" className="mb-6" />
+              ) : (
+                <div className="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-xs text-gray-600 dark:text-gray-300 mb-6">
+                  <span className="font-semibold text-indigo-800 dark:text-indigo-300">
+                    {t('externalJobs.disclaimerGeneral', 'External opportunities are provided by third parties and availability may vary by region.')}
+                  </span>
+                </div>
               )}
 
               {/* External Search Bar */}
@@ -437,11 +443,11 @@ const WorkerJobs = () => {
                       </button>
                     )}
                   </div>
-                  {isJoobleProvider ? (
-                    <JoobleAttribution />
-                  ) : (
+                  {externalProvider === 'jooble' ? (
+                    <JoobleAttribution country={externalCountry} />
+                  ) : externalProvider === 'adzuna' ? (
                     <AdzunaAttribution country={externalCountry} />
-                  )}
+                  ) : null}
                 </div>
               </form>
 
@@ -462,7 +468,7 @@ const WorkerJobs = () => {
                     {t('externalJobs.unsupportedCountryTitle', 'External Listings Unavailable in Your Country')}
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300 max-w-md mx-auto">
-                    {t('externalJobs.unsupportedCountryDesc', 'External job aggregation is currently available in select regions (e.g. TR, GB, US, CA, AU, FR, DE, ZA, etc.). You can continue applying for direct internal opportunities on HomelyServ.')}
+                    {t('externalJobs.unsupportedCountryDesc', 'External job listings are not currently available for your country. You can continue using HomelyServ internal job opportunities.')}
                   </p>
                 </div>
               )}
@@ -471,10 +477,14 @@ const WorkerJobs = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
                   <AlertCircle size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                   <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
-                    {t('externalJobs.setupRequiredTitle', 'Integration Pending')}
+                    {externalProvider === 'jooble'
+                      ? t('externalJobs.joobleSetupRequiredTitle', 'Jooble Integration Pending')
+                      : externalProvider === 'adzuna'
+                      ? t('externalJobs.setupRequiredTitle', 'Adzuna Integration Pending')
+                      : t('externalJobs.setupRequiredTitleGeneral', 'Integration Pending')}
                   </h3>
                   <p className="text-sm text-blue-700 dark:text-blue-300 max-w-md mx-auto">
-                    {externalCredentialsMissingMsg || t('externalJobs.setupRequiredDesc', 'External job search requires local credentials configuration in the server environment.')}
+                    {externalCredentialsMissingMsg || t('externalJobs.setupRequiredDesc', 'External job search requires configuration in the server environment.')}
                   </p>
                 </div>
               )}

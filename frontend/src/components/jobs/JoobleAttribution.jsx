@@ -1,15 +1,22 @@
-﻿// frontend/src/components/jobs/JoobleAttribution.jsx
+// frontend/src/components/jobs/JoobleAttribution.jsx
 // ============================================================
-// EXPERIMENTAL JOOBLE ATTRIBUTION COMPONENT — Phase 1
-// Clear text and link attribution for Jooble Turkey partner results.
+// EXPERIMENTAL JOOBLE ATTRIBUTION COMPONENT — Multi-Market
+// Clear text and link attribution for Jooble partner results (TR & EG).
 // ============================================================
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const JOOBLE_TR_URL = 'https://tr.jooble.org';
+const getJoobleUrl = (country) => {
+  const norm = String(country || 'tr').toLowerCase().trim();
+  if (norm === 'eg') {
+    return 'https://eg.jooble.org';
+  }
+  return 'https://tr.jooble.org';
+};
 
-const JoobleAttribution = ({ className = '', variant = 'card' }) => {
+const JoobleAttribution = ({ className = '', variant = 'card', country = 'tr' }) => {
   const { t } = useTranslation();
+  const joobleUrl = getJoobleUrl(country);
 
   if (variant === 'banner') {
     return (
@@ -24,7 +31,7 @@ const JoobleAttribution = ({ className = '', variant = 'card' }) => {
           style={{ minWidth: '124px', minHeight: '26px' }}
         >
           <a
-            href={JOOBLE_TR_URL}
+            href={joobleUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline transition"
@@ -33,7 +40,7 @@ const JoobleAttribution = ({ className = '', variant = 'card' }) => {
           </a>
           <span className="text-gray-400 dark:text-gray-500 font-normal">by</span>
           <a
-            href={JOOBLE_TR_URL}
+            href={joobleUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline transition"
@@ -51,7 +58,7 @@ const JoobleAttribution = ({ className = '', variant = 'card' }) => {
       style={{ minWidth: '116px', minHeight: '24px' }}
     >
       <a
-        href={JOOBLE_TR_URL}
+        href={joobleUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="text-gray-700 dark:text-gray-200 font-medium hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline transition"
@@ -60,7 +67,7 @@ const JoobleAttribution = ({ className = '', variant = 'card' }) => {
       </a>
       <span className="text-gray-400 dark:text-gray-500 font-normal">by</span>
       <a
-        href={JOOBLE_TR_URL}
+        href={joobleUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline transition"
