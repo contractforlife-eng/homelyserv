@@ -13,6 +13,7 @@ import ExternalJobCard from '../components/jobs/ExternalJobCard';
 import AdzunaAttribution from '../components/jobs/AdzunaAttribution';
 import JoobleAttribution from '../components/jobs/JoobleAttribution';
 import UsajobsAttribution from '../components/jobs/UsajobsAttribution';
+import JobicyAttribution from '../components/jobs/JobicyAttribution';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 const TYPE_LABELS = {
@@ -42,7 +43,8 @@ const WorkerJobs = () => {
   const [employmentType, setEmploymentType] = useState('');
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // External Jobs state
+  // External Jobs state (local vs remote mode)
+  const [externalMode, setExternalMode] = useState('local'); // 'local' | 'remote'
   const [externalJobs, setExternalJobs] = useState([]);
   const [externalLoading, setExternalLoading] = useState(false);
   const [externalError, setExternalError] = useState('');
@@ -55,6 +57,14 @@ const WorkerJobs = () => {
   const [externalHasLoaded, setExternalHasLoaded] = useState(false);
   const [externalCountry, setExternalCountry] = useState(null);
   const [externalProvider, setExternalProvider] = useState(null);
+
+  // Remote Jobs state (Jobicy)
+  const [remoteJobs, setRemoteJobs] = useState([]);
+  const [remoteLoading, setRemoteLoading] = useState(false);
+  const [remoteError, setRemoteError] = useState('');
+  const [remoteQuery, setRemoteQuery] = useState('');
+  const [remoteHasLoaded, setRemoteHasLoaded] = useState(false);
+  const [remoteSearchTermRequired, setRemoteSearchTermRequired] = useState(false);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -79,6 +89,45 @@ const WorkerJobs = () => {
       setHasLoaded(true);
     }
   }, [query, location, employmentType, t]);
+
+  const loadRemoteJobs = useCallback(async (customWhat) => {
+    setRemoteLoading(true);
+    setRemoteError('');
+    setRemoteSearchTermRequired(false);
+    try {
+      const whatParam = customWhat !== undefined ? customWhat : (remoteQuery || authUser?.desiredJob || authUser?.profession || '');
+      const data = await externalJobService.getExternalJobs({
+        what: whatParam,
+        remote: true
+      });
+
+      if (data?.success) {
+        if (data.reason === 'SEARCH_TERM_REQUIRED') {
+          setRemoteSearchTermRequired(true);
+          setRemoteJobs([]);
+        } else if (data.error === 'JOBICY_RATE_LIMITED') {
+          setRemoteError(t('externalJobs.rateLimited', 'External job search is currently rate-limited. Please wait a moment and try again.'));
+          setRemoteJobs([]);
+        } else if (data.error === 'JOBICY_TIMEOUT') {
+          setRemoteError(t('externalJobs.timeout', 'External job search timed out. Please try again shortly.'));
+          setRemoteJobs([]);
+        } else if (data.error === 'JOBICY_UPSTREAM_ERROR') {
+          setRemoteError(t('externalJobs.upstreamError', 'Unable to load external opportunities due to a temporary provider issue. Internal HomelyServ jobs remain available.'));
+          setRemoteJobs([]);
+        } else {
+          setRemoteJobs(data.jobs || []);
+        }
+      } else {
+        setRemoteError(data?.message || t('externalJobs.error', 'Failed to load external opportunities.'));
+      }
+    } catch (err) {
+      console.error('Load remote jobs error:', err);
+      setRemoteError(err.response?.data?.message || t('externalJobs.error', 'Failed to load external opportunities.'));
+    } finally {
+      setRemoteLoading(false);
+      setRemoteHasLoaded(true);
+    }
+  }, [remoteQuery, authUser, t]);
 
   const loadExternalJobs = useCallback(async (customWhat, customWhere) => {
     setExternalLoading(true);
@@ -187,6 +236,26 @@ const WorkerJobs = () => {
     setExternalQuery('');
     setExternalLocation('');
     loadExternalJobs('', '');
+  };
+
+  const handleRemoteSearch = (e) => {
+    e.preventDefault();
+    loadRemoteJobs(remoteQuery);
+  };
+
+  const handleRemoteClear = () => {
+    setRemoteQuery('');
+    loadRemoteJobs('');
+  };
+
+  const handleSwitchToRemoteMode = () => {
+    setExternalMode('remote');
+    if (!remoteHasLoaded && !remoteLoading) {
+      if (!remoteQuery && authUser?.desiredJob) {
+        setRemoteQuery(authUser.desiredJob);
+      }
+      loadRemoteJobs(authUser?.desiredJob || '');
+    }
   };
 
   const formatSalary = (job) => formatJobCompensation(job, t, i18n.resolvedLanguage);
@@ -395,138 +464,256 @@ const WorkerJobs = () => {
           {/* TAB 2: External Opportunities (Adzuna / Jooble) */}
           {activeTab === 'external' && (
             <>
-              {/* External Banner Attribution & Disclaimer */}
-              {externalProvider === 'jooble' ? (
-                <JoobleAttribution country={externalCountry} variant="banner" className="mb-6" />
-              ) : externalProvider === 'adzuna' ? (
-                <AdzunaAttribution country={externalCountry} variant="banner" className="mb-6" />
-              ) : externalProvider === 'usajobs' ? (
-                <UsajobsAttribution variant="banner" className="mb-6" />
-              ) : (
-                <div className="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-xs text-gray-600 dark:text-gray-300 mb-6">
-                  <span className="font-semibold text-indigo-800 dark:text-indigo-300">
-                    {t('externalJobs.disclaimerGeneral', 'External opportunities are provided by third parties and availability may vary by region.')}
+              {/* Mode Toggle: Local / Country Opportunities vs Remote Opportunities */}
+              <div className="flex items-center gap-2 mb-6 p-1 bg-gray-100 dark:bg-gray-800/80 rounded-xl w-fit border border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setExternalMode('local')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${
+                    externalMode === 'local'
+                      ? 'bg-white dark:bg-gray-900 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <MapPin size={15} />
+                  <span>{t('externalJobs.localOpportunities', 'Local / Country Opportunities')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSwitchToRemoteMode}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${
+                    externalMode === 'remote'
+                      ? 'bg-white dark:bg-gray-900 text-teal-700 dark:text-teal-300 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <Globe size={15} />
+                  <span>{t('externalJobs.remoteOpportunities', 'Remote Opportunities')}</span>
+                  <span className="text-2xs uppercase tracking-wider px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold">
+                    {t('externalJobs.remoteBadge', 'Remote')}
                   </span>
-                </div>
-              )}
+                </button>
+              </div>
 
-              {/* External Search Bar */}
-              <form onSubmit={handleExternalSearch} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-900/40 p-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="relative">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={externalQuery}
-                      onChange={(e) => setExternalQuery(e.target.value)}
-                      placeholder={t('externalJobs.searchPlaceholder', 'Keyword or job title (e.g. Caregiver, Nurse, Driver)...')}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div className="relative">
-                    <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={externalLocation}
-                      onChange={(e) => setExternalLocation(e.target.value)}
-                      placeholder={t('workerJobs.locationPlaceholder')}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                    >
-                      <Search size={16} /> {t('externalJobs.searchButton', 'Search External')}
-                    </button>
-                    {(externalQuery || externalLocation) && (
-                      <button
-                        type="button"
-                        onClick={handleExternalClear}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition"
-                      >
-                        {t('workerJobs.clearFilters')}
-                      </button>
-                    )}
-                  </div>
+              {/* LOCAL / COUNTRY MODE */}
+              {externalMode === 'local' && (
+                <>
+                  {/* External Banner Attribution & Disclaimer */}
                   {externalProvider === 'jooble' ? (
-                    <JoobleAttribution country={externalCountry} />
+                    <JoobleAttribution country={externalCountry} variant="banner" className="mb-6" />
                   ) : externalProvider === 'adzuna' ? (
-                    <AdzunaAttribution country={externalCountry} />
+                    <AdzunaAttribution country={externalCountry} variant="banner" className="mb-6" />
                   ) : externalProvider === 'usajobs' ? (
-                    <UsajobsAttribution />
+                    <UsajobsAttribution variant="banner" className="mb-6" />
+                  ) : (
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-xs text-gray-600 dark:text-gray-300 mb-6">
+                      <span className="font-semibold text-indigo-800 dark:text-indigo-300">
+                        {t('externalJobs.disclaimerGeneral', 'External opportunities are provided by third parties and availability may vary by region.')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* External Search Bar */}
+                  <form onSubmit={handleExternalSearch} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-900/40 p-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="relative">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={externalQuery}
+                          onChange={(e) => setExternalQuery(e.target.value)}
+                          placeholder={t('externalJobs.searchPlaceholder', 'Keyword or job title (e.g. Caregiver, Nurse, Driver)...')}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="relative">
+                        <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={externalLocation}
+                          onChange={(e) => setExternalLocation(e.target.value)}
+                          placeholder={t('workerJobs.locationPlaceholder')}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                        >
+                          <Search size={16} /> {t('externalJobs.searchButton', 'Search External')}
+                        </button>
+                        {(externalQuery || externalLocation) && (
+                          <button
+                            type="button"
+                            onClick={handleExternalClear}
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition"
+                          >
+                            {t('workerJobs.clearFilters')}
+                          </button>
+                        )}
+                      </div>
+                      {externalProvider === 'jooble' ? (
+                        <JoobleAttribution country={externalCountry} />
+                      ) : externalProvider === 'adzuna' ? (
+                        <AdzunaAttribution country={externalCountry} />
+                      ) : externalProvider === 'usajobs' ? (
+                        <UsajobsAttribution />
+                      ) : null}
+                    </div>
+                  </form>
+
+                  {/* State handling */}
+                  {externalSearchTermRequired && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
+                      <Search size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                        {t('externalJobs.searchTermRequired', 'Please enter a search keyword with at least 2 characters to view external opportunities.')}
+                      </h3>
+                    </div>
+                  )}
+
+                  {externalCountryUnsupported && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center mb-6">
+                      <Globe size={32} className="text-amber-600 dark:text-amber-400 mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-1">
+                        {t('externalJobs.unsupportedCountryTitle', 'External Listings Unavailable in Your Country')}
+                      </h3>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 max-w-md mx-auto">
+                        {t('externalJobs.unsupportedCountryDesc', 'External job listings are not currently available for your country. You can continue using HomelyServ internal job opportunities.')}
+                      </p>
+                    </div>
+                  )}
+
+                  {externalCredentialsMissing && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
+                      <AlertCircle size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                        {externalProvider === 'jooble'
+                          ? t('externalJobs.joobleSetupRequiredTitle', 'Jooble Integration Pending')
+                          : externalProvider === 'adzuna'
+                          ? t('externalJobs.setupRequiredTitle', 'Adzuna Integration Pending')
+                          : t('externalJobs.setupRequiredTitleGeneral', 'Integration Pending')}
+                      </h3>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 max-w-md mx-auto">
+                        {externalCredentialsMissingMsg || t('externalJobs.setupRequiredDesc', 'External job search requires configuration in the server environment.')}
+                      </p>
+                    </div>
+                  )}
+
+                  {externalError && !externalLoading && (
+                    <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400">
+                      {externalError}
+                    </div>
+                  )}
+
+                  {externalLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <Loader2 size={32} className="animate-spin text-indigo-600 mx-auto" />
+                    </div>
+                  ) : externalHasLoaded && !externalCountryUnsupported && !externalCredentialsMissing && !externalSearchTermRequired && !externalError && externalJobs.length === 0 ? (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
+                      <div className="text-5xl mb-4">🌐</div>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                        {t('externalJobs.emptyTitle', 'No external opportunities found')}
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('externalJobs.emptyDesc', 'Try searching for different keywords or broadening your location.')}
+                      </p>
+                    </div>
+                  ) : !externalCountryUnsupported && !externalCredentialsMissing && !externalSearchTermRequired && !externalError && externalJobs.length > 0 ? (
+                    <div className="space-y-4">
+                      {externalJobs.map((job) => (
+                        <ExternalJobCard key={job.id} job={job} country={externalCountry} />
+                      ))}
+                    </div>
                   ) : null}
-                </div>
-              </form>
-
-              {/* State handling */}
-              {externalSearchTermRequired && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
-                  <Search size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
-                    {t('externalJobs.searchTermRequired', 'Please enter a search keyword with at least 2 characters to view external opportunities.')}
-                  </h3>
-                </div>
+                </>
               )}
 
-              {externalCountryUnsupported && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center mb-6">
-                  <Globe size={32} className="text-amber-600 dark:text-amber-400 mx-auto mb-2" />
-                  <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-1">
-                    {t('externalJobs.unsupportedCountryTitle', 'External Listings Unavailable in Your Country')}
-                  </h3>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 max-w-md mx-auto">
-                    {t('externalJobs.unsupportedCountryDesc', 'External job listings are not currently available for your country. You can continue using HomelyServ internal job opportunities.')}
-                  </p>
-                </div>
-              )}
+              {/* REMOTE OPPORTUNITIES MODE (Jobicy) */}
+              {externalMode === 'remote' && (
+                <>
+                  {/* Remote Banner Attribution */}
+                  <JobicyAttribution variant="banner" className="mb-6" />
 
-              {externalCredentialsMissing && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
-                  <AlertCircle size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
-                    {externalProvider === 'jooble'
-                      ? t('externalJobs.joobleSetupRequiredTitle', 'Jooble Integration Pending')
-                      : externalProvider === 'adzuna'
-                      ? t('externalJobs.setupRequiredTitle', 'Adzuna Integration Pending')
-                      : t('externalJobs.setupRequiredTitleGeneral', 'Integration Pending')}
-                  </h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 max-w-md mx-auto">
-                    {externalCredentialsMissingMsg || t('externalJobs.setupRequiredDesc', 'External job search requires configuration in the server environment.')}
-                  </p>
-                </div>
-              )}
+                  {/* Remote Search Bar */}
+                  <form onSubmit={handleRemoteSearch} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-teal-100 dark:border-teal-900/40 p-4 mb-6">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="relative">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={remoteQuery}
+                          onChange={(e) => setRemoteQuery(e.target.value)}
+                          placeholder={t('externalJobs.remoteSearchPlaceholder', 'Remote keyword (e.g. Customer Support, Virtual Assistant, Sales)...')}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-2 px-5 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+                        >
+                          <Search size={16} /> {t('externalJobs.searchRemote', 'Search Remote')}
+                        </button>
+                        {remoteQuery && (
+                          <button
+                            type="button"
+                            onClick={handleRemoteClear}
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition"
+                          >
+                            {t('workerJobs.clearFilters')}
+                          </button>
+                        )}
+                      </div>
+                      <JobicyAttribution />
+                    </div>
+                  </form>
 
-              {externalError && !externalLoading && (
-                <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400">
-                  {externalError}
-                </div>
-              )}
+                  {/* Remote State handling */}
+                  {remoteSearchTermRequired && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center mb-6">
+                      <Search size={32} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                        {t('externalJobs.remoteSearchTermRequired', 'Please enter a search keyword with at least 2 characters to search remote opportunities.')}
+                      </h3>
+                    </div>
+                  )}
 
-              {externalLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 size={32} className="animate-spin text-indigo-600 mx-auto" />
-                </div>
-              ) : externalHasLoaded && !externalCountryUnsupported && !externalCredentialsMissing && !externalSearchTermRequired && !externalError && externalJobs.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
-                  <div className="text-5xl mb-4">🌐</div>
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                    {t('externalJobs.emptyTitle', 'No external opportunities found')}
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    {t('externalJobs.emptyDesc', 'Try searching for different keywords or broadening your location.')}
-                  </p>
-                </div>
-              ) : !externalCountryUnsupported && !externalCredentialsMissing && !externalSearchTermRequired && !externalError && externalJobs.length > 0 ? (
-                <div className="space-y-4">
-                  {externalJobs.map((job) => (
-                    <ExternalJobCard key={job.id} job={job} country={externalCountry} />
-                  ))}
-                </div>
-              ) : null}
+                  {remoteError && !remoteLoading && (
+                    <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400">
+                      {remoteError}
+                    </div>
+                  )}
+
+                  {remoteLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <Loader2 size={32} className="animate-spin text-teal-600 mx-auto" />
+                    </div>
+                  ) : remoteHasLoaded && !remoteSearchTermRequired && !remoteError && remoteJobs.length === 0 ? (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
+                      <div className="text-5xl mb-4">🌐</div>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                        {t('externalJobs.remoteEmptyTitle', 'No remote opportunities found')}
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('externalJobs.remoteEmptyDesc', 'Try searching for different remote keywords or roles.')}
+                      </p>
+                    </div>
+                  ) : !remoteSearchTermRequired && !remoteError && remoteJobs.length > 0 ? (
+                    <div className="space-y-4">
+                      {remoteJobs.map((job) => (
+                        <ExternalJobCard key={job.id} job={job} country="remote" />
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              )}
             </>
           )}
         </div>

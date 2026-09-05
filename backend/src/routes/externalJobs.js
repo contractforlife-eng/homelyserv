@@ -9,6 +9,7 @@ import { requireWorker } from '../middleware/auth.js';
 import { searchAdzunaJobs, ADZUNA_SUPPORTED_COUNTRIES } from '../services/adzunaService.js';
 import { searchJoobleJobs } from '../services/joobleService.js';
 import { searchUsajobsJobs } from '../services/usajobsService.js';
+import { searchJobicyJobs } from '../services/jobicyService.js';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
 import { normalizeCountryCode } from '../utils/currencyMetadata.js';
@@ -59,10 +60,22 @@ const dedupeExternalJobs = (jobList) => {
  *   - what: string (keyword / job title / category)
  *   - where: string (city or region)
  *   - country: string (2-letter ISO country code)
+ *   - remote: boolean (if true, proxies to Jobicy remote jobs)
+ *   - count: integer (for remote results)
  */
 router.get('/', requireWorker, async (req, res) => {
   try {
-    const { page, what, where, country } = req.query;
+    const { page, what, where, country, remote, count } = req.query;
+
+    // REMOTE MODE: Isolated Jobicy Remote Jobs query
+    if (String(remote).toLowerCase() === 'true') {
+      const jobicyResult = await searchJobicyJobs({
+        what: typeof what === 'string' ? what : '',
+        geo: typeof where === 'string' ? where : '',
+        count: count ? parseInt(count, 10) : 20
+      });
+      return res.json(jobicyResult);
+    }
 
     let targetCountry = country ? String(country).trim() : null;
     let workerProfession = '';

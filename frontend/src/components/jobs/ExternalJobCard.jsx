@@ -10,6 +10,7 @@ import { ExternalLink, MapPin, Building, Calendar, Globe } from 'lucide-react';
 import AdzunaAttribution from './AdzunaAttribution';
 import JoobleAttribution from './JoobleAttribution';
 import UsajobsAttribution from './UsajobsAttribution';
+import JobicyAttribution from './JobicyAttribution';
 
 const ExternalJobCard = ({ job, country }) => {
   const { t, i18n } = useTranslation();
@@ -19,6 +20,7 @@ const ExternalJobCard = ({ job, country }) => {
 
   const isJooble = job.source === 'jooble' || job.provider === 'jooble';
   const isUsajobs = job.source === 'usajobs' || job.provider === 'usajobs';
+  const isJobicy = job.source === 'jobicy' || job.provider === 'jobicy';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -60,7 +62,7 @@ const ExternalJobCard = ({ job, country }) => {
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
             <Globe size={12} />
-            {t('externalJobs.badge', 'External Opportunity')}
+            {job.remote ? t('externalJobs.remoteBadge', 'Remote Opportunity') : t('externalJobs.badge', 'External Opportunity')}
           </span>
           {job.category && (
             <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -77,11 +79,18 @@ const ExternalJobCard = ({ job, country }) => {
               {t('externalJobs.federalJob', 'Federal Job')}
             </span>
           )}
+          {isJobicy && (
+            <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+              {`Remote (${job.geoRestriction || 'Worldwide'})`}
+            </span>
+          )}
         </div>
         {isJooble ? (
           <JoobleAttribution country={job.market || country} />
         ) : isUsajobs ? (
           <UsajobsAttribution />
+        ) : isJobicy ? (
+          <JobicyAttribution />
         ) : (
           <AdzunaAttribution country={country} />
         )}
@@ -135,6 +144,8 @@ const ExternalJobCard = ({ job, country }) => {
             ? t('externalJobs.disclaimerJooble', 'Opens external partner application on Jooble')
             : isUsajobs
             ? t('externalJobs.disclaimerUsajobs', 'Opens official Federal job application on USAJOBS')
+            : isJobicy
+            ? t('externalJobs.disclaimerJobicy', 'Opens external partner application on Jobicy')
             : t('externalJobs.disclaimer', 'Opens external partner application on Adzuna')}
         </span>
         <a
