@@ -24,6 +24,7 @@ export default function PublicSupportWidget() {
   const endRef = useRef(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages, open]);
+
   useEffect(() => {
     if (!session || !open) return undefined;
     return connectGuestSupportSocket(session, {
@@ -33,11 +34,47 @@ export default function PublicSupportWidget() {
         try {
           const current = await loadGuestSession(session);
           setConversation(current.conversation);
-          setMessages(current.messages || []);
+          if (Array.isArray(current.messages)) {
+            setMessages((prev) => {
+              let next = prev;
+              for (const m of current.messages) next = mergeMessage(next, m);
+              return next;
+            });
+          }
         } catch { /* Keep the locally rendered history and retry on the next reconnect. */ }
       },
     });
   }, [session, open]);
+
+  useEffect(() => {
+    const isHumanOwned = ['WAITING_FOR_SUPPORT', 'ASSIGNED'].includes(conversation?.status);
+    if (!open || !session || !isHumanOwned) return undefined;
+
+    let isSyncing = false;
+    const intervalId = setInterval(async () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      try {
+        const current = await loadGuestSession(session);
+        if (current?.conversation) {
+          setConversation(current.conversation);
+        }
+        if (Array.isArray(current?.messages)) {
+          setMessages((prev) => {
+            let next = prev;
+            for (const m of current.messages) next = mergeMessage(next, m);
+            return next;
+          });
+        }
+      } catch {
+        /* Silently ignore intermittent background poll failures */
+      } finally {
+        isSyncing = false;
+      }
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [open, session, conversation?.status]);
 
   async function ensureSession(forceReload = false) {
     if (conversation && !forceReload) return;

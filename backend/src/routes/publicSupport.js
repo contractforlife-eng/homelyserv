@@ -8,6 +8,7 @@ import { answerFaq, welcomeFaq, transferredFaq } from '../services/publicSupport
 import { createGuestToken, hashGuestToken, verifyGuestConversation } from '../services/publicSupportAccessService.js';
 import { canSendToPublicSupportConversation, expireConversationIfInactive } from '../services/publicSupportExpiryService.js';
 import { applyDetectedConversationLanguage } from '../services/publicSupportLanguageService.js';
+import { processPublicSupportAiReply } from '../services/publicSupportAiService.js';
 
 const router = express.Router();
 const LANGUAGES = new Set(['en', 'ar', 'fr', 'ru', 'tr', 'de']);
@@ -101,20 +102,22 @@ router.post('/session/:publicId/messages', limit(60_000, 30), requireGuest, asyn
       emitStaff('public-support:queue', conversationDto(conversation));
     }
 
-    let botMessage = null;
-    let requiresContact = false;
     if (conversation.status === 'BOT') {
-      const faqResult = answerFaq(body, conversation.language);
-      requiresContact = faqResult.escalate;
-      botMessage = await PublicSupportMessage.create({ conversationId:conversation._id, senderType:'BOT', body:faqResult.answer });
-      conversation.lastMessage = botMessage.body;
-      conversation.lastMessageAt = botMessage.createdAt;
-      conversation.lastActivityAt = botMessage.createdAt;
-      if (requiresContact) conversation.escalationReason = clean(body, 500);
-      await conversation.save();
-      emitGuest(conversation, 'public-support:message', messageDto(botMessage));
+      // Async fire-and-forget Gemini AI processor (never blocks HTTP response)
+      setImmediate(() => {
+        processPublicSupportAiReply(conversation._id).catch((err) => {
+          console.error('[PublicSupportAI] Dispatch error:', err.message);
+        });
+      });
     }
-    res.status(201).json({ success:true, message:messageDto(visitorMessage), botMessage:botMessage ? messageDto(botMessage) : null, requiresContact, conversation:conversationDto(conversation) });
+
+    res.status(201).json({
+      success: true,
+      message: messageDto(visitorMessage),
+      botMessage: null,
+      requiresContact: false,
+      conversation: conversationDto(conversation)
+    });
   } catch (error) {
     console.error('Public support message error:', error.message);
     res.status(500).json({ success:false, message:'Unable to send message.' });
