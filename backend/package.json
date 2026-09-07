@@ -7,6 +7,7 @@
   "scripts": {
     "prestart": "npx prisma generate --schema=./prisma/schema.prisma",
     "start": "node src/index.js",
+    "test": "node --test src/routes/*.test.js",
     "dev": "nodemon src/index.js",
     "build": "npx prisma generate",
     "vercel-build": "npx prisma generate",
