@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { disconnectSocket } from '../utils/socket';
 import { changeLanguageGlobal } from '../i18n';
 import { getStoredAuthToken, persistAuthToken, removeStoredAuthTokens } from '../utils/storageMaintenance';
+import { StorageService } from '../services/storage.service';
 import { revokeCurrentDeviceToken } from '../utils/pushNotifications';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -15,17 +16,12 @@ import {
 } from '../native/biometricUnlock';
 import { clearRuntimeAuthToken, getRuntimeAuthToken, setRuntimeAuthToken } from '../utils/runtimeAuthToken';
 
-const storedAuthToken = getStoredAuthToken();
 const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
 let activeAuthCheck = null;
 let authEpoch = 0;
 let biometricStartupAttempted = false;
 
 const persistSessionToken = (token, options = {}) => {
-  if (isAndroidCapacitor) {
-    removeStoredAuthTokens();
-    return { success: true, persisted: false };
-  }
   return persistAuthToken(token, options);
 };
 
@@ -41,17 +37,19 @@ const normalizeUser = (userData) => {
   return normalized;
 };
 
+const initialToken = getStoredAuthToken();
+
 const useAuthStore = create(
   persist(
     (set, get) => ({
       user: null,
-      token: isAndroidCapacitor ? null : storedAuthToken,
-      isAuthenticated: isAndroidCapacitor ? false : Boolean(storedAuthToken),
+      token: initialToken,
+      isAuthenticated: Boolean(initialToken),
       isLoading: true,
       error: null,
       biometricLocked: false,
       biometricEnabled: false,
-      language: localStorage.getItem('homelyserv_language') || 'en',
+      language: (typeof window !== 'undefined' && localStorage.getItem('homelyserv_language')) || 'en',
 
       register: async (userData, userType) => {
         authEpoch += 1;
@@ -69,6 +67,7 @@ const useAuthStore = create(
           const persisted = persistSessionToken(token);
           if (!persisted.success) throw new Error(persisted.error);
           setRuntimeAuthToken(token);
+          StorageService.setUser(normalizedUser).catch(() => {});
 
           set({
             user: normalizedUser,
@@ -106,6 +105,7 @@ const useAuthStore = create(
           const persisted = persistSessionToken(token);
           if (!persisted.success) throw new Error(persisted.error);
           setRuntimeAuthToken(token);
+          StorageService.setUser(normalizedUser).catch(() => {});
 
           set({
             user: normalizedUser,
@@ -149,7 +149,10 @@ const useAuthStore = create(
         });
 
         removeStoredAuthTokens();
-        localStorage.removeItem('auth-storage');
+        StorageService.clearSession().catch(() => {});
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-storage');
+        }
         clearRuntimeAuthToken();
 
         if (isAndroidCapacitor && !skipBiometricCleanup) {
@@ -198,61 +201,46 @@ const useAuthStore = create(
           if (checkEpoch !== authEpoch) return { success: false, stale: true };
           set({ isLoading: true });
 
-          let token = get().token || getRuntimeAuthToken();
-          let persistSession = true;
+          // Ensure StorageService has bootstrapped and migrated tokens
+          const bootstrapped = await StorageService.bootstrapAndMigrate().catch(() => ({ token: null, user: null }));
+          if (checkEpoch !== authEpoch) return { success: false, stale: true };
+
+          let token = bootstrapped?.token || get().token || getStoredAuthToken() || getRuntimeAuthToken();
+          let isBiometric = false;
 
           if (isAndroidCapacitor) {
             try {
               if (checkEpoch !== authEpoch) return { success: false, stale: true };
-              const enabledState = await getBiometricEnabled();
+              const enabledState = await getBiometricEnabled().catch(() => null);
               if (checkEpoch !== authEpoch) return { success: false, stale: true };
+
               if (enabledState?.enabled) {
                 if (biometricStartupAttempted) {
-                  token = get().token || getRuntimeAuthToken();
-                  persistSession = false;
+                  token = get().token || getRuntimeAuthToken() || token;
                   if (!token) {
                     return { success: false, biometricCancelled: true };
                   }
                 } else {
                   biometricStartupAttempted = true;
-                set({
-                  user: null,
-                  token: null,
-                  isAuthenticated: false,
-                  isLoading: true,
-                  biometricLocked: true,
-                  biometricEnabled: true
-                });
-
-                const unlocked = await unlockNativeBiometric();
-                if (checkEpoch !== authEpoch) return { success: false, stale: true };
-                token = unlocked?.token;
-                persistSession = false;
-                if (!token) throw { code: 'SECURE_TOKEN_MISSING' };
-                }
-              } else {
-                if (enabledState?.reason === 'KEY_INVALIDATED') {
-                  await disableNativeBiometric().catch(() => {});
-                  removeStoredAuthTokens();
                   set({
                     user: null,
                     token: null,
                     isAuthenticated: false,
-                    isLoading: false,
-                    biometricLocked: false,
-                    biometricEnabled: false,
-                    error: null
+                    isLoading: true,
+                    biometricLocked: true,
+                    biometricEnabled: true
                   });
-                  return { success: false, biometricInvalidated: true };
+
+                  const unlocked = await unlockNativeBiometric();
+                  if (checkEpoch !== authEpoch) return { success: false, stale: true };
+                  token = unlocked?.token || token;
+                  isBiometric = true;
+                  if (!token) throw { code: 'SECURE_TOKEN_MISSING' };
                 }
-                // Android sessions without biometric protection are runtime-only.
-                // Remove tokens left by older app versions before resolving startup.
-                removeStoredAuthTokens();
-                token = get().token || getRuntimeAuthToken();
+              } else {
                 set({ biometricEnabled: false });
               }
             } catch (error) {
-              clearRuntimeAuthToken();
               if (error?.code === 'USER_CANCELLED' || error?.code === 'BIOMETRIC_AUTHENTICATION_FAILED' || error?.code === 'BIOMETRIC_LOCKOUT') {
                 set({
                   user: null,
@@ -266,22 +254,9 @@ const useAuthStore = create(
                 return { success: false, biometricCancelled: true };
               }
 
-              try {
-                await disableNativeBiometric();
-              } catch (disableError) {
-                console.warn('[Biometric] Invalid enrollment cleanup failed:', disableError?.code || 'DISABLE_FAILED');
-              }
-              removeStoredAuthTokens();
-              set({
-                user: null,
-                token: null,
-                isAuthenticated: false,
-                isLoading: false,
-                biometricLocked: false,
-                biometricEnabled: false,
-                error: null
-              });
-              return { success: false, biometricUnavailable: true };
+              // Fallback to standard persistent storage if biometric prompt failed or was not configured
+              console.warn('[Auth] Biometric check error, falling back to persistent token:', error?.code || error?.message);
+              set({ biometricEnabled: false, biometricLocked: false });
             }
           }
 
@@ -289,6 +264,7 @@ const useAuthStore = create(
             if (checkEpoch !== authEpoch) return { success: false, stale: true };
             set({
               user: null,
+              token: null,
               isAuthenticated: false,
               isLoading: false,
               biometricLocked: false
@@ -303,28 +279,23 @@ const useAuthStore = create(
             if (checkEpoch !== authEpoch) return { success: false, stale: true };
 
             if (response.data?.success && response.data?.user) {
-              const restored = get().restoreAuth(response.data.user, token, { persist: false });
+              const restoredUser = response.data.user;
+              const restored = get().restoreAuth(restoredUser, token, { persist: true });
               if (!restored.success) throw new Error(restored.error);
+              StorageService.setUser(restoredUser).catch(() => {});
 
-              if (isAndroidCapacitor && !persistSession) {
-                removeStoredAuthTokens();
-              }
-              return { success: true, biometric: !persistSession };
+              return { success: true, biometric: isBiometric, user: restoredUser };
             }
 
             throw new Error('Session verification failed');
           } catch (error) {
             if (checkEpoch !== authEpoch) return { success: false, stale: true };
             clearRuntimeAuthToken();
-            if (isAndroidCapacitor && !persistSession) {
-              try {
-                await disableNativeBiometric();
-              } catch (disableError) {
-                console.warn('[Biometric] Rejected-token cleanup failed:', disableError?.code || 'DISABLE_FAILED');
-              }
-            }
             removeStoredAuthTokens();
-            localStorage.removeItem('auth-storage');
+            StorageService.clearSession().catch(() => {});
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('auth-storage');
+            }
             set({
               user: null,
               token: null,
@@ -685,12 +656,12 @@ const useAuthStore = create(
         language: state.language
       }),
       merge: (persistedState, currentState) => {
-        const token = isAndroidCapacitor ? null : getStoredAuthToken();
+        const token = getStoredAuthToken();
         return {
           ...currentState,
           language: persistedState?.language || currentState.language,
           token,
-          isAuthenticated: isAndroidCapacitor ? false : Boolean(token),
+          isAuthenticated: Boolean(token),
         };
       }
     }

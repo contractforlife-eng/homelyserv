@@ -1,3 +1,5 @@
+import { StorageService } from '../services/storage.service';
+
 const LEGACY_CACHE_KEYS = [
   'homelyserv_users',
   'homelyserv_profiles',
@@ -14,15 +16,21 @@ const AUTH_TOKEN_KEY = 'homelyserv_token';
 export const isQuotaExceededError = (error) => error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014;
 
 export function getStoredAuthToken() {
-  return localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY) || null;
+  const sync = StorageService.getSyncToken();
+  if (sync) return sync;
+  return (typeof window !== 'undefined' && (localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY))) || null;
 }
 
 export function removeStoredAuthTokens() {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  StorageService.clearSession().catch(() => {});
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  }
 }
 
 export function cleanupObsoleteHomelyServStorage() {
+  if (typeof window === 'undefined') return [];
   const removed = [];
   for (const key of LEGACY_CACHE_KEYS) {
     if (localStorage.getItem(key) !== null) {
@@ -57,6 +65,7 @@ export function cleanupObsoleteHomelyServStorage() {
 }
 
 export function getStorageAudit() {
+  if (typeof window === 'undefined') return [];
   const keys = [];
   for (let index = 0; index < localStorage.length; index += 1) {
     const key = localStorage.key(index);
@@ -71,6 +80,14 @@ export function persistAuthToken(token, { remember = true } = {}) {
   if (typeof token !== 'string' || token.length < 20 || token.length > 16_384 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
     return { success:false, error:'Invalid authentication token format.' };
   }
+
+  // Persist asynchronously into Native Preferences via StorageService
+  StorageService.setToken(token).catch((err) => {
+    console.warn('[AuthStorage] StorageService.setToken error:', err);
+  });
+
+  if (typeof window === 'undefined') return { success: true };
+
   const targetStorage = remember ? localStorage : sessionStorage;
   const otherStorage = remember ? sessionStorage : localStorage;
   try {
@@ -90,3 +107,4 @@ export function persistAuthToken(token, { remember = true } = {}) {
     }
   }
 }
+

@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       // Always validate auth on initial load
       const result = await checkAuth();
-      if (result?.biometric && (window.location.pathname === '/' || window.location.pathname === '/login')) {
-        const restoredUser = useAuthStore.getState().user;
+      if (result?.success && (window.location.pathname === '/' || window.location.pathname === '/login')) {
+        const restoredUser = useAuthStore.getState().user || result?.user;
         const role = restoredUser?.role?.toUpperCase();
         const destination = role === 'ADMIN'
           ? '/admin'

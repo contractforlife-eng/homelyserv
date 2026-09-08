@@ -1,14 +1,17 @@
-﻿import { Preferences } from '@capacitor/preferences';
+import { Preferences } from '@capacitor/preferences';
 
 const TOKEN_KEY = 'homelyserv_access_token';
 const REFRESH_TOKEN_KEY = 'homelyserv_refresh_token';
 const USER_KEY = 'homelyserv_user_profile';
+const LEGACY_TOKEN_KEY = 'homelyserv_token';
+
+let memoryToken: string | null = null;
+let memoryUser: Record<string, unknown> | null = null;
 
 export const StorageService = {
   /**
-   * Reads credentials from native storage.
-   * If empty, scans legacy web localStorage for active sessions,
-   * migrates them to native preferences, and purges the legacy store.
+   * Initializes tokens and profile into memory and native preferences.
+   * Migrates any legacy token from localStorage.
    */
   async bootstrapAndMigrate<T = Record<string, unknown>>(): Promise<{
     token: string | null;
@@ -17,24 +20,20 @@ export const StorageService = {
     let token = await this.getToken();
     let user = await this.getUser<T>();
 
-    // Fallback: Check legacy web localStorage if native storage is empty
-    if (!token && typeof window !== 'undefined' && window.localStorage) {
+    // Fallback & Migration: Check legacy web localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
       const legacyToken =
         window.localStorage.getItem('token') ||
         window.localStorage.getItem('authToken') ||
         window.localStorage.getItem('accessToken') ||
-        window.localStorage.getItem('homelyserv_token');
+        window.localStorage.getItem(LEGACY_TOKEN_KEY);
 
       const legacyRefreshToken = window.localStorage.getItem('refreshToken');
       const legacyUser = window.localStorage.getItem('user') || window.localStorage.getItem('userProfile');
 
-      if (legacyToken) {
+      if (!token && legacyToken) {
         token = legacyToken;
         await this.setToken(legacyToken);
-        window.localStorage.removeItem('token');
-        window.localStorage.removeItem('authToken');
-        window.localStorage.removeItem('accessToken');
-        window.localStorage.removeItem('homelyserv_token');
       }
 
       if (legacyRefreshToken) {
@@ -42,72 +41,149 @@ export const StorageService = {
         window.localStorage.removeItem('refreshToken');
       }
 
-      if (legacyUser) {
+      if (!user && legacyUser) {
         try {
           user = JSON.parse(legacyUser) as T;
-          await this.setUser(user as Record<string, unknown>);
-          window.localStorage.removeItem('user');
-          window.localStorage.removeItem('userProfile');
+          if (user) {
+            await this.setUser(user as Record<string, unknown>);
+          }
         } catch {
           // Ignore parse errors on malformed legacy user strings
         }
       }
     }
 
+    if (token) {
+      memoryToken = token;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(LEGACY_TOKEN_KEY, token);
+      }
+    }
+
+    if (user) {
+      memoryUser = user as Record<string, unknown>;
+    }
+
     return { token, user };
+  },
+
+  // Synchronous token getter for immediate Axios interceptor calls
+  getSyncToken(): string | null {
+    if (memoryToken) return memoryToken;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(LEGACY_TOKEN_KEY) || null;
+    }
+    return null;
   },
 
   // Access Token
   async setToken(token: string): Promise<void> {
-    await Preferences.set({ key: TOKEN_KEY, value: token });
+    memoryToken = token;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(LEGACY_TOKEN_KEY, token);
+      } catch {}
+    }
+    try {
+      await Preferences.set({ key: TOKEN_KEY, value: token });
+    } catch (e) {
+      console.warn('[StorageService] Preferences.set token failed:', e);
+    }
   },
 
   async getToken(): Promise<string | null> {
-    const { value } = await Preferences.get({ key: TOKEN_KEY });
-    return value;
+    try {
+      const { value } = await Preferences.get({ key: TOKEN_KEY });
+      if (value) {
+        memoryToken = value;
+        return value;
+      }
+    } catch (e) {
+      console.warn('[StorageService] Preferences.get token failed:', e);
+    }
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const fallback = window.localStorage.getItem(LEGACY_TOKEN_KEY) || window.localStorage.getItem('token');
+      if (fallback) {
+        memoryToken = fallback;
+        return fallback;
+      }
+    }
+
+    return memoryToken;
   },
 
   // Refresh Token
   async setRefreshToken(refreshToken: string): Promise<void> {
-    await Preferences.set({ key: REFRESH_TOKEN_KEY, value: refreshToken });
+    try {
+      await Preferences.set({ key: REFRESH_TOKEN_KEY, value: refreshToken });
+    } catch (e) {
+      console.warn('[StorageService] Preferences.set refreshToken failed:', e);
+    }
   },
 
   async getRefreshToken(): Promise<string | null> {
-    const { value } = await Preferences.get({ key: REFRESH_TOKEN_KEY });
-    return value;
-  },
-
-  // User Profile Object
-  async setUser(user: Record<string, unknown>): Promise<void> {
-    await Preferences.set({ key: USER_KEY, value: JSON.stringify(user) });
-  },
-
-  async getUser<T>(): Promise<T | null> {
-    const { value } = await Preferences.get({ key: USER_KEY });
-    if (!value) return null;
     try {
-      return JSON.parse(value) as T;
+      const { value } = await Preferences.get({ key: REFRESH_TOKEN_KEY });
+      return value;
     } catch {
       return null;
     }
   },
 
+  // User Profile Object
+  async setUser(user: Record<string, unknown>): Promise<void> {
+    memoryUser = user;
+    try {
+      await Preferences.set({ key: USER_KEY, value: JSON.stringify(user) });
+    } catch (e) {
+      console.warn('[StorageService] Preferences.set user failed:', e);
+    }
+  },
+
+  async getUser<T>(): Promise<T | null> {
+    try {
+      const { value } = await Preferences.get({ key: USER_KEY });
+      if (value) {
+        const parsed = JSON.parse(value) as T;
+        memoryUser = parsed as Record<string, unknown>;
+        return parsed;
+      }
+    } catch {}
+
+    return (memoryUser as T) || null;
+  },
+
   // Complete Session Purge (Logout)
   async clearSession(): Promise<void> {
-    await Preferences.remove({ key: TOKEN_KEY });
-    await Preferences.remove({ key: REFRESH_TOKEN_KEY });
-    await Preferences.remove({ key: USER_KEY });
+    memoryToken = null;
+    memoryUser = null;
+    try {
+      await Preferences.remove({ key: TOKEN_KEY });
+      await Preferences.remove({ key: REFRESH_TOKEN_KEY });
+      await Preferences.remove({ key: USER_KEY });
+    } catch (e) {
+      console.warn('[StorageService] Preferences.remove failed:', e);
+    }
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem('token');
       window.localStorage.removeItem('authToken');
       window.localStorage.removeItem('accessToken');
-      window.localStorage.removeItem('homelyserv_token');
+      window.localStorage.removeItem(LEGACY_TOKEN_KEY);
       window.localStorage.removeItem('refreshToken');
       window.localStorage.removeItem('user');
       window.localStorage.removeItem('userProfile');
       window.localStorage.removeItem('auth-storage');
     }
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.removeItem('token');
+      window.sessionStorage.removeItem('authToken');
+      window.sessionStorage.removeItem('accessToken');
+      window.sessionStorage.removeItem(LEGACY_TOKEN_KEY);
+      window.sessionStorage.removeItem('refreshToken');
+    }
   }
 };
 
 export default StorageService;
+
