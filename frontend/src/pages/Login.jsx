@@ -107,9 +107,9 @@ function Login() {
   // persistent token. React to the restored auth state instead of relying
   // only on the one-time mount check above.
   useEffect(() => {
-    if (loading || mustChangePassword || authLoading || !isAuthenticated || !authUser) return;
+    if (mustChangePassword || authLoading || !isAuthenticated || !authUser) return;
     redirectUser(authUser);
-  }, [authUser, authLoading, isAuthenticated, loading, mustChangePassword]);
+  }, [authUser, authLoading, isAuthenticated, mustChangePassword]);
 
   const loginUser = async (email, password) => {
     setError('');
@@ -126,7 +126,6 @@ function Login() {
 
       if (!data.success) {
         setError(data.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : (data.message || t('invalidCredentials')));
-        setLoading(false);
         return;
       }
 
@@ -140,7 +139,6 @@ function Login() {
       });
       if (!authResult.success) {
         setError(authResult.error || t('loginFailed'));
-        setLoading(false);
         return;
       }
 
@@ -148,38 +146,37 @@ function Login() {
       console.log('✅ User role:', user.role);
 
       // One-time migration: if profileImage is missing in MongoDB but
-      // exists in legacy localStorage, copy it to MongoDB now.
-      // Wait for migration to complete before redirecting to prevent
-      // navigation before auth state is fully settled.
-      try {
-        const migratedUser = await migrateLegacyProfileIfNeeded(user, token);
-        if (migratedUser) {
-          console.log('✅ Profile image migrated — updating store');
-          useAuthStore.setState({
-            user: migratedUser
-          });
-        }
-      } catch (migrationError) {
-        console.warn('⚠️ Profile migration failed (non-blocking):', migrationError);
-      }
+      // exists in legacy localStorage, copy it to MongoDB in the background.
+      // Do NOT block navigation / login completion on migration.
+      migrateLegacyProfileIfNeeded(user, token)
+        .then((migratedUser) => {
+          if (migratedUser) {
+            console.log('✅ Profile image migrated — updating store');
+            useAuthStore.setState({
+              user: migratedUser
+            });
+          }
+        })
+        .catch((migrationError) => {
+          console.warn('⚠️ Profile migration failed (non-blocking):', migrationError);
+        });
 
       if (data.mustChangePassword) {
         temporaryCurrentPasswordRef.current = password;
         setMustChangePassword(true);
-        setLoading(false);
         setPassword('');
         return;
       }
 
       temporaryCurrentPasswordRef.current = '';
 
-      // Get the latest user from store (in case migration updated it)
-      const latestUser = useAuthStore.getState().user || user;
-      redirectUser(latestUser);
+      // Redirect immediately with the authenticated user
+      redirectUser(user);
     } catch (error) {
       console.error('Login error:', error);
       temporaryCurrentPasswordRef.current = '';
       setError(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : t('loginFailed'));
+    } finally {
       setLoading(false);
     }
   };
