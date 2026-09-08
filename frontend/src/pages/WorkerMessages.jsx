@@ -145,7 +145,7 @@ const WorkerMessages = () => {
        return;
      }
 
-     if (authUser.role !== 'WORKER') {
+     if (authUser.role?.toUpperCase() !== 'WORKER') {
        return;
      }
 
@@ -703,6 +703,7 @@ const WorkerMessages = () => {
   };
 
   const userProfileImage = authUser?.profileImage || null;
+  const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;
 
   return (
     <DashboardLayout requiredRole="WORKER">

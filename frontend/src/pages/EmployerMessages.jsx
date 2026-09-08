@@ -167,7 +167,7 @@ const EmployerMessages = () => {
       return;
     }
 
-    if (authUser.role !== 'EMPLOYER') {
+    if (authUser.role?.toUpperCase() !== 'EMPLOYER') {
       navigate('/login');
       return;
     }
@@ -749,6 +749,7 @@ const EmployerMessages = () => {
   };
 
   const userProfileImage = authUser?.profileImage || null;
+  const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;
 
   if (authLoading) {
     return (
