@@ -57,10 +57,11 @@ export const AuthProvider = ({ children }) => {
   }, [checkAuth, navigate, startupReady]);
 
   // AuthContext exposes authStore values directly — no duplicate state
+  // On Android/native startup, loading remains true until startupReady is signaled AND auth check finishes
   const value = {
     user,
     isAuthenticated,
-    loading: isLoading,
+    loading: !startupReady || isLoading,
     login,
     logout: () => {
       logout();
