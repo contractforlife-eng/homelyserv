@@ -82,7 +82,7 @@ export const recordAnalyticsEvent = async (req, res) => {
 export const redirectToApk = async (req, res) => {
   const source = req.query?.source === 'android' ? 'android' : 'web';
   const dedupeKey = req.query?.dedupeKey;
-  const target = process.env.ANDROID_APK_DOWNLOAD_URL || 'https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.15/HomelyServ-1.0.15-16.apk';
+  const target = process.env.ANDROID_APK_DOWNLOAD_URL || 'https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.16/HomelyServ-1.0.16-17.apk';
 
   if (isValidDedupeKey(dedupeKey)) {
     try {
