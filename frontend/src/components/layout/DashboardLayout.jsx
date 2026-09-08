@@ -59,12 +59,12 @@ const DashboardLayout = ({
     if (authLoading) return;
 
     if (!isAuthenticated || !authUser) {
-      navigate('/login');
+      navigate('/login', { replace: true });
       return;
     }
 
-    if (requiredRole && authUser.role !== requiredRole) {
-      navigate('/login');
+    if (requiredRole && authUser.role?.toUpperCase() !== requiredRole.toUpperCase()) {
+      navigate('/login', { replace: true });
       return;
     }
   }, [authUser, isAuthenticated, authLoading, navigate, requiredRole]);

@@ -45,7 +45,7 @@ const useAuthStore = create(
       user: null,
       token: initialToken,
       isAuthenticated: Boolean(initialToken),
-      isLoading: true,
+      isLoading: Boolean(initialToken),
       error: null,
       biometricLocked: false,
       biometricEnabled: false,

@@ -155,20 +155,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
   
-if (!isAuthenticated) {
-     return <Navigate to="/login" replace />;
-   }
-
-   if (!user) {
-     return (
-       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-         <div className="text-center">
-           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-           <p className="mt-4 text-gray-600">{t('sharedChrome.app.loading')}</p>
-         </div>
-       </div>
-     );
-   }
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
 
    const userRole = user.role?.toUpperCase();
 

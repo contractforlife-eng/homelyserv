@@ -186,28 +186,28 @@ const WorkerDashboardContent = () => {
       return;
     }
 
-    if (authUser.role !== 'WORKER') {
+    if (authUser.role?.toUpperCase() !== 'WORKER') {
       navigate('/login');
       return;
     }
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+  }, [authUser?.role, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
-    if (authUser) {
+    if (authUser?.id || authUser?.email) {
       loadRealStats();
     }
-  }, [authUser]);
+  }, [authUser?.id, authUser?.email]);
 
   // Check for new stats periodically
   useEffect(() => {
-    if (!authUser) return;
+    if (!authUser?.id && !authUser?.email) return;
     
     const interval = setInterval(() => {
       loadRealStats();
     }, 15000);
     
     return () => clearInterval(interval);
-   }, [authUser]);
+  }, [authUser?.id, authUser?.email]);
 
   // ============================================================
   // GENERATE RECENT ACTIVITY
@@ -308,40 +308,6 @@ const WorkerDashboardContent = () => {
       status: formatActivityStatus(activity.status)
     });
   };
-
-  // ============================================================
-  // USE EFFECTS
-  // ============================================================
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!isAuthenticated || !authUser) {
-      navigate('/login');
-      return;
-    }
-
-    if (authUser.role !== 'WORKER') {
-      navigate('/login');
-      return;
-    }
-  }, [authUser, isAuthenticated, authLoading, navigate]);
-
-  useEffect(() => {
-    if (authUser) {
-      loadRealStats();
-    }
-  }, [authUser]);
-
-  // Check for new stats periodically
-  useEffect(() => {
-    if (!authUser) return;
-    
-    const interval = setInterval(() => {
-      loadRealStats();
-    }, 15000);
-    
-    return () => clearInterval(interval);
-  }, [authUser]);
 
   if (authLoading) {
     return (

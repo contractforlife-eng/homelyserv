@@ -19,9 +19,10 @@ import { useTranslation } from 'react-i18next';
 const NotificationBell = ({ userId: userIdProp, className = '' }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const authUserId = useAuthStore(state => state.user?.id);
+  const authUserRole = useAuthStore(state => state.user?.role);
   // Use the userId prop if provided, otherwise fall back to the authenticated user's id
-  const userId = userIdProp || user?.id;
+  const userId = userIdProp || authUserId;
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -163,7 +164,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
     const isMessageNotification = notification.type === 'NEW_MESSAGE'
       || notification.entityType === 'MESSAGE';
     const conversationId = notification.data?.conversationId || notification.entityId;
-    const route = isMessageNotification && user?.role === 'SUPPORT'
+    const route = isMessageNotification && authUserRole === 'SUPPORT'
       ? `/support-messages${conversationId ? `?conversationId=${encodeURIComponent(conversationId)}` : ''}`
       : getEntityRoute(notification);
     navigate(route);

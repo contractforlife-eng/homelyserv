@@ -5,7 +5,8 @@ import { clearRuntimeAuthToken, getRuntimeAuthToken } from './runtimeAuthToken';
 import { StorageService } from '../services/storage.service';
 
 const api = axios.create({
-  baseURL: API_BASE
+  baseURL: API_BASE,
+  timeout: 20000
 });
 
 api.interceptors.request.use(
@@ -22,6 +23,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const requestUrl = error.config?.url || '';
+    const isAuthEndpoint =
+      requestUrl.includes('/api/auth/login') ||
+      requestUrl.includes('/api/auth/register') ||
+      requestUrl.includes('/api/auth/forgot-password') ||
+      requestUrl.includes('/api/auth/reset-password') ||
+      requestUrl.includes('/api/auth/verify-email');
+
     if (error.response?.data?.code === 'ACCOUNT_SUSPENDED') {
       const isLoginOrRegister = window.location.pathname === '/login' || window.location.pathname === '/register';
       if (!isLoginOrRegister) {
@@ -30,17 +39,17 @@ api.interceptors.response.use(
       localStorage.removeItem('auth-storage');
       removeStoredAuthTokens();
       clearRuntimeAuthToken();
-      if (!isLoginOrRegister) {
+      if (!isLoginOrRegister && !isAuthEndpoint) {
         window.location.href = '/login';
       }
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       // Don't redirect for public endpoints that don't require authentication
-      const publicPaths = ['/verify-email', '/forgot-password', '/reset-password'];
+      const publicPaths = ['/verify-email', '/forgot-password', '/reset-password', '/login', '/register'];
       const isPublicPath = publicPaths.some(path => 
-        error.config?.url?.includes(path)
+        requestUrl.includes(path) || window.location.pathname === path
       );
       
       if (!isPublicPath) {

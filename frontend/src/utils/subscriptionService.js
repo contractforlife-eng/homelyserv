@@ -181,7 +181,7 @@ export const applyBackendSubscription = (userId, userEmail, backendSubscription)
         persistSubscriptions(subscriptions);
       }
       const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
+      if (currentUser && (currentUser.isPremium !== false || currentUser.subscriptionActive !== false)) {
         useAuthStore.setState({
           user: { ...currentUser, isPremium: false, subscriptionActive: false }
         });
@@ -207,9 +207,9 @@ export const applyBackendSubscription = (userId, userEmail, backendSubscription)
     };
     persistSubscriptions(subscriptions);
 
-    // Reflect premium flag on the session user
+    // Reflect premium flag on the session user ONLY if changed
     const currentUser = useAuthStore.getState().user;
-    if (currentUser) {
+    if (currentUser && (currentUser.isPremium !== isActive || currentUser.subscriptionActive !== isActive)) {
       useAuthStore.setState({
         user: { ...currentUser, isPremium: isActive, subscriptionActive: isActive }
       });
@@ -253,11 +253,13 @@ export const cancelSubscription = (userId) => {
  */
 const updateAllUserData = (userEmail, isPremium, userId, userRole, userFullName) => {
   try {
-    const currentUser = useAuthStore.getState().user || {};
-    if (currentUser.email === userEmail || currentUser.id === userId) {
-      const updatedUser = { ...currentUser, isPremium, subscriptionActive: isPremium };
-      useAuthStore.setState({ user: updatedUser });
-      console.log('✅ Updated current session user');
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser && (currentUser.email === userEmail || currentUser.id === userId)) {
+      if (currentUser.isPremium !== isPremium || currentUser.subscriptionActive !== isPremium) {
+        const updatedUser = { ...currentUser, isPremium, subscriptionActive: isPremium };
+        useAuthStore.setState({ user: updatedUser });
+        console.log('✅ Updated current session user');
+      }
     }
 
     // 2. Update profiles

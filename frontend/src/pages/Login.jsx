@@ -86,30 +86,31 @@ function Login() {
   }, []);
 
   const redirectUser = (user) => {
-     const role = user?.role?.toUpperCase();
+    const role = user?.role?.toUpperCase();
 
-      if (role === 'ADMIN') {
-        navigate('/admin');
-      } else if (role === 'EMPLOYER') {
-        navigate('/employer-dashboard');
-      } else if (role === 'WORKER') {
-        navigate('/worker-dashboard');
-      } else if (role === 'SUPPORT') {
-        navigate('/support-dashboard');
-      } else if (role === 'SUPPORT_HELPER') {
-        navigate('/sup-help');
-      } else {
-        navigate('/login');
-      }
-   };
+    if (role === 'ADMIN') {
+      navigate('/admin', { replace: true });
+    } else if (role === 'EMPLOYER') {
+      navigate('/employer-dashboard', { replace: true });
+    } else if (role === 'WORKER') {
+      navigate('/worker-dashboard', { replace: true });
+    } else if (role === 'SUPPORT') {
+      navigate('/support-dashboard', { replace: true });
+    } else if (role === 'SUPPORT_HELPER') {
+      navigate('/sup-help', { replace: true });
+    } else {
+      console.warn('[Auth] Unknown or missing user role:', user?.role);
+      navigate('/login', { replace: true });
+    }
+  };
 
   // A new tab can render Login before AuthProvider finishes validating the
   // persistent token. React to the restored auth state instead of relying
   // only on the one-time mount check above.
   useEffect(() => {
-    if (mustChangePassword || authLoading || !isAuthenticated || !authUser) return;
+    if (mustChangePassword || !isAuthenticated || !authUser) return;
     redirectUser(authUser);
-  }, [authUser, authLoading, isAuthenticated, mustChangePassword]);
+  }, [authUser, isAuthenticated, mustChangePassword]);
 
   const loginUser = async (email, password) => {
     setError('');
@@ -124,8 +125,8 @@ function Login() {
 
       const data = response.data;
 
-      if (!data.success) {
-        setError(data.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : (data.message || t('invalidCredentials')));
+      if (!data?.success || !data?.user || !data?.token) {
+        setError(data?.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : (data?.message || t('invalidCredentials')));
         return;
       }
 
@@ -152,8 +153,10 @@ function Login() {
         .then((migratedUser) => {
           if (migratedUser) {
             console.log('✅ Profile image migrated — updating store');
+            const normalized = { ...migratedUser };
+            if (normalized.role) normalized.role = String(normalized.role).toUpperCase();
             useAuthStore.setState({
-              user: migratedUser
+              user: normalized
             });
           }
         })
@@ -175,7 +178,7 @@ function Login() {
     } catch (error) {
       console.error('Login error:', error);
       temporaryCurrentPasswordRef.current = '';
-      setError(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : t('loginFailed'));
+      setError(error.response?.data?.code === 'ACCOUNT_SUSPENDED' ? 'ACCOUNT_SUSPENDED' : (error.response?.data?.message || t('loginFailed')));
     } finally {
       setLoading(false);
     }
