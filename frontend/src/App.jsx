@@ -142,9 +142,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const { t } = useTranslation();
   const { user, isAuthenticated, loading } = useAuth();
   
-  // Only block during initial unresolved authentication
-  // After auth is resolved, never show full-page loader during SPA navigation
-  if (loading && !isAuthenticated && !user) {
+  // While authentication validation is in progress, render the loading UI
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
