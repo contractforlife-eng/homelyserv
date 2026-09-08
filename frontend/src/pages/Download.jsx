@@ -9,7 +9,7 @@ import { getAnalyticsSource, getOperationalAnalyticsDedupeKey } from '../utils/o
 import { API_BASE } from '../config/api';
 
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.13-14/release.json';
-const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/android-v1.0.13/HomelyServ-1.0.13-14.apk';
+const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.13/HomelyServ-1.0.13-14.apk';
 const FALLBACK_RELEASE = {
   appName: 'HomelyServ',
   versionName: '1.0.13',

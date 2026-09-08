@@ -10,5 +10,5 @@
   "packageName": "com.homelyserv.app",
   "sha256": "DF8A19B716A84928FC23C6C708085B64E1A619D53C09BC254EB7327DE219BDE9",
   "signingCertificateSha256": "b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50",
-  "downloadUrl": "https://github.com/contractforlife-eng/homelyserv/releases/download/android-v1.0.13/HomelyServ-1.0.13-14.apk"
+  "downloadUrl": "https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.13/HomelyServ-1.0.13-14.apk"
 }
