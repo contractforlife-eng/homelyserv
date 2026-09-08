@@ -90,28 +90,29 @@ router.get('/', requireWorker, async (req, res) => {
       }
 
       if (!targetCountry) {
-        // Priority 1: user.countryCode
-        if (user?.countryCode && String(user.countryCode).trim()) {
-          targetCountry = user.countryCode;
-        // Priority 2: user.registrationCountryCode
-        } else if (user?.registrationCountryCode && String(user.registrationCountryCode).trim()) {
+        // Priority 1: Authoritative User Registration Geography (registrationCountryCode)
+        if (user?.registrationCountryCode && String(user.registrationCountryCode).trim()) {
           targetCountry = user.registrationCountryCode;
-        // Priority 3: derive from user.countryName using existing supported country metadata
-        } else if (user?.countryName && typeof user.countryName === 'string') {
-          const matchedCode = countriesByName.get(user.countryName.trim().toLowerCase());
-          if (matchedCode) targetCountry = matchedCode;
-        // Priority 4: derive from user.registrationCountryName using existing supported country metadata
-        } else if (user?.registrationCountryName && typeof user.registrationCountryName === 'string') {
-          const matchedCode = countriesByName.get(user.registrationCountryName.trim().toLowerCase());
-          if (matchedCode) targetCountry = matchedCode;
+        // Priority 2: Authoritative User Registration Geography (registrationCountryName)
+        } else if (user?.registrationCountryName && typeof user.registrationCountryName === 'string' && countriesByName.get(user.registrationCountryName.trim().toLowerCase())) {
+          targetCountry = countriesByName.get(user.registrationCountryName.trim().toLowerCase());
+        // Priority 3: Fallback to profile countryCode
+        } else if (user?.countryCode && String(user.countryCode).trim()) {
+          targetCountry = user.countryCode;
+        // Priority 4: Fallback to profile countryName
+        } else if (user?.countryName && typeof user.countryName === 'string' && countriesByName.get(user.countryName.trim().toLowerCase())) {
+          targetCountry = countriesByName.get(user.countryName.trim().toLowerCase());
         } else {
-          // Priority 5: Fallback to Prisma lookup if needed
+          // Priority 5: Fallback to Prisma lookup for registrationCountryCode if needed
           const prismaUser = await prisma.user.findUnique({
             where: { id: String(req.userId) },
             select: { registrationCountryCode: true }
           });
           if (prismaUser?.registrationCountryCode) {
             targetCountry = prismaUser.registrationCountryCode;
+          } else {
+            // Priority 5 (Legacy Default): Owner business rule — legacy accounts without any country data default to Egypt
+            targetCountry = 'EG';
           }
         }
       }
