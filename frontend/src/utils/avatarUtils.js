@@ -13,7 +13,7 @@ export const resolveAvatarUrl = (
   image,
   apiBase = (typeof process !== 'undefined' && process.env?.VITE_API_URL)
     ? process.env.VITE_API_URL
-    : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL ? import.meta.env.VITE_API_URL : 'http://localhost:5000')
+    : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL ? import.meta.env.VITE_API_URL : 'https://adventurous-grace-production-1b38.up.railway.app')
 ) => {
   if (!image || typeof image !== 'string') return null;
   const trimmed = image.trim();

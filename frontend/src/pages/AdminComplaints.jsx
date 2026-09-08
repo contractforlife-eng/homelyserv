@@ -146,7 +146,7 @@ const AdminComplaints = () => {
   // ============================================================
   const loadSupportUsers = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/support-users`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://adventurous-grace-production-1b38.up.railway.app'}/api/chat/support-users`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('homelyserv_token')}`
         }

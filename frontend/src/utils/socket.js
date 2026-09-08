@@ -37,7 +37,7 @@ export const getSocket = (userId) => {
     registeredHandlers.clear();
   }
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://adventurous-grace-production-1b38.up.railway.app';
 
   socket = io(API_URL, {
     auth: { token: localStorage.getItem('homelyserv_token') },
