@@ -17,6 +17,7 @@ import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { resolveAccountDefaultCurrency } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
 import { validatePhone } from '../controllers/authController.js';
+import { detectPlatform, extractAppVersion } from '../services/platformDetectionService.js';
 
 const router = express.Router();
 
@@ -212,6 +213,16 @@ router.post('/social-login', async (req, res) => {
       });
     }
 
+    // Update last login and activity immediately on successful social login
+    user.lastLogin = new Date();
+    user.lastActiveAt = new Date();
+    user.lastPlatform = detectPlatform(req);
+    const appVer = extractAppVersion(req);
+    if (appVer) {
+      user.lastAppVersion = appVer;
+    }
+    await user.save();
+
     // Generate JWT token (same format as /auth/login)
     const token = jwt.sign(
       { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
@@ -316,6 +327,9 @@ router.post('/social-onboarding/complete', async (req, res) => {
         ...(normalizedDesiredJob === 'tutor' ? { tutorSpecialization: normalizedTutorSpecialization } : {}),
       } : {}),
       profileImage: onboarding.profileImage || null,
+      lastPlatform: detectPlatform(req),
+      lastActiveAt: new Date(),
+      ...(extractAppVersion(req) ? { lastAppVersion: extractAppVersion(req) } : {}),
       registrationIp: decryptOnboardingRegistrationIp(onboarding.registrationIpCiphertext),
       registrationCountryCode: onboarding.registrationCountryCode || null,
       registrationCountryName: onboarding.registrationCountryName || 'Unknown',

@@ -35,7 +35,12 @@ import {
   Pause,
   Play,
   ChevronDown,
-  UserCog
+  UserCog,
+  Globe,
+  Smartphone,
+  Apple,
+  HelpCircle,
+  Activity
 } from 'lucide-react';
 
 // ============================================================
@@ -112,6 +117,76 @@ const StatusBadge = ({ isSuspended, isVerified, labels }) => {
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
       {labels.active}
+    </span>
+  );
+};
+
+const formatLastActive = (dateString, lang = 'en') => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return null;
+
+  const now = new Date();
+  const diffMs = now - date;
+  if (diffMs < 0) return 'Just now';
+
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 1) return 'Active just now';
+  if (diffMinutes < 60) return `Active ${diffMinutes}m ago`;
+  if (diffHours < 24) return `Active ${diffHours}h ago`;
+  if (diffDays === 1) return 'Last active yesterday';
+  if (diffDays < 30) return `Last active ${diffDays}d ago`;
+
+  return `Last active ${date.toLocaleDateString(lang)}`;
+};
+
+const PlatformIcon = ({ platform, lastActiveAt, appVersion, lang = 'en' }) => {
+  const norm = String(platform || '').trim().toLowerCase();
+  const activeLabel = formatLastActive(lastActiveAt, lang);
+
+  const configs = {
+    web: {
+      label: 'Web',
+      fullName: 'Web',
+      icon: Globe,
+      color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+    },
+    android: {
+      label: 'Android',
+      fullName: appVersion ? `Android App · v${appVersion}` : 'Android App',
+      icon: Smartphone,
+      color: 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+    },
+    ios: {
+      label: 'iOS',
+      fullName: appVersion ? `iOS App · v${appVersion}` : 'iOS App',
+      icon: Apple,
+      color: 'text-indigo-600 bg-indigo-50 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800'
+    },
+    unknown: {
+      label: 'Unknown',
+      fullName: 'Platform unknown',
+      icon: HelpCircle,
+      color: 'text-gray-500 bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+    }
+  };
+
+  const current = configs[norm] || configs.unknown;
+  const Icon = current.icon;
+  const tooltipText = activeLabel ? `${current.fullName} (Last active: ${activeLabel.toLowerCase()})` : current.fullName;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border cursor-help shrink-0 whitespace-nowrap ${current.color} transition-colors`}
+      title={tooltipText}
+      aria-label={tooltipText}
+    >
+      <Icon size={12} className="shrink-0" />
+      <span>{current.label}</span>
     </span>
   );
 };
@@ -219,6 +294,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [platformFilter, setPlatformFilter] = useState('all');
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedUserForReset, setSelectedUserForReset] = useState(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -294,6 +370,13 @@ const AdminUsers = () => {
       filtered = filtered.filter(u => !isSuspendedAccount(u));
     }
 
+    if (platformFilter !== 'all') {
+      filtered = filtered.filter(u => {
+        const p = String(u.lastPlatform || 'unknown').toLowerCase();
+        return p === platformFilter.toLowerCase();
+      });
+    }
+
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(u =>
@@ -306,7 +389,7 @@ const AdminUsers = () => {
     }
 
     setFilteredUsers(filtered);
-  }, [users, roleFilter, statusFilter, searchTerm]);
+  }, [users, roleFilter, statusFilter, platformFilter, searchTerm]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -511,9 +594,10 @@ const AdminUsers = () => {
     setSearchTerm('');
     setRoleFilter('all');
     setStatusFilter('all');
+    setPlatformFilter('all');
   };
 
-  const hasActiveFilters = searchTerm || roleFilter !== 'all' || statusFilter !== 'all';
+  const hasActiveFilters = searchTerm || roleFilter !== 'all' || statusFilter !== 'all' || platformFilter !== 'all';
 
   // Calculate stats
   const stats = {
@@ -674,6 +758,22 @@ const AdminUsers = () => {
               <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
 
+            {/* Platform Filter */}
+            <div className="relative">
+              <select
+                value={platformFilter}
+                onChange={(e) => setPlatformFilter(e.target.value)}
+                className="w-full md:w-auto px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white appearance-none cursor-pointer"
+              >
+                <option value="all">All Platforms</option>
+                <option value="web">🌐 Web</option>
+                <option value="android">📱 Android App</option>
+                <option value="ios">🍎 iOS App</option>
+                <option value="unknown">⚪ Unknown</option>
+              </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+
             {/* Clear Filters */}
             {hasActiveFilters && (
               <button
@@ -734,8 +834,16 @@ const AdminUsers = () => {
                             role={u.role}
                             size="md"
                           />
-                          <div>
-                            <UserDisplayName user={u} size="lg" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <UserDisplayName user={u} size="lg" className="shrink min-w-0" />
+                              <PlatformIcon
+                                platform={u.lastPlatform}
+                                lastActiveAt={u.lastActiveAt}
+                                appVersion={u.lastAppVersion}
+                                lang={i18n.resolvedLanguage || 'en'}
+                              />
+                            </div>
                             {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
                               <p className="text-xs font-semibold text-purple-600 mt-0.5">Root Admin</p>
                             )}

@@ -162,6 +162,19 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  lastPlatform: {
+    type: String,
+    enum: ['web', 'android', 'ios', 'unknown'],
+    default: 'unknown'
+  },
+  lastActiveAt: {
+    type: Date,
+    default: null
+  },
+  lastAppVersion: {
+    type: String,
+    default: null
+  },
   passwordResetAt: {
     type: Date,
     default: null

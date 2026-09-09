@@ -2,7 +2,19 @@ import axios from 'axios';
 import { API_BASE } from '../config/api';
 import { getStoredAuthToken, removeStoredAuthTokens } from './storageMaintenance';
 import { clearRuntimeAuthToken, getRuntimeAuthToken } from './runtimeAuthToken';
+import { Capacitor } from '@capacitor/core';
 import { StorageService } from '../services/storage.service';
+
+const getClientPlatform = () => {
+  try {
+    const platform = Capacitor.getPlatform();
+    if (platform === 'android') return 'android';
+    if (platform === 'ios') return 'ios';
+    return 'web';
+  } catch {
+    return 'web';
+  }
+};
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -11,6 +23,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+    config.headers = config.headers || {};
+    config.headers['X-Client-Platform'] = getClientPlatform();
     const token = getRuntimeAuthToken() || StorageService.getSyncToken() || getStoredAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -355,6 +355,9 @@ model User {
   profileComplete                  Boolean          @default(false)
   desiredJob                       String           @default("")
   lastLogin                        DateTime?
+  lastPlatform                     String?          @default("unknown")
+  lastActiveAt                     DateTime?
+  lastAppVersion                   String?
   passwordResetAt                  DateTime?
   mustChangePassword               Boolean          @default(false)
   settings                         Json?            @default("{}")

@@ -1,12 +1,9 @@
+
 // backend/src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
-
-// PHASE 0 SECURITY FIX (audit §2.8): no hardcoded fallback secret.
-// getJwtSecret() throws if JWT_SECRET is missing/weak; that error is
-// caught below and surfaced as a 500 rather than silently signing/
-// verifying tokens with a secret that was committed to source control.
+import { trackUserActivityThrottled } from '../services/platformDetectionService.js';
 
 // Matches admin.js helper: guards against legacy non-ObjectId user IDs
 // (e.g. "user_1784367005840") which would crash a Mongoose findById.
@@ -113,13 +110,18 @@ export const authenticate = async (req, res, next) => {
           message: 'Authentication error' 
         });
       }
-      
+
+      // Track authenticated user activity with non-blocking 15-minute throttle
+      if (isValidObjectId(String(req.userId))) {
+        trackUserActivityThrottled(req.userId, req);
+      }
+
       next();
     } catch (jwtError) {
       // Handle specific JWT errors
       console.error('❌ JWT verification error:', jwtError.message);
       console.error('❌ JWT error name:', jwtError.name);
-      
+
       if (jwtError.name === 'JsonWebTokenError') {
         return res.status(401).json({ 
           success: false, 

@@ -28,6 +28,7 @@ import {
   resendVerificationEmail,
   sendVerificationOnRegistration
 } from '../services/verificationService.js';
+import { detectPlatform, extractAppVersion } from '../services/platformDetectionService.js';
 
 // ============================================================
 // PASSWORD RESET CONSTANTS
@@ -231,6 +232,9 @@ export const register = async (req, res) => {
       countryCode: matchedCountry.code,
       countryName: matchedCountry.name,
       location: location || '',
+      lastPlatform: detectPlatform(req),
+      lastActiveAt: new Date(),
+      ...(extractAppVersion(req) ? { lastAppVersion: extractAppVersion(req) } : {}),
       ...(normalizedRole === 'WORKER' ? {
         desiredJob: canonicalDesiredJob,
         hourlyRate: normalizedHourlyRate,
@@ -482,8 +486,14 @@ export const login = async (req, res) => {
       });
     }
 
-    // Update last login
+    // Update last login and activity immediately
     user.lastLogin = new Date();
+    user.lastActiveAt = new Date();
+    user.lastPlatform = detectPlatform(req);
+    const appVer = extractAppVersion(req);
+    if (appVer) {
+      user.lastAppVersion = appVer;
+    }
     await user.save();
 
     // Generate token
