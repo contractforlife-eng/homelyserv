@@ -227,7 +227,7 @@ router.post('/social-login', async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
       getJwtSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // Return user without password
@@ -352,7 +352,7 @@ router.post('/social-onboarding/complete', async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
       getJwtSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     return res.status(201).json({ success: true, token, user: serializeSocialUser(user) });

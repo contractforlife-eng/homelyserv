@@ -279,7 +279,7 @@ export const register = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
       getJwtSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // Return user data (without password)
@@ -444,7 +444,7 @@ export const login = async (req, res) => {
         const token = jwt.sign(
           createRootRecoveryTokenClaims(user),
           getJwtSecret(),
-          { expiresIn: '7d' }
+          { expiresIn: '30d' }
         );
 
         return res.json({
@@ -500,7 +500,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
       getJwtSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // Return user data (without password)
