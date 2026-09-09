@@ -29,13 +29,12 @@ export const AuthProvider = ({ children }) => {
   const markStartupReady = useCallback(() => setStartupReady(true), []);
 
   // On mount, verify token with backend via Zustand's checkAuth
-  // This runs ONLY ONCE per app load/browser refresh, not on every navigation
+  // This runs immediately on app load/browser refresh in background, not waiting for intro animations
   useEffect(() => {
-    if (!startupReady) return;
-
+    let isMounted = true;
     const initAuth = async () => {
-      // Always validate auth on initial load
       const result = await checkAuth();
+      if (!isMounted) return;
       if (result?.success && (window.location.pathname === '/' || window.location.pathname === '/login')) {
         const restoredUser = useAuthStore.getState().user || result?.user;
         const role = restoredUser?.role?.toUpperCase();
@@ -54,7 +53,10 @@ export const AuthProvider = ({ children }) => {
       }
     };
     initAuth();
-  }, [checkAuth, navigate, startupReady]);
+    return () => {
+      isMounted = false;
+    };
+  }, [checkAuth, navigate]);
 
   // AuthContext exposes authStore values directly — no duplicate state
   // On Android/native startup, loading remains true until startupReady is signaled AND auth check finishes

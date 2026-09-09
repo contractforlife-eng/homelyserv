@@ -137,6 +137,37 @@ const role = user.role?.toUpperCase();
   );
 };
 
+// Root Route Redirect Component
+const HomeRedirect = () => {
+  const { t } = useTranslation();
+  const { user, isAuthenticated, loading } = useAuth();
+  const token = useAuthStore(state => state.token);
+
+  if (!isAuthenticated && !token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user) {
+    const role = user.role?.toUpperCase();
+    if (role === 'ADMIN') return <Navigate to="/admin" replace />;
+    if (role === 'EMPLOYER') return <Navigate to="/employer-dashboard" replace />;
+    if (role === 'WORKER') return <Navigate to="/worker-dashboard" replace />;
+    if (role === 'SUPPORT') return <Navigate to="/support-dashboard" replace />;
+    if (role === 'SUPPORT_HELPER') return <Navigate to="/sup-help" replace />;
+    return <Navigate to="/login" replace />;
+  }
+
+  // If token is present but user profile is loading, render clean loader
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">{t('sharedChrome.app.loading')}</p>
+      </div>
+    </div>
+  );
+};
+
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { t } = useTranslation();
@@ -276,7 +307,7 @@ function App() {
       <BiometricLockGate />
       <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

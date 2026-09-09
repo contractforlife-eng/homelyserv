@@ -38,11 +38,12 @@ const normalizeUser = (userData) => {
 };
 
 const initialToken = getStoredAuthToken();
+const initialUser = normalizeUser(StorageService.getSyncUser());
 
 const useAuthStore = create(
   persist(
     (set, get) => ({
-      user: null,
+      user: initialUser,
       token: initialToken,
       isAuthenticated: Boolean(initialToken),
       isLoading: Boolean(initialToken),
@@ -182,6 +183,9 @@ const useAuthStore = create(
           }
         }
         setRuntimeAuthToken(token);
+        if (normalizedUser) {
+          StorageService.setUser(normalizedUser).catch(() => {});
+        }
         set({
           user: normalizedUser,
           token,
@@ -290,21 +294,42 @@ const useAuthStore = create(
             throw new Error('Session verification failed');
           } catch (error) {
             if (checkEpoch !== authEpoch) return { success: false, stale: true };
-            clearRuntimeAuthToken();
-            removeStoredAuthTokens();
-            StorageService.clearSession().catch(() => {});
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('auth-storage');
+
+            const status = error?.response?.status;
+            const isExplicitAuthFailure = status === 401 || status === 403 || error?.response?.data?.code === 'ACCOUNT_SUSPENDED';
+
+            if (isExplicitAuthFailure) {
+              // Token is genuinely invalid, expired, or revoked by server
+              clearRuntimeAuthToken();
+              removeStoredAuthTokens();
+              StorageService.clearSession().catch(() => {});
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('auth-storage');
+              }
+              set({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                isLoading: false,
+                biometricLocked: false,
+                biometricEnabled: false,
+                error: error?.response?.data?.message || null
+              });
+              return { success: false, error: 'SESSION_INVALID' };
             }
+
+            // Transient error: network offline, timeout, server 5xx, or request cancelled
+            // PRESERVE stored tokens and existing user session
+            console.warn('[Auth] Verification failed due to transient/network error. Preserving session:', error?.message || error);
+            const fallbackUser = get().user || normalizeUser(StorageService.getSyncUser()) || normalizeUser(bootstrapped?.user);
             set({
-              user: null,
-              token: null,
-              isAuthenticated: false,
+              user: fallbackUser,
+              token,
+              isAuthenticated: Boolean(token),
               isLoading: false,
-              biometricLocked: false,
-              biometricEnabled: false
+              error: null
             });
-            return { success: false };
+            return { success: true, offline: true, user: fallbackUser };
           }
         })();
 
@@ -657,10 +682,12 @@ const useAuthStore = create(
       }),
       merge: (persistedState, currentState) => {
         const token = getStoredAuthToken();
+        const syncUser = normalizeUser(StorageService.getSyncUser());
         return {
           ...currentState,
           language: persistedState?.language || currentState.language,
           token,
+          user: currentState.user || syncUser,
           isAuthenticated: Boolean(token),
         };
       }

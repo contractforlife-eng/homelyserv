@@ -76,6 +76,27 @@ export const StorageService = {
     return null;
   },
 
+  // Synchronous user profile getter for immediate store initialization
+  getSyncUser<T = Record<string, unknown>>(): T | null {
+    if (memoryUser) return memoryUser as T;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw =
+          window.localStorage.getItem(USER_KEY) ||
+          window.localStorage.getItem('user') ||
+          window.localStorage.getItem('userProfile');
+        if (raw) {
+          const parsed = JSON.parse(raw) as T;
+          if (parsed && typeof parsed === 'object') {
+            memoryUser = parsed as Record<string, unknown>;
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  },
+
   // Access Token
   async setToken(token: string): Promise<void> {
     memoryToken = token;
@@ -134,6 +155,11 @@ export const StorageService = {
   // User Profile Object
   async setUser(user: Record<string, unknown>): Promise<void> {
     memoryUser = user;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(USER_KEY, JSON.stringify(user));
+      } catch {}
+    }
     try {
       await Preferences.set({ key: USER_KEY, value: JSON.stringify(user) });
     } catch (e) {
@@ -150,6 +176,22 @@ export const StorageService = {
         return parsed;
       }
     } catch {}
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw =
+          window.localStorage.getItem(USER_KEY) ||
+          window.localStorage.getItem('user') ||
+          window.localStorage.getItem('userProfile');
+        if (raw) {
+          const parsed = JSON.parse(raw) as T;
+          if (parsed && typeof parsed === 'object') {
+            memoryUser = parsed as Record<string, unknown>;
+            return parsed;
+          }
+        }
+      } catch {}
+    }
 
     return (memoryUser as T) || null;
   },
@@ -170,6 +212,7 @@ export const StorageService = {
       window.localStorage.removeItem('authToken');
       window.localStorage.removeItem('accessToken');
       window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+      window.localStorage.removeItem(USER_KEY);
       window.localStorage.removeItem('refreshToken');
       window.localStorage.removeItem('user');
       window.localStorage.removeItem('userProfile');
@@ -180,6 +223,7 @@ export const StorageService = {
       window.sessionStorage.removeItem('authToken');
       window.sessionStorage.removeItem('accessToken');
       window.sessionStorage.removeItem(LEGACY_TOKEN_KEY);
+      window.sessionStorage.removeItem(USER_KEY);
       window.sessionStorage.removeItem('refreshToken');
     }
   }
