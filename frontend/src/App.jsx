@@ -93,6 +93,7 @@ import SupHelpSettings from './pages/sup-help/SupHelpSettings';
 import PublicSupportWidget from './components/public-support/PublicSupportWidget';
 
 import { useAuth } from './context/AuthContext';
+import useAuthStore from './store/authStore';
 import { useTranslation } from 'react-i18next';
 import { initializePushNotifications, setupPushListeners, getPendingPushAction, clearPendingPushAction } from './utils/pushNotifications';
 
