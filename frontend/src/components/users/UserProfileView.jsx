@@ -74,6 +74,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
 
   // The VIEWED profile — completely separate from the authenticated session.
   const [profileUser, setProfileUser] = useState(null);
+  const resolvedUserId = profileUser?.id || profileUser?._id || userId;
   const [stats, setStats] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [paymentPagination, setPaymentPagination] = useState({ page: 1, hasMore: false });
@@ -161,7 +162,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     try {
       if (isAdmin) {
         const endpoint = suspend ? '/suspend' : '/activate';
-        const response = await api.post(`${apiBase}/users/${profileUser.id}${endpoint}`, {
+        const response = await api.post(`${apiBase}/users/${resolvedUserId}${endpoint}`, {
           reason: suspend ? 'Violation of terms of service' : 'Account reactivated'
         });
 
@@ -191,7 +192,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     if (!profileUser || isAdmin || !reason) return;
     setActionLoading(true);
     try {
-      const response = await api.post(`/api/support/users/${profileUser.id}/suspension-request`, { reason });
+      const response = await api.post(`/api/support/users/${resolvedUserId}/suspension-request`, { reason });
       if (response.data?.success) {
         setNotification({ type: 'success', text: 'Suspension request sent to Admin for review' });
         setShowSuspensionRequestModal(false);
@@ -279,7 +280,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           return;
         }
 
-        const response = await api.put(`${apiBase}/users/${profileUser.id}/reset-password`, {
+        const response = await api.put(`${apiBase}/users/${resolvedUserId}/reset-password`, {
           newPassword: passwordToUse,
           reason: resetReason || 'Password reset requested by administrator'
         });
@@ -294,7 +295,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           setNotification({ type: 'error', text: response.data?.message || t.errors.resetPassword });
         }
       } else {
-        const response = await api.post(`${apiBase}/users/${profileUser.id}/reset-password`, {
+        const response = await api.post(`${apiBase}/users/${resolvedUserId}/reset-password`, {
           reason: resetReason || 'Password reset requested by support'
         });
 
@@ -332,7 +333,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     setActionLoading(true);
     try {
       if (isAdmin) {
-        const targetUserId = profileUser?.id || profileUser?._id || userId;
+        const targetUserId = resolvedUserId;
         
         if (!targetUserId) {
           console.error('[ADMIN-START-CONVERSATION] Missing target user ID');
@@ -347,7 +348,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           authUser.id,
           authUser.fullName || 'Support',
           authUser.role || 'SUPPORT',
-          profileUser.id,
+          resolvedUserId,
           profileUser.fullName,
           profileUser.role
         );
@@ -800,7 +801,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><MapPin size={12} />{t.country}</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{profileUser.city || t.notProvided}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
+                  {profileUser?.countryName || profileUser?.location || profileUser?.countryCode || t.notProvided}
+                </p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><Globe size={12} />{t.language}</p>
@@ -982,7 +985,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
 
               {!isSupHelp && (
                 <Link
-                  to={`${routes.complaints}?userId=${profileUser.id}`}
+                  to={`${routes.complaints}?userId=${resolvedUserId}`}
                   className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition"
                 >
                   <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
