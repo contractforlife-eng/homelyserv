@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle, Download as DownloadIcon } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
-import LoginMarketing from '../components/LoginMarketing';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import { migrateLegacyProfileIfNeeded } from '../utils/profileMigration';
@@ -597,45 +596,36 @@ function Login() {
         <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-red-300 rounded-full blur-md animate-pulse delay-700"></div>
       </div>
 
-      {/* Desktop: Split layout | Mobile: Stacked */}
-      <div className="flex flex-col lg:flex-row w-full relative z-10 lg:flex-1 lg:min-h-0">
+      {/* Centered Login Card Container */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10 w-full">
+        <div className="w-full max-w-lg">
+          <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/20 p-6 sm:p-10 border border-red-100/60 transition-all duration-300 hover:shadow-red-500/30">
 
-        {/* Marketing Panel - Hidden on mobile, visible on desktop */}
-        <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] bg-white/80 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto">
-          <LoginMarketing />
-        </div>
+            {/* Logo & Brand - Radiant Red, White, Black */}
+            <div className="text-center mb-6 sm:mb-8 pt-2">
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-gray-800 rounded-full blur-2xl opacity-70 scale-110 animate-pulse"></div>
 
-        {/* Login Panel */}
-        <div className="flex-1 flex flex-col items-center justify-center lg:overflow-y-auto p-4 sm:p-6 lg:px-12 lg:py-6 2xl:p-16">
-          <div className="w-full max-w-lg 2xl:max-w-xl">
-            <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 sm:p-10 lg:p-6 2xl:p-12 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
-
-          {/* Logo & Brand - Radiant Red, White, Black */}
-          <div className="text-center mb-6 sm:mb-8 pt-2">
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-gray-800 rounded-full blur-2xl opacity-70 scale-110 animate-pulse"></div>
-
-              <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto bg-gradient-to-br from-red-500 via-red-600 to-gray-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/40 transform transition-transform hover:scale-105 duration-300 hover:shadow-red-500/60">
-                <div className="relative">
-                  <Shield size={48} sm:size={64} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
-                  <div className="relative z-10 flex items-center justify-center">
-                    <Home size={28} sm:size={36} fill="none" stroke="#ffffff" color="#ffffff" strokeWidth={2} className="drop-shadow-lg" />
-                    <Sparkles size={12} sm:size={16} className="text-red-200 absolute -top-1 -right-1 animate-pulse" />
+                <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto bg-gradient-to-br from-red-500 via-red-600 to-gray-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/40 transform transition-transform hover:scale-105 duration-300 hover:shadow-red-500/60">
+                  <div className="relative">
+                    <Shield size={48} sm:size={64} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
+                    <div className="relative z-10 flex items-center justify-center">
+                      <Home size={28} sm:size={36} fill="none" stroke="#ffffff" color="#ffffff" strokeWidth={2} className="drop-shadow-lg" />
+                      <Sparkles size={12} sm:size={16} className="text-red-200 absolute -top-1 -right-1 animate-pulse" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-3 sm:mt-4">
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight drop-shadow-sm">
-                  <span className="text-red-600">Homely</span><span className="text-emerald-600">Serv</span>
-                </h1>
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">{t('premiumServices')}</p>
+                <div className="mt-3 sm:mt-4">
+                  <h1 className="text-3xl sm:text-4xl font-bold tracking-tight drop-shadow-sm">
+                    <span className="text-red-600">Homely</span><span className="text-emerald-600">Serv</span>
+                  </h1>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 tracking-widest uppercase mt-1 font-medium">{t('premiumServices')}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {loginContent}
-        </div>
+            {loginContent}
           </div>
         </div>
       </div>

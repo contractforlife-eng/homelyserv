@@ -6,6 +6,7 @@ import AnimatedIntro from './components/intro/AnimatedIntro';
 import BiometricLockGate from './components/security/BiometricLockGate';
 
 // Public Pages
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import About from './pages/About';
@@ -145,7 +146,7 @@ const HomeRedirect = () => {
   const token = useAuthStore(state => state.token);
 
   if (!isAuthenticated && !token) {
-    return <Navigate to="/login" replace />;
+    return <Home />;
   }
 
   if (user) {
@@ -301,6 +302,16 @@ function App() {
     window.addEventListener('push-action', handler);
     return () => window.removeEventListener('push-action', handler);
   }, [isAuthenticated, loading, user, navigate]);
+
+  useEffect(() => {
+    if (!location.hash) {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      });
+    }
+  }, [location.pathname, location.hash]);
 
   return (
     <>

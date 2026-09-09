@@ -5,6 +5,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { HOME_TRANSLATIONS } from './homepageTranslations';
 
 // ---------------------------------------------------------------------------
 // Shared language metadata – used by every language selector in the app.
@@ -12,7 +13,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // ---------------------------------------------------------------------------
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', nativeName: 'English', flag: '🇬🇧', dir: 'ltr' },
-  { code: 'ar', nativeName: 'العربية', flag: '🇪🇬', dir: 'ltr' },
+  { code: 'ar', nativeName: 'العربية', flag: '🇪🇬', dir: 'rtl' },
   { code: 'fr', nativeName: 'Français', flag: '🇫🇷', dir: 'ltr' },
   { code: 'ru', nativeName: 'Русский', flag: '🇷🇺', dir: 'ltr' },
   { code: 'tr', nativeName: 'Türkçe', flag: '🇹🇷', dir: 'ltr' },
@@ -25,13 +26,12 @@ export const LANGUAGE_CODES = SUPPORTED_LANGUAGES.map(l => l.code);
 export const LANGUAGE_STORAGE_KEY = 'homelyserv_language';
 
 // ---------------------------------------------------------------------------
-// Helper: apply direction (LTR only) + lang attribute to <html>.
+// Helper: apply direction (RTL for Arabic, LTR for others) + lang attribute to <html>.
 // Called once on init and whenever the language changes.
-// All languages including Arabic use LTR layout; only text is translated.
 // ---------------------------------------------------------------------------
 export function applyDocumentDirection(langCode) {
-  // Always use LTR layout for all languages - Arabic text only, no layout reversal
-  document.documentElement.dir = 'ltr';
+  const isRtl = langCode === 'ar';
+  document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
   document.documentElement.lang = langCode || 'en';
 }
 
@@ -5981,6 +5981,13 @@ const reportAnalyticsLabels = {
 Object.entries(reportAnalyticsLabels).forEach(([language, labels]) => {
   const translation = { en, ar, fr, ru, tr, de }[language].translation;
   translation.adminReportsPage = { ...translation.adminReportsPage, ...labels };
+});
+
+Object.entries(HOME_TRANSLATIONS).forEach(([language, homeCopy]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    target.translation.home = homeCopy;
+  }
 });
 
 const resources = {

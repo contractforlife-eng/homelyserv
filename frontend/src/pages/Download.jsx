@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Download as DownloadIcon, Facebook, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import appIcon from '../assets/homelyserv-app-icon.png';
+import markDark from '../assets/branding/homelyserv-mark-dark.png';
 import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
 import { classifyDevice } from '../utils/deviceType';
@@ -205,31 +206,39 @@ const Download = () => {
 
   return (
     <main dir="ltr" className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="relative overflow-hidden bg-gradient-to-br from-red-700 via-red-600 to-rose-500 px-5 pb-16 pt-10 text-white sm:px-8 sm:pt-14">
-        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-red-700 via-red-600 to-rose-600 px-5 pb-16 pt-10 text-white sm:px-8 sm:pt-14">
+        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
             <div className="mb-7 flex items-center gap-3">
               <img src={markLight} alt="HomelyServ" className="h-11 w-auto shrink-0 object-contain" />
-              <span className="text-lg font-bold tracking-tight">HomelyServ</span>
+              <span className="text-xl font-extrabold tracking-tight text-slate-900">
+                Homely<span className="text-emerald-600">Serv</span>
+              </span>
             </div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-red-100">{t('downloadPage.officialRelease')}</p>
-            <h1 className="max-w-2xl text-4xl font-black tracking-tight sm:text-6xl">
+            <p className="mb-3 text-xs sm:text-sm font-bold uppercase tracking-[0.18em] text-slate-900 bg-white/30 inline-block px-3.5 py-1 rounded-full border border-white/40 backdrop-blur-sm">
+              {t('downloadPage.officialRelease')}
+            </p>
+            <h1 className="max-w-2xl text-4xl font-black tracking-tight text-white sm:text-6xl">
               {isIosVisitor ? t('downloadPage.iosTitle') : isAndroidVisitor ? t('downloadPage.androidVisitorTitle') : t('downloadPage.title')}
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-red-50 sm:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-900 sm:text-lg">
               {isIosVisitor ? t('downloadPage.iosDescription') : isAndroidVisitor ? t('downloadPage.androidVisitorDescription') : t('downloadPage.heroDescription')}
             </p>
             {isIosVisitor && (
-              <div className="mt-5 max-w-xl rounded-2xl border border-white/25 bg-white/10 p-4 text-sm leading-6 text-red-50">
-                <strong className="block text-base text-white">{t('downloadPage.iosTitle')}</strong>
-                <span>{t('downloadPage.iosAndroidNote')}</span>
+              <div className="mt-5 max-w-xl rounded-2xl border border-white/30 bg-white/20 p-4 text-sm leading-6 text-slate-900 backdrop-blur-sm">
+                <strong className="block text-base text-slate-900">{t('downloadPage.iosTitle')}</strong>
+                <span className="text-slate-900">{t('downloadPage.iosAndroidNote')}</span>
               </div>
             )}
             <a
               href={downloadUrl}
               download
-              className={`mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-extrabold shadow-xl transition focus-visible:outline-white sm:w-auto ${isIosVisitor ? 'border border-white/40 bg-white/15 text-white hover:bg-white/25' : 'bg-white text-red-700 hover:bg-red-50'}`}
+              className={`mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-extrabold shadow-xl transition focus-visible:outline-slate-900 sm:w-auto ${
+                isIosVisitor
+                  ? 'border border-white/40 bg-white/25 text-slate-900 hover:bg-white/35'
+                  : 'bg-white text-red-700 hover:bg-red-50 active:scale-[0.98]'
+              }`}
             >
               <DownloadIcon size={21} aria-hidden="true" />
               {t('downloadPage.androidDownloadApk')}
@@ -240,7 +249,7 @@ const Download = () => {
               <HeroStat label={t('downloadPage.minimumAndroid')} value={minimumAndroid} />
               <HeroStat label={t('downloadPage.releaseDate')} value={releaseDate} />
             </div>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-red-100">{updateNote}</p>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-900 font-medium">{updateNote}</p>
           </div>
           <div className="mx-auto w-full max-w-sm rounded-[2rem] border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-sm">
             <div className="rounded-[1.5rem] bg-white p-8 text-center text-slate-900">
@@ -362,9 +371,9 @@ const Download = () => {
 };
 
 const HeroStat = ({ label, value }) => (
-  <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-3 backdrop-blur-sm">
-    <div className="text-[11px] font-semibold uppercase tracking-wide text-red-100">{label}</div>
-    <div className="mt-1 truncate font-bold text-white">{value}</div>
+  <div className="rounded-xl border border-white/40 bg-white/90 px-3 py-3 backdrop-blur-sm shadow-xs">
+    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-900">{label}</div>
+    <div className="mt-1 truncate font-extrabold text-slate-900">{value}</div>
   </div>
 );
 

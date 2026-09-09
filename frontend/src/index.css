@@ -154,46 +154,6 @@ html {
   background-color: #1a1a2e;
 }
 
-/* Legacy white text on dark backgrounds */
-.text-white {
-  color: #1f2937;
-}
-.dark .text-white {
-  color: #ffffff;
-}
-
-/* Legacy gray-300 text */
-.text-gray-300 {
-  color: #4b5563;
-}
-.dark .text-gray-300 {
-  color: #d1d5db;
-}
-
-/* Legacy gray-400 text */
-.text-gray-400 {
-  color: #6b7280;
-}
-.dark .text-gray-400 {
-  color: #9ca3af;
-}
-
-/* Legacy gray-700 borders */
-.border-gray-700 {
-  border-color: #e5e7eb;
-}
-.dark .border-gray-700 {
-  border-color: #374151;
-}
-
-/* Legacy placeholder text */
-.placeholder-gray-500::placeholder {
-  color: #9ca3af;
-}
-.dark .placeholder-gray-500::placeholder {
-  color: #6b7280;
-}
-
 /* Legacy hover:bg-gray-800 */
 .hover\:bg-gray-800:hover {
   background-color: #f3f4f6;
@@ -201,3 +161,4 @@ html {
 .dark .hover\:bg-gray-800:hover {
   background-color: #1f2937;
 }
+
