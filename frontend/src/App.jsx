@@ -40,6 +40,7 @@ import WorkerApplications from './pages/WorkerApplications';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
+import EmployerFamily from './pages/EmployerFamily';
 import EmployerSearch from './pages/EmployerSearch';
 import EmployerPending from './pages/EmployerPending';
 import EmployerPast from './pages/EmployerPast';
@@ -460,6 +461,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/employer-family" 
+        element={
+          <ProtectedRoute requiredRole="EMPLOYER">
+            <EmployerFamily />
           </ProtectedRoute>
         } 
       />

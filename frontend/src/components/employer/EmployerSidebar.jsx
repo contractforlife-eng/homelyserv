@@ -23,7 +23,8 @@ import {
   Crown,
   X,
   PlusCircle,
-  ClipboardList
+  ClipboardList,
+  Users
 } from 'lucide-react';
 const EmployerSidebar = ({
   language,
@@ -49,6 +50,7 @@ const EmployerSidebar = ({
 
   const menuItems = [
     { id: 'dashboard', label: t('employerSidebar.dashboard'), icon: Home, path: '/employer-dashboard' },
+    { id: 'myFamily', label: t('employerSidebar.myFamily'), icon: Users, path: '/employer-family' },
     { id: 'postJob', label: t('employerSidebar.postJob'), icon: PlusCircle, path: '/employer-post-job' },
     { id: 'myJobs', label: t('employerSidebar.myJobs'), icon: ClipboardList, path: '/employer-jobs' },
     { id: 'profile', label: t('employerSidebar.myProfile'), icon: User, path: '/employer-profile' },

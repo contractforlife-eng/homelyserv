@@ -391,6 +391,8 @@ model User {
   ComplaintTimeline                ComplaintTimeline[]
   ComplaintReply                   ComplaintReply[]
   AccountDeletionRequest           AccountDeletionRequest?
+  EmployerFamilyMembers            EmployerFamilyMember[]
+  EmployerFamilyRelationships      EmployerFamilyRelationship[]
 
   @@index([registrationCountryCode], map: "registrationCountryCode_1")
   @@map("users")
@@ -946,3 +948,51 @@ model AccountingEntry {
   @@index([createdBy])
   @@map("accounting_entries")
 }
+
+// ============================================================
+// EMPLOYER FAMILY MEMBER — Milestone 1 (Lightweight profile)
+// Owned exclusively by the Employer (employerId derived server-side).
+// No independent accounts, logins, chats, or payments.
+// ============================================================
+model EmployerFamilyMember {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  employerId     String   @db.ObjectId
+  firstName      String
+  relationship   String
+  birthYear      Int?
+  careNotes      String?
+  neededServices String[] @default([])
+  isArchived     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  User           User     @relation(fields: [employerId], references: [id])
+
+  @@index([employerId, isArchived])
+  @@index([employerId, createdAt(sort: Desc)])
+  @@map("employer_family_members")
+}
+
+// ============================================================
+// EMPLOYER FAMILY RELATIONSHIP — Safe Family Tree Foundation
+// Expresses directional relationships (parentOf, spouseOf, etc.)
+// strictly within the same Employer scope.
+// ============================================================
+model EmployerFamilyRelationship {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  employerId       String   @db.ObjectId
+  fromMemberId     String   @db.ObjectId
+  toMemberId       String   @db.ObjectId
+  relationshipType String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  User             User     @relation(fields: [employerId], references: [id])
+
+  @@unique([fromMemberId, toMemberId, relationshipType])
+  @@index([employerId])
+  @@index([fromMemberId])
+  @@index([toMemberId])
+  @@map("employer_family_relationships")
+}
+
