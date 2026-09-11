@@ -8,15 +8,35 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { requireEmployer } from '../middleware/auth.js';
 
+import { hasActiveSubscription } from '../services/paymentAuthService.js';
+
 const router = express.Router();
 
 const TREE_RELATIONSHIP_TYPES = ['parentOf', 'childOf', 'spouseOf', 'siblingOf', 'guardianOf'];
 
 const isValidObjectId = (id) => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 
+// Middleware to verify Premium for advanced Family Tree operations
+const requirePremiumEmployer = async (req, res, next) => {
+  try {
+    const isPremium = await hasActiveSubscription(req.userId);
+    if (!isPremium) {
+      return res.status(403).json({
+        success: false,
+        requiresPremium: true,
+        message: 'Family Tree is a Premium feature. Upgrade to Premium to manage family relationships.'
+      });
+    }
+    next();
+  } catch (err) {
+    console.error('requirePremiumEmployer error:', err);
+    res.status(500).json({ success: false, message: 'Server error verifying subscription' });
+  }
+};
+
 // ============================================================
 // GET /api/employer/family-members
-// List all active (non-archived) family members for current employer
+// List all active (non-archived) family members for current employer (Free + Premium)
 // ============================================================
 router.get('/', requireEmployer, async (req, res) => {
   try {
@@ -45,12 +65,12 @@ router.get('/', requireEmployer, async (req, res) => {
 
 // ============================================================
 // POST /api/employer/family-members
-// Create a new lightweight family member profile
+// Create a new lightweight family member profile (Free + Premium)
 // ============================================================
 router.post('/', requireEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
-    const { firstName, relationship, birthYear, careNotes, neededServices } = req.body;
+    const { firstName, relationship, birthYear, careNotes, neededServices, isDeceased } = req.body;
 
     if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
       return res.status(400).json({ success: false, message: 'First name is required' });
@@ -82,6 +102,7 @@ router.post('/', requireEmployer, async (req, res) => {
         birthYear: parsedBirthYear,
         careNotes: careNotes && typeof careNotes === 'string' ? careNotes.trim().slice(0, 1000) : null,
         neededServices: cleanNeededServices,
+        isDeceased: Boolean(isDeceased),
         isArchived: false
       }
     });
@@ -99,7 +120,7 @@ router.post('/', requireEmployer, async (req, res) => {
 
 // ============================================================
 // GET /api/employer/family-members/:id
-// Get single family member (ownership enforced)
+// Get single family member (ownership enforced, Free + Premium)
 // ============================================================
 router.get('/:id', requireEmployer, async (req, res) => {
   try {
@@ -133,13 +154,13 @@ router.get('/:id', requireEmployer, async (req, res) => {
 
 // ============================================================
 // PUT /api/employer/family-members/:id
-// Update family member profile (ownership enforced)
+// Update family member profile (ownership enforced, Free + Premium)
 // ============================================================
 router.put('/:id', requireEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
     const { id } = req.params;
-    const { firstName, relationship, birthYear, careNotes, neededServices, isArchived } = req.body;
+    const { firstName, relationship, birthYear, careNotes, neededServices, isDeceased, isArchived } = req.body;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ success: false, message: 'Invalid member ID' });
@@ -192,6 +213,10 @@ router.put('/:id', requireEmployer, async (req, res) => {
         : [];
     }
 
+    if (isDeceased !== undefined) {
+      updateData.isDeceased = Boolean(isDeceased);
+    }
+
     if (isArchived !== undefined) {
       updateData.isArchived = Boolean(isArchived);
     }
@@ -215,6 +240,7 @@ router.put('/:id', requireEmployer, async (req, res) => {
 // ============================================================
 // DELETE /api/employer/family-members/:id
 // Archive/Soft-delete family member (ownership enforced)
+// Removes from master list AND cascades cleanup of tree relations
 // ============================================================
 router.delete('/:id', requireEmployer, async (req, res) => {
   try {
@@ -233,20 +259,21 @@ router.delete('/:id', requireEmployer, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Family member not found' });
     }
 
-    // Soft delete / archive
+    // Soft delete / archive the family member
     await prisma.employerFamilyMember.update({
       where: { id },
       data: { isArchived: true }
     });
 
-    // Also clean up any tree relationships referencing this member
-    await prisma.employerFamilyRelationship.deleteMany({
+    // If linked to a Family Tree Person, safely disconnect the link
+    // without destroying the Family Tree node or its genealogy relationships
+    await prisma.employerFamilyTreePerson.updateMany({
       where: {
         employerId,
-        OR: [
-          { fromMemberId: id },
-          { toMemberId: id }
-        ]
+        familyMemberId: id
+      },
+      data: {
+        familyMemberId: null
       }
     });
 
@@ -261,10 +288,11 @@ router.delete('/:id', requireEmployer, async (req, res) => {
 });
 
 // ============================================================
-// FAMILY TREE RELATIONSHIPS API (Foundation)
+// FAMILY TREE RELATIONSHIPS API (Premium-only)
 // ============================================================
 
 // GET /api/employer/family-members/relationships/all
+// Read relationships (allowed for both to preserve data integrity across status changes)
 router.get('/relationships/all', requireEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
@@ -281,8 +309,8 @@ router.get('/relationships/all', requireEmployer, async (req, res) => {
   }
 });
 
-// POST /api/employer/family-members/relationships
-router.post('/relationships', requireEmployer, async (req, res) => {
+// POST /api/employer/family-members/relationships (Premium required to modify tree)
+router.post('/relationships', requireEmployer, requirePremiumEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
     const { fromMemberId, toMemberId, relationshipType } = req.body;
@@ -346,8 +374,40 @@ router.post('/relationships', requireEmployer, async (req, res) => {
   }
 });
 
-// DELETE /api/employer/family-members/relationships/:id
-router.delete('/relationships/:id', requireEmployer, async (req, res) => {
+// DELETE /api/employer/family-members/relationships/member/:memberId
+// Remove all tree relationships for a member WITHOUT deleting the family member (Premium required)
+router.delete('/relationships/member/:memberId', requireEmployer, requirePremiumEmployer, async (req, res) => {
+  try {
+    const employerId = req.userId;
+    const { memberId } = req.params;
+
+    if (!isValidObjectId(memberId)) {
+      return res.status(400).json({ success: false, message: 'Invalid member ID' });
+    }
+
+    const deleteResult = await prisma.employerFamilyRelationship.deleteMany({
+      where: {
+        employerId,
+        OR: [
+          { fromMemberId: memberId },
+          { toMemberId: memberId }
+        ]
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Member removed from Family Tree',
+      deletedCount: deleteResult.count
+    });
+  } catch (error) {
+    console.error('Remove member from tree error:', error);
+    res.status(500).json({ success: false, message: 'Server error removing member from tree' });
+  }
+});
+
+// DELETE /api/employer/family-members/relationships/:id (Premium required)
+router.delete('/relationships/:id', requireEmployer, requirePremiumEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
     const { id } = req.params;

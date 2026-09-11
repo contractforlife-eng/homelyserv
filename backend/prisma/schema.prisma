@@ -392,6 +392,7 @@ model User {
   ComplaintReply                   ComplaintReply[]
   AccountDeletionRequest           AccountDeletionRequest?
   EmployerFamilyMembers            EmployerFamilyMember[]
+  EmployerFamilyTreePeople         EmployerFamilyTreePerson[]
   EmployerFamilyRelationships      EmployerFamilyRelationship[]
 
   @@index([registrationCountryCode], map: "registrationCountryCode_1")
@@ -962,11 +963,13 @@ model EmployerFamilyMember {
   birthYear      Int?
   careNotes      String?
   neededServices String[] @default([])
+  isDeceased     Boolean  @default(false)
   isArchived     Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   User           User     @relation(fields: [employerId], references: [id])
+  treePerson     EmployerFamilyTreePerson?
 
   @@index([employerId, isArchived])
   @@index([employerId, createdAt(sort: Desc)])
@@ -974,25 +977,55 @@ model EmployerFamilyMember {
 }
 
 // ============================================================
+// EMPLOYER FAMILY TREE PERSON — Independent Genealogy Node
+// Represents a person in the Employer's Family Tree.
+// May optionally link to an EmployerFamilyMember (1-to-1).
+// ============================================================
+model EmployerFamilyTreePerson {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  employerId     String   @db.ObjectId
+  firstName      String
+  role           String   @default("other")
+  birthYear      Int?
+  isDeceased     Boolean  @default(false)
+  careNotes      String?
+
+  familyMemberId String?  @unique @db.ObjectId
+  familyMember   EmployerFamilyMember? @relation(fields: [familyMemberId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  User           User     @relation(fields: [employerId], references: [id])
+
+  @@index([employerId])
+  @@map("employer_family_tree_people")
+}
+
+// ============================================================
 // EMPLOYER FAMILY RELATIONSHIP — Safe Family Tree Foundation
 // Expresses directional relationships (parentOf, spouseOf, etc.)
-// strictly within the same Employer scope.
+// between Tree Persons strictly within the same Employer scope.
+// fromPersonId / toPersonId refer to EmployerFamilyTreePerson.id.
+// (Legacy fromMemberId/toMemberId mapped seamlessly during read/write).
 // ============================================================
 model EmployerFamilyRelationship {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   employerId       String   @db.ObjectId
-  fromMemberId     String   @db.ObjectId
-  toMemberId       String   @db.ObjectId
+  fromPersonId     String?  @db.ObjectId
+  toPersonId       String?  @db.ObjectId
+  // Legacy fields kept optional for zero-data-loss Mongo backward compatibility
+  fromMemberId     String?  @db.ObjectId
+  toMemberId       String?  @db.ObjectId
   relationshipType String
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   User             User     @relation(fields: [employerId], references: [id])
 
-  @@unique([fromMemberId, toMemberId, relationshipType])
   @@index([employerId])
-  @@index([fromMemberId])
-  @@index([toMemberId])
+  @@index([fromPersonId])
+  @@index([toPersonId])
   @@map("employer_family_relationships")
 }
 

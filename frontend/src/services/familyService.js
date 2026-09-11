@@ -41,6 +41,11 @@ export const deleteFamilyRelationship = async (id) => {
   return response.data;
 };
 
+export const removeMemberFromTree = async (memberId) => {
+  const response = await api.delete(`/api/employer/family-members/relationships/member/${memberId}`);
+  return response.data;
+};
+
 const familyService = {
   getFamilyMembers,
   getFamilyMember,
@@ -49,7 +54,8 @@ const familyService = {
   archiveFamilyMember,
   getFamilyRelationships,
   createFamilyRelationship,
-  deleteFamilyRelationship
+  deleteFamilyRelationship,
+  removeMemberFromTree
 };
 
 export default familyService;
