@@ -58,11 +58,12 @@ export default function Home() {
     }
   };
 
-  // Service item configuration mapping keys to icons and category params
+  // Service item configuration mapping keys to icons, photos, and category params
   const serviceCategories = [
     {
       id: 'nurse',
       icon: HeartPulse,
+      image: '/images/services/nurse.jpg',
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       iconBg: 'bg-emerald-500 text-white',
       title: t('home.services.nurse.title'),
@@ -71,6 +72,7 @@ export default function Home() {
     {
       id: 'elderly_caregiver',
       icon: HeartHandshake,
+      image: '/images/services/elderly-care.jpg',
       badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
       iconBg: 'bg-rose-500 text-white',
       title: t('home.services.elderlyCaregiver.title'),
@@ -79,6 +81,7 @@ export default function Home() {
     {
       id: 'driver',
       icon: Car,
+      image: '/images/services/driver.jpg',
       badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
       iconBg: 'bg-blue-600 text-white',
       title: t('home.services.driver.title'),
@@ -87,6 +90,7 @@ export default function Home() {
     {
       id: 'cook',
       icon: ChefHat,
+      image: '/images/services/cook.jpg',
       badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
       iconBg: 'bg-amber-500 text-white',
       title: t('home.services.cook.title'),
@@ -95,6 +99,7 @@ export default function Home() {
     {
       id: 'house_manager',
       icon: HomeIcon,
+      image: '/images/services/house-manager.jpg',
       badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
       iconBg: 'bg-indigo-600 text-white',
       title: t('home.services.houseManager.title'),
@@ -103,6 +108,7 @@ export default function Home() {
     {
       id: 'gardener',
       icon: TreePine,
+      image: '/images/services/gardener.jpg',
       badgeColor: 'bg-green-50 text-green-700 border-green-200',
       iconBg: 'bg-green-600 text-white',
       title: t('home.services.gardener.title'),
@@ -111,6 +117,7 @@ export default function Home() {
     {
       id: 'security_guard',
       icon: ShieldCheck,
+      image: '/images/services/security-guard.jpg',
       badgeColor: 'bg-slate-50 text-slate-700 border-slate-200',
       iconBg: 'bg-slate-700 text-white',
       title: t('home.services.securityGuard.title'),
@@ -119,6 +126,7 @@ export default function Home() {
     {
       id: 'bodyguard',
       icon: UserCheck,
+      image: '/images/services/bodyguard.jpg',
       badgeColor: 'bg-red-50 text-red-700 border-red-200',
       iconBg: 'bg-red-600 text-white',
       title: t('home.services.bodyguard.title'),
@@ -127,6 +135,7 @@ export default function Home() {
     {
       id: 'private_tutor',
       icon: GraduationCap,
+      image: '/images/services/private-tutor.jpg',
       badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
       iconBg: 'bg-purple-600 text-white',
       title: t('home.services.privateTutor.title'),
@@ -323,38 +332,38 @@ export default function Home() {
       </header>
 
       {/* ========================================================= */}
-      {/* 2. HERO SECTION */}
+      {/* 2. HERO SECTION (HIGH-IMPACT VISUAL MARKETPLACE) */}
       {/* ========================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-slate-100/70 pt-12 pb-20 lg:pt-20 lg:pb-28 border-b border-slate-200/60">
-        {/* Background Decorative Blobs */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-red-100/50 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-60 -left-40 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-slate-100/70 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-200/60">
+        {/* Subtle Ambient Background Accents */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-red-100/40 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-60 -left-40 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
             {/* Left Hero Content */}
-            <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
+            <div className="lg:col-span-7 space-y-7 text-center lg:text-left">
               {/* Eyebrow Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-xs sm:text-sm font-semibold tracking-wide shadow-xs mx-auto lg:mx-0">
-                <Sparkles size={16} className="text-red-600 animate-pulse" />
+                <Sparkles size={16} className="text-red-600 shrink-0" />
                 <span>{t('home.hero.badge')}</span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+              <h1 className="text-3.5xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
                 {t('home.hero.headlineStart')}{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-rose-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-rose-600 to-red-700">
                   {t('home.hero.headlineHighlight')}
                 </span>
               </h1>
 
               {/* Subtitle */}
-              <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+              <p className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
                 {t('home.hero.subtitle')}
               </p>
 
               {/* Dual Role CTAs */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-1">
                 <Link
                   to="/register?role=employer"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-base shadow-lg shadow-red-600/25 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 active:scale-[0.98] transition-all group"
@@ -374,108 +383,96 @@ export default function Home() {
               <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200/80">
                 <div className="text-left">
                   <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t('home.hero.stat1Number')}</div>
-                  <div className="text-xs sm:text-sm font-medium text-slate-500">{t('home.hero.stat1Label')}</div>
+                  <div className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{t('home.hero.stat1Label')}</div>
                 </div>
-                <div className="text-left">
+                <div className="text-left border-x border-slate-200 px-3 sm:px-4">
                   <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t('home.hero.stat2Number')}</div>
-                  <div className="text-xs sm:text-sm font-medium text-slate-500">{t('home.hero.stat2Label')}</div>
+                  <div className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{t('home.hero.stat2Label')}</div>
                 </div>
                 <div className="text-left">
                   <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t('home.hero.stat3Number')}</div>
-                  <div className="text-xs sm:text-sm font-medium text-slate-500">{t('home.hero.stat3Label')}</div>
+                  <div className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{t('home.hero.stat3Label')}</div>
                 </div>
               </div>
             </div>
 
-            {/* Right Hero Interactive Marketplace Showcase Card */}
+            {/* Right Hero Photographic Feature Card */}
             <div className="lg:col-span-5 relative">
-              <div className="relative rounded-2xl bg-white border border-slate-200/80 shadow-2xl p-6 sm:p-8 space-y-6">
-                {/* Showcase Header */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold">
-                      <Users size={20} />
+              <div className="relative mx-auto max-w-md lg:max-w-none">
+                {/* Decorative Blur Shadow */}
+                <div className="absolute -inset-2 bg-gradient-to-tr from-red-600/20 via-rose-500/10 to-teal-500/20 rounded-3xl blur-xl opacity-75" />
+
+                {/* Main Card Container */}
+                <div className="relative rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+                  {/* Real Photographic Hero Image */}
+                  <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
+                    <img
+                      src="/images/hero/hero-family-care.jpg"
+                      alt={t('home.hero.badge')}
+                      className="w-full h-full object-cover object-center"
+                      loading="eager"
+                      fetchpriority="high"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+
+                    {/* Floating Status Badge */}
+                    <div className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-slate-900 text-xs font-bold shadow-md border border-white/50">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{t('home.hero.badgeLive')}</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-sm">{t('home.hero.previewProfileTitle')}</h3>
-                      <p className="text-xs text-slate-500">{t('home.hero.previewProfileSub')}</p>
+
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-rose-300">
+                        {t('home.whyUs.feature1Title')}
+                      </span>
+                      <p className="text-sm font-bold text-white/95 truncate">
+                        {t('home.hero.previewGlobalReachSub')}
+                      </p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    {t('home.hero.badgeLive')}
-                  </span>
-                </div>
 
-                {/* Micro Candidate Cards Preview */}
-                <div className="space-y-3">
-                  {/* Candidate 1 */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm">
-                        <HeartPulse size={18} />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
-                          <span>{t('home.services.nurse.title')}</span>
-                          <CheckCircle2 size={14} className="text-emerald-500" />
+                  {/* Micro Candidate Highlights */}
+                  <div className="p-5 sm:p-6 space-y-3 bg-white">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
+                          <Users size={16} />
                         </div>
-                        <div className="text-xs text-slate-500">{t('home.hero.previewActiveStatus')}</div>
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded bg-white text-slate-700 border border-slate-200 shadow-xs">
-                      {t('home.hero.previewActiveStatus')}
-                    </span>
-                  </div>
-
-                  {/* Candidate 2 */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                        <Car size={18} />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
-                          <span>{t('home.services.driver.title')}</span>
-                          <CheckCircle2 size={14} className="text-emerald-500" />
+                        <div>
+                          <h3 className="font-bold text-slate-900 text-xs sm:text-sm">{t('home.hero.previewProfileTitle')}</h3>
+                          <p className="text-[11px] text-slate-500">{t('home.hero.previewProfileSub')}</p>
                         </div>
-                        <div className="text-xs text-slate-500">{t('home.hero.previewActiveStatus')}</div>
+                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        {t('home.hero.previewActiveStatus')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <HeartPulse size={16} className="text-emerald-600 mx-auto mb-1" />
+                        <span className="font-semibold text-slate-800 text-[11px] block truncate">{t('home.services.nurse.title')}</span>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <Car size={16} className="text-blue-600 mx-auto mb-1" />
+                        <span className="font-semibold text-slate-800 text-[11px] block truncate">{t('home.services.driver.title')}</span>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <GraduationCap size={16} className="text-purple-600 mx-auto mb-1" />
+                        <span className="font-semibold text-slate-800 text-[11px] block truncate">{t('home.services.privateTutor.title')}</span>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded bg-white text-slate-700 border border-slate-200 shadow-xs">
-                      {t('home.hero.previewActiveStatus')}
-                    </span>
-                  </div>
 
-                  {/* Candidate 3 */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
-                        <GraduationCap size={18} />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
-                          <span>{t('home.services.privateTutor.title')}</span>
-                          <CheckCircle2 size={14} className="text-emerald-500" />
-                        </div>
-                        <div className="text-xs text-slate-500">{t('home.hero.previewActiveStatus')}</div>
-                      </div>
+                    <div className="pt-2">
+                      <Link
+                        to="/register?role=employer"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-xs sm:text-sm hover:bg-slate-800 transition"
+                      >
+                        <span>{t('home.services.exploreAction')}</span>
+                        <ChevronRight size={16} />
+                      </Link>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded bg-white text-slate-700 border border-slate-200 shadow-xs">
-                      {t('home.hero.previewActiveStatus')}
-                    </span>
                   </div>
-                </div>
-
-                {/* Showcase Footer Action */}
-                <div className="pt-2">
-                  <Link
-                    to="/register?role=employer"
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 text-white font-semibold text-sm hover:bg-slate-800 transition"
-                  >
-                    <span>{t('home.services.exploreAction')}</span>
-                    <ChevronRight size={16} />
-                  </Link>
                 </div>
               </div>
             </div>
@@ -484,7 +481,7 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 3. POPULAR SERVICES GRID */}
+      {/* 3. POPULAR SERVICES GRID (PHOTO-CARD GALLERY) */}
       {/* ========================================================= */}
       <section id="services" className="py-20 lg:py-28 bg-white border-b border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -501,52 +498,61 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 9 Services Grid */}
+          {/* 9 Photographic Service Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {serviceCategories.map((service) => {
               const IconComponent = service.icon;
               return (
                 <div
                   key={service.id}
-                  className="group relative bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 hover:border-red-300 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  className="group relative h-80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-slate-900 flex flex-col justify-end"
                 >
-                  <div className="space-y-4">
-                    {/* Header: Icon & Category Tag */}
-                    <div className="flex items-center justify-between">
-                      <div className={`p-3.5 rounded-xl ${service.iconBg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                        <IconComponent size={24} />
-                      </div>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${service.badgeColor}`}>
-                        {service.title}
-                      </span>
-                    </div>
+                  {/* Background Service Photo */}
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="lazy"
+                  />
 
-                    {/* Title & Description */}
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-900 group-hover:text-red-600 transition-colors">
-                        {service.title}
-                      </h3>
-                      <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                        {service.desc}
-                      </p>
+                  {/* Dark Gradient Overlay for Readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-black/20 group-hover:via-slate-950/60 transition-colors" />
+
+                  {/* Category Badge & Icon on Top Right */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-white flex items-center justify-center group-hover:bg-red-600 group-hover:border-red-600 transition-colors shadow-sm">
+                      <IconComponent size={20} />
                     </div>
                   </div>
 
-                  {/* Card Action Link */}
-                  <div className="pt-6 mt-4 border-t border-slate-100 flex items-center justify-between">
-                    <Link
-                      to={`/register?role=employer&category=${service.id}`}
-                      className="text-sm font-semibold text-slate-900 group-hover:text-red-600 flex items-center gap-1.5 transition-colors"
-                    >
-                      <span>{t('home.services.exploreAction')}</span>
-                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                    </Link>
-                    <Link
-                      to={`/register?role=worker&category=${service.id}`}
-                      className="text-xs font-medium text-slate-500 hover:text-slate-800"
-                    >
-                      {t('home.nav.findJobs')}
-                    </Link>
+                  {/* Card Bottom Content */}
+                  <div className="relative z-10 p-6 text-left">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded-md border border-red-800/60 inline-block mb-2">
+                      {service.title}
+                    </span>
+                    <h3 className="text-xl font-bold text-white tracking-tight group-hover:text-red-300 transition-colors">
+                      {service.title}
+                    </h3>
+                    <p className="mt-1.5 text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+                      {service.desc}
+                    </p>
+
+                    {/* Dual Action Links */}
+                    <div className="pt-4 mt-3 border-t border-white/15 flex items-center justify-between">
+                      <Link
+                        to={`/register?role=employer&category=${service.id}`}
+                        className="text-xs sm:text-sm font-bold text-white group-hover:text-red-300 flex items-center gap-1.5 transition-colors"
+                      >
+                        <span>{t('home.services.exploreAction')}</span>
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </Link>
+                      <Link
+                        to={`/register?role=worker&category=${service.id}`}
+                        className="text-xs font-medium text-slate-300 hover:text-white transition-colors"
+                      >
+                        {t('home.nav.findJobs')}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
@@ -603,9 +609,14 @@ export default function Home() {
           {activeTab === 'employer' ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Step 1 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
-                  1
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
+                    1
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+                    <Compass size={20} />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">
                   {t('home.howItWorks.employerStep1Title')}
@@ -616,9 +627,14 @@ export default function Home() {
               </div>
 
               {/* Step 2 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
-                  2
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
+                    2
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+                    <MessageSquare size={20} />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">
                   {t('home.howItWorks.employerStep2Title')}
@@ -629,9 +645,14 @@ export default function Home() {
               </div>
 
               {/* Step 3 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
-                  3
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
+                    3
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+                    <ShieldCheck size={20} />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">
                   {t('home.howItWorks.employerStep3Title')}
@@ -644,9 +665,14 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Step 1 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
-                  1
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
+                    1
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+                    <Users size={20} />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">
                   {t('home.howItWorks.workerStep1Title')}
@@ -657,9 +683,14 @@ export default function Home() {
               </div>
 
               {/* Step 2 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
-                  2
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
+                    2
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+                    <Sparkles size={20} />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">
                   {t('home.howItWorks.workerStep2Title')}
@@ -670,9 +701,14 @@ export default function Home() {
               </div>
 
               {/* Step 3 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
-                  3
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
+                    3
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+                    <Star size={20} />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">
                   {t('home.howItWorks.workerStep3Title')}
