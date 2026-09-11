@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { createQrMatrix } from '../utils/qrCode';
+import markDark from '../assets/branding/homelyserv-mark-dark.png';
 
 const DOWNLOAD_URL = 'https://www.homelyserv.com/download';
 
@@ -185,12 +186,9 @@ export default function Home() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group focus:outline-none">
               <img
-                src="/branding/homelyserv-mark-dark.png"
+                src={markDark}
                 alt="HomelyServ"
-                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
+                className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105"
               />
               <span className="font-extrabold text-2xl tracking-tight text-slate-900">
                 Homely<span className="text-red-600">Serv</span>

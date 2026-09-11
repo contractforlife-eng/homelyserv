@@ -37,13 +37,14 @@ const validateResendConfig = () => {
 };
 
 // ============================================================
-// SMTP CONFIGURATION (Fallback)
+// SMTP CONFIGURATION
 // ============================================================
 const createTransporter = () => {
+  const port = parseInt(process.env.EMAIL_PORT) || 465;
   const smtpConfig = {
-    host: process.env.EMAIL_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === 'true' || false, // true for 465, false for other ports
+    host: process.env.EMAIL_HOST || 'mail.spacemail.com',
+    port: port,
+    secure: process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : port === 465, // true for 465, false for 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -95,14 +96,15 @@ const addSMTPReplyTo = (mailOptions) => {
  * @param {string} options.html - HTML content
  * @param {string} options.text - Plain text content
  * @param {string} [options.replyTo] - Reply-to address
+ * @param {string} [options.from] - Custom from address or full sender identity
  * @returns {Promise<Object>} - Result object with success status
  */
-const sendViaResend = async ({ to, subject, html, text, replyTo }) => {
+const sendViaResend = async ({ to, subject, html, text, replyTo, from }) => {
   try {
     console.log('[EMAIL] Sending via Resend to:', to);
 
     const emailData = {
-      from: buildEmailSenderIdentity(),
+      from: from ? (from.includes('<') ? from : buildEmailSenderIdentity(from)) : buildEmailSenderIdentity(),
       to: to,
       subject: subject,
       html: html,
@@ -153,16 +155,19 @@ const sendViaResend = async ({ to, subject, html, text, replyTo }) => {
  * @param {string} options.subject - Email subject
  * @param {string} options.html - HTML content
  * @param {string} options.text - Plain text content
+ * @param {string} [options.from] - Custom from address or full sender identity
  * @returns {Promise<Object>} - Result object with success status
  */
-const sendViaSMTP = async ({ to, subject, html, text }) => {
+const sendViaSMTP = async ({ to, subject, html, text, from }) => {
   try {
     console.log('[EMAIL] Sending via SMTP to:', to);
 
     const mailTransporter = getTransporter();
 
+    const senderIdentity = from ? (from.includes('<') ? from : buildEmailSenderIdentity(from)) : buildEmailSenderIdentity();
+
     const mailOptions = addSMTPReplyTo({
-      from: buildEmailSenderIdentity(),
+      from: senderIdentity,
       to: to,
       subject: subject,
       text: text,
@@ -363,6 +368,9 @@ export const sendVerificationEmail = async (user, rawToken) => {
       console.log('[VERIFY-EMAIL] Subject:', verificationEmail.subject);
     }
 
+    // Verification emails use the specific "HomelyServ Verified Registration" sender identity
+    const verificationSender = buildEmailSenderIdentity(undefined, 'HomelyServ Verified Registration');
+
     // Send via Resend (production) or SMTP (fallback)
     if (EMAIL_PROVIDER === 'resend') {
       return await sendViaResend({
@@ -370,14 +378,16 @@ export const sendVerificationEmail = async (user, rawToken) => {
         subject: verificationEmail.subject,
         html: verificationEmail.html,
         text: verificationEmail.text,
-        replyTo: process.env.EMAIL_REPLY_TO
+        replyTo: process.env.EMAIL_REPLY_TO,
+        from: verificationSender,
       });
     } else {
       return await sendViaSMTP({
         to: email,
         subject: verificationEmail.subject,
         html: verificationEmail.html,
-        text: verificationEmail.text
+        text: verificationEmail.text,
+        from: verificationSender,
       });
     }
 
