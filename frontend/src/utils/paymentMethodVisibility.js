@@ -9,10 +9,8 @@ export const getVisiblePaymentMethods = (methods, availableProviderIds, {
   methods.filter(({ id }) => {
     if (id === 'paymob') return false;
     if (MANUAL_PAYMENT_METHOD_IDS.has(id)) return showEgyptianManualMethods;
-    if (id === 'paypal') {
-      return availableProviderIds === null || availableProviderIds.includes('paypal');
-    }
-    if (id === 'bank_transfer') return bankTransferAvailable !== false;
+    if (id === 'paypal') return true;
+    if (id === 'bank_transfer') return true;
     return false;
   })
 );

@@ -120,7 +120,7 @@ const Subscription = () => {
 
   // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const paymentMethods = [
-    ...(paypalAvailable !== false ? [{
+    {
       id: PAYMENT_METHODS.PAYPAL,
       name: t('subscriptionPage.methods.paypal'),
       icon: Wallet,
@@ -128,7 +128,7 @@ const Subscription = () => {
       color: 'from-blue-700 to-blue-800',
       badge: null,
       badgeColor: null
-    }] : []),
+    },
     {
       id: PAYMENT_METHODS.VODAFONE_CASH,
       name: t('manualPayment.vodafoneCash'),
@@ -147,7 +147,7 @@ const Subscription = () => {
       badge: t('manualPayment.manualVerification'),
       badgeColor: 'bg-amber-100 text-amber-700'
     },
-    ...(bankTransferAvailable ? [{
+    {
       id: PAYMENT_METHODS.BANK_TRANSFER,
       name: t('bankTransfer.category'),
       icon: Building2,
@@ -155,7 +155,7 @@ const Subscription = () => {
       color: 'from-teal-500 to-teal-600',
       badge: t('bankTransfer.available'),
       badgeColor: 'bg-green-100 text-green-700'
-    }] : [])
+    }
   ];
   const visiblePaymentMethods = canShowEgyptianManualPaymentMethods(authUser)
     ? paymentMethods

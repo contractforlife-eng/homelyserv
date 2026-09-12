@@ -16,7 +16,12 @@ import {
   getSubscriptionPlan,
   normalizeSubscriptionPlanId,
 } from '../config/subscription.js';
-import { resolveSubscriptionMarket, resolveSubscriptionPriceBook } from '../config/subscriptionPriceBooks.js';
+import {
+  SUBSCRIPTION_PRICE_BOOKS,
+  SUBSCRIPTION_PRICE_BOOK_VERSION,
+  resolveSubscriptionMarket,
+  resolveSubscriptionPriceBook,
+} from '../config/subscriptionPriceBooks.js';
 import {
   PROVIDER_CAPABILITY_MODES,
   getAvailableProviders,
@@ -2908,27 +2913,31 @@ const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId
       return { error: 'Role is not eligible for Premium', status: 403 };
     }
 
-    const resolvedMarket = resolveSubscriptionMarket(dbUser.countryCode).market;
-    if (!['EGYPT', 'LEGACY_EGP'].includes(resolvedMarket)) {
-      return { error: 'Manual subscription payments are available only in Egypt', status: 400 };
+    const egyptBook = SUBSCRIPTION_PRICE_BOOKS.EGYPT;
+    const planDetails = egyptBook?.plans?.[selectedPlan.id];
+    if (!planDetails) {
+      return { error: 'Unsupported subscription plan', status: 400 };
     }
-    const resolvedSubscription = resolveSubscriptionPriceBook({ user: dbUser, plan: selectedPlan.id });
+
+    const amount = planDetails.prices[dbUser.role];
+    const durationDays = planDetails.durationDays;
+    const transactionCurrency = egyptBook.currency; // 'EGP'
 
     return {
       manualConfig,
       selectedPaymentMethod,
-      amount: resolvedSubscription.amount,
-      transactionCurrency: resolvedSubscription.currency,
+      amount,
+      transactionCurrency,
       hireId: null,
       workerId: null,
       offerId: null,
       subscriptionSnapshot: {
         plan: selectedPlan.id,
-        purchaserRole: resolvedSubscription.role,
-        durationDays: resolvedSubscription.durationDays,
-        market: resolvedSubscription.market,
-        countryCode: resolvedSubscription.countryCode,
-        priceBookVersion: resolvedSubscription.priceBookVersion,
+        purchaserRole: dbUser.role,
+        durationDays,
+        market: egyptBook.market,
+        countryCode: dbUser.countryCode || null,
+        priceBookVersion: SUBSCRIPTION_PRICE_BOOK_VERSION,
       },
     };
   }

@@ -842,7 +842,7 @@ const PaymentOptions = () => {
           toggleSidebar={toggleSidebar}
           mobileMenuOpen={mobileMenuOpen}
           toggleMobileMenu={toggleMobileMenu}
-          user={authUser}
+          authUser={authUser}
           handleLogout={handleLogout}
         />
         <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
@@ -872,7 +872,7 @@ const PaymentOptions = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={authUser}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 

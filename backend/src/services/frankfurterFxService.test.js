@@ -58,3 +58,57 @@ test('scientific-notation provider rates normalize without money arithmetic', ()
   });
   assert.equal(result.rate, '0.000038');
 });
+
+test('validates current and next-day market reference calendar dates across timezones and weekends', () => {
+  // Current calendar day
+  const resultCurrent = validateFrankfurterQuote({
+    sourceCurrency: 'EUR',
+    now: Date.parse('2026-09-12T00:05:00.000Z'),
+    quote: { base: 'EUR', quote: 'USD', rate: 1.08, effectiveAt: '2026-09-12' },
+  });
+  assert.equal(resultCurrent.rate, '1.08');
+  assert.equal(resultCurrent.effectiveAt, '2026-09-12T00:00:00.000Z');
+
+  // Next-day reference date (e.g., weekend forward market date like Sunday 2026-09-13 evaluated on Saturday 2026-09-12)
+  const resultNextDay = validateFrankfurterQuote({
+    sourceCurrency: 'EGP',
+    now: Date.parse('2026-09-12T00:05:00.000Z'),
+    quote: { base: 'EGP', quote: 'USD', rate: 0.0195, effectiveAt: '2026-09-13' },
+  });
+  assert.equal(resultNextDay.rate, '0.0195');
+  assert.equal(resultNextDay.effectiveAt, '2026-09-13T00:00:00.000Z');
+});
+
+test('rejects genuinely invalid future dates more than 1 calendar day ahead', () => {
+  assert.throws(
+    () => validateFrankfurterQuote({
+      sourceCurrency: 'EUR',
+      now: Date.parse('2026-09-12T00:05:00.000Z'),
+      quote: { base: 'EUR', quote: 'USD', rate: 1.08, effectiveAt: '2026-09-15' },
+    }),
+    (error) => error.code === 'INVALID_PROVIDER_QUOTE',
+  );
+});
+
+test('rejects malformed or invalid effective dates', () => {
+  assert.throws(
+    () => validateFrankfurterQuote({
+      sourceCurrency: 'EUR',
+      now: Date.parse('2026-09-12T00:05:00.000Z'),
+      quote: { base: 'EUR', quote: 'USD', rate: 1.08, effectiveAt: 'invalid-date' },
+    }),
+    (error) => error.code === 'INVALID_PROVIDER_QUOTE',
+  );
+});
+
+test('rejects stale quotes exceeding max working days', () => {
+  assert.throws(
+    () => validateFrankfurterQuote({
+      sourceCurrency: 'EUR',
+      now: Date.parse('2026-08-24T12:00:00.000Z'),
+      quote: { base: 'EUR', quote: 'USD', rate: 1.08, effectiveAt: '2026-08-17' },
+      maxWorkingDays: 3,
+    }),
+    (error) => error.code === 'STALE_PROVIDER_QUOTE',
+  );
+});

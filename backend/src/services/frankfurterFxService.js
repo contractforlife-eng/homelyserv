@@ -64,7 +64,21 @@ export const validateFrankfurterQuote = ({ quote, sourceCurrency, now = Date.now
   if (!isDecimal(normalizedRate) || !/[1-9]/.test(normalizedRate)) {
     throw new FrankfurterFxError('INVALID_PROVIDER_QUOTE', 'Frankfurter returned an invalid rate');
   }
-  if (!Number.isFinite(effectiveDate.getTime()) || effectiveDate > nowDate) {
+  const effectiveDayUtc = Date.UTC(
+    effectiveDate.getUTCFullYear(),
+    effectiveDate.getUTCMonth(),
+    effectiveDate.getUTCDate(),
+  );
+  const nowDayUtc = Date.UTC(
+    nowDate.getUTCFullYear(),
+    nowDate.getUTCMonth(),
+    nowDate.getUTCDate(),
+  );
+
+  // A calendar market date cannot be more than 1 calendar day ahead (e.g. market forward reference on weekends or cross-timezone publication).
+  const maxForwardDayUtc = nowDayUtc + (24 * 60 * 60 * 1000);
+
+  if (!Number.isFinite(effectiveDate.getTime()) || effectiveDayUtc > maxForwardDayUtc) {
     throw new FrankfurterFxError('INVALID_PROVIDER_QUOTE', 'Frankfurter returned an invalid effective date');
   }
   if (workingDaysSince(effectiveDate, nowDate) > maxWorkingDays) {

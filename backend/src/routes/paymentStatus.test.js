@@ -185,3 +185,95 @@ test('terminal PayPal statuses do not invite further approval polling', () => {
   }
   assert.equal(normalizePayPalOrderStatus('unexpected'), 'UNKNOWN');
 });
+
+const manualInstructionsHandler = paymentRouter.stack
+  .find((layer) => layer.route?.path === '/manual/instructions')
+  .route.stack.at(-1).handle;
+
+test('manual subscription instructions resolve successfully for foreign user (e.g. US) with Egyptian EGP pricing', async () => {
+  const originalUserLookup = prisma.user.findUnique;
+  let responseStatus;
+  let responseBody;
+
+  prisma.user.findUnique = async () => ({
+    id: 'user-us-1',
+    role: 'EMPLOYER',
+    countryCode: 'US',
+  });
+
+  try {
+    await withEnvironment({
+      MANUAL_VODAFONE_CASH_PHONE: '01012345678',
+    }, async () => {
+      await manualInstructionsHandler(
+        {
+          userId: 'user-us-1',
+          userRole: 'EMPLOYER',
+          query: {
+            paymentMethod: 'vodafone_cash',
+            purpose: 'SUBSCRIPTION',
+            plan: 'monthly',
+          },
+        },
+        {
+          status(code) { responseStatus = code; return this; },
+          json(body) { responseBody = body; return this; },
+        },
+      );
+    });
+  } finally {
+    prisma.user.findUnique = originalUserLookup;
+  }
+
+  assert.equal(responseStatus, undefined); // 200 (res.json without res.status)
+  assert.equal(responseBody.success, true);
+  assert.equal(responseBody.payment.paymentMethod, 'vodafone_cash');
+  assert.equal(responseBody.payment.amount, 300);
+  assert.equal(responseBody.payment.currency, 'EGP');
+  assert.equal(responseBody.payment.purpose, 'SUBSCRIPTION');
+  assert.equal(responseBody.payment.manualReviewState, 'draft');
+});
+
+test('manual subscription instructions resolve successfully for Egyptian user with Egyptian EGP pricing', async () => {
+  const originalUserLookup = prisma.user.findUnique;
+  let responseStatus;
+  let responseBody;
+
+  prisma.user.findUnique = async () => ({
+    id: 'user-eg-1',
+    role: 'WORKER',
+    countryCode: 'EG',
+  });
+
+  try {
+    await withEnvironment({
+      MANUAL_INSTAPAY_IPA: 'worker@instapay',
+    }, async () => {
+      await manualInstructionsHandler(
+        {
+          userId: 'user-eg-1',
+          userRole: 'WORKER',
+          query: {
+            paymentMethod: 'instapay',
+            purpose: 'SUBSCRIPTION',
+            plan: 'weekly',
+          },
+        },
+        {
+          status(code) { responseStatus = code; return this; },
+          json(body) { responseBody = body; return this; },
+        },
+      );
+    });
+  } finally {
+    prisma.user.findUnique = originalUserLookup;
+  }
+
+  assert.equal(responseStatus, undefined); // 200
+  assert.equal(responseBody.success, true);
+  assert.equal(responseBody.payment.paymentMethod, 'instapay');
+  assert.equal(responseBody.payment.amount, 75);
+  assert.equal(responseBody.payment.currency, 'EGP');
+  assert.equal(responseBody.payment.purpose, 'SUBSCRIPTION');
+  assert.equal(responseBody.payment.manualReviewState, 'draft');
+});

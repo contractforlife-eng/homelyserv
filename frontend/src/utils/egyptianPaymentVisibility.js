@@ -1,9 +1,3 @@
-// Legacy accounts may lack countryCode. Preserve their existing manual-method
-// presentation until a reviewed account-data migration exists.
-export const canShowEgyptianManualPaymentMethods = (user) => {
-  const countryCode = typeof user?.countryCode === 'string'
-    ? user.countryCode.trim().toUpperCase()
-    : '';
-
-  return !countryCode || countryCode === 'EG';
-};
+// Payment methods (Vodafone Cash, InstaPay, PayPal, Bank Transfer)
+// are visible to all users regardless of countryCode or nationality.
+export const canShowEgyptianManualPaymentMethods = () => true;
