@@ -47,3 +47,29 @@ test('PayPal and Bank Transfer remain visible regardless of bankTransferAvailabl
     ['paypal', 'vodafone_cash', 'instapay', 'bank_transfer']
   );
 });
+
+test('manual payment methods are available across all user countries (EG, TR, US, DE, FR, RU, GB, GLOBAL)', () => {
+  const testCountries = ['EG', 'TR', 'US', 'DE', 'FR', 'RU', 'GB', null, undefined];
+  for (const countryCode of testCountries) {
+    const user = countryCode ? { countryCode } : {};
+    const visible = getVisiblePaymentMethods(methods, [], {
+      showEgyptianManualMethods: true,
+    }).map(({ id }) => id);
+    assert.ok(visible.includes('vodafone_cash'), `Vodafone cash should be available for country: ${countryCode}`);
+    assert.ok(visible.includes('instapay'), `InstaPay should be available for country: ${countryCode}`);
+  }
+});
+
+test('annual plan restricts visible methods to PayPal and Bank Transfer only', () => {
+  const visibleForWeeklyOrMonthly = getVisiblePaymentMethods(methods, ['paypal', 'bank_transfer'], {
+    showEgyptianManualMethods: true,
+  });
+  const planVisibleAnnual = visibleForWeeklyOrMonthly.filter(
+    ({ id }) => id === 'paypal' || id === 'bank_transfer'
+  );
+  assert.deepEqual(
+    planVisibleAnnual.map(({ id }) => id),
+    ['paypal', 'bank_transfer']
+  );
+  assert.equal(planVisibleAnnual.some(({ id }) => id === 'vodafone_cash' || id === 'instapay'), false);
+});

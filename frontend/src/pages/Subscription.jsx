@@ -80,11 +80,11 @@ const Subscription = () => {
   const hasActivePremium = subscriptionStatus?.active === true;
   const selectedPlanPurchasable = !hasActivePremium
     && isSubscriptionPlanPurchaseEnabled(subscriptionQuote, selectedPlan);
-  const genericMarketGateRequired = selectedMethod === PAYMENT_METHODS.VODAFONE_CASH
+  const isManualMethod = selectedMethod === PAYMENT_METHODS.VODAFONE_CASH
     || selectedMethod === PAYMENT_METHODS.INSTAPAY;
   const selectedMethodCheckoutEnabled = (selectedMethod === PAYMENT_METHODS.PAYPAL && paypalAvailable === true)
     || selectedMethod === PAYMENT_METHODS.BANK_TRANSFER
-    || (genericMarketGateRequired && selectedPlanPurchasable);
+    || isManualMethod;
   const quotePlans = getRenderableSubscriptionPlans(subscriptionQuote);
 
   const loadSubscriptionQuote = async () => {
@@ -372,7 +372,7 @@ const Subscription = () => {
       return;
     }
 
-    if (!selectedPlanQuote || (genericMarketGateRequired && !selectedPlanPurchasable)) {
+    if (!selectedPlanQuote) {
       setPaymentError(t('subscriptionPlanOptions.purchaseComingSoon'));
       return;
     }
@@ -841,7 +841,7 @@ const Subscription = () => {
                         capabilityAvailable={bankTransferAvailable}
                         onCancel={() => setSelectedMethod(null)}
                       />
-                    ) : selectedPlanPurchasable && (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) ? (
+                    ) : (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) ? (
                       <ManualPaymentFlow
                         paymentMethod={selectedMethod}
                         purpose="SUBSCRIPTION"
