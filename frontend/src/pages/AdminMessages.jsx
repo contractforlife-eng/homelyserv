@@ -1133,7 +1133,7 @@ const AdminMessages = () => {
               value={newMessage}
               onChange={handleNewMessageChange}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 min-w-0 px-4 py-2.5 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500 text-sm"
+              className="flex-1 min-w-0 px-4 py-2.5 bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm"
             />
             <button
               onClick={handleSendMessage}
