@@ -8,6 +8,8 @@ import employerService from '../services/employerService';
 import complaintService from '../services/complaintService';
 import ReportModal from '../components/messages/ReportModal';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
+import TrustVerificationSection from '../components/verification/TrustVerificationSection';
 import { UserDisplayName } from '../components/users';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -318,6 +320,7 @@ const WorkerProfileView = () => {
                   </span>
                 </span>
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mt-1">
+                  <VerifiedBadge verification={worker.verification} size="md" />
                   {worker.isPremium && <PremiumBadge label={t('workerProfile.premiumLabel')} size="md" />}
                   {worker.activelyLooking && <ActivelyLookingBadge label={t('workerProfile.activelyLooking')} size="md" />}
                 </div>
@@ -478,6 +481,13 @@ const WorkerProfileView = () => {
                   </div>
                 )}
               </div>
+
+              {/* Trust & Verification Section */}
+              <TrustVerificationSection
+                verification={worker.verification}
+                userId={worker.id || worker._id}
+                userRole="WORKER"
+              />
             </div>
           </div>
         </div>

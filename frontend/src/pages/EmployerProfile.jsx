@@ -6,6 +6,8 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
+import TrustVerificationSection from '../components/verification/TrustVerificationSection';
 import api from '../utils/api';
 import {
   Home,
@@ -67,6 +69,7 @@ const EmployerProfile = () => {
   const [imagePreview, setImagePreview] = useState('');
   const [pendingImageFile, setPendingImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [verification, setVerification] = useState(null);
 
   const checkPremiumStatus = () => {
     const userId = authUser?.id || authUser?.email;
@@ -75,6 +78,24 @@ const EmployerProfile = () => {
   };
 
   const isPremium = checkPremiumStatus();
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadVerification = async () => {
+      try {
+        const res = await api.get('/api/verification/me');
+        if (!cancelled && res.data?.success) {
+          setVerification(res.data.verification);
+        }
+      } catch (err) {
+        console.error('Failed to load verification details:', err);
+      }
+    };
+    if (authUser) {
+      loadVerification();
+    }
+    return () => { cancelled = true; };
+  }, [authUser?.id]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -234,6 +255,7 @@ const EmployerProfile = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">{t('employerProfile.title')}</h1>
+                  <VerifiedBadge verification={verification} size="md" />
                   {isPremium && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                       <Crown size={12} className="text-yellow-300" />
@@ -457,6 +479,17 @@ const EmployerProfile = () => {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Trust & Verification Section */}
+          <div className="mt-6">
+            <TrustVerificationSection
+              verification={verification}
+              userId={authUser?.id}
+              userRole="EMPLOYER"
+              isOwnProfile={true}
+              onVerificationUpdated={(v) => setVerification(v)}
+            />
           </div>
         </div>
     </DashboardLayout>

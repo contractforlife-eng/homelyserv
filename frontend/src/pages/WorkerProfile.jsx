@@ -9,6 +9,8 @@ import { fetchSubscriptionStatus } from '../services/paymentService';
 import { applyBackendSubscription } from '../utils/subscriptionService';
 import { normalizePremiumStatus } from '../utils/premiumStatus';
 import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
+import TrustVerificationSection from '../components/verification/TrustVerificationSection';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
@@ -102,6 +104,7 @@ const WorkerProfile = () => {
     return Math.round((completedFields / totalFields) * 100) || 0;
   }, [formData]);
   const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
+  const [verification, setVerification] = useState(null);
 
   const jobOptions = JOB_OPTIONS;
 
@@ -136,9 +139,20 @@ const WorkerProfile = () => {
         console.error('Failed to load subscription status:', error);
       }
     };
+    const loadVerification = async () => {
+      try {
+        const res = await api.get('/api/verification/me');
+        if (!cancelled && res.data?.success) {
+          setVerification(res.data.verification);
+        }
+      } catch (err) {
+        console.error('Failed to load verification details:', err);
+      }
+    };
     loadPremium();
+    loadVerification();
     return () => { cancelled = true; };
-  }, []);
+  }, [authUser?.id]);
 
   const loadRealStats = (userEmail, userId) => {
     try {
@@ -514,6 +528,17 @@ const WorkerProfile = () => {
           {/* Premium & Availability — backend-enforced */}
           <div className="mb-6">
             <WorkerPremiumCard />
+          </div>
+
+          {/* Trust & Verification Section */}
+          <div className="mb-6">
+            <TrustVerificationSection
+              verification={verification}
+              userId={authUser?.id}
+              userRole="WORKER"
+              isOwnProfile={true}
+              onVerificationUpdated={(v) => setVerification(v)}
+            />
           </div>
 
           {/* Personal Information */}

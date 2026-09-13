@@ -48,6 +48,8 @@ import {
 import api from '../../utils/api';
 import { formatExperienceDisplay } from '../../utils/experienceDisplay';
 import { ensureConversationExists } from '../../utils/chatService';
+import VerifiedBadge from '../verification/VerifiedBadge';
+import TrustVerificationSection from '../verification/TrustVerificationSection';
 import {
   UserAvatar,
   UserDisplayName,
@@ -561,12 +563,29 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     size="xl"
                     defaultNameClassName="font-bold text-white"
                   />
+                  <VerifiedBadge
+                    verification={profileUser.verification || {
+                      isVerified: Boolean(profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true)
+                    }}
+                    size="md"
+                    className="shadow-sm"
+                  />
                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium">
                      <Shield size={12} />
                      {t.roles[profileUser.role] || t.roles.user}
                    </span>
-                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${profileUser.isSuspended ? 'bg-red-900/30 text-red-100' : profileUser.isVerified ? 'bg-green-900/30 text-green-100' : 'bg-white/20 text-white'}`}>
-                     {profileUser.isSuspended ? t.status.suspended : profileUser.isVerified ? t.status.verified : t.status.active}
+                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                     profileUser.isSuspended
+                       ? 'bg-red-900/30 text-red-100'
+                       : (profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true)
+                         ? 'bg-green-900/30 text-green-100'
+                         : 'bg-white/20 text-white'
+                   }`}>
+                     {profileUser.isSuspended
+                       ? t.status.suspended
+                       : (profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true)
+                         ? t.status.verified
+                         : t.status.active}
                    </span>
                 </div>
                 <p className="text-white/80 mt-1">{profileUser.email}</p>
@@ -819,6 +838,39 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               </div>
             </div>
           </div>
+
+          {/* TRUST & VERIFICATION STATUS */}
+          <TrustVerificationSection
+            userId={resolvedUserId}
+            userRole={profileUser?.role}
+            verification={profileUser.verification || {
+              isVerified: Boolean(profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true),
+              verifiedProfileStatus: profileUser.verifiedProfileStatus || (profileUser.isVerified ? 'VERIFIED' : 'NOT_VERIFIED'),
+              phoneVerified: profileUser.phoneVerified,
+              emailVerified: profileUser.emailVerified || !!profileUser.email,
+              identityVerificationStatus: profileUser.identityVerificationStatus,
+              experienceVerificationStatus: profileUser.experienceVerificationStatus,
+              certificatesVerificationStatus: profileUser.certificatesVerificationStatus
+            }}
+            isAdmin={isAdmin || variant === 'support'}
+            onVerificationUpdated={(updatedVerification) => {
+              const isNowVerified = Boolean(
+                updatedVerification?.isVerified === true ||
+                updatedVerification?.profile?.status === 'VERIFIED'
+              );
+              setProfileUser(prev => ({
+                ...prev,
+                verification: updatedVerification,
+                isVerified: isNowVerified,
+                verifiedProfileStatus: isNowVerified ? 'VERIFIED' : (updatedVerification?.profile?.status || 'NOT_VERIFIED'),
+                phoneVerified: updatedVerification?.phone?.verified ?? prev.phoneVerified,
+                emailVerified: updatedVerification?.email?.verified ?? prev.emailVerified,
+                identityVerificationStatus: updatedVerification?.identity?.status ?? prev.identityVerificationStatus,
+                experienceVerificationStatus: updatedVerification?.experience?.status ?? prev.experienceVerificationStatus,
+                certificatesVerificationStatus: updatedVerification?.certificates?.status ?? prev.certificatesVerificationStatus
+              }));
+            }}
+          />
 
           {/* WORKER PROFILE */}
           {profileUser.WorkerProfile && (
