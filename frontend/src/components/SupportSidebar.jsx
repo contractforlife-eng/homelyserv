@@ -38,6 +38,7 @@ const SupportSidebar = ({
   const counters = useSidebarCounters();
 
   const badgeCounterKeys = {
+    users: 'users',
     complaints: 'complaints',
     messages: 'messages',
   };

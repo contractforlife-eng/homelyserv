@@ -32,6 +32,7 @@
 // ============================================================
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
+import User from '../models/User.js';
 import { getUnreadCount } from './notificationService.js';
 
 export const SIDEBAR_COUNTER_KEYS = [
@@ -41,6 +42,7 @@ export const SIDEBAR_COUNTER_KEYS = [
   'hires',
   'payments',
   'complaints',
+  'users',
 ];
 
 // Mirrors the pending definition used by the admin command center.
@@ -140,6 +142,7 @@ export const getSidebarCounters = async (userId, role) => {
     hires: 0,
     payments: 0,
     complaints: 0,
+    users: 0,
   };
 
   // Role-specific counters need valid ObjectId-bound relations.
@@ -233,7 +236,7 @@ export const getSidebarCounters = async (userId, role) => {
   // ADMIN
   // ============================================================
   if (userRole === 'ADMIN') {
-    const [hires, payments, complaints] = await Promise.all([
+    const [hires, payments, complaints, users] = await Promise.all([
       safeCount('hires', prisma.hire.count({
         where: { paymentStatus: 'pending', paymentProofUrl: { not: null } },
       })),
@@ -243,18 +246,38 @@ export const getSidebarCounters = async (userId, role) => {
       safeCount('complaints', prisma.complaint.count({
         where: { status: 'ESCALATED' },
       })),
+      safeCount('users_pending_verification', User.countDocuments({
+        verifiedProfileStatus: 'PENDING',
+      })),
     ]);
 
     counters.hires = hires;
     counters.payments = payments;
     counters.complaints = complaints;
+    counters.users = users;
     return counters;
   }
 
   // ============================================================
   // SUPPORT & SUPPORT_HELPER
   // ============================================================
-  if (userRole === 'SUPPORT' || userRole === 'SUPPORT_HELPER') {
+  if (userRole === 'SUPPORT') {
+    const [complaints, users] = await Promise.all([
+      safeCount('complaints', prisma.complaint.count({
+        where: buildSupportComplaintsCounterWhere(uid),
+      })),
+      safeCount('users_pending_verification', User.countDocuments({
+        verifiedProfileStatus: 'PENDING',
+        role: { $in: ['WORKER', 'EMPLOYER'] },
+      })),
+    ]);
+
+    counters.complaints = complaints;
+    counters.users = users;
+    return counters;
+  }
+
+  if (userRole === 'SUPPORT_HELPER') {
     counters.complaints = await safeCount('complaints', prisma.complaint.count({
       where: buildSupportComplaintsCounterWhere(uid),
     }));

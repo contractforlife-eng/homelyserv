@@ -44,6 +44,7 @@ const AdminSidebar = ({
 
   // Maps sidebar menu item ids to unified counter keys
   const badgeCounterKeys = {
+    users: 'users',
     payments: 'payments',
     complaints: 'complaints',
     messages: 'messages',

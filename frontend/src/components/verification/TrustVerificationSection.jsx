@@ -243,6 +243,9 @@ const TrustVerificationSection = ({
       if (res.data?.success) {
         setFeedback({ type: 'success', message: 'Verification status updated successfully.' });
         if (onVerificationUpdated) onVerificationUpdated(res.data.verification);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('sidebar-counters:refresh'));
+        }
       }
     } catch (err) {
       setFeedback({ type: 'error', message: err.response?.data?.message || 'Failed to update verification' });

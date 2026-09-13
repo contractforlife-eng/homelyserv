@@ -13,6 +13,7 @@ export const EMPTY_SIDEBAR_COUNTERS = {
   hires: 0,
   payments: 0,
   complaints: 0,
+  users: 0,
 };
 
 const toCount = (value) => {
@@ -36,6 +37,7 @@ export async function getSidebarCounters() {
       hires: toCount(data.hires),
       payments: toCount(data.payments),
       complaints: toCount(data.complaints),
+      users: toCount(data.users),
     };
   } catch (error) {
     console.error('Error fetching sidebar counters:', error);
