@@ -41,6 +41,7 @@ import {
 } from '../config/manualPayments.js';
 import { buildSubscriptionQuote, isSubscriptionPurchaseMarketEnabled } from '../services/subscriptionQuoteService.js';
 import { getActivePremiumEntitlement } from '../services/premiumService.js';
+import getWorkerPaymentHistory from '../services/workerPaymentHistoryService.js';
 import {
   proofUpload,
   uploadProof,
@@ -2192,6 +2193,52 @@ router.get('/subscription-status', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get subscription status'
+    });
+  }
+});
+
+/**
+ * GET /api/payments/subscription-history
+ * Authenticated user's own subscription financial history (role-agnostic: WORKER or EMPLOYER)
+ */
+router.get('/subscription-history', authenticate, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
+
+    const [entitlement, history] = await Promise.all([
+      getActivePremiumEntitlement(String(userId)),
+      getWorkerPaymentHistory(String(userId)),
+    ]);
+
+    const projectEntitlement = (ent) => {
+      if (!ent) return null;
+      const source = ent.plan === 'manual' ? 'manual' : 'paid';
+      return {
+        source,
+        plan: ent.plan || null,
+        status: ent.status || null,
+        startDate: ent.startDate || null,
+        endDate: ent.endDate || null,
+      };
+    };
+
+    return res.json({
+      success: true,
+      currentPremium: projectEntitlement(entitlement),
+      history,
+    });
+  } catch (error) {
+    console.error('❌ Subscription history error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get subscription history'
     });
   }
 });

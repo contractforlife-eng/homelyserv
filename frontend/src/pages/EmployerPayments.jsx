@@ -6,6 +6,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import PremiumSubscriptionSection from '../components/subscription/PremiumSubscriptionSection';
 import { sendMessage } from '../utils/chatService';
 import hireService from '../services/hireService';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
@@ -455,6 +456,9 @@ const EmployerPayments = () => {
               </p>
             </div>
           </div>
+
+          {/* Premium Subscription Section */}
+          <PremiumSubscriptionSection className="mb-6" />
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">

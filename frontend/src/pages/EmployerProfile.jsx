@@ -8,6 +8,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import VerifiedBadge from '../components/verification/VerifiedBadge';
 import TrustVerificationSection from '../components/verification/TrustVerificationSection';
+import PremiumSubscriptionSection from '../components/subscription/PremiumSubscriptionSection';
 import api from '../utils/api';
 import {
   Home,
@@ -480,6 +481,9 @@ const EmployerProfile = () => {
               </div>
             )}
           </div>
+
+          {/* Premium Subscription Section */}
+          <PremiumSubscriptionSection className="mt-6" />
 
           {/* Trust & Verification Section */}
           <div className="mt-6">

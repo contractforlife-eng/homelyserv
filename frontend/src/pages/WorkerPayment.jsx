@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import PremiumSubscriptionSection from '../components/subscription/PremiumSubscriptionSection';
 import { useDashboard } from '../components/layout/DashboardContext';
 import hireService from '../services/hireService';
 import workerEarningService from '../services/workerEarningService';
@@ -18,23 +19,6 @@ const formatDate = (value, language) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString(localeFor(language), { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
-const planLabel = (plan) => {
-  if (!plan || plan === 'manual') return 'Manual Premium';
-  return `${String(plan).replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())} Premium`;
-};
-
-const remainingTimeLabel = (endDate, language) => {
-  if (!endDate) return '—';
-  const end = new Date(endDate);
-  if (Number.isNaN(end.getTime())) return '—';
-  const remainingMs = end.getTime() - Date.now();
-  if (remainingMs <= 0) return 'Expired';
-  const hours = Math.floor(remainingMs / (60 * 60 * 1000));
-  if (hours < 24) return `${hours || 1} ${language === 'ar' ? 'ساعة متبقية' : 'hours remaining'}`;
-  const days = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
-  return `${days} ${language === 'ar' ? 'يوم متبقٍ' : 'days remaining'}`;
 };
 
 const statusClass = (status) => ({
@@ -54,20 +38,6 @@ const statusIcon = (status) => {
   return <Clock size={14} />;
 };
 
-const premiumHistoryItemClass = (status) => {
-  const normalizedStatus = String(status || '').trim().toLowerCase();
-  if (['completed', 'paid', 'successful', 'succeeded', 'active'].includes(normalizedStatus)) {
-    return 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/70';
-  }
-  if (['pending', 'processing', 'pending_verification', 'awaiting_transfer', 'proof_submitted'].includes(normalizedStatus)) {
-    return 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/70';
-  }
-  if (['failed', 'rejected', 'cancelled', 'canceled', 'expired', 'revoked'].includes(normalizedStatus)) {
-    return 'bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-800/70';
-  }
-  return 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700';
-};
-
 const WorkerPayment = () => {
   const { t } = useTranslation();
   const dashboard = useDashboard();
@@ -80,8 +50,6 @@ const WorkerPayment = () => {
   const [submittingId, setSubmittingId] = useState(null);
   const [earningsSummary, setEarningsSummary] = useState({ pendingContractValue: 0, earnedBalance: 0, paidTotal: 0, onHoldAmount: 0 });
   const [activeHires, setActiveHires] = useState(0);
-  const [premiumHistory, setPremiumHistory] = useState({ currentPremium: null, paid: [], manual: [] });
-  const [premiumHistoryLoading, setPremiumHistoryLoading] = useState(true);
 
   const userIsPremium = dashboard.premiumStatus?.known === true && dashboard.premiumStatus.isPremium === true;
   const language = dashboard.language;
@@ -114,29 +82,9 @@ const WorkerPayment = () => {
     }
   };
 
-  const loadPremiumHistory = async () => {
-    if (!authUser) return;
-    setPremiumHistoryLoading(true);
-    try {
-      const response = await api.get('/api/worker/payment-history');
-      const data = response.data || {};
-      setPremiumHistory({
-        currentPremium: data.currentPremium || null,
-        paid: Array.isArray(data.history?.paid) ? data.history.paid : [],
-        manual: Array.isArray(data.history?.manual) ? data.history.manual : [],
-      });
-    } catch (error) {
-      console.error('Error loading Premium payment history:', error);
-      setPremiumHistory({ currentPremium: null, paid: [], manual: [] });
-    } finally {
-      setPremiumHistoryLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (authUser?.id) {
       loadEarningsData();
-      loadPremiumHistory();
     }
   }, [authUser?.id]);
 
@@ -160,13 +108,8 @@ const WorkerPayment = () => {
     return formatCurrencyTotals(groupCurrencyTotals(records, (record) => record.amount, resolveEarningCurrency), locale);
   };
 
-  const premiumHistoryItems = useMemo(() => [...premiumHistory.paid, ...premiumHistory.manual].sort((a, b) => new Date(b.createdAt || b.paymentDate || 0) - new Date(a.createdAt || a.paymentDate || 0)), [premiumHistory]);
-  const currentPremium = premiumHistory.currentPremium;
-  const currentPremiumActive = currentPremium?.status === 'active';
-
   const handleRefresh = () => {
     loadEarningsData();
-    loadPremiumHistory();
   };
 
   const handleSubmitPeriod = async (record) => {
@@ -208,10 +151,8 @@ const WorkerPayment = () => {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{stats.map(({ label, value, icon: Icon, color, bg, card }) => <div key={label} className={`${card} rounded-xl shadow-sm p-5 border`}><div className="flex items-center justify-between mb-3"><p className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</p><div className={`w-10 h-10 ${bg} rounded-lg flex items-center justify-center`}><Icon size={20} className={color} /></div></div><p className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white break-words">{value}</p></div>)}</div>
 
-        <section className="bg-purple-50/60 dark:bg-purple-950/20 rounded-xl shadow-sm border border-purple-200/80 dark:border-purple-800/60 overflow-hidden" aria-labelledby="premium-history-heading">
-          <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between"><div><h2 id="premium-history-heading" className="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2"><Crown size={21} className="text-purple-600" />Premium Subscription</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your current entitlement and Premium payment history</p></div>{currentPremiumActive && <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 border border-green-200">Active</span>}</div>
-          <div className="p-5 md:p-6">{premiumHistoryLoading ? <div className="text-sm text-gray-500">Loading Premium history…</div> : <><div className="mb-6">{currentPremiumActive ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><div><p className="text-xs uppercase text-gray-500">Source</p><p className="font-semibold text-gray-800 dark:text-white">{currentPremium.source === 'manual' ? 'Admin Grant' : 'Paid'}</p></div><div><p className="text-xs uppercase text-gray-500">Plan</p><p className="font-semibold text-gray-800 dark:text-white">{planLabel(currentPremium.plan)}</p></div><div><p className="text-xs uppercase text-gray-500">Start date</p><p className="font-semibold text-gray-800 dark:text-white">{formatDate(currentPremium.startDate, language)}</p></div><div><p className="text-xs uppercase text-gray-500">Expiry / remaining</p><p className="font-semibold text-gray-800 dark:text-white">{formatDate(currentPremium.endDate, language)} · {remainingTimeLabel(currentPremium.endDate, language)}</p></div></div> : <p className="text-sm text-gray-600 dark:text-gray-300">No active Premium entitlement. Historical purchases and grants remain listed below.</p>}</div><h3 className="text-base font-semibold text-gray-800 dark:text-white mb-3">Premium payment history</h3>{premiumHistoryItems.length === 0 ? <p className="text-sm text-gray-500 dark:text-gray-400">No Premium purchases or grants recorded.</p> : <div className="space-y-3">{premiumHistoryItems.map((item, index) => { const amount = item.source === 'paid' && item.status === 'completed' ? formatCurrencyAmount(item.amount, item.currency, locale) : item.source === 'manual' ? 'Admin Grant — no payment' : 'Payment not completed'; const historyStatus = item.source === 'paid' && item.endDate && new Date(item.endDate) < new Date() ? 'expired' : (item.subscriptionStatus || item.status); return <div key={`${item.source}-${item.createdAt || index}`} className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 rounded-lg border p-4 ${premiumHistoryItemClass(historyStatus)}`}><div><p className="text-xs text-gray-500">Plan</p><p className="font-medium text-gray-800 dark:text-white">{planLabel(item.plan)}</p></div><div><p className="text-xs text-gray-500">Amount</p><p className="font-medium text-gray-800 dark:text-white">{amount}</p></div><div><p className="text-xs text-gray-500">Provider</p><p className="font-medium text-gray-800 dark:text-white">{item.source === 'manual' ? 'Admin Grant' : item.provider || '—'}</p></div><div><p className="text-xs text-gray-500">Payment date</p><p className="font-medium text-gray-800 dark:text-white">{formatDate(item.paymentDate, language)}</p></div><div><p className="text-xs text-gray-500">Period</p><p className="font-medium text-gray-800 dark:text-white">{formatDate(item.startDate, language)} – {formatDate(item.endDate, language)}</p></div><div><p className="text-xs text-gray-500">Status</p><span className={`inline-flex px-2 py-1 rounded-full border text-xs font-medium ${historyStatus === 'active' ? 'bg-green-100 text-green-800 border-green-200' : statusClass(historyStatus)}`}>{historyStatus || '—'}</span></div></div>; })}</div>}</>}</div>
-        </section>
+        {/* Premium Subscription */}
+        <PremiumSubscriptionSection />
 
         <section className="bg-slate-50 dark:bg-slate-950/30 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden" aria-labelledby="earnings-history-heading">
           <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between"><h2 id="earnings-history-heading" className="text-xl font-semibold text-gray-800 dark:text-white">{t('workerPayment.paymentHistory.title')}</h2><button onClick={handleRefresh} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500" aria-label="Refresh"><RefreshCw size={18} /></button></div>
