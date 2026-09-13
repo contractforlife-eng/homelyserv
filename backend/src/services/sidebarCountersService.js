@@ -45,6 +45,13 @@ export const SIDEBAR_COUNTER_KEYS = [
   'users',
 ];
 
+const PENDING_VERIFICATION_CRITERIA = Object.freeze([
+  { verifiedProfileStatus: 'PENDING' },
+  { identityVerificationStatus: 'PENDING' },
+  { experienceVerificationStatus: 'PENDING' },
+  { certificatesVerificationStatus: 'PENDING' },
+]);
+
 // Mirrors the pending definition used by the admin command center.
 const ACTIONABLE_USER_PAYMENT_STATE = {
   status: 'pending',
@@ -247,7 +254,7 @@ export const getSidebarCounters = async (userId, role) => {
         where: { status: 'ESCALATED' },
       })),
       safeCount('users_pending_verification', User.countDocuments({
-        verifiedProfileStatus: 'PENDING',
+        $or: PENDING_VERIFICATION_CRITERIA,
       })),
     ]);
 
@@ -267,8 +274,8 @@ export const getSidebarCounters = async (userId, role) => {
         where: buildSupportComplaintsCounterWhere(uid),
       })),
       safeCount('users_pending_verification', User.countDocuments({
-        verifiedProfileStatus: 'PENDING',
         role: { $in: ['WORKER', 'EMPLOYER'] },
+        $or: PENDING_VERIFICATION_CRITERIA,
       })),
     ]);
 
