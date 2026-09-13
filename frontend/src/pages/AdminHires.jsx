@@ -347,7 +347,7 @@ const AdminHires = () => {
       <div className="p-4 md:p-6 space-y-6 bg-[#0a0a0a] min-h-screen">
         {/* Heading */}
         <div>
-          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
           <p className="text-sm text-gray-400 mt-0.5">{t.subtitle}</p>
         </div>
 
@@ -363,7 +363,7 @@ const AdminHires = () => {
                     <Icon size={16} />
                   </div>
                 </div>
-                <p className="text-xl font-bold text-white mt-1.5">{card.value}</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white mt-1.5">{card.value}</p>
               </div>
             );
           })}
@@ -379,13 +379,13 @@ const AdminHires = () => {
                 placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                className="w-full pl-9 pr-3 py-2 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+              className="px-3 py-2 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
             >
               <option value="all">{t.filters.all}</option>
               <option value={HIRE_STATUS.OFFER_SENT}>{t.filters.offer_sent}</option>
@@ -395,7 +395,7 @@ const AdminHires = () => {
             <select
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value)}
-              className="px-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+              className="px-3 py-2 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
             >
               <option value="all">{t.filters.allPayments}</option>
               <option value="paid">{t.filters.paid}</option>
@@ -406,7 +406,7 @@ const AdminHires = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+              className="px-3 py-2 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
             >
               <option value="newest">{t.filters.newest}</option>
               <option value="oldest">{t.filters.oldest}</option>
@@ -428,14 +428,14 @@ const AdminHires = () => {
 
         {/* Results count */}
         <p className="text-sm text-gray-400">
-          {t.showing} <span className="font-semibold text-white">{filteredHires.length}</span> {t.hiresWord}
+          {t.showing} <span className="font-semibold text-gray-900 dark:text-white">{filteredHires.length}</span> {t.hiresWord}
         </p>
 
         {/* Empty state */}
         {filteredHires.length === 0 ? (
           <div className="bg-[#1a1a1a] rounded-xl border border-yellow-500/15 p-12 text-center">
             <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-white mb-2">{t.noHires}</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t.noHires}</h3>
             <p className="text-gray-400">{t.noHiresDesc}</p>
             {hasActiveFilters && (
               <button
@@ -477,7 +477,7 @@ const AdminHires = () => {
                             <div className="flex items-center gap-2.5">
                               <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                               <div className="min-w-0">
-                                <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm truncate flex items-center gap-1">
                                   <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} />
                                   {hire.employerIsPremium && <Crown size={11} className="text-yellow-400" />}
                                 </p>
@@ -497,7 +497,7 @@ const AdminHires = () => {
                             <div className="flex items-center gap-2.5">
                               <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                               <div className="min-w-0">
-                                <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm truncate flex items-center gap-1">
                                   <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} />
                                   {hire.workerIsPremium && <Crown size={11} className="text-yellow-400" />}
                                 </p>
@@ -514,7 +514,7 @@ const AdminHires = () => {
                           </td>
                           {/* Salary */}
                           <td className="px-4 py-3">
-                            <p className="font-medium text-white text-sm">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</p>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</p>
                             <p className="text-[11px] text-gray-500">{t.perMonth}</p>
                           </td>
                           {/* Commission */}
@@ -537,7 +537,7 @@ const AdminHires = () => {
                           </td>
                           {/* Date */}
                           <td className="px-4 py-3">
-                            <p className="text-sm text-gray-300 flex items-center gap-1.5">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                               <Calendar size={13} className="text-gray-500" />
                               {formatDate(hire.createdAt || hire.startDate)}
                             </p>
@@ -577,7 +577,7 @@ const AdminHires = () => {
                         <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                         <div className="min-w-0">
                           <p className="text-xs text-gray-500">{t.table.employer}</p>
-                          <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} defaultNameClassName="font-semibold text-white" />
+                          <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} defaultNameClassName="font-semibold text-gray-900 dark:text-white" />
                         </div>
                       </div>
                       <div className="flex flex-col items-center text-yellow-500/70 flex-shrink-0">
@@ -587,7 +587,7 @@ const AdminHires = () => {
                       <div className="flex items-center gap-2 min-w-0 justify-end">
                         <div className="min-w-0 text-right">
                           <p className="text-xs text-gray-500">{t.table.worker}</p>
-                          <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} defaultNameClassName="font-semibold text-white" />
+                          <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} defaultNameClassName="font-semibold text-gray-900 dark:text-white" />
                         </div>
                         <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                       </div>
@@ -597,7 +597,7 @@ const AdminHires = () => {
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-800">
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.salary}</p>
-                        <p className="text-sm font-semibold text-white">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</p>
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.commission}</p>
@@ -605,7 +605,7 @@ const AdminHires = () => {
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.hiredOn}</p>
-                        <p className="text-sm font-semibold text-white">{formatDate(hire.createdAt || hire.startDate)}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(hire.createdAt || hire.startDate)}</p>
                       </div>
                     </div>
 
@@ -753,13 +753,13 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-[#141414] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-yellow-500/20"
+        className="bg-[#0a0a0a] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-yellow-500/20"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-yellow-500/15 sticky top-0 bg-[#141414] z-10">
-          <h2 className="text-xl font-semibold text-white">{t.modal.title}</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-white">
+        <div className="flex items-center justify-between p-6 border-b border-yellow-500/15 sticky top-0 bg-[#0a0a0a] z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t.modal.title}</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
             <X size={20} />
           </button>
         </div>
@@ -771,13 +771,13 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
             <div className="flex items-center gap-3">
               <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="lg" className="border-2 border-yellow-500/40" />
               <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.employer}</p>
-                <p className="font-semibold text-white truncate flex items-center gap-1">
+                <p className="text-[11px] uppercase tracking-wide text-gray-600 dark:text-gray-400">{t.table.employer}</p>
+                <p className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1">
                   <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} size="lg" />
                   {hire.employerIsPremium && <Crown size={12} className="text-yellow-400" />}
                 </p>
-                <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Mail size={11} />{hire.employerEmail || t.modal.notProvided}</p>
-                <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Phone size={11} />{hire.employerPhone || t.modal.notProvided}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate flex items-center gap-1"><Mail size={11} />{hire.employerEmail || t.modal.notProvided}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate flex items-center gap-1"><Phone size={11} />{hire.employerPhone || t.modal.notProvided}</p>
               </div>
             </div>
             {/* Arrow */}
@@ -788,13 +788,13 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
             {/* Worker */}
             <div className="flex items-center gap-3 md:justify-end">
               <div className="min-w-0 md:text-right">
-                <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.worker}</p>
-                <p className="font-semibold text-white truncate flex items-center gap-1 md:justify-end">
+                <p className="text-[11px] uppercase tracking-wide text-gray-600 dark:text-gray-400">{t.table.worker}</p>
+                <p className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1 md:justify-end">
                   <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} size="lg" />
                   {hire.workerIsPremium && <Crown size={12} className="text-yellow-400" />}
                 </p>
-                <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end"><Briefcase size={11} />{hire.jobTitle || t.serviceProvider}</p>
-                <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end">
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate flex items-center gap-1 md:justify-end"><Briefcase size={11} />{hire.jobTitle || t.serviceProvider}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate flex items-center gap-1 md:justify-end">
                   <Star size={11} className="text-yellow-400" />{hire.workerRating ?? t.modal.notProvided}
                 </p>
               </div>
@@ -806,50 +806,50 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Status */}
             <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
-              <h4 className="text-sm font-semibold text-gray-300 mb-3">{t.modal.currentStatus}</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-3">{t.modal.currentStatus}</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{t.modal.hireStatus}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.hireStatus}</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${status.cls}`}>{status.icon}{status.label}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{t.modal.paymentStatus}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.paymentStatus}</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${payment.cls}`}><Wallet size={11} />{payment.label}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-xs text-gray-500">{t.modal.hireDate}</span>
-                  <span className="text-gray-200">{formatDate(hire.createdAt || hire.startDate)}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.hireDate}</span>
+                  <span className="text-gray-900 dark:text-gray-200">{formatDate(hire.createdAt || hire.startDate)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-xs text-gray-500">{t.modal.lastUpdated}</span>
-                  <span className="text-gray-200">{formatDate(hire.updatedAt)}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.lastUpdated}</span>
+                  <span className="text-gray-900 dark:text-gray-200">{formatDate(hire.updatedAt)}</span>
                 </div>
               </div>
             </div>
 
             {/* Financial */}
             <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
-              <h4 className="text-sm font-semibold text-gray-300 mb-3">{t.modal.financial}</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-3">{t.modal.financial}</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{t.modal.salary}</span>
-                  <span className="font-semibold text-white">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.salary}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{t.modal.commission}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.commission}</span>
                   <span className="font-semibold text-yellow-400">{formatCurrency(getCommission(hire), hire)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{t.modal.vat}</span>
-                  <span className="text-gray-200">{formatCurrency(hire.vatAmount, hire)}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.vat}</span>
+                  <span className="text-gray-900 dark:text-gray-200">{formatCurrency(hire.vatAmount, hire)}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-800 pt-2">
-                  <span className="text-xs text-gray-500">{t.modal.totalDue}</span>
-                  <span className="font-bold text-white">{formatCurrency(hire.totalDue ?? getCommission(hire), hire)}</span>
+                <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-800 pt-2">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.totalDue}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(hire.totalDue ?? getCommission(hire), hire)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{t.modal.paymentRef}</span>
-                  <span className="text-gray-400 text-xs">{hire.paymentReference || t.modal.notProvided}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t.modal.paymentRef}</span>
+                  <span className="text-gray-700 dark:text-gray-400 text-xs">{hire.paymentReference || t.modal.notProvided}</span>
                 </div>
               </div>
             </div>
@@ -857,16 +857,16 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
 
           {/* Timeline */}
           <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
-            <h4 className="text-sm font-semibold text-gray-300 mb-4">{t.modal.timeline}</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-4">{t.modal.timeline}</h4>
             <div className="space-y-4">
               {timeline.map((step, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/40 text-gray-500'}`}>
+                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-green-500/20 text-green-400' : 'bg-gray-200 dark:bg-gray-700/40 text-gray-500 dark:text-gray-500'}`}>
                     {step.done ? <CheckCircle size={14} /> : <Clock size={14} />}
                   </div>
                   <div className="flex-1">
-                    <p className={`text-sm font-medium ${step.done ? 'text-white' : 'text-gray-500'}`}>{step.label}</p>
-                    <p className="text-xs text-gray-500">{step.date ? formatDate(step.date) : '—'}</p>
+                    <p className={`text-sm font-medium ${step.done ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{step.label}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{step.date ? formatDate(step.date) : '—'}</p>
                   </div>
                 </div>
               ))}
@@ -876,8 +876,8 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
           {/* Notes */}
           {hire.additionalNotes && (
             <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
-              <h4 className="text-sm font-semibold text-gray-300 mb-2">{t.modal.notes}</h4>
-              <p className="text-sm text-gray-300 whitespace-pre-wrap">{hire.additionalNotes}</p>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-300 mb-2">{t.modal.notes}</h4>
+              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{hire.additionalNotes}</p>
             </div>
           )}
         </div>

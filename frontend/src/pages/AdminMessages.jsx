@@ -145,7 +145,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser, allowedRoles = 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-yellow-500/20">
           <div>
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Plus size={18} className="text-yellow-500" />
               {t('adminMessagesPage.startConversation')}
             </h2>
@@ -225,7 +225,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser, allowedRoles = 
                     <UserDisplayName
                       user={user}
                       size="sm"
-                      defaultNameClassName="font-semibold text-white"
+                      defaultNameClassName="font-semibold text-gray-900 dark:text-white"
                     />
                     <p className="text-sm text-gray-400 truncate">{user.email}</p>
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mt-1 ${getRoleColorClass(user.role)}`}>
@@ -875,7 +875,7 @@ const AdminMessages = () => {
               role={avatarRole}
               isPremium={(type === 'USERS' ? conv.user : conv.otherStaff)?.isPremium === true}
               size="sm"
-              defaultNameClassName="font-medium text-white"
+              defaultNameClassName="font-medium text-gray-900 dark:text-white"
             />
             <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(conv.lastMessageTime || conv.updatedAt)}</span>
           </div>
@@ -950,7 +950,7 @@ const AdminMessages = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/10 flex items-center justify-center">
               <MessageSquare size={32} className="text-yellow-500" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">{t.selectConversation}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t.selectConversation}</h3>
             <p className="text-sm text-gray-400">{t.selectConversation}</p>
           </div>
         </div>
@@ -999,13 +999,13 @@ const AdminMessages = () => {
                   ? selectedConversation.user
                   : selectedConversation.otherStaff)?.isPremium === true}
                 size="sm"
-                defaultNameClassName="font-medium text-white"
+                defaultNameClassName="font-medium text-gray-900 dark:text-white"
               />
-              <p className="text-xs text-gray-400">{chatSubtitle}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{chatSubtitle}</p>
               {presence[String(getOtherUserId())] === true ? (
                 <p className="text-xs text-green-500">{t.online}</p>
               ) : (
-                <p className="text-xs text-gray-400">{t.offline}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t.offline}</p>
               )}
               {otherUserTyping && (
                 <p className="text-xs font-medium text-yellow-500">{i18nT('typingIndicator')}</p>
@@ -1077,7 +1077,7 @@ const AdminMessages = () => {
                   <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
                     isSelf
                       ? 'bg-yellow-500 text-black'
-                      : 'bg-[#1a1a1a] text-white border border-yellow-500/20'
+                      : 'bg-[#1a1a1a] text-gray-900 dark:text-white border border-yellow-500/20'
                   }`}>
                     <div className="mb-1">
                       {isSelf ? (
@@ -1090,7 +1090,7 @@ const AdminMessages = () => {
                           role={senderRole}
                           isPremium={msg.senderIsPremium || msg.sender?.isPremium}
                           size="sm"
-                          className="text-white"
+                          className="text-gray-900 dark:text-white"
                         />
                       )}
                     </div>
@@ -1174,7 +1174,7 @@ const AdminMessages = () => {
         <div className="px-6 py-4 border-b border-yellow-500/20 bg-[#0a0a0a]">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-white">{t.title}</h1>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{t.title}</h1>
               <p className="text-sm text-gray-400 mt-0.5">{t.subtitle}</p>
             </div>
             <div className="flex items-center gap-2">

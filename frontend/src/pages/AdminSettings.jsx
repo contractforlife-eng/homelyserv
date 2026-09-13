@@ -466,51 +466,51 @@ const AdminSettings = () => {
         <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
           {activeTab === 'general' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.general.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.general.title}</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteName}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.general.siteName}</label>
                   <input
                     type="text"
                     value={settings.siteName}
                     onChange={(e) => handleSettingChange('siteName', e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteDescription}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.general.siteDescription}</label>
                   <textarea
                     value={settings.siteDescription}
                     onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
                     rows="2"
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactEmail}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.general.contactEmail}</label>
                   <input
                     type="email"
                     value={settings.contactEmail}
                     onChange={(e) => handleSettingChange('contactEmail', e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactPhone}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.general.contactPhone}</label>
                   <input
                     type="text"
                     value={settings.contactPhone}
                     onChange={(e) => handleSettingChange('contactPhone', e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.address}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.general.address}</label>
                   <input
                     type="text"
                     value={settings.address}
                     onChange={(e) => handleSettingChange('address', e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -519,12 +519,12 @@ const AdminSettings = () => {
 
           {activeTab === 'appearance' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.appearance.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.appearance.title}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300 dark:text-gray-300">{t.appearance.darkMode}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.darkMode}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.appearance.darkMode}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.darkMode}</p>
                   </div>
                   <button
                     onClick={toggleTheme}
@@ -546,12 +546,12 @@ const AdminSettings = () => {
 
           {activeTab === 'notifications' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.notifications.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.notifications.title}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.notifications.systemNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.systemNotifications}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.notifications.systemNotifications}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.systemNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.systemNotifications}
@@ -560,8 +560,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.notifications.emailNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.emailNotifications}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.notifications.emailNotifications}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.emailNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.emailNotifications}
@@ -570,8 +570,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.notifications.pushNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.pushNotifications}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.notifications.pushNotifications}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.pushNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.pushNotifications}
@@ -580,8 +580,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.complaintNotifications}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.notifications.complaintNotifications}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.complaintNotifications}</p>
                     <p className="text-xs text-yellow-500">{t.notices.complaintNotificationsRequired}</p>
                   </div>
                   <ToggleSwitch
@@ -592,8 +592,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.paymentNotifications}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.notifications.paymentNotifications}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.paymentNotifications}</p>
                     <p className="text-xs text-yellow-500">{t.notices.paymentNotificationsComingSoon}</p>
                   </div>
                   <ToggleSwitch
@@ -608,12 +608,12 @@ const AdminSettings = () => {
 
           {activeTab === 'security' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.security.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.security.title}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.security.twoFactorAuth}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.twoFactorAuth}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.security.twoFactorAuth}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.twoFactorAuth}</p>
                     <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
@@ -624,8 +624,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.security.requireEmailVerification}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.requireEmailVerification}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.security.requireEmailVerification}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.requireEmailVerification}</p>
                     <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
@@ -635,21 +635,21 @@ const AdminSettings = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.sessionTimeout}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.security.sessionTimeout}</label>
                   <input
                     type="number"
                     value={settings.sessionTimeout}
                     onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.maxLoginAttempts}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.security.maxLoginAttempts}</label>
                   <input
                     type="number"
                     value={settings.maxLoginAttempts}
                     onChange={(e) => handleSettingChange('maxLoginAttempts', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div className="pt-4 border-t border-yellow-500/20">
@@ -668,14 +668,14 @@ const AdminSettings = () => {
 
           {activeTab === 'payment' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.payment.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.payment.title}</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.currency}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.payment.currency}</label>
                   <select
                     value={settings.currency}
                     onChange={(e) => handleSettingChange('currency', e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   >
                     <option value="EGP">{t.currencyOptions.egp}</option>
                     <option value="USD">{t.currencyOptions.usd}</option>
@@ -683,21 +683,21 @@ const AdminSettings = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.minWithdrawal}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.payment.minWithdrawal}</label>
                   <input
                     type="number"
                     value={settings.minWithdrawal}
                     onChange={(e) => handleSettingChange('minWithdrawal', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.maxWithdrawal}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.payment.maxWithdrawal}</label>
                   <input
                     type="number"
                     value={settings.maxWithdrawal}
                     onChange={(e) => handleSettingChange('maxWithdrawal', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -706,12 +706,12 @@ const AdminSettings = () => {
 
           {activeTab === 'users' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.users.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.users.title}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.users.allowRegistration}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.allowRegistration}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.users.allowRegistration}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.allowRegistration}</p>
                     <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
@@ -722,8 +722,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.users.requireApproval}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.requireApproval}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.users.requireApproval}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.requireApproval}</p>
                     <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
@@ -733,21 +733,21 @@ const AdminSettings = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.maxUsersPerIp}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.users.maxUsersPerIp}</label>
                   <input
                     type="number"
                     value={settings.maxUsersPerIp}
                     onChange={(e) => handleSettingChange('maxUsersPerIp', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.autoSuspendAfter}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.users.autoSuspendAfter}</label>
                   <input
                     type="number"
                     value={settings.autoSuspendAfter}
                     onChange={(e) => handleSettingChange('autoSuspendAfter', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -756,12 +756,12 @@ const AdminSettings = () => {
 
           {activeTab === 'system' && (
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.system.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.system.title}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.system.debugMode}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.debugMode}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.system.debugMode}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.debugMode}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.debugMode}
@@ -770,8 +770,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.system.maintenanceMode}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.maintenanceMode}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.system.maintenanceMode}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.maintenanceMode}</p>
                     <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
@@ -782,8 +782,8 @@ const AdminSettings = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.system.cacheEnabled}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.cacheEnabled}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.system.cacheEnabled}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.descriptions.cacheEnabled}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.cacheEnabled}
@@ -794,7 +794,7 @@ const AdminSettings = () => {
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={handleClearCache}
-                      className="px-4 py-2 border border-yellow-500/20 text-gray-300 rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2"
+                      className="px-4 py-2 border border-yellow-500/20 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2"
                     >
                       <Trash2 size={16} />
                       {t.system.clearCache}
@@ -841,7 +841,7 @@ const AdminSettings = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-yellow-500/20 w-full max-w-md max-h-[90dvh] overflow-y-auto">
             <div className="p-6 border-b border-yellow-500/20 flex justify-between items-center sticky top-0 bg-[#1a1a1a] z-10">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Lock size={20} className="text-yellow-500" />
                 {t.actions.changePassword}
               </h3>
@@ -855,30 +855,30 @@ const AdminSettings = () => {
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t.actions.currentPassword}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.actions.currentPassword}</label>
                 <input
                   type="password"
                   value={passwordData.currentPassword}
                   onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t.actions.newPassword}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.actions.newPassword}</label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t.actions.confirmPassword}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.actions.confirmPassword}</label>
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -886,7 +886,7 @@ const AdminSettings = () => {
             <div className="p-6 border-t border-yellow-500/20 flex justify-end gap-3">
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="px-4 py-2.5 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition text-sm font-medium"
+                className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-sm font-medium"
               >
                 {t.actions.cancel}
               </button>
