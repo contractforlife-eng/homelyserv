@@ -144,10 +144,15 @@ export const getPublicVerification = (user = {}) => {
   const identity = user.identityVerificationStatus === VERIFICATION_STATUSES.VERIFIED;
   const experience = user.experienceVerificationStatus === VERIFICATION_STATUSES.VERIFIED;
   const certificates = user.certificatesVerificationStatus === VERIFICATION_STATUSES.VERIFIED;
-  const verifiedProfileStatus = normalizeVerificationStatus(user.verifiedProfileStatus);
+
+  // Staff accounts ('ADMIN', 'SUPPORT', 'SUPPORT_HELPER') are internal; their verified profile status is never public
+  const isStaff = ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'].includes(user.role);
+  const verifiedProfileStatus = isStaff
+    ? VERIFICATION_STATUSES.NOT_VERIFIED
+    : normalizeVerificationStatus(user.verifiedProfileStatus);
   
   // Authoritative rule: isVerified is TRUE ONLY when verifiedProfileStatus is VERIFIED
-  const isVerified = verifiedProfileStatus === VERIFICATION_STATUSES.VERIFIED;
+  const isVerified = !isStaff && verifiedProfileStatus === VERIFICATION_STATUSES.VERIFIED;
 
   return {
     phone,

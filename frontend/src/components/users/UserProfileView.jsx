@@ -563,13 +563,27 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     size="xl"
                     defaultNameClassName="font-bold text-white"
                   />
-                  <VerifiedBadge
-                    verification={profileUser.verification || {
-                      isVerified: Boolean(profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true)
-                    }}
-                    size="md"
-                    className="shadow-sm"
-                  />
+                  {(() => {
+                    const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
+                    const isStaffProfile = STAFF_ROLES.includes(profileUser?.role);
+                    const isViewerCoAdmin = authUser?.role === 'ADMIN';
+                    const isProfileVerified = Boolean(
+                      profileUser.isVerified === true ||
+                      profileUser.verifiedProfileStatus === 'VERIFIED' ||
+                      profileUser.verification?.isVerified === true
+                    );
+                    const shouldShowVerifiedBadge = isProfileVerified && (!isStaffProfile || isViewerCoAdmin);
+
+                    return shouldShowVerifiedBadge ? (
+                      <VerifiedBadge
+                        verification={profileUser.verification || {
+                          isVerified: isProfileVerified
+                        }}
+                        size="md"
+                        className="shadow-sm"
+                      />
+                    ) : null;
+                  })()}
                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium">
                      <Shield size={12} />
                      {t.roles[profileUser.role] || t.roles.user}
@@ -577,15 +591,11 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
                      profileUser.isSuspended
                        ? 'bg-red-900/30 text-red-100'
-                       : (profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true)
-                         ? 'bg-green-900/30 text-green-100'
-                         : 'bg-white/20 text-white'
+                       : 'bg-white/20 text-white'
                    }`}>
                      {profileUser.isSuspended
                        ? t.status.suspended
-                       : (profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true)
-                         ? t.status.verified
-                         : t.status.active}
+                       : t.status.active}
                    </span>
                 </div>
                 <p className="text-white/80 mt-1">{profileUser.email}</p>

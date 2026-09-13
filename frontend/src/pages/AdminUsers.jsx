@@ -10,6 +10,7 @@ import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import { UserDisplayName, UserAvatar } from '../components/users';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
 import {
   Search,
   Shield,
@@ -40,7 +41,8 @@ import {
   Smartphone,
   Apple,
   HelpCircle,
-  Activity
+  Activity,
+  Clock
 } from 'lucide-react';
 
 // ============================================================
@@ -193,6 +195,13 @@ const PlatformIcon = ({ platform, lastActiveAt, appVersion, lang = 'en' }) => {
 
 const isSuspendedAccount = (user) => (
   user?.isSuspended === true || String(user?.status || '').toUpperCase() === 'SUSPENDED'
+);
+
+const isVerificationPending = (user) => (
+  user?.verifiedProfileStatus === 'PENDING' ||
+  user?.identityVerificationStatus === 'PENDING' ||
+  user?.experienceVerificationStatus === 'PENDING' ||
+  user?.certificatesVerificationStatus === 'PENDING'
 );
 
 const UserActionsMenu = ({ user, currentAdminId, isRootAdmin, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate, labels }) => {
@@ -837,6 +846,9 @@ const AdminUsers = () => {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <UserDisplayName user={u} size="lg" className="shrink min-w-0" />
+                              {u.verifiedProfileStatus === 'VERIFIED' && (
+                                <VerifiedBadge isVerified={true} size="xs" />
+                              )}
                               <PlatformIcon
                                 platform={u.lastPlatform}
                                 lastActiveAt={u.lastActiveAt}
@@ -844,6 +856,14 @@ const AdminUsers = () => {
                                 lang={i18n.resolvedLanguage || 'en'}
                               />
                             </div>
+                            {isVerificationPending(u) && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                  <Clock size={11} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                                  <span>{i18nT('adminUsersPage.verificationRequested', 'Verified Profile review requested')}</span>
+                                </span>
+                              </div>
+                            )}
                             {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
                               <p className="text-xs font-semibold text-purple-600 mt-0.5">Root Admin</p>
                             )}

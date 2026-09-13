@@ -1018,10 +1018,26 @@ router.get('/verification/pending', async (req, res) => {
   }
 });
 
+const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
+
 router.patch('/users/:id/verification', async (req, res) => {
   try {
     const userId = req.params.id;
     const adminId = req.userId;
+
+    if (req.userRole === 'SUPPORT') {
+      const targetUser = await MongooseUser.findById(userId).select('role');
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      if (STAFF_ROLES.includes(targetUser.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Support administrators cannot modify verification status for staff accounts'
+        });
+      }
+    }
+
     const result = await adminUpdateVerification(userId, req.body, adminId);
     if (!result.success) {
       return res.status(400).json(result);
@@ -1041,6 +1057,20 @@ router.put('/users/:id/verification', async (req, res) => {
   try {
     const userId = req.params.id;
     const adminId = req.userId;
+
+    if (req.userRole === 'SUPPORT') {
+      const targetUser = await MongooseUser.findById(userId).select('role');
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      if (STAFF_ROLES.includes(targetUser.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Support administrators cannot modify verification status for staff accounts'
+        });
+      }
+    }
+
     const result = await adminUpdateVerification(userId, req.body, adminId);
     if (!result.success) {
       return res.status(400).json(result);
