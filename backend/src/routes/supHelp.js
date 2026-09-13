@@ -4,6 +4,8 @@ import { requireSupHelp } from '../middleware/supHelpAuth.js';
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
+import MongooseUser from '../models/User.js';
+import { getVerificationDetails } from '../services/profileVerificationService.js';
 import { ensureConversationMetadata, canAccessConversation, touchConversation, getConversationId } from '../routes/chat.js';
 import { getUserIdentity, getUserIdentities, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { emitToUser } from '../lib/socket.js';
@@ -176,7 +178,34 @@ router.get('/users/:id', async (req, res) => {
       });
     }
 
-    return res.json({ success: true, user });
+    // Fetch verification details from Mongoose User model
+    let verification = null;
+    let mongooseUserObj = null;
+    try {
+      const mongooseUser = await MongooseUser.findById(id).select('-password');
+      if (mongooseUser) {
+        verification = getVerificationDetails(mongooseUser);
+        mongooseUserObj = {
+          verifiedProfileStatus: mongooseUser.verifiedProfileStatus,
+          identityVerificationStatus: mongooseUser.identityVerificationStatus,
+          experienceVerificationStatus: mongooseUser.experienceVerificationStatus,
+          certificatesVerificationStatus: mongooseUser.certificatesVerificationStatus,
+          phoneVerified: mongooseUser.phoneVerified,
+          emailVerified: mongooseUser.emailVerified
+        };
+      }
+    } catch (e) {
+      console.error('Error fetching Mongoose user details for Sup-Help:', e.message);
+    }
+
+    return res.json({
+      success: true,
+      user: {
+        ...user,
+        ...(mongooseUserObj || {}),
+        verification
+      }
+    });
   } catch (error) {
     console.error('Error fetching user profile for Sup-Help:', error);
     return res.status(500).json({ error: 'Failed to fetch user' });

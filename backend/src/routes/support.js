@@ -357,19 +357,38 @@ router.get('/users/:id', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Profile access is limited to platform users' });
     }
 
-    // Fetch lastLogin from the Mongoose User model (kept in sync by auth routes)
+    // Fetch verification details and lastLogin from the Mongoose User model
     let lastLogin = null;
+    let verification = null;
+    let mongooseUserObj = null;
     try {
-      const mongooseUser = await MongooseUser.findById(id).select('lastLogin');
+      const mongooseUser = await MongooseUser.findById(id).select('-password');
       if (mongooseUser) {
         lastLogin = mongooseUser.lastLogin || null;
+        verification = getVerificationDetails(mongooseUser);
+        mongooseUserObj = {
+          verifiedProfileStatus: mongooseUser.verifiedProfileStatus,
+          identityVerificationStatus: mongooseUser.identityVerificationStatus,
+          experienceVerificationStatus: mongooseUser.experienceVerificationStatus,
+          certificatesVerificationStatus: mongooseUser.certificatesVerificationStatus,
+          phoneVerified: mongooseUser.phoneVerified,
+          emailVerified: mongooseUser.emailVerified
+        };
       }
     } catch (e) {
-      console.error('❌ Error fetching lastLogin for user:', e.message);
+      console.error('❌ Error fetching Mongoose user details:', e.message);
     }
 
     if (isSupport) {
-      return res.json({ success: true, user });
+      return res.json({
+        success: true,
+        user: {
+          ...user,
+          lastLogin,
+          ...(mongooseUserObj || {}),
+          verification
+        }
+      });
     }
 
     const subscription = await getSubscriptionStaffDetail(id);
@@ -378,6 +397,8 @@ router.get('/users/:id', async (req, res) => {
       user: {
         ...user,
         lastLogin,
+        ...(mongooseUserObj || {}),
+        verification,
         subscription,
       },
     });
