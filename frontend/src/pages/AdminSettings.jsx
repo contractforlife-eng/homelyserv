@@ -235,7 +235,6 @@ const AdminSettings = () => {
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
-    document.documentElement.dir = 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 

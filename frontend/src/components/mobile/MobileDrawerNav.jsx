@@ -114,8 +114,8 @@ const MobileDrawerNav = () => {
         />
       )}
 
-      <div className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#273449] shadow-2xl z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
-        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      <div className={`fixed top-0 left-0 rtl:left-auto rtl:right-0 h-full w-72 bg-white dark:bg-[#273449] shadow-2xl z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'
       }`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-3">

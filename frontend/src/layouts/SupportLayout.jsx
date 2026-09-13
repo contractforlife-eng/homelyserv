@@ -7,7 +7,6 @@ import SupportSidebar from '../components/SupportSidebar';
 import DashboardContext from '../components/layout/DashboardContext';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import MobileHeader from '../components/mobile/MobileHeader';
-import MobileDrawerNav from '../components/mobile/MobileDrawerNav';
 import VerificationBanner from '../components/VerificationBanner';
 import LegalFooter from '../components/common/LegalFooter';
 
@@ -117,7 +116,6 @@ const SupportLayout = ({
         />
 
         <MobileHeader />
-        <MobileDrawerNav />
 
         <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
           sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'

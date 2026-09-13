@@ -52,6 +52,7 @@ const SupportSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/sup-help/messages' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/sup-help/complaints' },
     { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/sup-help/live-support' },
+    { id: 'profile', label: t.profile, icon: UserIcon, path: '/sup-help/profile' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/sup-help/settings' },
   ] : [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },

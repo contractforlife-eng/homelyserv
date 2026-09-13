@@ -3,6 +3,7 @@ import { Menu, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../layout/DashboardContext';
 import NotificationBell from '../NotificationBell';
+import LanguageSwitcher from '../LanguageSwitcher';
 import { getDisplayName } from '../../utils/userDisplay';
 
 const MobileHeader = ({ title }) => {
@@ -38,6 +39,7 @@ const MobileHeader = ({ title }) => {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           {authUser?.id && <NotificationBell userId={authUser.id} />}
           <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ${
             isWorker ? 'bg-gradient-to-br from-red-500 to-red-600' :

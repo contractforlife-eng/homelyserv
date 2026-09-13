@@ -120,9 +120,8 @@ const SupportSettings = ({ isSupHelp = false }) => {
     return () => i18n.off('languageChanged', onLanguageChanged);
   }, [i18n]);
 
-  // Update document direction
+  // Update document lang attribute only; direction is managed globally by applyDocumentDirection
   useEffect(() => {
-    document.documentElement.dir = 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 
@@ -248,9 +247,10 @@ const SupportSettings = ({ isSupHelp = false }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Account Information */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className={`grid grid-cols-1 ${isHelper ? '' : 'lg:grid-cols-2'} gap-6`}>
+          {/* Account Information — SUP-ADMIN/ADMIN only (SUP-HELP manages profile on /sup-help/profile) */}
+          {!isHelper && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <UserIcon size={20} className={accentColor} />
@@ -318,6 +318,7 @@ const SupportSettings = ({ isSupHelp = false }) => {
               </div>
             </div>
           </div>
+          )}
 
           {/* Account Preferences */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -328,6 +329,23 @@ const SupportSettings = ({ isSupHelp = false }) => {
               </h2>
             </div>
             <div className="p-6 space-y-6">
+              {/* Language */}
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.language || 'Language'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.languageDesc || 'Choose your preferred language'}</p>
+                </div>
+                <select
+                  value={language}
+                  onChange={(e) => changeLanguageGlobal(e.target.value)}
+                  className={`px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 ${focusRing}`}
+                >
+                  {SUPPORTED_LANGUAGES.map(({ code, nativeName, flag }) => (
+                    <option key={code} value={code}>{flag} {nativeName}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Dark Mode */}
               <div className="flex items-center justify-between">
                 <div>
@@ -380,8 +398,8 @@ const SupportSettings = ({ isSupHelp = false }) => {
         </div>
       </div>
 
-      {/* Profile Edit Modal */}
-      {showProfileModal && (
+      {/* Profile Edit Modal — SUP-ADMIN/ADMIN only (SUP-HELP manages profile on /sup-help/profile) */}
+      {showProfileModal && !isHelper && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md max-h-[90dvh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">

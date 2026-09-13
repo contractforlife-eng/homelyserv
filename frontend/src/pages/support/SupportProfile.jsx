@@ -4,13 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
-import { SUPPORTED_LANGUAGES } from '../../i18n';
 import api from '../../utils/api';
+import TrustVerificationSection from '../../components/verification/TrustVerificationSection';
 import {
   User as UserIcon,
   Mail,
   Phone,
-  Globe,
   Shield,
   Edit,
   Save,
@@ -23,7 +22,7 @@ import {
   Clock
 } from 'lucide-react';
 
-const SupportProfile = () => {
+const SupportProfile = ({ isSupHelp = false }) => {
   const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
@@ -37,12 +36,12 @@ const SupportProfile = () => {
   const [saveError, setSaveError] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [pendingImageFile, setPendingImageFile] = useState(null);
+  const [verification, setVerification] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    language: 'en',
     profileImage: ''
   });
   const t = i18nT('supportProfilePage', { returnObjects: true });
@@ -68,12 +67,34 @@ const SupportProfile = () => {
         fullName: authUser.fullName || '',
         email: authUser.email || '',
         phone: authUser.phone || '',
-        language: authUser.language || 'en',
         profileImage: authUser.profileImage || authUser.profilePhotoUrl || ''
       });
       setImagePreview(authUser.profileImage || authUser.profilePhotoUrl || '');
     }
   }, [authUser]);
+
+  // Load the current staff member's verification status (email, phone,
+  // identity, and authoritative admin approval) from the shared API.
+  useEffect(() => {
+    if (!authUser?.id) return;
+    let cancelled = false;
+
+    const loadVerification = async () => {
+      try {
+        const res = await api.get('/api/verification/me');
+        if (!cancelled && res.data?.success) {
+          setVerification(res.data.verification);
+        }
+      } catch (err) {
+        console.error('Failed to load verification details:', err);
+      }
+    };
+
+    loadVerification();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -98,7 +119,6 @@ const SupportProfile = () => {
         fullName: authUser?.fullName || '',
         email: authUser?.email || '',
         phone: authUser?.phone || '',
-        language: authUser?.language || 'en',
         profileImage: authUser?.profileImage || authUser?.profilePhotoUrl || ''
       });
       setImagePreview(authUser?.profileImage || authUser?.profilePhotoUrl || '');
@@ -131,7 +151,6 @@ const SupportProfile = () => {
       const response = await api.put('/api/auth/profile', {
         fullName: formData.fullName,
         phone: formData.phone,
-        language: formData.language,
         profileImage: profileImageUrl
       });
 
@@ -168,16 +187,21 @@ const SupportProfile = () => {
   }
 
   const userRole = authUser.role?.toUpperCase();
-  const roleBadge = userRole === 'ADMIN' ? t.adminBadge : t.supportBadge;
-  const roleBadgeColor = userRole === 'ADMIN'
-    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-    : 'bg-green-500/20 text-green-400 border-green-500/30';
+  const isHelper = isSupHelp || userRole === 'SUPPORT_HELPER';
+  const isAdmin = userRole === 'ADMIN';
+  const roleBadge = isHelper ? (t.supHelpBadge || 'Sup-Help') : isAdmin ? t.adminBadge : t.supportBadge;
+  const roleBadgeColor = isHelper
+    ? 'bg-blue-600 text-white border-blue-400/50'
+    : isAdmin
+      ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      : 'bg-blue-600 text-white border-blue-400/50';
+  const bannerGradient = isHelper ? 'from-red-600 to-red-700' : isAdmin ? 'from-yellow-600 to-yellow-700' : 'from-green-600 to-green-700';
 
   return (
-    <SupportLayout headerTitle={t.title}>
+    <SupportLayout headerTitle={t.title} allowedRoles={['SUPPORT', 'ADMIN', 'SUPPORT_HELPER']}>
       <div className="p-6 md:p-8">
         {/* Page Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-8 text-white">
+        <div className={`bg-gradient-to-r ${bannerGradient} rounded-2xl p-6 mb-8 text-white`}>
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30 overflow-hidden flex-shrink-0">
               {imagePreview ? (
@@ -190,7 +214,7 @@ const SupportProfile = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-2xl font-bold">{authUser.fullName || t.supportAgent}</h1>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${roleBadgeColor}`}>
-                  <Shield size={12} />
+                  <Shield size={12} className={isHelper ? 'text-amber-400' : ''} />
                   {roleBadge}
                 </span>
               </div>
@@ -328,29 +352,6 @@ const SupportProfile = () => {
               </div>
             </div>
 
-            {/* Language */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.language}</label>
-              <div className="relative">
-                <Globe size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
-                <select
-                  name="language"
-                  value={formData.language}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                    isEditing
-                      ? 'border-green-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
-                      : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-300'
-                  }`}
-                >
-                  {SUPPORTED_LANGUAGES.map(({ code, nativeName }) => (
-                    <option key={code} value={code}>{nativeName}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* Role */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.role}</label>
@@ -414,6 +415,18 @@ const SupportProfile = () => {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Staff Verification Section */}
+        <div className="mt-6">
+          <TrustVerificationSection
+            verification={verification}
+            userId={authUser?.id}
+            userRole={authUser?.role}
+            isOwnProfile
+            staffMode
+            onVerificationUpdated={(v) => setVerification(v)}
+          />
         </div>
       </div>
     </SupportLayout>

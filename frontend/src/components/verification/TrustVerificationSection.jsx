@@ -37,6 +37,7 @@ const TrustVerificationSection = ({
   role,
   isOwnProfile = false,
   isAdmin = false,
+  staffMode = false,
   onVerificationUpdated,
   className = ''
 }) => {
@@ -93,6 +94,27 @@ const TrustVerificationSection = ({
     hasDocument: Boolean(v.hasCertificatesDocument || items.certificates?.hasDocument || v.certificates?.hasDocument)
   };
 
+  // Authoritative admin decision on the overall profile (explicit admin approval).
+  const profileItem = items.profile || v.profile || {
+    status: v.verifiedProfileStatus || (v.isVerified ? 'VERIFIED' : 'NOT_VERIFIED'),
+    verified: Boolean(v.verifiedProfileStatus === 'VERIFIED' || v.isVerified === true),
+    verifiedAt: v.verifiedProfileAt || null,
+    verifiedBy: v.verifiedProfileBy || null
+  };
+
+  // Staff accounts (ADMIN / SUPPORT / SUPPORT_HELPER) use a staff-tailored
+  // verification flow: email, phone, identity, and explicit administrative
+  // approval. Work Experience / Certifications are NOT applicable to staff.
+  const isStaffRole = staffMode || ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'].includes(effectiveRole);
+
+  const sectionTitle = isStaffRole
+    ? t('verification.staffVerificationTitle', 'Staff Verification')
+    : t('verification.trustSectionTitle', 'Trust & Verification');
+
+  const sectionSubtitle = isStaffRole
+    ? t('verification.staffVerificationSubtitle', 'Verification of email, phone, and identity with administrative approval for staff accounts.')
+    : t('verification.trustSectionSubtitle', 'Verification of identity and credentials to ensure trusted interactions.');
+
   const isOverallVerified = Boolean(
     v.isVerified === true ||
     v.verifiedProfileStatus === 'VERIFIED' ||
@@ -132,7 +154,7 @@ const TrustVerificationSection = ({
       modalDesc: t('verification.identityModalDesc', 'Upload a clear photo or PDF document of your official government-issued ID (Passport, National ID, or Driver’s License).'),
       uploadPrompt: t('verification.clickToUpload', 'Click to upload your Government ID')
     },
-    ...(!isEmployer ? [
+    ...(!isEmployer && !isStaffRole ? [
       {
         key: 'experience',
         title: t('verification.experience', 'Work Experience'),
@@ -160,6 +182,19 @@ const TrustVerificationSection = ({
         modalTitle: t('verification.uploadCertificates', 'Upload Certificate or License'),
         modalDesc: t('verification.certificatesModalDesc', 'Upload professional certifications, training diplomas, trade licenses, or relevant accreditations.'),
         uploadPrompt: t('verification.clickToUploadCertificates', 'Click to upload Certificate or License')
+      }
+    ] : []),
+    ...(isStaffRole ? [
+      {
+        key: 'profile',
+        title: t('verification.staffAuthoritativeTitle', 'Authoritative Admin Verification'),
+        descVerified: t('verification.staffAuthoritativeDescVerified', 'Approved explicitly by an authorized administrator.'),
+        descPending: t('verification.staffAuthoritativeDescPending', 'Submitted and awaiting administrative review.'),
+        descUnverified: t('verification.staffAuthoritativeDescUnverified', 'Awaiting explicit approval from an authorized administrator.'),
+        item: profileItem,
+        icon: ShieldCheck,
+        canRequest: false,
+        requiresUpload: false
       }
     ] : [])
   ];
@@ -335,11 +370,11 @@ const TrustVerificationSection = ({
           </div>
           <div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              {t('verification.trustSectionTitle', 'Trust & Verification')}
+              {sectionTitle}
               <Sparkles size={14} className="text-emerald-500" />
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {t('verification.trustSectionSubtitle', 'Verification of identity and credentials to ensure trusted interactions.')}
+              {sectionSubtitle}
             </p>
           </div>
         </div>
