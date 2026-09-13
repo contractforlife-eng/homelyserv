@@ -11,6 +11,12 @@ import { createAndSendPasswordReset } from '../services/passwordResetTokenServic
 import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { isRootAdmin, isRootRecoveryTarget } from '../security/rootAdmin.js';
+import {
+  adminUpdateVerification,
+  getPendingVerifications,
+  getVerificationDetails,
+  adminGetLatestUserDocument
+} from '../services/profileVerificationService.js';
 
 const supportResetAttempts = new Map();
 const SUPPORT_RESET_WINDOW_MS = 60 * 60 * 1000;
@@ -986,6 +992,112 @@ router.get('/activity', requireAdminForSensitiveSupport, async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching activity log:', error);
     return res.status(500).json({ error: 'Failed to fetch activity log' });
+  }
+});
+
+// ============================================================
+// Sup-Admin (SUPPORT) Verification Management Endpoints
+// Authorized for Sup-Admin (SUPPORT) & Co-Admin (ADMIN)
+// ============================================================
+router.get('/verification/pending', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const pending = await getPendingVerifications(limit);
+    res.json({
+      success: true,
+      count: pending.length,
+      pending
+    });
+  } catch (error) {
+    console.error('Get pending verifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get pending verifications',
+      error: error.message
+    });
+  }
+});
+
+router.patch('/users/:id/verification', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const adminId = req.userId;
+    const result = await adminUpdateVerification(userId, req.body, adminId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Support update verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update verification',
+      error: error.message
+    });
+  }
+});
+
+router.put('/users/:id/verification', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const adminId = req.userId;
+    const result = await adminUpdateVerification(userId, req.body, adminId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Support update verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update verification',
+      error: error.message
+    });
+  }
+});
+
+router.get('/verification/user/:id/document', async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    const docType = req.query.type || 'identity';
+    const result = await adminGetLatestUserDocument(targetUserId, docType);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Support get user verification document error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch verification document',
+      error: error.message
+    });
+  }
+});
+
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await MongooseUser.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const verification = getVerificationDetails(user);
+
+    res.json({
+      success: true,
+      user: { ...user.toObject(), verification }
+    });
+  } catch (error) {
+    console.error('Support get user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user',
+      error: error.message
+    });
   }
 });
 

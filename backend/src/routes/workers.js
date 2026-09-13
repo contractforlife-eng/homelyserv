@@ -14,6 +14,7 @@ import { buildWorkerProfileUpdate, profileUpdateErrorResponse } from '../service
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
 import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
+import { getPublicVerification } from '../services/profileVerificationService.js';
 
 const router = express.Router();
 
@@ -174,6 +175,8 @@ router.get('/profile/:userId', authenticate, async (req, res) => {
       userObj.email = null;
       userObj.phone = null;
     }
+
+    userObj.verification = getPublicVerification(user);
     
     res.json({ success: true, user: userObj, contactUnlocked });
   } catch (error) {

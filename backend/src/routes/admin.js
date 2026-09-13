@@ -30,6 +30,13 @@ import { listAccountingEntries, getAccountingSummary, createAccountingEntry, upd
 import { completePaymentTransaction } from '../routes/payment.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
 import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryRequest, isRootRecoveryTarget } from '../security/rootAdmin.js';
+import {
+  adminUpdateVerification,
+  getPendingVerifications,
+  getVerificationDetails,
+  adminGetLatestUserDocument,
+  adminGetLatestUserIdentityDocument
+} from '../services/profileVerificationService.js';
 
 const router = express.Router();
 
@@ -170,15 +177,96 @@ router.get('/users/:id', async (req, res) => {
       subscription.manualPremiumEndDate = manualState.manualPremiumEndDate;
     }
 
+    const verification = getVerificationDetails(user);
+
     res.json({
       success: true,
-      user: { ...user.toObject(), subscription }
+      user: { ...user.toObject(), subscription, verification }
     });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get user',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Verification Admin Operations
+// ============================================================
+router.get('/verification/pending', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const pending = await getPendingVerifications(limit);
+    res.json({
+      success: true,
+      count: pending.length,
+      pending
+    });
+  } catch (error) {
+    console.error('Get pending verifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get pending verifications',
+      error: error.message
+    });
+  }
+});
+
+router.patch('/users/:id/verification', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const adminId = req.userId;
+    const result = await adminUpdateVerification(userId, req.body, adminId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Admin update verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update verification',
+      error: error.message
+    });
+  }
+});
+
+router.put('/users/:id/verification', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const adminId = req.userId;
+    const result = await adminUpdateVerification(userId, req.body, adminId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Admin update verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update verification',
+      error: error.message
+    });
+  }
+});
+
+router.get('/verification/user/:id/document', async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    const docType = req.query.type || 'identity';
+    const result = await adminGetLatestUserDocument(targetUserId, docType);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Admin get user verification document error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch verification document',
       error: error.message
     });
   }

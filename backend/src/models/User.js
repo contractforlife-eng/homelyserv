@@ -225,6 +225,66 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // ============================================================
+  // PROFILE TRUST & VERIFICATION FIELDS
+  // ============================================================
+  phoneVerified: {
+    type: Boolean,
+    default: false
+  },
+  phoneVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  phoneVerificationStatus: {
+    type: String,
+    enum: ['NOT_VERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+    default: 'NOT_VERIFIED'
+  },
+  identityVerificationStatus: {
+    type: String,
+    enum: ['NOT_VERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+    default: 'NOT_VERIFIED'
+  },
+  identityVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  experienceVerificationStatus: {
+    type: String,
+    enum: ['NOT_VERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+    default: 'NOT_VERIFIED'
+  },
+  experienceVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  certificatesVerificationStatus: {
+    type: String,
+    enum: ['NOT_VERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+    default: 'NOT_VERIFIED'
+  },
+  certificatesVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  verifiedProfileStatus: {
+    type: String,
+    enum: ['NOT_VERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+    default: 'NOT_VERIFIED'
+  },
+  verifiedProfileAt: {
+    type: Date,
+    default: null
+  },
+  verifiedProfileBy: {
+    type: String,
+    default: null
+  },
+  verificationNotes: {
+    type: String,
+    default: null
+  },
   settings: {
     type: Object,
     default: {

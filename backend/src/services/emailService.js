@@ -1,6 +1,6 @@
 // backend/src/services/emailService.js
 // ============================================================
-// EMAIL SERVICE - RESEND API INTEGRATION (Primary) / ZOHO SMTP (Fallback)
+// EMAIL SERVICE - RESEND API INTEGRATION (Primary) / SPACEMAIL SMTP (Fallback)
 // ============================================================
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';

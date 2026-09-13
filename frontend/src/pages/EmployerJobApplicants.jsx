@@ -15,6 +15,7 @@ import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 import { formatCurrencyAmount, getAccountCurrency, getStoredCurrency } from '../utils/currencyPresentation';
 import { UserDisplayName } from '../components/users';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
 
 const STATUS_STYLES = {
   applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -326,6 +327,14 @@ const EmployerJobApplicants = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <UserDisplayName user={worker} name={t('employerJobApplicants.applicant')} size="lg" />
+                            <VerifiedBadge
+                              verification={worker.verification || {
+                                isVerified: worker.isVerified,
+                                phoneVerified: worker.phoneVerified,
+                                emailVerified: worker.emailVerified
+                              }}
+                              size="sm"
+                            />
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle}`}>
                               {statusLabel}
                             </span>

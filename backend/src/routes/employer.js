@@ -16,6 +16,7 @@ import {
   buildWorkerTextSearchFilter,
   isIntentionalWorkerSearch
 } from '../services/employerSearchPolicy.js';
+import { getPublicVerification } from '../services/profileVerificationService.js';
 
 const router = express.Router();
 
@@ -163,6 +164,7 @@ router.get('/search', requireEmployer, async (req, res) => {
       // Premium AND a stored true value. A stored true has NO effect when the
       // subscription is inactive or the worker is marked Not Available.
       workerObj.activelyLooking = isAvailable && workerIsPremium && profileInfo.activelyLooking;
+      workerObj.verification = getPublicVerification(w);
 
       return workerObj;
     });
@@ -233,9 +235,11 @@ router.get('/workers/:id', authenticate, async (req, res) => {
         message: 'Worker not found'
       });
     }
+    const workerObj = worker.toObject ? worker.toObject() : { ...worker };
+    workerObj.verification = getPublicVerification(worker);
     res.json({
       success: true,
-      worker
+      worker: workerObj
     });
   } catch (error) {
     console.error('Get worker error:', error);

@@ -6,6 +6,7 @@ import { JOB_OPTIONS, getJobValue } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import { UserDisplayName } from '../components/users';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -956,9 +957,17 @@ const EmployerSearch = () => {
                       {/* Worker Info */}
                       <div className="p-3 flex flex-col flex-1">
                         {/* Worker Name */}
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-1 truncate">
-                          <UserDisplayName user={worker} name={t('employerSearch.worker')} size="lg" />
-                        </h3>
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
+                            <UserDisplayName user={worker} name={t('employerSearch.worker')} size="lg" />
+                          </h3>
+                          <VerifiedBadge
+                            verification={worker.verification || {
+                              isVerified: worker.isVerified
+                            }}
+                            size="xs"
+                          />
+                        </div>
 
                           {/* Worker Job / Service */}
                           <div className="text-xs text-teal-700 dark:text-teal-400 font-medium mb-1 truncate">
@@ -1067,13 +1076,19 @@ const EmployerSearch = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
                               <h4 className={`font-semibold text-gray-800 dark:text-white ${viewMode === 'compact' ? 'text-sm' : ''}`}>
                                 <UserDisplayName user={worker} size="xl" />
                               </h4>
                               <div className={`flex flex-wrap items-center gap-1 ${
                                 worker.isPremium ? 'rounded-md bg-orange-50 border border-orange-200 text-orange-600 dark:bg-orange-900/25 dark:border-orange-700/50 dark:text-orange-300 px-2 py-1' : ''
                               }`}>
+                                <VerifiedBadge
+                                  verification={worker.verification || {
+                                    isVerified: worker.isVerified
+                                  }}
+                                  size="sm"
+                                />
                                 {worker.isPremium && <PremiumBadge label={t('employerSearch.premium')} size="sm" />}
                                 {worker.activelyLooking && <ActivelyLookingBadge label={t('employerSearch.activelyLooking')} size="sm" />}
                               </div>

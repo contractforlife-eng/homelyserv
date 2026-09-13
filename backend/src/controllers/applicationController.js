@@ -24,6 +24,8 @@ import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { createOffer, validateOfferMonetaryInput } from '../services/offerService.js';
 import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { sendPushToUser } from '../services/fcmService.js';
+import User from '../models/User.js';
+import { getPublicVerification } from '../services/profileVerificationService.js';
 
 const isValidObjectId = (id) => {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -357,7 +359,7 @@ export const getJobApplications = async (req, res) => {
     const workerProfileIds = [...new Set(applications.map((a) => String(a.workerProfileId)))];
     const workerUserIds = [...new Set(applications.map((a) => String(a.workerId)))];
 
-    const [workerProfiles, workerUsers, premiumUserIds] = await Promise.all([
+    const [workerProfiles, workerUsers, premiumUserIds, mongooseUsers] = await Promise.all([
       prisma.workerProfile.findMany({
         where: { id: { in: workerProfileIds } },
         select: {
@@ -385,10 +387,12 @@ export const getJobApplications = async (req, res) => {
         },
       }),
       getActivePremiumUserIds(workerUserIds),
+      User.find({ _id: { $in: workerUserIds } }),
     ]);
 
     const profileMap = new Map(workerProfiles.map((p) => [String(p.id), p]));
     const userMap = new Map(workerUsers.map((u) => [String(u.id), u]));
+    const mongooseUserMap = new Map(mongooseUsers.map((u) => [String(u._id), u]));
 
     const enriched = applications.map((app) => {
       const profile = profileMap.get(String(app.workerProfileId)) || null;
@@ -397,6 +401,7 @@ export const getJobApplications = async (req, res) => {
       const isAvailable = (profile?.availability || 'available') === 'available';
       // Effective "Actively Looking": ONLY when available AND Premium AND stored true.
       const effectiveActivelyLooking = isAvailable && isPremium && profile?.activelyLooking === true;
+      const mongooseUser = mongooseUserMap.get(String(app.workerId));
 
       return {
         id: app.id,
@@ -427,6 +432,7 @@ export const getJobApplications = async (req, res) => {
           ratingAvg: profile?.ratingAvg ?? null,
           isPremium,
           activelyLooking: effectiveActivelyLooking,
+          verification: getPublicVerification(mongooseUser),
         },
       };
     });

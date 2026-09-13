@@ -3,10 +3,11 @@ import { buildEmailSenderIdentity } from './emailSender.js';
 
 export const sendRegistrationEmail = async (toEmail, name, activationCode) => {
   try {
+    const port = parseInt(process.env.EMAIL_PORT || '465');
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false, // true for 465, false for 587
+      host: process.env.EMAIL_HOST || 'mail.spacemail.com',
+      port: port,
+      secure: process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : port === 465,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -16,7 +17,6 @@ export const sendRegistrationEmail = async (toEmail, name, activationCode) => {
     const mailOptions = {
       from: buildEmailSenderIdentity(),
       to: toEmail,
-      subject: 'Welcome to HomelyServ - Activate Your Account',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
           <h2 style="color: #e0a905; text-align: center;">Welcome to HomelyServ!</h2>

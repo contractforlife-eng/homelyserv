@@ -40,6 +40,7 @@ import registrationGeographyRoutes from './routes/registrationGeography.js';
 import analyticsRoutes from './routes/analytics.js';
 import employerFamilyRoutes from './routes/employerFamily.js';
 import employerFamilyTreeRoutes from './routes/employerFamilyTree.js';
+import verificationRoutes from './routes/verification.js';
 import { requireAdmin } from './middleware/auth.js';
 import { setIo } from './lib/socket.js';
 import { emitToUser } from './lib/socket.js';
@@ -386,6 +387,7 @@ app.use('/api/sup-help', supHelpRoutes);
 app.use('/api/sidebar', sidebarRoutes);
 app.use('/api/public-support', publicSupportRoutes);
 app.use('/api/external-jobs', externalJobRoutes);
+app.use('/api/verification', verificationRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
