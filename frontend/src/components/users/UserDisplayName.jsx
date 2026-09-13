@@ -21,6 +21,7 @@ const UserDisplayName = ({
   className = '',
   isPremium = undefined,
   defaultNameClassName = 'font-medium text-gray-900 dark:text-white',
+  truncate = true,
 }) => {
   const { t } = useTranslation();
   const roleValue = user?.role || role;
@@ -44,7 +45,7 @@ const UserDisplayName = ({
   return (
     <span className={`inline-flex items-baseline min-w-0 ${className}`}>
       <span
-        className={`truncate ${sizeClasses[size] || sizeClasses.md} ${
+        className={`${truncate ? 'truncate' : 'whitespace-normal break-words'} ${sizeClasses[size] || sizeClasses.md} ${
           staff
             ? 'font-semibold tracking-normal leading-tight text-red-600 dark:text-red-400'
             : premiumCustomer

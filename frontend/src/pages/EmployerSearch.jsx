@@ -958,8 +958,8 @@ const EmployerSearch = () => {
                       <div className="p-3 flex flex-col flex-1">
                         {/* Worker Name */}
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
-                            <UserDisplayName user={worker} name={t('employerSearch.worker')} size="lg" />
+                          <h3 className="text-sm font-semibold text-gray-800 dark:text-white break-words">
+                            <UserDisplayName user={worker} name={t('employerSearch.worker')} size="lg" truncate={false} />
                           </h3>
                           <VerifiedBadge
                             verification={worker.verification || {
@@ -1077,8 +1077,8 @@ const EmployerSearch = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <h4 className={`font-semibold text-gray-800 dark:text-white ${viewMode === 'compact' ? 'text-sm' : ''}`}>
-                                <UserDisplayName user={worker} size="xl" />
+                              <h4 className={`font-semibold text-gray-800 dark:text-white break-words ${viewMode === 'compact' ? 'text-sm' : ''}`}>
+                                <UserDisplayName user={worker} size="xl" truncate={false} />
                               </h4>
                               <div className={`flex flex-wrap items-center gap-1 ${
                                 worker.isPremium ? 'rounded-md bg-orange-50 border border-orange-200 text-orange-600 dark:bg-orange-900/25 dark:border-orange-700/50 dark:text-orange-300 px-2 py-1' : ''
