@@ -1,10 +1,12 @@
 // src/components/Payment/PaymentModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, CreditCard, Wallet, Building2, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED, PAYMENT_STATUS, TRANSACTION_TYPES } from '../../config/paymentConfig';
 
 const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transactionType, onSuccess, onError }) => {
+  const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [paymobIframe, setPaymobIframe] = useState(null);
@@ -136,7 +138,7 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">
-            {success ? 'Payment Successful!' : 'Complete Payment'}
+            {success ? t('paymentModal.paymentSuccessful', 'Payment Successful!') : t('paymentModal.completePayment', 'Complete Payment')}
           </h2>
           <button
             onClick={onClose}
@@ -152,11 +154,11 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-sm text-gray-500">Amount</p>
+                <p className="text-sm text-gray-500">{t('paymentModal.amount', 'Amount')}</p>
                 <p className="text-2xl font-bold text-teal-600">EGP {amount.toFixed(2)}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Order ID</p>
+                <p className="text-sm text-gray-500">{t('paymentModal.orderId', 'Order ID')}</p>
                 <p className="text-sm font-mono text-gray-600">{orderId}</p>
               </div>
             </div>
@@ -168,8 +170,8 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={32} className="text-green-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800">Payment Successful!</h3>
-              <p className="text-gray-500 mt-2">Your payment has been processed successfully.</p>
+              <h3 className="text-lg font-semibold text-gray-800">{t('paymentModal.paymentSuccessful', 'Payment Successful!')}</h3>
+              <p className="text-gray-500 mt-2">{t('paymentModal.paymentSuccessDesc', 'Your payment has been processed successfully.')}</p>
             </div>
           )}
 
@@ -185,7 +187,7 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
           {!success && (
             <>
               <div className="space-y-3 mb-6">
-                <p className="text-sm font-medium text-gray-700">Select Payment Method</p>
+                <p className="text-sm font-medium text-gray-700">{t('paymentModal.selectPaymentMethod', 'Select Payment Method')}</p>
                 {paymentMethods.map((method) => (
                   <div
                     key={method.id}

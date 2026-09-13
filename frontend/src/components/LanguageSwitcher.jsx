@@ -27,12 +27,12 @@ function LanguageSwitcher() {
       </button>
 
       {showLanguages && (
-        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               onClick={() => changeLanguage(lang.code)}
-              className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm ${
+              className={`w-full text-left rtl:text-right flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm ${
                 i18n.language === lang.code ? 'bg-red-50 font-semibold' : ''
               }`}
             >

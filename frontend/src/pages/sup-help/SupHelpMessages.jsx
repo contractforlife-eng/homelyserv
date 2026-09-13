@@ -13,7 +13,6 @@ import {
   ChevronRight,
   MoreVertical,
   CheckCheck,
-  RefreshCw,
   Shield,
   Users,
   MessageSquare,
@@ -101,7 +100,6 @@ const SupHelpMessages = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [archiveError, setArchiveError] = useState('');
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
@@ -587,22 +585,6 @@ const SupHelpMessages = () => {
     }
   };
 
-  const handleManualRefresh = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    if (authUser) {
-      await loadConversations();
-      const currentConvId = selectedConversationIdRef.current;
-      if (currentConvId) {
-        const response = await api.get(`/api/sup-help/messages/${encodeURIComponent(currentConvId)}`);
-        const updatedMessages = response.data?.messages || [];
-        setMessages(updatedMessages);
-        await api.post(`/api/sup-help/messages/${encodeURIComponent(currentConvId)}/read`, { userId: authUser.id });
-      }
-    }
-    setIsRefreshing(false);
-  };
-
   // ============================================================
   // Helpers
   // ============================================================
@@ -1012,15 +994,6 @@ const SupHelpMessages = () => {
               >
                 <Plus size={16} />
                 {t.newConversation}
-              </button>
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                {isRefreshing ? i18nT('adminMessagesPage.refreshing') : t.refresh}
               </button>
             </div>
           </div>

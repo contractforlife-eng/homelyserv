@@ -68,12 +68,12 @@ const SocialOnboarding = () => {
     else if (!getCountryByCode(formData.countryCode)) nextErrors.countryCode = t('countryInvalid');
 
     if (formData.role === 'WORKER') {
-      if (!formData.desiredJob) nextErrors.desiredJob = t('register.jobRequired');
-      else if (!JOB_OPTIONS.some((job) => job.value === formData.desiredJob)) nextErrors.desiredJob = t('register.jobInvalid');
+      if (!formData.desiredJob) nextErrors.desiredJob = t('jobRequired');
+      else if (!JOB_OPTIONS.some((job) => job.value === formData.desiredJob)) nextErrors.desiredJob = t('jobInvalid');
 
       const rate = Number(formData.hourlyRate);
-      if (!String(formData.hourlyRate || '').trim()) nextErrors.hourlyRate = t('register.hourlyRateRequired');
-      else if (!Number.isFinite(rate) || rate <= 0) nextErrors.hourlyRate = t('register.hourlyRateInvalid');
+      if (!String(formData.hourlyRate || '').trim()) nextErrors.hourlyRate = t('hourlyRateRequired');
+      else if (!Number.isFinite(rate) || rate <= 0) nextErrors.hourlyRate = t('hourlyRateInvalid');
 
       if (formData.desiredJob === 'tutor' && !formData.tutorSpecialization) {
         nextErrors.tutorSpecialization = t('tutorSpecializationRequired');

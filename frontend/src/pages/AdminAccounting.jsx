@@ -4,7 +4,7 @@
 // this page is a UI consumer only.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Filter, Plus, RefreshCw, Save, Trash2, Edit, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, Filter, Plus, Save, Trash2, Edit, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../utils/api';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -250,9 +250,6 @@ await Promise.all([loadEntries(), loadSummary()]);
             <p className="mt-2 max-w-2xl text-gray-500">{a('subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={refresh} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-500 px-4 py-2.5 font-semibold text-black disabled:opacity-50">
-              <RefreshCw size={17} className={loading ? 'animate-spin' : ''} />{a('refresh')}
-            </button>
             <button onClick={() => openCreate('EXPENSE')} className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-2.5 font-semibold text-white">
               <Plus size={17} />{a('addExpense')}
             </button>

@@ -239,12 +239,6 @@ const Notifications = () => {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={loadNotifications}
-              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition"
-            >
-              {t('notificationsPage.refresh')}
-            </button>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}

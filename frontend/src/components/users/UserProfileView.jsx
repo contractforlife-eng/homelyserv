@@ -1015,7 +1015,10 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                   className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition disabled:opacity-50"
                 >
                   <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center"><Pause size={20} className="text-red-600" /></div>
-                  <div className="text-left"><p className="font-medium text-gray-900 dark:text-white">Request Suspension</p><p className="text-xs text-gray-500 dark:text-gray-400">Send for Admin review</p></div>
+                  <div className="text-left">
+                    <p className="font-medium text-gray-900 dark:text-white">{t.requestSuspension || 'Request Suspension'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.sendForAdminReview || 'Send for Admin review'}</p>
+                  </div>
                 </button>
               )}
 
@@ -1065,22 +1068,22 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Request Suspension</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t.requestSuspension || 'Request Suspension'}</h3>
               <button onClick={() => setShowSuspensionRequestModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-300">Provide a concise reason for Admin review.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t.suspensionModalDesc || 'Provide a concise reason for Admin review.'}</p>
               <textarea
                 value={suspensionReason}
                 onChange={(e) => setSuspensionReason(e.target.value)}
                 maxLength={500}
                 rows={4}
-                placeholder="Reason for suspension request"
+                placeholder={t.suspensionReasonPlaceholder || 'Reason for suspension request'}
                 className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white"
               />
               <div className="flex gap-2">
-                <button onClick={() => setShowSuspensionRequestModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg">Cancel</button>
-                <button onClick={handleSuspensionRequest} disabled={actionLoading || !suspensionReason.trim()} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg disabled:opacity-50">{actionLoading ? 'Submitting…' : 'Submit Request'}</button>
+                <button onClick={() => setShowSuspensionRequestModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg">{t.cancel || 'Cancel'}</button>
+                <button onClick={handleSuspensionRequest} disabled={actionLoading || !suspensionReason.trim()} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg disabled:opacity-50">{actionLoading ? (t.submitting || 'Submitting…') : (t.submitRequest || 'Submit Request')}</button>
               </div>
             </div>
           </div>

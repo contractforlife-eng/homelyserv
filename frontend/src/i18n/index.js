@@ -58,6 +58,8 @@ export function changeLanguageGlobal(langCode) {
 
 const en = {
   translation: {
+    navigation:{switchRole:'Switch Role'},
+    'notifications.emptyState':'New notifications will appear here',
     paymentCapabilityMessages:{unsupportedCurrency:'Commission payment is not currently available for this currency.'},
     paypalCaptureErrors:{terminal:'PayPal could not process this payment. Please try again with a new payment or another available method.'},
     sharedUserDisplay:{roles:{coAdmin:'Co-Admin',supportAdmin:'Sup-Admin',supportHelper:'Sup-Help',employer:'Employer',worker:'Worker',user:'User',guest:'Guest'},fallbacks:{user:'User'}},
@@ -102,7 +104,7 @@ const en = {
     myHiresPage:{title:'My Hires',subtitle:'Manage your hired workers',stats:{total:'Total Hires',active:'Active',awaitingPayment:'Awaiting Payment',terminated:'Terminated'},status:{offer_sent:'Awaiting Payment',active:'Active',terminated:'Terminated',unknown:'Unknown'},payment:{paid:'Paid',unpaid:'Unpaid',pending:'Processing'},table:{worker:'Worker',salary:'Salary',commission:'Commission',hiredOn:'Hired On',status:'Status',payment:'Payment',actions:'Actions'},modal:{title:'Hire Details',salary:'Salary',commission:'Commission',startDate:'Start Date',endDate:'End Date',contact:'Contact Information',rating:'Rating'},terminate:{title:'Terminate Hire',confirm:'Are you sure you want to terminate this hire?',reason:'Reason for termination (optional)',placeholder:'Enter reason...',cancel:'Cancel',confirmButton:'Terminate Hire',processing:'Terminating...',success:'Hire terminated successfully',error:'Error terminating hire'},review:{title:'Work Period Completion',empty:'No work periods recorded for this hire yet.',loading:'Loading work periods...',period:'Period',awaiting:'Awaiting confirmation',approveButton:'Confirm Work Period Completed',awaitingWorker:'Waiting for Worker confirmation',awaitingEmployer:'Worker confirmed — your confirmation required',confirmedBoth:'Confirmed by both parties',disputeButton:'Dispute Period',approveTitle:'Confirm Work Period Completed',approveBody:'Confirm that the work covered by this contract period was completed. This does NOT confirm any salary payment — salaries are arranged directly between you and the worker.',disputeTitle:'Dispute Work Period',disputeBody:'Opening a dispute sends this period to review. Please provide a short reason.',reasonLabel:'Reason (optional)',reasonPlaceholder:'Explain why you are disputing this period...',cancel:'Cancel',confirmApprove:'Confirm',confirmDispute:'Submit Dispute',processing:'Please wait...',approved:'Work period confirmed',disputed:'Work period disputed',error:'Failed to update work period. Please try again.',alreadyUpdated:'This period was already updated',cancelled:'Cancelled',onHold:'On Hold',explanation:'Confirming a work period records that BOTH parties confirmed the period inside HomelyServ. It does NOT confirm salary payment.'},actions:{view:'View Details',terminate:'Terminate',message:'Message Worker'},filters:{all:'All Hires',offer_sent:'Awaiting Payment',active:'Active',terminated:'Terminated'},empty:{title:'No hires yet',description:"You haven't hired any workers yet",start:'Find workers to hire'},loading:'Loading hires...',searchPlaceholder:'Search by worker name or job title...',noResults:'No hires match your search',clearFilters:'Clear filters',refresh:'Refresh',salaryPerMonth:'EGP/mo',showing:'Showing',hiresWord:'hires',premium:'Premium',notProvided:'Not provided',notSpecified:'Not specified',workerIdNotFound:'Unable to open chat: Worker ID not found',fallbacks:{unknownWorker:'Unknown Worker',serviceProvider:'Service Provider'}},
     paymentOptionsPage:{title:'Payment Options',subtitle:'Choose your preferred payment method',totalAmount:'Total Amount',paymentMethods:'Payment Methods',selectMethod:'Select a payment method',processing:'Processing...',back:'Back',loading:'Loading payment options...',noWorkerData:'No worker selected',goBack:'Go back and select a worker',securePayment:'Secure Payment',chooseMethod:'Choose your payment method below',paymobTitle:'Pay with Paymob',paypalTitle:'Pay with PayPal',paymentFailed:'Payment failed. Please try again.',paymentCancelled:'Payment cancelled.',paymentVerifying:'Verifying payment...',payNow:'Pay Now',paypalOpened:'🔄 PayPal window opened. Complete the payment there.',waitingApproval:'⏳ Waiting for you to approve the payment in PayPal...',paymentApproved:'✅ Payment approved! Finalizing...',reopenPaypal:'Reopen PayPal Window',paypalDidNotOpen:"⚠️ PayPal window didn't open automatically. Click below to open it manually.",methods:{paymobDescription:'Pay with credit card, debit card, or online banking',paypalDescription:'Pay securely with your PayPal account'},recommended:'Recommended',loginRequired:'Please Log In',loginDescription:'You need to be logged in to make a payment.',login:'Log In',successRedirecting:'Payment Successful! Redirecting...',serviceProvider:'Service Provider',locationNotSpecified:'Location not specified',hourlyRateUnit:'EGP/hr',quickHireFee:'Quick Hire premium service fee',commissionIncluded:'{{rate}}% recruitment commission included',terms:'Terms & Conditions',refundPolicy:'Refund Policy',privacyPolicy:'Privacy Policy',popupBlocked:'⚠️ Popup blocked. Please allow popups or click the link below.',paypalReopened:'🔄 PayPal window reopened. Please complete the payment.',cancelledByUser:'Payment cancelled by user.',cancelPayment:'Cancel Payment',paypalManualLink:"Click here if PayPal doesn't open",securityNotice:'Your payment will be processed securely through Paymob or PayPal. The worker will be hired immediately after payment confirmation.',paymobIframeTitle:'Paymob Payment',paymentCompleted:'✅ Payment completed! Finalizing...',paymentCaptured:'✅ Payment captured successfully!',errors:{processingFailed:'Failed to process payment. Please contact support.',verificationTimeout:'Payment verification timed out. Please check your PayPal account.',verificationFailed:'Payment verification failed. Please try again.',invalidAmount:'Invalid payment amount. Please try again.',paymobFailed:'Paymob payment failed',paypalFailed:'PayPal payment failed',paypalOrderNotFound:'Could not find PayPal order. Please try again.'}},
     employerSettings: {
-      title:'Settings',subtitle:'Manage your account preferences',preferences:'Preferences',language:'Language',languageDesc:'Choose your preferred language',darkMode:'Dark Mode',darkModeDesc:'Switch between light and dark theme',notifications:'Notifications',notificationsDesc:'Enable or disable notifications',emailNotifications:'Email Notifications',emailNotificationsDesc:'Receive updates via email',pushNotifications:'Push Notifications',pushNotificationsDesc:'Receive real-time push notifications',smsNotifications:'SMS Notifications',smsNotificationsDesc:'Receive updates via SMS',smsNotificationsComingSoon:'Coming Soon',notificationsTitle:'Notifications',privacy:'Privacy',profileVisibility:'Profile Visibility',profileVisibilityDesc:'Control who can see your profile',public:'Public',private:'Private',contacts:'Contacts Only',showOnlineStatus:'Show Online Status',showOnlineStatusDesc:'Display your online status to others',allowMessages:'Allow Messages',allowMessagesDesc:'Allow others to send you messages',security:'Security',changePassword:'Change Password',changePasswordDesc:'Update your account password',twoFactorAuth:'Two-Factor Authentication',twoFactorAuthDesc:'Add an extra layer of security',general:'General',timezone:'Timezone',timezoneDesc:'Select your preferred timezone',currency:'Currency',currencyDesc:'Choose your preferred currency',currencyOptions:{egp:'EGP - Egyptian Pound',usd:'USD - US Dollar',eur:'EUR - Euro',gbp:'GBP - British Pound',sar:'SAR - Saudi Riyal',aed:'AED - UAE Dirham'},dateFormat:'Date Format',dateFormatDesc:'Select how dates are displayed',dateFormatLong:'DD Month YYYY',data:'Data',saveSearchHistory:'Save Search History',saveSearchHistoryDesc:'Store your search history for quick access',showRecommended:'Show Recommended',showRecommendedDesc:'Display recommended workers',autoSave:'Auto Save',autoSaveDesc:'Automatically save your preferences',exportData:'Export Data',exportDataDesc:'Download all your account data',deleteAccount:'Request Account Deletion',deleteAccountDesc:'Submit a request to delete your account',saveChanges:'Save Changes',saving:'Saving...',saved:'Settings saved successfully!',errorSaving:'Failed to save settings. Please try again.',loading:'Loading...',currentPassword:'Current password',newPassword:'New password',confirmPassword:'Confirm password',currentPasswordPlaceholder:'Enter current password',newPasswordPlaceholder:'Enter new password (min 6 characters)',confirmPasswordRequired:'Please enter your current password',passwordChanged:'Password changed successfully!',passwordMismatch:'New passwords do not match',passwordTooShort:'Password must be at least 6 characters',wrongPassword:'Current password is incorrect',cancel:'Cancel',confirm:'Confirm',deleteConfirm:'Submit an account deletion request?',deleteWarning:'Your request will be reviewed. HomelyServ may retain limited transaction, payment, hire, dispute, fraud, accounting, or legally required records. You will be signed out after your request is accepted.',deleteConfirmText:'Type DELETE to confirm',deletePlaceholder:'Type DELETE',typeDeleteToConfirm:'Please type DELETE to confirm',deleteButton:'Submit Request',accountDeleted:'Account deletion request submitted. You have been signed out.',deleteFailed:'Failed to submit account deletion request',deleteError:'Error submitting account deletion request. Please try again.',exportError:'Failed to export data. Please try again.'
+      title:'Settings',subtitle:'Manage your account preferences',preferences:'Preferences',language:'Language',languageDesc:'Choose your preferred language',darkMode:'Dark Mode',darkModeDesc:'Switch between light and dark theme',notifications:'Notifications',notificationsDesc:'Enable or disable notifications',emailNotifications:'Email Notifications',emailNotificationsDesc:'Receive updates via email',pushNotifications:'Push Notifications',pushNotificationsDesc:'Receive real-time push notifications',smsNotifications:'SMS Notifications',smsNotificationsDesc:'Receive updates via SMS',smsNotificationsComingSoon:'Coming Soon',notificationsTitle:'Notifications',privacy:'Privacy',profileVisibility:'Profile Visibility',profileVisibilityDesc:'Control who can see your profile',public:'Public',private:'Private',contacts:'Contacts Only',showOnlineStatus:'Show Online Status',showOnlineStatusDesc:'Display your online status to others',allowMessages:'Allow Messages',allowMessagesDesc:'Allow others to send you messages',security:'Security',changePassword:'Change Password',changePasswordDesc:'Update your account password',twoFactorAuth:'Two-Factor Authentication',twoFactorAuthDesc:'Add an extra layer of security',general:'General',timezone:'Timezone',timezoneDesc:'Select your preferred timezone',currency:'Currency',currencyDesc:'Choose your preferred currency',currencyOptions:{egp:'EGP - Egyptian Pound',usd:'USD - US Dollar',eur:'EUR - Euro',gbp:'GBP - British Pound',sar:'SAR - Saudi Riyal',aed:'AED - UAE Dirham'},dateFormat:'Date Format',dateFormatDesc:'Select how dates are displayed',dateFormatLong:'DD Month YYYY',data:'Data',saveSearchHistory:'Save Search History',saveSearchHistoryDesc:'Store your search history for quick access',showRecommended:'Show Recommended',showRecommendedDesc:'Display recommended workers',autoSave:'Auto Save',autoSaveDesc:'Automatically save your preferences',exportData:'Export Data',exportDataDesc:'Download all your account data',deleteAccount:'Request Account Deletion',deleteAccountDesc:'Submit a request to delete your account',saveChanges:'Save Changes',saving:'Saving...',saved:'Settings saved successfully!',errorSaving:'Failed to save settings. Please try again.',loading:'Loading...',currentPassword:'Current password',newPassword:'New password',confirmPassword:'Confirm password',currentPasswordPlaceholder:'Enter current password',newPasswordPlaceholder:'Enter new password (min 6 characters)',confirmPasswordPlaceholder:'Confirm new password',currentPasswordRequired:'Please enter your current password',confirmPasswordRequired:'Please enter your current password',passwordChanged:'Password changed successfully!',passwordMismatch:'New passwords do not match',passwordTooShort:'Password must be at least 6 characters',wrongPassword:'Current password is incorrect',cancel:'Cancel',confirm:'Confirm',deleteConfirm:'Submit an account deletion request?',deleteWarning:'Your request will be reviewed. HomelyServ may retain limited transaction, payment, hire, dispute, fraud, accounting, or legally required records. You will be signed out after your request is accepted.',deleteConfirmText:'Type DELETE to confirm',deletePlaceholder:'Type DELETE',typeDeleteToConfirm:'Please type DELETE to confirm',deleteButton:'Submit Request',accountDeleted:'Account deletion request submitted. You have been signed out.',deleteFailed:'Failed to submit account deletion request',deleteError:'Error submitting account deletion request. Please try again.',exportError:'Failed to export data. Please try again.'
     },
     employerProfile: {
       title:'My Profile',subtitle:'Manage your personal information and preferences',personalInfo:'Personal Information',fullName:'Full Name',email:'Email Address',phone:'Phone Number',location:'Location',bio:'About Me',company:'Company Name',website:'Website',editProfile:'Edit Profile',saveChanges:'Save Changes',saving:'Saving...',cancel:'Cancel',saved:'Profile updated successfully!',profilePhoto:'Profile Photo',profilePhotoAlt:'Profile',changePhoto:'Click to change photo',photoUploaded:'Photo uploaded',premiumBadge:'Premium Verified',getPremium:'Get Premium',errorSaving:'Failed to save profile. Please try again.',imageTooLarge:'Image size should be less than 5MB',userIdNotFound:'User ID not found. Please log in again.',photoUploadFailed:'Photo upload failed',updateFailed:'Failed to update profile',loading:'Loading...'
@@ -220,6 +222,8 @@ const en = {
       tree: {
         headerTitle: 'Family Tree',
         headerDesc: 'Organize your family members into a visual hierarchy across generations. Connect parents, spouses, siblings, and children.',
+        subtitle: 'Organize your family members into a visual hierarchy across generations. Connect parents, spouses, siblings, and children.',
+        treeSubtitle: 'Organize your family members into a visual hierarchy across generations. Connect parents, spouses, siblings, and children.',
         premiumBadge: 'Premium Feature',
         premiumTitle: 'Family Tree is a Premium Feature',
         premiumDesc: 'Organize your family members into a visual family tree, manage relationships, add new family members, and keep your family history organized with Premium.',
@@ -1009,6 +1013,8 @@ const en = {
 
 const ar = {
   translation: {
+    navigation:{switchRole:'تبديل الدور'},
+    'notifications.emptyState':'ستظهر الإشعارات الجديدة هنا',
     paymentCapabilityMessages:{unsupportedCurrency:'دفع العمولة غير متاح حاليًا لهذه العملة.'},
     paypalCaptureErrors:{terminal:'تعذر على PayPal معالجة هذه الدفعة. يرجى المحاولة مرة أخرى بدفعة جديدة أو بطريقة أخرى متاحة.'},
     sharedUserDisplay:{roles:{coAdmin:'مساعد مسؤول',supportAdmin:'مسؤول دعم',supportHelper:'مساعد دعم',employer:'صاحب عمل',worker:'عامل',user:'مستخدم',guest:'زائر'},fallbacks:{user:'مستخدم'}},
@@ -1173,6 +1179,8 @@ const ar = {
       tree: {
         headerTitle: 'شجرة العائلة',
         headerDesc: 'تنظيم أفراد أسرتك في هيكل بصري عبر الأجيال. اربط الآباء والأزواج والإخوة والأبناء.',
+        subtitle: 'تنظيم أفراد أسرتك في هيكل بصري عبر الأجيال. اربط الآباء والأزواج والإخوة والأبناء.',
+        treeSubtitle: 'تنظيم أفراد أسرتك في هيكل بصري عبر الأجيال. اربط الآباء والأزواج والإخوة والأبناء.',
         premiumBadge: 'ميزة بريميوم',
         premiumTitle: 'شجرة العائلة ميزة حصرية لمشتركي بريميوم',
         premiumDesc: 'نظم أفراد عائلتك في شجرة عائلية بصرية تفاعلية، وأدر العلاقات، وأضف أفراد العائلة الجدد مع الاحتفاظ بسجل أسرتك بأمان عبر بريميوم.',
@@ -1909,6 +1917,8 @@ const ar = {
 // ---------------------------------------------------------------------------
 const fr = {
   translation: {
+    navigation:{switchRole:'Changer de rôle'},
+    'notifications.emptyState':'Les nouvelles notifications apparaîtront ici',
     paymentCapabilityMessages:{unsupportedCurrency:'Le paiement de la commission n’est actuellement pas disponible dans cette devise.'},
     paypalCaptureErrors:{terminal:'PayPal n’a pas pu traiter ce paiement. Veuillez réessayer avec un nouveau paiement ou un autre moyen disponible.'},
     sharedUserDisplay:{roles:{coAdmin:'Co-administrateur',supportAdmin:'Administrateur du support',supportHelper:'Assistant Support',employer:'Employeur',worker:'Travailleur',user:'Utilisateur',guest:'Invité'},fallbacks:{user:'Utilisateur'}},
@@ -2066,6 +2076,8 @@ const fr = {
       tree: {
         headerTitle: 'Arbre généalogique',
         headerDesc: 'Organisez les membres de votre famille en une hiérarchie visuelle à travers les générations. Reliez parents, conjoints, frères/sœurs et enfants.',
+        subtitle: 'Organisez les membres de votre famille en une hiérarchie visuelle à travers les générations. Reliez parents, conjoints, frères/sœurs et enfants.',
+        treeSubtitle: 'Organisez les membres de votre famille en une hiérarchie visuelle à travers les générations. Reliez parents, conjoints, frères/sœurs et enfants.',
         premiumBadge: 'Fonctionnalité Premium',
         premiumTitle: 'L’arbre généalogique est une fonctionnalité Premium',
         premiumDesc: 'Organisez les membres de votre famille dans un arbre généalogique visuel et interactif, gérez leurs liens de parenté et préservez l’histoire de votre foyer grâce à Premium.',
@@ -2790,6 +2802,8 @@ const fr = {
 // ---------------------------------------------------------------------------
 const ru = {
   translation: {
+    navigation:{switchRole:'Сменить роль'},
+    'notifications.emptyState':'Новые уведомления будут появляться здесь',
     paymentCapabilityMessages:{unsupportedCurrency:'Оплата комиссии в этой валюте пока недоступна.'},
     paypalCaptureErrors:{terminal:'PayPal не смог обработать этот платеж. Создайте новый платеж или выберите другой доступный способ.'},
     sharedUserDisplay:{roles:{coAdmin:'Соадминистратор',supportAdmin:'Администратор поддержки',supportHelper:'Помощник поддержки',employer:'Работодатель',worker:'Работник',user:'Пользователь',guest:'Гость'},fallbacks:{user:'Пользователь'}},
@@ -2945,6 +2959,8 @@ const ru = {
       tree: {
         headerTitle: 'Семейное древо',
         headerDesc: 'Организуйте членов вашей семьи в наглядную иерархию по поколениям. Связывайте родителей, супругов, братьев/сестёр и детей.',
+        subtitle: 'Организуйте членов вашей семьи в наглядную иерархию по поколениям. Связывайте родителей, супругов, братьев/сестёр и детей.',
+        treeSubtitle: 'Организуйте членов вашей семьи в наглядную иерархию по поколениям. Связывайте родителей, супругов, братьев/сестёр и детей.',
         premiumBadge: 'Премиум функция',
         premiumTitle: 'Семейное древо — Премиум функция',
         premiumDesc: 'Организуйте членов семьи в интерактивное визуальное семейное древо, управляйте родственными связями и сохраняйте историю семьи с подпиской Премиум.',
@@ -3669,6 +3685,8 @@ const ru = {
 // ---------------------------------------------------------------------------
 const tr = {
   translation: {
+    navigation:{switchRole:'Rolü Değiştir'},
+    'notifications.emptyState':'Yeni bildirimler burada görünecek',
     paymentCapabilityMessages:{unsupportedCurrency:'Bu para biriminde komisyon ödemesi şu anda kullanılamıyor.'},
     paypalCaptureErrors:{terminal:'PayPal bu ödemeyi işleyemedi. Lütfen yeni bir ödeme ile veya kullanılabilir başka bir yöntemle tekrar deneyin.'},
     sharedUserDisplay:{roles:{coAdmin:'Yardımcı Yönetici',supportAdmin:'Destek Yöneticisi',supportHelper:'Destek Yardımcısı',employer:'İşveren',worker:'Çalışan',user:'Kullanıcı',guest:'Misafir'},fallbacks:{user:'Kullanıcı'}},
@@ -3824,6 +3842,8 @@ const tr = {
       tree: {
         headerTitle: 'Aile Ağacı',
         headerDesc: 'Aile üyelerinizi nesiller boyu görsel bir hiyerarşi içinde düzenleyin. Ebeveynleri, eşleri, kardeşleri ve çocukları bağlayın.',
+        subtitle: 'Aile üyelerinizi nesiller boyu görsel bir hiyerarşi içinde düzenleyin. Ebeveynleri, eşleri, kardeşleri ve çocukları bağlayın.',
+        treeSubtitle: 'Aile üyelerinizi nesiller boyu görsel bir hiyerarşi içinde düzenleyin. Ebeveynleri, eşleri, kardeşleri ve çocukları bağlayın.',
         premiumBadge: 'Premium Özellik',
         premiumTitle: 'Aile Ağacı bir Premium Özelliktir',
         premiumDesc: 'Aile üyelerinizi interaktif bir görsel aile ağacında düzenleyin, akrabalık ilişkilerini yönetin ve aile geçmişinizi Premium ile güvenle saklayın.',
@@ -4548,6 +4568,8 @@ const tr = {
 // ---------------------------------------------------------------------------
 const de = {
   translation: {
+    navigation:{switchRole:'Rolle wechseln'},
+    'notifications.emptyState':'Neue Benachrichtigungen werden hier angezeigt',
     paymentCapabilityMessages:{unsupportedCurrency:'Die Provisionszahlung ist in dieser Währung derzeit nicht verfügbar.'},
     paypalCaptureErrors:{terminal:'PayPal konnte diese Zahlung nicht verarbeiten. Bitte versuchen Sie es mit einer neuen Zahlung oder einer anderen verfügbaren Methode erneut.'},
     sharedUserDisplay:{roles:{coAdmin:'Co-Administrator',supportAdmin:'Support-Administrator',supportHelper:'Support-Hilfe',employer:'Arbeitgeber',worker:'Arbeitskraft',user:'Benutzer',guest:'Gast'},fallbacks:{user:'Benutzer'}},
@@ -4703,6 +4725,8 @@ const de = {
       tree: {
         headerTitle: 'Stammbaum',
         headerDesc: 'Visuelle Hierarchie Ihres Haushalts über Generationen hinweg. Verknüpfen Sie Eltern, Ehepartner, Geschwister und Kinder.',
+        subtitle: 'Visuelle Hierarchie Ihres Haushalts über Generationen hinweg. Verknüpfen Sie Eltern, Ehepartner, Geschwister und Kinder.',
+        treeSubtitle: 'Visuelle Hierarchie Ihres Haushalts über Generationen hinweg. Verknüpfen Sie Eltern, Ehepartner, Geschwister und Kinder.',
         premiumBadge: 'Premium-Funktion',
         premiumTitle: 'Der Stammbaum ist eine Premium-Funktion',
         premiumDesc: 'Organisieren Sie Ihre Familienmitglieder in einem interaktiven visuellen Stammbaum, verwalten Sie Generationsbeziehungen und bewahren Sie Ihre Familiengeschichte mit Premium sicher auf.',
@@ -5653,12 +5677,12 @@ const buildAdminSettingsPage = (x, c) => ({
 for (const [code, resource] of Object.entries({en,ar,fr,ru,tr,de})) resource.translation.adminSettingsPage = buildAdminSettingsPage(resource.translation, ADMIN_SETTINGS_COPY[code]);
 
 const USER_PROFILE_VIEW_COPY = {
-  en:{back:'Back',notFound:'User not found',loading:'Loading user profile...',accountInfo:'Account Information',statistics:'Statistics',quickActions:'Quick Actions',email:'Email',phone:'Phone',country:'Country',language:'Preferred Language',registered:'Registration Date',lastLogin:'Last Login',never:'Never',notProvided:'Not provided',complaints:'Complaints',messages:'Messages',hires:'Hires',offers:'Offers',payments:'Payments',resetPassword:'Reset Password',suspendAccount:'Suspend Account',activateAccount:'Activate Account',startConversation:'Start Conversation',openComplaints:'Open User Complaints',resetReason:'Reason (optional)',cancel:'Cancel',confirmReset:'Reset Password',tempPasswordLabel:'Temporary Password',copyTempPassword:'Copy temporary password',copied:'Copied!',done:'Done',adminProtected:'Admin accounts cannot be modified',workerProfile:'Worker Profile',employerProfile:'Employer Profile',category:'Category',experience:'Experience',experienceYears:'{{count}} years',skills:'Skills',company:'Company',industry:'Industry',noSkills:'No skills listed',generatePassword:'Generate Password',showPassword:'Show password',hidePassword:'Hide password',passwordPlaceholder:'Enter or generate a temporary password',minPasswordLength:'Minimum 6 characters',sendResetLink:'Send Password Reset Link',resetLinkSent:'Password reset link sent successfully',resetLinkInfo:'A secure password reset link has been sent to',userWillChoose:'The user will choose their own new password through the reset page.',setTemporaryPassword:'Set Temporary Password',setTemporaryPasswordDescription:'Set a temporary password',generateTemporaryPasswordDescription:'Generate a temporary password',temporaryPasswordFor:'Temporary password for',shareTemporaryPassword:'Share this password with the user. They will be required to change it on next login.',setTemporaryPasswordFor:'Set a temporary password for',changeOnNextLogin:'The user will be required to change this password on next login.',resetReasonPlaceholder:'Enter reason for password reset...',sendSecureResetLinkTo:'This will send a secure password reset link to:',errors:{loadProfile:'Failed to load user profile',updateStatus:'Failed to update user status',passwordRequired:'Please enter or generate a password (minimum 6 characters)',resetPassword:'Failed to reset password',sendResetLink:'Failed to send reset link',missingUserId:'Failed to start conversation: Missing user ID'},feedback:{suspended:'User suspended successfully',activated:'User activated successfully',passwordReset:'Password reset successfully'},roles:{EMPLOYER:'Employer',WORKER:'Worker',ADMIN:'Admin',SUPPORT:'Support',SUPPORT_HELPER:'Support Helper',USER:'User',user:'User'},status:{active:'Active',inactive:'Inactive',suspended:'Suspended',verified:'Verified',unverified:'Unverified'},noGrants:'No subscription grants'},
-  ar:{back:'رجوع',notFound:'المستخدم غير موجود',loading:'جارٍ تحميل ملف المستخدم...',accountInfo:'معلومات الحساب',statistics:'الإحصاءات',quickActions:'إجراءات سريعة',email:'البريد الإلكتروني',phone:'الهاتف',country:'البلد',language:'اللغة المفضلة',registered:'تاريخ التسجيل',lastLogin:'آخر تسجيل دخول',never:'أبدًا',notProvided:'غير متوفر',complaints:'الشكاوى',messages:'الرسائل',hires:'التوظيفات',offers:'العروض',payments:'المدفوعات',resetPassword:'إعادة تعيين كلمة المرور',suspendAccount:'تعليق الحساب',activateAccount:'تفعيل الحساب',startConversation:'بدء محادثة',openComplaints:'عرض شكاوى المستخدم',resetReason:'السبب (اختياري)',cancel:'إلغاء',confirmReset:'إعادة تعيين كلمة المرور',tempPasswordLabel:'كلمة المرور المؤقتة',copyTempPassword:'نسخ كلمة المرور المؤقتة',copied:'تم النسخ!',done:'تم',adminProtected:'لا يمكن تعديل حسابات المشرفين',workerProfile:'ملف العامل',employerProfile:'ملف صاحب العمل',category:'الفئة',experience:'الخبرة',experienceYears:'{{count}} سنة',skills:'المهارات',company:'الشركة',industry:'المجال',noSkills:'لا توجد مهارات مدرجة',generatePassword:'إنشاء كلمة مرور',showPassword:'إظهار كلمة المرور',hidePassword:'إخفاء كلمة المرور',passwordPlaceholder:'أدخل أو أنشئ كلمة مرور مؤقتة',minPasswordLength:'6 أحرف على الأقل',sendResetLink:'إرسال رابط إعادة تعيين كلمة المرور',resetLinkSent:'تم إرسال رابط إعادة تعيين كلمة المرور بنجاح',resetLinkInfo:'تم إرسال رابط آمن لإعادة تعيين كلمة المرور إلى',userWillChoose:'سيختار المستخدم كلمة مروره الجديدة بنفسه عبر صفحة إعادة التعيين.',setTemporaryPassword:'تعيين كلمة مرور مؤقتة',setTemporaryPasswordDescription:'تعيين كلمة مرور مؤقتة',generateTemporaryPasswordDescription:'إنشاء كلمة مرور مؤقتة',temporaryPasswordFor:'كلمة المرور المؤقتة لـ',shareTemporaryPassword:'شارك كلمة المرور هذه مع المستخدم. سيُطلب منه تغييرها عند تسجيل الدخول التالي.',setTemporaryPasswordFor:'عيّن كلمة مرور مؤقتة لـ',changeOnNextLogin:'سيُطلب من المستخدم تغيير كلمة المرور عند تسجيل الدخول التالي.',resetReasonPlaceholder:'أدخل سبب إعادة تعيين كلمة المرور...',sendSecureResetLinkTo:'سيتم إرسال رابط آمن لإعادة تعيين كلمة المرور إلى:',errors:{loadProfile:'تعذر تحميل ملف المستخدم',updateStatus:'تعذر تحديث حالة المستخدم',passwordRequired:'أدخل كلمة مرور أو أنشئها (6 أحرف على الأقل)',resetPassword:'تعذرت إعادة تعيين كلمة المرور',sendResetLink:'تعذر إرسال رابط إعادة التعيين',missingUserId:'تعذر بدء المحادثة: معرّف المستخدم مفقود'},feedback:{suspended:'تم تعليق المستخدم بنجاح',activated:'تم تفعيل المستخدم بنجاح',passwordReset:'تمت إعادة تعيين كلمة المرور بنجاح'},roles:{EMPLOYER:'صاحب عمل',WORKER:'عامل',ADMIN:'مشرف',SUPPORT:'دعم',SUPPORT_HELPER:'مساعد دعم',USER:'مستخدم',user:'مستخدم'},status:{active:'نشط',inactive:'غير نشط',suspended:'معلّق',verified:'موثّق',unverified:'غير موثّق'},noGrants:'لا توجد منح اشتراك'},
-  fr:{back:'Retour',notFound:'Utilisateur introuvable',loading:'Chargement du profil utilisateur...',accountInfo:'Informations du compte',statistics:'Statistiques',quickActions:'Actions rapides',email:'E-mail',phone:'Téléphone',country:'Pays',language:'Langue préférée',registered:'Date d’inscription',lastLogin:'Dernière connexion',never:'Jamais',notProvided:'Non renseigné',complaints:'Réclamations',messages:'Messages',hires:'Embauches',offers:'Offres',payments:'Paiements',resetPassword:'Réinitialiser le mot de passe',suspendAccount:'Suspendre le compte',activateAccount:'Activer le compte',startConversation:'Démarrer une conversation',openComplaints:'Voir les réclamations de l’utilisateur',resetReason:'Motif (facultatif)',cancel:'Annuler',confirmReset:'Réinitialiser le mot de passe',tempPasswordLabel:'Mot de passe temporaire',copyTempPassword:'Copier le mot de passe temporaire',copied:'Copié !',done:'Terminé',adminProtected:'Les comptes administrateur ne peuvent pas être modifiés',workerProfile:'Profil du travailleur',employerProfile:'Profil de l’employeur',category:'Catégorie',experience:'Expérience',experienceYears:'{{count}} ans',skills:'Compétences',company:'Entreprise',industry:'Secteur',noSkills:'Aucune compétence indiquée',generatePassword:'Générer un mot de passe',showPassword:'Afficher le mot de passe',hidePassword:'Masquer le mot de passe',passwordPlaceholder:'Saisissez ou générez un mot de passe temporaire',minPasswordLength:'6 caractères minimum',sendResetLink:'Envoyer le lien de réinitialisation',resetLinkSent:'Lien de réinitialisation envoyé avec succès',resetLinkInfo:'Un lien sécurisé de réinitialisation a été envoyé à',userWillChoose:'L’utilisateur choisira son nouveau mot de passe sur la page de réinitialisation.',setTemporaryPassword:'Définir un mot de passe temporaire',setTemporaryPasswordDescription:'Définir un mot de passe temporaire',generateTemporaryPasswordDescription:'Générer un mot de passe temporaire',temporaryPasswordFor:'Mot de passe temporaire pour',shareTemporaryPassword:'Communiquez ce mot de passe à l’utilisateur. Il devra le modifier lors de sa prochaine connexion.',setTemporaryPasswordFor:'Définissez un mot de passe temporaire pour',changeOnNextLogin:'L’utilisateur devra modifier ce mot de passe lors de sa prochaine connexion.',resetReasonPlaceholder:'Saisissez le motif de la réinitialisation...',sendSecureResetLinkTo:'Un lien sécurisé de réinitialisation sera envoyé à :',errors:{loadProfile:'Impossible de charger le profil utilisateur',updateStatus:'Impossible de modifier le statut de l’utilisateur',passwordRequired:'Saisissez ou générez un mot de passe (6 caractères minimum)',resetPassword:'Impossible de réinitialiser le mot de passe',sendResetLink:'Impossible d’envoyer le lien de réinitialisation',missingUserId:'Impossible de démarrer la conversation : ID utilisateur manquant'},feedback:{suspended:'Utilisateur suspendu avec succès',activated:'Utilisateur activé avec succès',passwordReset:'Mot de passe réinitialisé avec succès'},roles:{EMPLOYER:'Employeur',WORKER:'Travailleur',ADMIN:'Administrateur',SUPPORT:'Support',SUPPORT_HELPER:'Assistant Support',USER:'Utilisateur',user:'Utilisateur'},status:{active:'Actif',inactive:'Inactif',suspended:'Suspendu',verified:'Vérifié',unverified:'Non vérifié'},noGrants:'Aucun droit d’abonnement'},
-  ru:{back:'Назад',notFound:'Пользователь не найден',loading:'Загрузка профиля пользователя...',accountInfo:'Информация об аккаунте',statistics:'Статистика',quickActions:'Быстрые действия',email:'Электронная почта',phone:'Телефон',country:'Страна',language:'Предпочитаемый язык',registered:'Дата регистрации',lastLogin:'Последний вход',never:'Никогда',notProvided:'Не указано',complaints:'Жалобы',messages:'Сообщения',hires:'Наймы',offers:'Предложения',payments:'Платежи',resetPassword:'Сбросить пароль',suspendAccount:'Приостановить аккаунт',activateAccount:'Активировать аккаунт',startConversation:'Начать переписку',openComplaints:'Открыть жалобы пользователя',resetReason:'Причина (необязательно)',cancel:'Отмена',confirmReset:'Сбросить пароль',tempPasswordLabel:'Временный пароль',copyTempPassword:'Скопировать временный пароль',copied:'Скопировано!',done:'Готово',adminProtected:'Аккаунты администраторов нельзя изменять',workerProfile:'Профиль работника',employerProfile:'Профиль работодателя',category:'Категория',experience:'Опыт',experienceYears:'{{count}} лет',skills:'Навыки',company:'Компания',industry:'Отрасль',noSkills:'Навыки не указаны',generatePassword:'Создать пароль',showPassword:'Показать пароль',hidePassword:'Скрыть пароль',passwordPlaceholder:'Введите или создайте временный пароль',minPasswordLength:'Не менее 6 символов',sendResetLink:'Отправить ссылку для сброса',resetLinkSent:'Ссылка для сброса пароля отправлена',resetLinkInfo:'Безопасная ссылка для сброса пароля отправлена на адрес',userWillChoose:'Пользователь сам выберет новый пароль на странице сброса.',setTemporaryPassword:'Установить временный пароль',setTemporaryPasswordDescription:'Установить временный пароль',generateTemporaryPasswordDescription:'Создать временный пароль',temporaryPasswordFor:'Временный пароль для',shareTemporaryPassword:'Передайте этот пароль пользователю. При следующем входе ему потребуется его изменить.',setTemporaryPasswordFor:'Установите временный пароль для',changeOnNextLogin:'При следующем входе пользователю потребуется изменить этот пароль.',resetReasonPlaceholder:'Введите причину сброса пароля...',sendSecureResetLinkTo:'Безопасная ссылка для сброса пароля будет отправлена на адрес:',errors:{loadProfile:'Не удалось загрузить профиль пользователя',updateStatus:'Не удалось изменить статус пользователя',passwordRequired:'Введите или создайте пароль (не менее 6 символов)',resetPassword:'Не удалось сбросить пароль',sendResetLink:'Не удалось отправить ссылку для сброса',missingUserId:'Не удалось начать переписку: отсутствует ID пользователя'},feedback:{suspended:'Пользователь приостановлен',activated:'Пользователь активирован',passwordReset:'Пароль успешно сброшен'},roles:{EMPLOYER:'Работодатель',WORKER:'Работник',ADMIN:'Администратор',SUPPORT:'Поддержка',SUPPORT_HELPER:'Помощник поддержки',USER:'Пользователь',user:'Пользователь'},status:{active:'Активен',inactive:'Неактивен',suspended:'Приостановлен',verified:'Подтверждён',unverified:'Не подтверждён'},noGrants:'Нет предоставленных подписок'},
-  tr:{back:'Geri',notFound:'Kullanıcı bulunamadı',loading:'Kullanıcı profili yükleniyor...',accountInfo:'Hesap Bilgileri',statistics:'İstatistikler',quickActions:'Hızlı İşlemler',email:'E-posta',phone:'Telefon',country:'Ülke',language:'Tercih Edilen Dil',registered:'Kayıt Tarihi',lastLogin:'Son Giriş',never:'Hiçbir zaman',notProvided:'Belirtilmedi',complaints:'Şikâyetler',messages:'Mesajlar',hires:'İşe Alımlar',offers:'Teklifler',payments:'Ödemeler',resetPassword:'Şifreyi Sıfırla',suspendAccount:'Hesabı Askıya Al',activateAccount:'Hesabı Etkinleştir',startConversation:'Görüşme Başlat',openComplaints:'Kullanıcı Şikâyetlerini Aç',resetReason:'Neden (isteğe bağlı)',cancel:'İptal',confirmReset:'Şifreyi Sıfırla',tempPasswordLabel:'Geçici Şifre',copyTempPassword:'Geçici şifreyi kopyala',copied:'Kopyalandı!',done:'Tamam',adminProtected:'Yönetici hesapları değiştirilemez',workerProfile:'Çalışan Profili',employerProfile:'İşveren Profili',category:'Kategori',experience:'Deneyim',experienceYears:'{{count}} yıl',skills:'Beceriler',company:'Şirket',industry:'Sektör',noSkills:'Beceri belirtilmedi',generatePassword:'Şifre Oluştur',showPassword:'Şifreyi göster',hidePassword:'Şifreyi gizle',passwordPlaceholder:'Geçici bir şifre girin veya oluşturun',minPasswordLength:'En az 6 karakter',sendResetLink:'Şifre Sıfırlama Bağlantısı Gönder',resetLinkSent:'Şifre sıfırlama bağlantısı gönderildi',resetLinkInfo:'Güvenli şifre sıfırlama bağlantısı şu adrese gönderildi',userWillChoose:'Kullanıcı sıfırlama sayfasından kendi yeni şifresini seçecektir.',setTemporaryPassword:'Geçici Şifre Belirle',setTemporaryPasswordDescription:'Geçici bir şifre belirleyin',generateTemporaryPasswordDescription:'Geçici bir şifre oluşturun',temporaryPasswordFor:'Şunun için geçici şifre',shareTemporaryPassword:'Bu şifreyi kullanıcıyla paylaşın. Sonraki girişte değiştirmesi istenecektir.',setTemporaryPasswordFor:'Şunun için geçici bir şifre belirleyin',changeOnNextLogin:'Kullanıcının sonraki girişte bu şifreyi değiştirmesi gerekecektir.',resetReasonPlaceholder:'Şifre sıfırlama nedenini girin...',sendSecureResetLinkTo:'Şu adrese güvenli bir şifre sıfırlama bağlantısı gönderilecek:',errors:{loadProfile:'Kullanıcı profili yüklenemedi',updateStatus:'Kullanıcı durumu güncellenemedi',passwordRequired:'Bir şifre girin veya oluşturun (en az 6 karakter)',resetPassword:'Şifre sıfırlanamadı',sendResetLink:'Sıfırlama bağlantısı gönderilemedi',missingUserId:'Görüşme başlatılamadı: kullanıcı kimliği eksik'},feedback:{suspended:'Kullanıcı askıya alındı',activated:'Kullanıcı etkinleştirildi',passwordReset:'Şifre başarıyla sıfırlandı'},roles:{EMPLOYER:'İşveren',WORKER:'Çalışan',ADMIN:'Yönetici',SUPPORT:'Destek',SUPPORT_HELPER:'Destek Yardımcısı',USER:'Kullanıcı',user:'Kullanıcı'},status:{active:'Aktif',inactive:'Pasif',suspended:'Askıya Alındı',verified:'Doğrulandı',unverified:'Doğrulanmadı'},noGrants:'Abonelik hakkı yok'},
-  de:{back:'Zurück',notFound:'Benutzer nicht gefunden',loading:'Benutzerprofil wird geladen...',accountInfo:'Kontoinformationen',statistics:'Statistiken',quickActions:'Schnellaktionen',email:'E-Mail',phone:'Telefon',country:'Land',language:'Bevorzugte Sprache',registered:'Registrierungsdatum',lastLogin:'Letzte Anmeldung',never:'Nie',notProvided:'Nicht angegeben',complaints:'Beschwerden',messages:'Nachrichten',hires:'Einstellungen',offers:'Angebote',payments:'Zahlungen',resetPassword:'Passwort zurücksetzen',suspendAccount:'Konto sperren',activateAccount:'Konto aktivieren',startConversation:'Unterhaltung starten',openComplaints:'Benutzerbeschwerden öffnen',resetReason:'Grund (optional)',cancel:'Abbrechen',confirmReset:'Passwort zurücksetzen',tempPasswordLabel:'Temporäres Passwort',copyTempPassword:'Temporäres Passwort kopieren',copied:'Kopiert!',done:'Fertig',adminProtected:'Administratorkonten können nicht geändert werden',workerProfile:'Arbeitskraftprofil',employerProfile:'Arbeitgeberprofil',category:'Kategorie',experience:'Erfahrung',experienceYears:'{{count}} Jahre',skills:'Fähigkeiten',company:'Unternehmen',industry:'Branche',noSkills:'Keine Fähigkeiten angegeben',generatePassword:'Passwort erzeugen',showPassword:'Passwort anzeigen',hidePassword:'Passwort ausblenden',passwordPlaceholder:'Temporäres Passwort eingeben oder erzeugen',minPasswordLength:'Mindestens 6 Zeichen',sendResetLink:'Link zum Zurücksetzen senden',resetLinkSent:'Link zum Zurücksetzen des Passworts gesendet',resetLinkInfo:'Ein sicherer Link zum Zurücksetzen wurde gesendet an',userWillChoose:'Der Benutzer wählt sein neues Passwort auf der Seite zum Zurücksetzen selbst.',setTemporaryPassword:'Temporäres Passwort festlegen',setTemporaryPasswordDescription:'Temporäres Passwort festlegen',generateTemporaryPasswordDescription:'Temporäres Passwort erzeugen',temporaryPasswordFor:'Temporäres Passwort für',shareTemporaryPassword:'Teilen Sie dieses Passwort mit dem Benutzer. Bei der nächsten Anmeldung muss es geändert werden.',setTemporaryPasswordFor:'Legen Sie ein temporäres Passwort fest für',changeOnNextLogin:'Der Benutzer muss dieses Passwort bei der nächsten Anmeldung ändern.',resetReasonPlaceholder:'Grund für das Zurücksetzen eingeben...',sendSecureResetLinkTo:'Ein sicherer Link zum Zurücksetzen wird gesendet an:',errors:{loadProfile:'Benutzerprofil konnte nicht geladen werden',updateStatus:'Benutzerstatus konnte nicht geändert werden',passwordRequired:'Passwort eingeben oder erzeugen (mindestens 6 Zeichen)',resetPassword:'Passwort konnte nicht zurückgesetzt werden',sendResetLink:'Link zum Zurücksetzen konnte nicht gesendet werden',missingUserId:'Unterhaltung konnte nicht gestartet werden: Benutzer-ID fehlt'},feedback:{suspended:'Benutzer erfolgreich gesperrt',activated:'Benutzer erfolgreich aktiviert',passwordReset:'Passwort erfolgreich zurückgesetzt'},roles:{EMPLOYER:'Arbeitgeber',WORKER:'Arbeitskraft',ADMIN:'Administrator',SUPPORT:'Support',SUPPORT_HELPER:'Support-Hilfe',USER:'Benutzer',user:'Benutzer'},status:{active:'Aktiv',inactive:'Inaktiv',suspended:'Gesperrt',verified:'Verifiziert',unverified:'Nicht verifiziert'},noGrants:'Keine Abonnementberechtigungen'}
+  en:{back:'Back',notFound:'User not found',loading:'Loading user profile...',accountInfo:'Account Information',statistics:'Statistics',quickActions:'Quick Actions',email:'Email',phone:'Phone',country:'Country',language:'Preferred Language',registered:'Registration Date',lastLogin:'Last Login',never:'Never',notProvided:'Not provided',complaints:'Complaints',messages:'Messages',hires:'Hires',offers:'Offers',payments:'Payments',resetPassword:'Reset Password',suspendAccount:'Suspend Account',requestSuspension:'Request Suspension',sendForAdminReview:'Send for Admin review',suspensionModalDesc:'Provide a concise reason for Admin review.',suspensionReasonPlaceholder:'Reason for suspension request',submitRequest:'Submit Request',submitting:'Submitting…',activateAccount:'Activate Account',startConversation:'Start Conversation',openComplaints:'Open User Complaints',resetReason:'Reason (optional)',cancel:'Cancel',confirmReset:'Reset Password',tempPasswordLabel:'Temporary Password',copyTempPassword:'Copy temporary password',copied:'Copied!',done:'Done',adminProtected:'Admin accounts cannot be modified',workerProfile:'Worker Profile',employerProfile:'Employer Profile',category:'Category',experience:'Experience',experienceYears:'{{count}} years',skills:'Skills',company:'Company',industry:'Industry',noSkills:'No skills listed',generatePassword:'Generate Password',showPassword:'Show password',hidePassword:'Hide password',passwordPlaceholder:'Enter or generate a temporary password',minPasswordLength:'Minimum 6 characters',sendResetLink:'Send Password Reset Link',resetLinkSent:'Password reset link sent successfully',resetLinkInfo:'A secure password reset link has been sent to',userWillChoose:'The user will choose their own new password through the reset page.',setTemporaryPassword:'Set Temporary Password',setTemporaryPasswordDescription:'Set a temporary password',generateTemporaryPasswordDescription:'Generate a temporary password',temporaryPasswordFor:'Temporary password for',shareTemporaryPassword:'Share this password with the user. They will be required to change it on next login.',setTemporaryPasswordFor:'Set a temporary password for',changeOnNextLogin:'The user will be required to change this password on next login.',resetReasonPlaceholder:'Enter reason for password reset...',sendSecureResetLinkTo:'This will send a secure password reset link to:',errors:{loadProfile:'Failed to load user profile',updateStatus:'Failed to update user status',passwordRequired:'Please enter or generate a password (minimum 6 characters)',resetPassword:'Failed to reset password',sendResetLink:'Failed to send reset link',missingUserId:'Failed to start conversation: Missing user ID'},feedback:{suspended:'User suspended successfully',activated:'User activated successfully',passwordReset:'Password reset successfully'},roles:{EMPLOYER:'Employer',WORKER:'Worker',ADMIN:'Admin',SUPPORT:'Support',SUPPORT_HELPER:'Support Helper',USER:'User',user:'User'},status:{active:'Active',inactive:'Inactive',suspended:'Suspended',verified:'Verified',unverified:'Unverified'},noGrants:'No subscription grants'},
+  ar:{back:'رجوع',notFound:'المستخدم غير موجود',loading:'جارٍ تحميل ملف المستخدم...',accountInfo:'معلومات الحساب',statistics:'الإحصاءات',quickActions:'إجراءات سريعة',email:'البريد الإلكتروني',phone:'الهاتف',country:'البلد',language:'اللغة المفضلة',registered:'تاريخ التسجيل',lastLogin:'آخر تسجيل دخول',never:'أبدًا',notProvided:'غير متوفر',complaints:'الشكاوى',messages:'الرسائل',hires:'التوظيفات',offers:'العروض',payments:'المدفوعات',resetPassword:'إعادة تعيين كلمة المرور',suspendAccount:'تعليق الحساب',requestSuspension:'طلب تعليق الحساب',sendForAdminReview:'إرسال لمراجعة الإدارة',suspensionModalDesc:'يرجى تقديم سبب موجز لمراجعة الإدارة.',suspensionReasonPlaceholder:'سبب طلب تعليق الحساب',submitRequest:'إرسال الطلب',submitting:'جارٍ الإرسال…',activateAccount:'تفعيل الحساب',startConversation:'بدء محادثة',openComplaints:'عرض شكاوى المستخدم',resetReason:'السبب (اختياري)',cancel:'إلغاء',confirmReset:'إعادة تعيين كلمة المرور',tempPasswordLabel:'كلمة المرور المؤقتة',copyTempPassword:'نسخ كلمة المرور المؤقتة',copied:'تم النسخ!',done:'تم',adminProtected:'لا يمكن تعديل حسابات المشرفين',workerProfile:'ملف العامل',employerProfile:'ملف صاحب العمل',category:'الفئة',experience:'الخبرة',experienceYears:'{{count}} سنة',skills:'المهارات',company:'الشركة',industry:'المجال',noSkills:'لا توجد مهارات مدرجة',generatePassword:'إنشاء كلمة مرور',showPassword:'إظهار كلمة المرور',hidePassword:'إخفاء كلمة المرور',passwordPlaceholder:'أدخل أو أنشئ كلمة مرور مؤقتة',minPasswordLength:'6 أحرف على الأقل',sendResetLink:'إرسال رابط إعادة تعيين كلمة المرور',resetLinkSent:'تم إرسال رابط إعادة تعيين كلمة المرور بنجاح',resetLinkInfo:'تم إرسال رابط آمن لإعادة تعيين كلمة المرور إلى',userWillChoose:'سيختار المستخدم كلمة مروره الجديدة بنفسه عبر صفحة إعادة التعيين.',setTemporaryPassword:'تعيين كلمة مرور مؤقتة',setTemporaryPasswordDescription:'تعيين كلمة مرور مؤقتة',generateTemporaryPasswordDescription:'إنشاء كلمة مرور مؤقتة',temporaryPasswordFor:'كلمة المرور المؤقتة لـ',shareTemporaryPassword:'شارك كلمة المرور هذه مع المستخدم. سيُطلب منه تغييرها عند تسجيل الدخول التالي.',setTemporaryPasswordFor:'عيّن كلمة مرور مؤقتة لـ',changeOnNextLogin:'سيُطلب من المستخدم تغيير كلمة المرور عند تسجيل الدخول التالي.',resetReasonPlaceholder:'أدخل سبب إعادة تعيين كلمة المرور...',sendSecureResetLinkTo:'سيتم إرسال رابط آمن لإعادة تعيين كلمة المرور إلى:',errors:{loadProfile:'تعذر تحميل ملف المستخدم',updateStatus:'تعذر تحديث حالة المستخدم',passwordRequired:'أدخل كلمة مرور أو أنشئها (6 أحرف على الأقل)',resetPassword:'تعذرت إعادة تعيين كلمة المرور',sendResetLink:'تعذر إرسال رابط إعادة التعيين',missingUserId:'تعذر بدء المحادثة: معرّف المستخدم مفقود'},feedback:{suspended:'تم تعليق المستخدم بنجاح',activated:'تم تفعيل المستخدم بنجاح',passwordReset:'تمت إعادة تعيين كلمة المرور بنجاح'},roles:{EMPLOYER:'صاحب عمل',WORKER:'عامل',ADMIN:'مشرف',SUPPORT:'دعم',SUPPORT_HELPER:'مساعد دعم',USER:'مستخدم',user:'مستخدم'},status:{active:'نشط',inactive:'غير نشط',suspended:'معلّق',verified:'موثّق',unverified:'غير موثّق'},noGrants:'لا توجد منح اشتراك'},
+  fr:{back:'Retour',notFound:'Utilisateur introuvable',loading:'Chargement du profil utilisateur...',accountInfo:'Informations du compte',statistics:'Statistiques',quickActions:'Actions rapides',email:'E-mail',phone:'Téléphone',country:'Pays',language:'Langue préférée',registered:'Date d’inscription',lastLogin:'Dernière connexion',never:'Jamais',notProvided:'Non renseigné',complaints:'Réclamations',messages:'Messages',hires:'Embauches',offers:'Offres',payments:'Paiements',resetPassword:'Réinitialiser le mot de passe',suspendAccount:'Suspendre le compte',requestSuspension:'Demander la suspension',sendForAdminReview:'Envoyer pour examen par l’administrateur',suspensionModalDesc:'Indiquez un motif concis pour examen par l’administrateur.',suspensionReasonPlaceholder:'Motif de la demande de suspension',submitRequest:'Envoyer la demande',submitting:'Envoi en cours…',activateAccount:'Activer le compte',startConversation:'Démarrer une conversation',openComplaints:'Voir les réclamations de l’utilisateur',resetReason:'Motif (facultatif)',cancel:'Annuler',confirmReset:'Réinitialiser le mot de passe',tempPasswordLabel:'Mot de passe temporaire',copyTempPassword:'Copier le mot de passe temporaire',copied:'Copié !',done:'Terminé',adminProtected:'Les comptes administrateur ne peuvent pas être modifiés',workerProfile:'Profil du travailleur',employerProfile:'Profil de l’employeur',category:'Catégorie',experience:'Expérience',experienceYears:'{{count}} ans',skills:'Compétences',company:'Entreprise',industry:'Secteur',noSkills:'Aucune compétence indiquée',generatePassword:'Générer un mot de passe',showPassword:'Afficher le mot de passe',hidePassword:'Masquer le mot de passe',passwordPlaceholder:'Saisissez ou générez un mot de passe temporaire',minPasswordLength:'6 caractères minimum',sendResetLink:'Envoyer le lien de réinitialisation',resetLinkSent:'Lien de réinitialisation envoyé avec succès',resetLinkInfo:'Un lien sécurisé de réinitialisation a été envoyé à',userWillChoose:'L’utilisateur choisira son nouveau mot de passe sur la page de réinitialisation.',setTemporaryPassword:'Définir un mot de passe temporaire',setTemporaryPasswordDescription:'Définir un mot de passe temporaire',generateTemporaryPasswordDescription:'Générer un mot de passe temporaire',temporaryPasswordFor:'Mot de passe temporaire pour',shareTemporaryPassword:'Communiquez ce mot de passe à l’utilisateur. Il devra le modifier lors de sa prochaine connexion.',setTemporaryPasswordFor:'Définissez un mot de passe temporaire pour',changeOnNextLogin:'L’utilisateur devra modifier ce mot de passe lors de sa prochaine connexion.',resetReasonPlaceholder:'Saisissez le motif de la réinitialisation...',sendSecureResetLinkTo:'Un lien sécurisé de réinitialisation sera envoyé à :',errors:{loadProfile:'Impossible de charger le profil utilisateur',updateStatus:'Impossible de modifier le statut de l’utilisateur',passwordRequired:'Saisissez ou générez un mot de passe (6 caractères minimum)',resetPassword:'Impossible de réinitialiser le mot de passe',sendResetLink:'Impossible d’envoyer le lien de réinitialisation',missingUserId:'Impossible de démarrer la conversation : ID utilisateur manquant'},feedback:{suspended:'Utilisateur suspendu avec succès',activated:'Utilisateur activé avec succès',passwordReset:'Mot de passe réinitialisé avec succès'},roles:{EMPLOYER:'Employeur',WORKER:'Travailleur',ADMIN:'Administrateur',SUPPORT:'Support',SUPPORT_HELPER:'Assistant Support',USER:'Utilisateur',user:'Utilisateur'},status:{active:'Actif',inactive:'Inactif',suspended:'Suspendu',verified:'Vérifié',unverified:'Non vérifié'},noGrants:'Aucun droit d’abonnement'},
+  ru:{back:'Назад',notFound:'Пользователь не найден',loading:'Загрузка профиля пользователя...',accountInfo:'Информация об аккаунте',statistics:'Статистика',quickActions:'Быстрые действия',email:'Электронная почта',phone:'Телефон',country:'Страна',language:'Предпочитаемый язык',registered:'Дата регистрации',lastLogin:'Последний вход',never:'Никогда',notProvided:'Не указано',complaints:'Жалобы',messages:'Сообщения',hires:'Наймы',offers:'Предложения',payments:'Платежи',resetPassword:'Сбросить пароль',suspendAccount:'Приостановить аккаунт',requestSuspension:'Запросить блокировку',sendForAdminReview:'Отправить на проверку администратору',suspensionModalDesc:'Укажите краткую причину для проверки администратором.',suspensionReasonPlaceholder:'Причина запроса на блокировку',submitRequest:'Отправить запрос',submitting:'Отправка…',activateAccount:'Активировать аккаунт',startConversation:'Начать переписку',openComplaints:'Открыть жалобы пользователя',resetReason:'Причина (необязательно)',cancel:'Отмена',confirmReset:'Сбросить пароль',tempPasswordLabel:'Временный пароль',copyTempPassword:'Скопировать временный пароль',copied:'Скопировано!',done:'Готово',adminProtected:'Аккаунты администраторов нельзя изменять',workerProfile:'Профиль работника',employerProfile:'Профиль работодателя',category:'Категория',experience:'Опыт',experienceYears:'{{count}} лет',skills:'Навыки',company:'Компания',industry:'Отрасль',noSkills:'Навыки не указаны',generatePassword:'Создать пароль',showPassword:'Показать пароль',hidePassword:'Скрыть пароль',passwordPlaceholder:'Введите или создайте временный пароль',minPasswordLength:'Не менее 6 символов',sendResetLink:'Отправить ссылку для сброса',resetLinkSent:'Ссылка для сброса пароля отправлена',resetLinkInfo:'Безопасная ссылка для сброса пароля отправлена на адрес',userWillChoose:'Пользователь сам выберет новый пароль на странице сброса.',setTemporaryPassword:'Установить временный пароль',setTemporaryPasswordDescription:'Установить временный пароль',generateTemporaryPasswordDescription:'Создать временный пароль',temporaryPasswordFor:'Временный пароль для',shareTemporaryPassword:'Передайте этот пароль пользователю. При следующем входе ему потребуется его изменить.',setTemporaryPasswordFor:'Установите временный пароль для',changeOnNextLogin:'При следующем входе пользователю потребуется изменить этот пароль.',resetReasonPlaceholder:'Введите причину сброса пароля...',sendSecureResetLinkTo:'Безопасная ссылка для сброса пароля будет отправлена на адрес:',errors:{loadProfile:'Не удалось загрузить профиль пользователя',updateStatus:'Не удалось изменить статус пользователя',passwordRequired:'Введите или создайте пароль (не менее 6 символов)',resetPassword:'Не удалось сбросить пароль',sendResetLink:'Не удалось отправить ссылку для сброса',missingUserId:'Не удалось начать переписку: отсутствует ID пользователя'},feedback:{suspended:'Пользователь приостановлен',activated:'Пользователь активирован',passwordReset:'Пароль успешно сброшен'},roles:{EMPLOYER:'Работодатель',WORKER:'Работник',ADMIN:'Администратор',SUPPORT:'Поддержка',SUPPORT_HELPER:'Помощник поддержки',USER:'Пользователь',user:'Пользователь'},status:{active:'Активен',inactive:'Неактивен',suspended:'Приостановлен',verified:'Подтверждён',unverified:'Не подтверждён'},noGrants:'Нет предоставленных подписок'},
+  tr:{back:'Geri',notFound:'Kullanıcı bulunamadı',loading:'Kullanıcı profili yükleniyor...',accountInfo:'Hesap Bilgileri',statistics:'İstatistikler',quickActions:'Hızlı İşlemler',email:'E-posta',phone:'Telefon',country:'Ülke',language:'Tercih Edilen Dil',registered:'Kayıt Tarihi',lastLogin:'Son Giriş',never:'Hiçbir zaman',notProvided:'Belirtilmedi',complaints:'Şikâyetler',messages:'Mesajlar',hires:'İşe Alımlar',offers:'Teklifler',payments:'Ödemeler',resetPassword:'Şifreyi Sıfırla',suspendAccount:'Hesabı Askıya Al',requestSuspension:'Askıya Alma Talebi Gönder',sendForAdminReview:'Yönetici incelemesine gönder',suspensionModalDesc:'Yönetici incelemesi için kısa bir neden belirtin.',suspensionReasonPlaceholder:'Askıya alma talebi nedeni',submitRequest:'Talebi Gönder',submitting:'Gönderiliyor…',activateAccount:'Hesabı Etkinleştir',startConversation:'Görüşme Başlat',openComplaints:'Kullanıcı Şikâyetlerini Aç',resetReason:'Neden (isteğe bağlı)',cancel:'İptal',confirmReset:'Şifreyi Sıfırla',tempPasswordLabel:'Geçici Şifre',copyTempPassword:'Geçici şifreyi kopyala',copied:'Kopyalandı!',done:'Tamam',adminProtected:'Yönetici hesapları değiştirilemez',workerProfile:'Çalışan Profili',employerProfile:'İşveren Profili',category:'Kategori',experience:'Deneyim',experienceYears:'{{count}} yıl',skills:'Beceriler',company:'Şirket',industry:'Sektör',noSkills:'Beceri belirtilmedi',generatePassword:'Şifre Oluştur',showPassword:'Şifreyi göster',hidePassword:'Şifreyi gizle',passwordPlaceholder:'Geçici bir şifre girin veya oluşturun',minPasswordLength:'En az 6 karakter',sendResetLink:'Şifre Sıfırlama Bağlantısı Gönder',resetLinkSent:'Şifre sıfırlama bağlantısı gönderildi',resetLinkInfo:'Güvenli şifre sıfırlama bağlantısı şu adrese gönderildi',userWillChoose:'Kullanıcı sıfırlama sayfasından kendi yeni şifresini seçecektir.',setTemporaryPassword:'Geçici Şifre Belirle',setTemporaryPasswordDescription:'Geçici bir şifre belirleyin',generateTemporaryPasswordDescription:'Geçici bir şifre oluşturun',temporaryPasswordFor:'Şunun için geçici şifre',shareTemporaryPassword:'Bu şifreyi kullanıcıyla paylaşın. Sonraki girişte değiştirmesi istenecektir.',setTemporaryPasswordFor:'Şunun için geçici bir şifre belirleyin',changeOnNextLogin:'Kullanıcının sonraki girişte bu şifreyi değiştirmesi gerekecektir.',resetReasonPlaceholder:'Şifre sıfırlama nedenini girin...',sendSecureResetLinkTo:'Şu adrese güvenli bir şifre sıfırlama bağlantısı gönderilecek:',errors:{loadProfile:'Kullanıcı profili yüklenemedi',updateStatus:'Kullanıcı durumu güncellenemedi',passwordRequired:'Bir şifre girin veya oluşturun (en az 6 karakter)',resetPassword:'Şifre sıfırlanamadı',sendResetLink:'Sıfırlama bağlantısı gönderilemedi',missingUserId:'Görüşme başlatılamadı: kullanıcı kimliği eksik'},feedback:{suspended:'Kullanıcı askıya alındı',activated:'Kullanıcı etkinleştirildi',passwordReset:'Şifre başarıyla sıfırlandı'},roles:{EMPLOYER:'İşveren',WORKER:'Çalışan',ADMIN:'Yönetici',SUPPORT:'Destek',SUPPORT_HELPER:'Destek Yardımcısı',USER:'Kullanıcı',user:'Kullanıcı'},status:{active:'Aktif',inactive:'Pasif',suspended:'Askıya Alındı',verified:'Doğrulandı',unverified:'Doğrulanmadı'},noGrants:'Abonelik hakkı yok'},
+  de:{back:'Zurück',notFound:'Benutzer nicht gefunden',loading:'Benutzerprofil wird geladen...',accountInfo:'Kontoinformationen',statistics:'Statistiken',quickActions:'Schnellaktionen',email:'E-Mail',phone:'Telefon',country:'Land',language:'Bevorzugte Sprache',registered:'Registrierungsdatum',lastLogin:'Letzte Anmeldung',never:'Nie',notProvided:'Nicht angegeben',complaints:'Beschwerden',messages:'Nachrichten',hires:'Einstellungen',offers:'Angebote',payments:'Zahlungen',resetPassword:'Passwort zurücksetzen',suspendAccount:'Konto sperren',requestSuspension:'Sperrung beantragen',sendForAdminReview:'Zur Prüfung an den Administrator senden',suspensionModalDesc:'Geben Sie einen kurzen Grund für die Prüfung durch den Administrator an.',suspensionReasonPlaceholder:'Grund für den Sperrantrag',submitRequest:'Antrag einreichen',submitting:'Wird übermittelt…',activateAccount:'Konto aktivieren',startConversation:'Unterhaltung starten',openComplaints:'Benutzerbeschwerden öffnen',resetReason:'Grund (optional)',cancel:'Abbrechen',confirmReset:'Passwort zurücksetzen',tempPasswordLabel:'Temporäres Passwort',copyTempPassword:'Temporäres Passwort kopieren',copied:'Kopiert!',done:'Fertig',adminProtected:'Administratorkonten können nicht geändert werden',workerProfile:'Arbeitskraftprofil',employerProfile:'Arbeitgeberprofil',category:'Kategorie',experience:'Erfahrung',experienceYears:'{{count}} Jahre',skills:'Fähigkeiten',company:'Unternehmen',industry:'Branche',noSkills:'Keine Fähigkeiten angegeben',generatePassword:'Passwort erzeugen',showPassword:'Passwort anzeigen',hidePassword:'Passwort ausblenden',passwordPlaceholder:'Temporäres Passwort eingeben oder erzeugen',minPasswordLength:'Mindestens 6 Zeichen',sendResetLink:'Link zum Zurücksetzen senden',resetLinkSent:'Link zum Zurücksetzen des Passworts gesendet',resetLinkInfo:'Ein sicherer Link zum Zurücksetzen wurde gesendet an',userWillChoose:'Der Benutzer wählt sein neues Passwort auf der Seite zum Zurücksetzen selbst.',setTemporaryPassword:'Temporäres Passwort festlegen',setTemporaryPasswordDescription:'Temporäres Passwort festlegen',generateTemporaryPasswordDescription:'Temporäres Passwort erzeugen',temporaryPasswordFor:'Temporäres Passwort für',shareTemporaryPassword:'Teilen Sie dieses Passwort mit dem Benutzer. Bei der nächsten Anmeldung muss es geändert werden.',setTemporaryPasswordFor:'Legen Sie ein temporäres Passwort fest für',changeOnNextLogin:'Der Benutzer muss dieses Passwort bei der nächsten Anmeldung ändern.',resetReasonPlaceholder:'Grund für das Zurücksetzen eingeben...',sendSecureResetLinkTo:'Ein sicherer Link zum Zurücksetzen wird gesendet an:',errors:{loadProfile:'Benutzerprofil konnte nicht geladen werden',updateStatus:'Benutzerstatus konnte nicht geändert werden',passwordRequired:'Passwort eingeben oder erzeugen (mindestens 6 Zeichen)',resetPassword:'Passwort konnte nicht zurückgesetzt werden',sendResetLink:'Link zum Zurücksetzen konnte nicht gesendet werden',missingUserId:'Unterhaltung konnte nicht gestartet werden: Benutzer-ID fehlt'},feedback:{suspended:'Benutzer erfolgreich gesperrt',activated:'Benutzer erfolgreich aktiviert',passwordReset:'Passwort erfolgreich zurückgesetzt'},roles:{EMPLOYER:'Arbeitgeber',WORKER:'Arbeitskraft',ADMIN:'Administrator',SUPPORT:'Support',SUPPORT_HELPER:'Support-Hilfe',USER:'Benutzer',user:'Benutzer'},status:{active:'Aktiv',inactive:'Inaktiv',suspended:'Gesperrt',verified:'Verifiziert',unverified:'Nicht verifiziert'},noGrants:'Keine Abonnementberechtigungen'}
 };
 const USER_PROFILE_VIEW_EXTRA = {
   en:{startConversation:'Failed to start conversation',violation:'Violation of terms of service',reactivated:'Account reactivated',reactivatedSupport:'Account reactivated by support',languages:{en:'English',ar:'Arabic',fr:'French',ru:'Russian',tr:'Turkish',de:'German'}},
@@ -6636,13 +6660,13 @@ const DOWNLOAD_PAGE_COPY = {
     seoTitle: 'HomelyServ pour Android | Téléchargement officiel APK', seoDescription: 'Téléchargez l’APK Android officiel HomelyServ directement depuis homelyserv.com.', officialRelease: 'Version Android officielle', title: 'HomelyServ pour Android', heroDescription: 'Obtenez l’application Android officielle HomelyServ, distribuée directement par HomelyServ pour un téléchargement fiable.', downloadApk: 'Télécharger l’APK', version: 'Version', apkSize: 'Taille de l’APK', minimumAndroid: 'Android 7.0+', releaseDate: 'Date de sortie', signedRelease: 'Version signée numériquement', directDistribution: 'Publié directement par HomelyServ avec les informations de vérification ci-dessous.', trustTitle: 'Téléchargez en toute confiance', trustOfficialTitle: 'Version officielle', trustOfficialText: 'Il s’agit de la version Android officielle de HomelyServ.', trustHttpsTitle: 'Distribution HTTPS directe', trustHttpsText: 'L’APK est distribué directement depuis homelyserv.com via HTTPS.', trustChecksumTitle: 'Vérifiez le fichier', trustChecksumText: 'Le checksum SHA-256 exact est disponible pour vérifier le téléchargement.', technicalTitle: 'Détails techniques', technicalDescription: 'Utilisez ces valeurs pour confirmer que l’APK installé est bien la version HomelyServ prévue.', packageName: 'Nom du package', versionCode: 'Code de version', targetSdk: 'SDK cible', apkSha256: 'SHA-256 de l’APK', signingCertificateSha256: 'SHA-256 du certificat de signature', metadataLoading: 'Chargement des détails de la version…', metadataError: 'Les détails de la version sont temporairement indisponibles. Le téléchargement officiel reste disponible.', installTitle: 'Installer en toute sécurité', installDescription: 'Android peut demander une autorisation temporaire lors de l’installation d’un APK hors magasin d’applications.', installStep1: 'Téléchargez l’APK officiel HomelyServ.', installStep2: 'Android peut demander à ce navigateur ou gestionnaire de fichiers d’autoriser les installations depuis cette source.', installStep3: 'Autorisez uniquement cette source temporairement, puis revenez à l’installateur.', installStep4: 'Installez HomelyServ et ouvrez l’application.', installStep5: 'Désactivez ensuite l’autorisation de cette source si vous n’en avez plus besoin.', installStep6: 'Gardez les protections de sécurité Android activées.', storeTitle: 'Où obtenir HomelyServ', storeDescription: 'Utilisez uniquement les sources officielles indiquées ici.', directDownload: 'Téléchargement direct', status: { available: 'Disponible', underReview: 'En cours d’examen', comingSoon: 'Bientôt disponible' }, reviewsTitle: 'Avis des utilisateurs', reviewsText: 'Avis des utilisateurs bientôt disponibles', updateNote: 'HomelyServ est déjà installé ? L’installation de cette version mettra à jour l’application existante.'
   },
   ru: {
-    seoTitle: 'HomelyServ для Android | Официальная загрузка APK', seoDescription: 'Скачайте официальное Android-приложение HomelyServ напрямую с homelyserv.com.', officialRelease: 'Официальный релиз Android', title: 'HomelyServ для Android', heroDescription: 'Получите официальное приложение HomelyServ для Android, распространяемое напрямую HomelyServ для безопасной загрузки.', downloadApk: 'Скачать APK', version: 'Версия', apkSize: 'Размер APK', minimumAndroid: 'Android 7.0+', releaseDate: 'Дата выпуска', signedRelease: 'Релиз с цифровой подписью', directDistribution: 'Опубликовано напрямую HomelyServ; сведения для проверки приведены ниже.', trustTitle: 'Скачивайте с уверенностью', trustOfficialTitle: 'Официальный релиз', trustOfficialText: 'Это официальный релиз HomelyServ для Android.', trustHttpsTitle: 'Прямая доставка по HTTPS', trustHttpsText: 'APK распространяется напрямую с homelyserv.com по HTTPS.', trustChecksumTitle: 'Проверьте файл', trustChecksumText: 'Точная контрольная сумма SHA-256 доступна для проверки загрузки.', technicalTitle: 'Технические сведения', technicalDescription: 'Используйте эти значения, чтобы подтвердить, что установлен нужный релиз HomelyServ.', packageName: 'Имя пакета', versionCode: 'Код версии', targetSdk: 'Целевой SDK', apkSha256: 'SHA-256 APK', signingCertificateSha256: 'SHA-256 сертификата подписи', metadataLoading: 'Загрузка сведений о релизе…', metadataError: 'Сведения о релизе временно недоступны. Официальная загрузка остаётся доступной.', installTitle: 'Безопасная установка', installDescription: 'Android может запросить временное разрешение при установке APK вне магазина приложений.', installStep1: 'Скачайте официальный APK HomelyServ.', installStep2: 'Android может попросить этот браузер или файловый менеджер разрешить установку приложений из этого источника.', installStep3: 'Временно разрешите только этот источник и вернитесь к установщику.', installStep4: 'Установите HomelyServ и откройте приложение.', installStep5: 'После установки снова отключите разрешение для этого источника, если оно больше не нужно.', installStep6: 'Не отключайте средства защиты Android.', storeTitle: 'Где получить HomelyServ', storeDescription: 'Используйте только официальные источники, перечисленные здесь.', directDownload: 'Прямая загрузка', status: { available: 'Доступно', underReview: 'На рассмотрении', comingSoon: 'Скоро' }, reviewsTitle: 'Отзывы пользователей', reviewsText: 'Отзывы пользователей скоро появятся'
+    seoTitle: 'HomelyServ для Android | Официальная загрузка APK', seoDescription: 'Скачайте официальное Android-приложение HomelyServ напрямую с homelyserv.com.', officialRelease: 'Официальный релиз Android', title: 'HomelyServ для Android', heroDescription: 'Получите официальное приложение HomelyServ для Android, распространяемое напрямую HomelyServ для безопасной загрузки.', downloadApk: 'Скачать APK', version: 'Версия', apkSize: 'Размер APK', minimumAndroid: 'Android 7.0+', releaseDate: 'Дата выпуска', signedRelease: 'Релиз с цифровой подписью', directDistribution: 'Опубликовано напрямую HomelyServ; сведения для проверки приведены ниже.', trustTitle: 'Скачивайте с уверенностью', trustOfficialTitle: 'Официальный релиз', trustOfficialText: 'Это официальный релиз HomelyServ для Android.', trustHttpsTitle: 'Прямая доставка по HTTPS', trustHttpsText: 'APK распространяется напрямую с homelyserv.com по HTTPS.', trustChecksumTitle: 'Проверьте файл', trustChecksumText: 'Точная контрольная сумма SHA-256 доступна для проверки загрузки.', technicalTitle: 'Технические сведения', technicalDescription: 'Используйте эти значения, чтобы подтвердить, что установлен нужный релиз HomelyServ.', packageName: 'Имя пакета', versionCode: 'Код версии', targetSdk: 'Целевой SDK', apkSha256: 'SHA-256 APK', signingCertificateSha256: 'SHA-256 сертификата подписи', metadataLoading: 'Загрузка сведений о релизе…', metadataError: 'Сведения о релизе временно недоступны. Официальная загрузка остаётся доступной.', installTitle: 'Безопасная установка', installDescription: 'Android может запросить временное разрешение при установке APK вне магазина приложений.', installStep1: 'Скачайте официальный APK HomelyServ.', installStep2: 'Android может попросить этот браузер или файловый менеджер разрешить установку приложений из этого источника.', installStep3: 'Временно разрешите только этот источник и вернитесь к установщику.', installStep4: 'Установите HomelyServ и откройте приложение.', installStep5: 'После установки снова отключите разрешение для этого источника, если оно больше не нужно.', installStep6: 'Не отключайте средства защиты Android.', storeTitle: 'Где получить HomelyServ', storeDescription: 'Используйте только официальные источники, перечисленные здесь.', directDownload: 'Прямая загрузка', status: { available: 'Доступно', underReview: 'На рассмотрении', comingSoon: 'Скоро' }, reviewsTitle: 'Отзывы пользователей', reviewsText: 'Отзывы пользователей скоро появятся', updateNote: 'HomelyServ уже установлен? Установка этой версии обновит существующее приложение.'
   },
   tr: {
-    seoTitle: 'Android için HomelyServ | Resmî APK İndirme', seoDescription: 'Resmî HomelyServ Android APK’sını doğrudan homelyserv.com adresinden indirin.', officialRelease: 'Resmî Android sürümü', title: 'Android için HomelyServ', heroDescription: 'Güvenilir bir indirme deneyimi için doğrudan HomelyServ tarafından dağıtılan resmî HomelyServ Android uygulamasını edinin.', downloadApk: 'APK İndir', version: 'Sürüm', apkSize: 'APK boyutu', minimumAndroid: 'Android 7.0+', releaseDate: 'Yayın tarihi', signedRelease: 'Dijital olarak imzalanmış sürüm', directDistribution: 'Aşağıdaki doğrulama bilgileriyle doğrudan HomelyServ tarafından yayınlanır.', trustTitle: 'Güvenle indirin', trustOfficialTitle: 'Resmî sürüm', trustOfficialText: 'Bu, resmî HomelyServ Android sürümüdür.', trustHttpsTitle: 'Doğrudan HTTPS dağıtımı', trustHttpsText: 'APK, homelyserv.com üzerinden HTTPS ile doğrudan dağıtılır.', trustChecksumTitle: 'Dosyayı doğrulayın', trustChecksumText: 'İndirmeyi doğrulamak için tam SHA-256 özeti sunulur.', technicalTitle: 'Teknik bilgiler', technicalDescription: 'Yüklü APK’nın hedeflenen HomelyServ sürümü olduğunu doğrulamak için bu değerleri kullanın.', packageName: 'Paket adı', versionCode: 'Sürüm kodu', targetSdk: 'Hedef SDK', apkSha256: 'APK SHA-256', signingCertificateSha256: 'İmzalama sertifikası SHA-256', metadataLoading: 'Sürüm bilgileri yükleniyor…', metadataError: 'Sürüm bilgileri geçici olarak kullanılamıyor. Resmî indirme kullanılabilir.', installTitle: 'Güvenli kurulum', installDescription: 'Uygulama mağazası dışından APK yüklerken Android geçici bir izin isteyebilir.', installStep1: 'Resmî HomelyServ APK’sını indirin.', installStep2: 'Android, bu tarayıcıdan veya dosya yöneticisinden bu kaynaktan uygulama yüklemeye izin vermenizi isteyebilir.', installStep3: 'Yalnızca bu kaynağa geçici olarak izin verin ve yükleyiciye dönün.', installStep4: 'HomelyServ’i yükleyin ve uygulamayı açın.', installStep5: 'İhtiyacınız kalmadığında bu kaynak iznini tekrar kapatın.', installStep6: 'Android güvenlik korumalarını açık tutun.', storeTitle: 'HomelyServ’i nereden edinebilirsiniz', storeDescription: 'Yalnızca burada listelenen resmî kaynakları kullanın.', directDownload: 'Doğrudan indirme', status: { available: 'Kullanılabilir', underReview: 'İnceleniyor', comingSoon: 'Yakında' }, reviewsTitle: 'Kullanıcı yorumları', reviewsText: 'Kullanıcı yorumları yakında'
+    seoTitle: 'Android için HomelyServ | Resmî APK İndirme', seoDescription: 'Resmî HomelyServ Android APK’sını doğrudan homelyserv.com adresinden indirin.', officialRelease: 'Resmî Android sürümü', title: 'Android için HomelyServ', heroDescription: 'Güvenilir bir indirme deneyimi için doğrudan HomelyServ tarafından dağıtılan resmî HomelyServ Android uygulamasını edinin.', downloadApk: 'APK İndir', version: 'Sürüm', apkSize: 'APK boyutu', minimumAndroid: 'Android 7.0+', releaseDate: 'Yayın tarihi', signedRelease: 'Dijital olarak imzalanmış sürüm', directDistribution: 'Aşağıdaki doğrulama bilgileriyle doğrudan HomelyServ tarafından yayınlanır.', trustTitle: 'Güvenle indirin', trustOfficialTitle: 'Resmî sürüm', trustOfficialText: 'Bu, resmî HomelyServ Android sürümüdür.', trustHttpsTitle: 'Doğrudan HTTPS dağıtımı', trustHttpsText: 'APK, homelyserv.com üzerinden HTTPS ile doğrudan dağıtılır.', trustChecksumTitle: 'Dosyayı doğrulayın', trustChecksumText: 'İndirmeyi doğrulamak için tam SHA-256 özeti sunulur.', technicalTitle: 'Teknik bilgiler', technicalDescription: 'Yüklü APK’nın hedeflenen HomelyServ sürümü olduğunu doğrulamak için bu değerleri kullanın.', packageName: 'Paket adı', versionCode: 'Sürüm kodu', targetSdk: 'Hedef SDK', apkSha256: 'APK SHA-256', signingCertificateSha256: 'İmzalama sertifikası SHA-256', metadataLoading: 'Sürüm bilgileri yükleniyor…', metadataError: 'Sürüm bilgileri geçici olarak kullanılamıyor. Resmî indirme kullanılabilir.', installTitle: 'Güvenli kurulum', installDescription: 'Uygulama mağazası dışından APK yüklerken Android geçici bir izin isteyebilir.', installStep1: 'Resmî HomelyServ APK’sını indirin.', installStep2: 'Android, bu tarayıcıdan veya dosya yöneticisinden bu kaynaktan uygulama yüklemeye izin vermenizi isteyebilir.', installStep3: 'Yalnızca bu kaynağa geçici olarak izin verin ve yükleyiciye dönün.', installStep4: 'HomelyServ’i yükleyin ve uygulamayı açın.', installStep5: 'İhtiyacınız kalmadığında bu kaynak iznini tekrar kapatın.', installStep6: 'Android güvenlik korumalarını açık tutun.', storeTitle: 'HomelyServ’i nereden edinebilirsiniz', storeDescription: 'Yalnızca burada listelenen resmî kaynakları kullanın.', directDownload: 'Doğrudan indirme', status: { available: 'Kullanılabilir', underReview: 'İnceleniyor', comingSoon: 'Yakında' }, reviewsTitle: 'Kullanıcı yorumları', reviewsText: 'Kullanıcı yorumları yakında', updateNote: 'HomelyServ zaten yüklü mü? Bu sürümü yüklemek mevcut uygulamayı güncelleyecektir.'
   },
   de: {
-    seoTitle: 'HomelyServ für Android | Offizieller APK-Download', seoDescription: 'Laden Sie die offizielle HomelyServ-Android-APK direkt von homelyserv.com herunter.', officialRelease: 'Offizielle Android-Version', title: 'HomelyServ für Android', heroDescription: 'Holen Sie sich die offizielle HomelyServ-Android-App, die für einen vertrauenswürdigen Download direkt von HomelyServ bereitgestellt wird.', downloadApk: 'APK herunterladen', version: 'Version', apkSize: 'APK-Größe', minimumAndroid: 'Android 7.0+', releaseDate: 'Veröffentlichungsdatum', signedRelease: 'Digital signierte Version', directDistribution: 'Direkt von HomelyServ veröffentlicht, mit den unten verfügbaren Prüfinformationen.', trustTitle: 'Vertrauensvoll herunterladen', trustOfficialTitle: 'Offizielle Version', trustOfficialText: 'Dies ist die offizielle HomelyServ-Version für Android.', trustHttpsTitle: 'Direkte HTTPS-Bereitstellung', trustHttpsText: 'Die APK wird direkt über HTTPS von homelyserv.com bereitgestellt.', trustChecksumTitle: 'Datei prüfen', trustChecksumText: 'Der exakte SHA-256-Hash ist zur Prüfung des Downloads verfügbar.', technicalTitle: 'Technische Details', technicalDescription: 'Verwenden Sie diese Werte, um zu bestätigen, dass die installierte APK die vorgesehene HomelyServ-Version ist.', packageName: 'Paketname', versionCode: 'Versionscode', targetSdk: 'Ziel-SDK', apkSha256: 'APK-SHA-256', signingCertificateSha256: 'SHA-256 des Signaturzertifikats', metadataLoading: 'Versionsdetails werden geladen…', metadataError: 'Versionsdetails sind vorübergehend nicht verfügbar. Der offizielle Download bleibt verfügbar.', installTitle: 'Sicher installieren', installDescription: 'Android kann bei der Installation einer APK außerhalb eines App-Stores eine vorübergehende Berechtigung anfordern.', installStep1: 'Laden Sie die offizielle HomelyServ-APK herunter.', installStep2: 'Android kann diesen Browser oder Dateimanager auffordern, Installationen aus dieser Quelle zu erlauben.', installStep3: 'Erlauben Sie nur diese Quelle vorübergehend und kehren Sie zum Installationsprogramm zurück.', installStep4: 'Installieren Sie HomelyServ und öffnen Sie die App.', installStep5: 'Deaktivieren Sie die Berechtigung dieser Quelle anschließend wieder, wenn Sie sie nicht benötigen.', installStep6: 'Lassen Sie die Android-Sicherheitsschutzfunktionen aktiviert.', storeTitle: 'Wo Sie HomelyServ erhalten', storeDescription: 'Verwenden Sie nur die hier aufgeführten offiziellen Quellen.', directDownload: 'Direkter Download', status: { available: 'Verfügbar', underReview: 'In Prüfung', comingSoon: 'Demnächst' }, reviewsTitle: 'Nutzerbewertungen', reviewsText: 'Nutzerbewertungen folgen in Kürze'
+    seoTitle: 'HomelyServ für Android | Offizieller APK-Download', seoDescription: 'Laden Sie die offizielle HomelyServ-Android-APK direkt von homelyserv.com herunter.', officialRelease: 'Offizielle Android-Version', title: 'HomelyServ für Android', heroDescription: 'Holen Sie sich die offizielle HomelyServ-Android-App, die für einen vertrauenswürdigen Download direkt von HomelyServ bereitgestellt wird.', downloadApk: 'APK herunterladen', version: 'Version', apkSize: 'APK-Größe', minimumAndroid: 'Android 7.0+', releaseDate: 'Veröffentlichungsdatum', signedRelease: 'Digital signierte Version', directDistribution: 'Direkt von HomelyServ veröffentlicht, mit den unten verfügbaren Prüfinformationen.', trustTitle: 'Vertrauensvoll herunterladen', trustOfficialTitle: 'Offizielle Version', trustOfficialText: 'Dies ist die offizielle HomelyServ-Version für Android.', trustHttpsTitle: 'Direkte HTTPS-Bereitstellung', trustHttpsText: 'Die APK wird direkt über HTTPS von homelyserv.com bereitgestellt.', trustChecksumTitle: 'Datei prüfen', trustChecksumText: 'Der exakte SHA-256-Hash ist zur Prüfung des Downloads verfügbar.', technicalTitle: 'Technische Details', technicalDescription: 'Verwenden Sie diese Werte, um zu bestätigen, dass die installierte APK die vorgesehene HomelyServ-Version ist.', packageName: 'Paketname', versionCode: 'Versionscode', targetSdk: 'Ziel-SDK', apkSha256: 'APK-SHA-256', signingCertificateSha256: 'SHA-256 des Signaturzertifikats', metadataLoading: 'Versionsdetails werden geladen…', metadataError: 'Versionsdetails sind vorübergehend nicht verfügbar. Der offizielle Download bleibt verfügbar.', installTitle: 'Sicher installieren', installDescription: 'Android kann bei der Installation einer APK außerhalb eines App-Stores eine vorübergehende Berechtigung anfordern.', installStep1: 'Laden Sie die offizielle HomelyServ-APK herunter.', installStep2: 'Android kann diesen Browser oder Dateimanager auffordern, Installationen aus dieser Quelle zu erlauben.', installStep3: 'Erlauben Sie nur diese Quelle vorübergehend und kehren Sie zum Installationsprogramm zurück.', installStep4: 'Installieren Sie HomelyServ und öffnen Sie die App.', installStep5: 'Deaktivieren Sie die Berechtigung dieser Quelle anschließend wieder, wenn Sie sie nicht benötigen.', installStep6: 'Lassen Sie die Android-Sicherheitsschutzfunktionen aktiviert.', storeTitle: 'Wo Sie HomelyServ erhalten', storeDescription: 'Verwenden Sie nur die hier aufgeführten offiziellen Quellen.', directDownload: 'Direkter Download', status: { available: 'Verfügbar', underReview: 'In Prüfung', comingSoon: 'Demnächst' }, reviewsTitle: 'Nutzerbewertungen', reviewsText: 'Nutzerbewertungen folgen in Kürze', updateNote: 'Ist HomelyServ bereits installiert? Die Installation dieser Version aktualisiert die vorhandene App.'
   }
 };
 
@@ -6887,11 +6911,17 @@ Object.entries(HOME_TRANSLATIONS).forEach(([language, homeCopy]) => {
 const VERIFICATION_TRANSLATIONS = {
   en: {
     trustTitle: 'Trust & Verification',
+    trustSectionTitle: 'Trust & Verification',
     trustSubtitle: 'Review verified credentials and account authenticity.',
+    trustSectionSubtitle: 'Verification of identity and credentials to ensure trusted interactions.',
     verified: 'Verified',
+    statusVerified: 'Verified',
     unverified: 'Not Verified',
+    statusUnverified: 'Unverified',
     pending: 'Under Review',
+    statusPending: 'Pending Review',
     rejected: 'Rejected',
+    statusRejected: 'Rejected',
     phone: 'Phone Number',
     phoneDesc: 'Phone number has been confirmed.',
     phoneDescUnverified: 'Phone number has not been confirmed yet.',
@@ -6913,18 +6943,34 @@ const VERIFICATION_TRANSLATIONS = {
     requestVerification: 'Request Verification',
     uploadGovernmentId: 'Upload Government ID',
     uploadId: 'Upload Government ID',
+    uploadDoc: 'Upload Document',
     clickToUpload: 'Click to upload your Government ID',
+    uploadExperience: 'Upload Work Experience Proof',
+    experienceModalDesc: 'Upload employment contracts, recommendation letters, client references, or work history documentation.',
+    clickToUploadExperience: 'Click to upload Work Experience Proof',
+    uploadCertificates: 'Upload Certificate or License',
+    certificatesModalDesc: 'Upload professional certifications, training diplomas, trade licenses, or relevant accreditations.',
+    clickToUploadCertificates: 'Click to upload Certificate or License',
     acceptedFormats: 'Accepted: JPG, PNG, WebP, or PDF (Max 10 MB)',
     privacyNotice: 'Your document is private, encrypted, and will only be reviewed by HomelyServ verification staff. It is never displayed publicly or shared with other users.',
     optionalNotes: 'Notes / Context (Optional)',
     submitRequest: 'Submit Request',
     invalidFileType: 'Invalid file type. Only JPG, PNG, WebP, or PDF files are accepted.',
     fileTooLarge: 'File is too large. Maximum allowed size is 10 MB.',
-    documentUploadSuccess: 'Identity document submitted successfully. It is now pending admin review.',
+    documentUploadSuccess: 'Document submitted successfully. It is now pending admin review.',
     identityModalDesc: 'Upload a clear photo or PDF document of your official government-issued ID (Passport, National ID, or Driver’s License).',
     generalModalDesc: 'Please provide any details, reference links, or certificate credentials for verification.',
     requestSuccess: 'Verification request submitted successfully. Our team will review it shortly.',
     requestError: 'Failed to submit verification request. Please try again.',
+    profileVerified: 'Verified Profile',
+    profileNotVerified: 'Unverified Profile',
+    adminVerifiedProfileTitle: 'Authoritative Verified Profile Status',
+    adminVerifiedProfileDesc: 'Explicit administrator decision. Email and phone verifications alone do not grant this status.',
+    revokeVerifiedProfile: 'Revoke Verified Status',
+    approveVerifiedProfile: 'Approve Verified Profile',
+    viewDoc: 'View Doc',
+    cancel: 'Cancel',
+    submitting: 'Submitting...',
     badge: {
       verifiedProfile: 'Verified Profile',
       phoneVerified: 'Phone Verified',
@@ -6934,11 +6980,17 @@ const VERIFICATION_TRANSLATIONS = {
   },
   ar: {
     trustTitle: 'الثقة والتحقق',
+    trustSectionTitle: 'الثقة والتحقق',
     trustSubtitle: 'مراجعة بيانات الاعتماد الموثقة وموثوقية الحساب.',
+    trustSectionSubtitle: 'التحقق من الهوية وبيانات الاعتماد لضمان تعاملات موثوقة.',
     verified: 'موثق',
+    statusVerified: 'موثق',
     unverified: 'غير موثق',
+    statusUnverified: 'غير موثق',
     pending: 'قيد المراجعة',
+    statusPending: 'قيد المراجعة',
     rejected: 'مرفوض',
+    statusRejected: 'مرفوض',
     phone: 'رقم الهاتف',
     phoneDesc: 'تم تأكيد رقم الهاتف بنجاح.',
     phoneDescUnverified: 'لم يتم تأكيد رقم الهاتف بعد.',
@@ -6960,18 +7012,34 @@ const VERIFICATION_TRANSLATIONS = {
     requestVerification: 'طلب توثيق الحساب',
     uploadGovernmentId: 'رفع بطاقة الهوية الرسمية',
     uploadId: 'رفع بطاقة الهوية',
+    uploadDoc: 'رفع المستند',
     clickToUpload: 'انقر لرفع وثيقة الهوية الرسمية',
+    uploadExperience: 'رفع إثبات الخبرة العملية',
+    experienceModalDesc: 'يرجى رفع عقود العمل، خطابات التوصية، مراجع العملاء، أو وثائق سجل العمل.',
+    clickToUploadExperience: 'انقر لرفع إثبات الخبرة العملية',
+    uploadCertificates: 'رفع الشهادة أو الترخيص المهني',
+    certificatesModalDesc: 'يرجى رفع الشهادات المهنية، دبلومات التدريب، التراخيص المهنية، أو الاعتمادات ذات الصلة.',
+    clickToUploadCertificates: 'انقر لرفع الشهادة أو الترخيص المهني',
     acceptedFormats: 'الصيغ المقبولة: JPG أو PNG أو WebP أو PDF (بحد أقصى 10 ميجابايت)',
     privacyNotice: 'مستندك خاص ومشفر ولن يتم الاطلاع عليه إلا من قِبل فريق التوثيق في هوملي سيرف. لن يتم عرضه علناً إطلاقاً.',
     optionalNotes: 'ملاحظات / سياق إضافي (اختياري)',
     submitRequest: 'إرسال طلب التوثيق',
     invalidFileType: 'نوع الملف غير مدعوم. الصيغ المقبولة: JPG أو PNG أو WebP أو PDF.',
     fileTooLarge: 'حجم الملف كبير جداً. الحد الأقصى المسموح به هو 10 ميجابايت.',
-    documentUploadSuccess: 'تم رفع وثيقة الهوية بنجاح وهي الآن قيد مراجعة الإدارة.',
+    documentUploadSuccess: 'تم رفع المستند بنجاح وهو الآن قيد مراجعة الإدارة.',
     identityModalDesc: 'يرجى رفع صورة واضحة أو ملف PDF لبطاقة الهوية الوطنية أو جواز السفر أو رخصة القيادة.',
     generalModalDesc: 'يرجى تقديم التفاصيل أو الروابط المرجعية للتحقق.',
     requestSuccess: 'تم إرسال طلب التوثيق بنجاح. سيقوم فريقنا بمراجعته قريباً.',
     requestError: 'فشل إرسال طلب التوثيق. يرجى المحاولة مرة أخرى.',
+    profileVerified: 'ملف موثق',
+    profileNotVerified: 'ملف غير موثق',
+    adminVerifiedProfileTitle: 'حالة التوثيق الرسمية للملف الشخصي',
+    adminVerifiedProfileDesc: 'قرار إداري صريح. تأكيد البريد الإلكتروني والهاتف فقط لا يمنحان هذه الحالة.',
+    revokeVerifiedProfile: 'إلغاء حالة التوثيق',
+    approveVerifiedProfile: 'اعتماد توثيق الملف',
+    viewDoc: 'عرض المستند',
+    cancel: 'إلغاء',
+    submitting: 'جارٍ الإرسال...',
     badge: {
       verifiedProfile: 'ملف موثق',
       phoneVerified: 'هاتف موثق',
@@ -6981,11 +7049,17 @@ const VERIFICATION_TRANSLATIONS = {
   },
   fr: {
     trustTitle: 'Confiance et vérification',
+    trustSectionTitle: 'Confiance et vérification',
     trustSubtitle: 'Consultez les informations d’identification vérifiées et l’authenticité du compte.',
+    trustSectionSubtitle: 'Vérification de l’identité et des titres pour garantir des interactions fiables.',
     verified: 'Vérifié',
+    statusVerified: 'Vérifié',
     unverified: 'Non vérifié',
+    statusUnverified: 'Non vérifié',
     pending: 'En cours d’examen',
+    statusPending: 'En cours d’examen',
     rejected: 'Rejeté',
+    statusRejected: 'Rejeté',
     phone: 'Numéro de téléphone',
     phoneDesc: 'Le numéro de téléphone a été confirmé.',
     phoneDescUnverified: 'Le numéro de téléphone n’a pas encore été confirmé.',
@@ -7007,7 +7081,14 @@ const VERIFICATION_TRANSLATIONS = {
     requestVerification: 'Demander une vérification',
     uploadGovernmentId: 'Télécharger une pièce d’identité',
     uploadId: 'Télécharger une pièce d’identité',
+    uploadDoc: 'Télécharger le document',
     clickToUpload: 'Cliquez pour télécharger votre pièce d’identité',
+    uploadExperience: 'Télécharger un justificatif d’expérience',
+    experienceModalDesc: 'Téléchargez des contrats de travail, lettres de recommandation, références clients ou justificatifs.',
+    clickToUploadExperience: 'Cliquez pour télécharger un justificatif d’expérience',
+    uploadCertificates: 'Télécharger un certificat ou diplôme',
+    certificatesModalDesc: 'Téléchargez vos certifications professionnelles, diplômes de formation ou licences professionnelles.',
+    clickToUploadCertificates: 'Cliquez pour télécharger un certificat ou diplôme',
     acceptedFormats: 'Accepté : JPG, PNG, WebP ou PDF (Max 10 Mo)',
     privacyNotice: 'Votre document est privé, chiffré et sera uniquement examiné par l’équipe HomelyServ.',
     optionalNotes: 'Remarques (Facultatif)',
@@ -7019,6 +7100,15 @@ const VERIFICATION_TRANSLATIONS = {
     generalModalDesc: 'Veuillez fournir les détails et justificatifs pour vérification.',
     requestSuccess: 'Demande de vérification soumise avec succès.',
     requestError: 'Échec de la soumission de la demande. Veuillez réessayer.',
+    profileVerified: 'Profil vérifié',
+    profileNotVerified: 'Profil non vérifié',
+    adminVerifiedProfileTitle: 'Statut officiel du profil vérifié',
+    adminVerifiedProfileDesc: 'Décision administrative explicite. Les vérifications e-mail et téléphone seules ne confèrent pas ce statut.',
+    revokeVerifiedProfile: 'Révoquer le statut vérifié',
+    approveVerifiedProfile: 'Approuver le profil vérifié',
+    viewDoc: 'Voir le doc',
+    cancel: 'Annuler',
+    submitting: 'Envoi en cours...',
     badge: {
       verifiedProfile: 'Profil vérifié',
       phoneVerified: 'Téléphone vérifié',
@@ -7028,11 +7118,17 @@ const VERIFICATION_TRANSLATIONS = {
   },
   ru: {
     trustTitle: 'Доверие и верификация',
+    trustSectionTitle: 'Доверие и верификация',
     trustSubtitle: 'Просмотр подтвержденных данных и подлинности аккаунта.',
+    trustSectionSubtitle: 'Проверка личности и квалификации для обеспечения надежного взаимодействия.',
     verified: 'Подтверждено',
+    statusVerified: 'Подтверждено',
     unverified: 'Не подтверждено',
+    statusUnverified: 'Не подтверждено',
     pending: 'На рассмотрении',
+    statusPending: 'На рассмотрении',
     rejected: 'Отклонено',
+    statusRejected: 'Отклонено',
     phone: 'Номер телефона',
     phoneDesc: 'Номер телефона подтвержден.',
     phoneDescUnverified: 'Номер телефона еще не подтвержден.',
@@ -7054,7 +7150,14 @@ const VERIFICATION_TRANSLATIONS = {
     requestVerification: 'Запросить верификацию',
     uploadGovernmentId: 'Загрузить документ личности',
     uploadId: 'Загрузить удостоверение',
+    uploadDoc: 'Загрузить документ',
     clickToUpload: 'Нажмите для загрузки удостоверения',
+    uploadExperience: 'Загрузить подтверждение опыта работы',
+    experienceModalDesc: 'Загрузите трудовые договоры, рекомендательные письма или историю работы.',
+    clickToUploadExperience: 'Нажмите для загрузки подтверждения опыта',
+    uploadCertificates: 'Загрузить сертификат или диплом',
+    certificatesModalDesc: 'Загрузите профессиональные сертификаты, дипломы об обучении или лицензии.',
+    clickToUploadCertificates: 'Нажмите для загрузки сертификата',
     acceptedFormats: 'Форматы: JPG, PNG, WebP или PDF (макс. 10 МБ)',
     privacyNotice: 'Ваш документ является конфиденциальным и доступен только сотрудникам проверки HomelyServ.',
     optionalNotes: 'Примечания (необязательно)',
@@ -7066,6 +7169,15 @@ const VERIFICATION_TRANSLATIONS = {
     generalModalDesc: 'Укажите необходимые данные для подтверждения.',
     requestSuccess: 'Запрос на верификацию успешно отправлен.',
     requestError: 'Не удалось отправить запрос. Пожалуйста, попробуйте снова.',
+    profileVerified: 'Верифицированный профиль',
+    profileNotVerified: 'Неверифицированный профиль',
+    adminVerifiedProfileTitle: 'Официальный статус верифицированного профиля',
+    adminVerifiedProfileDesc: 'Прямое решение администратора. Проверка только эл. почты и телефона не дает этот статус.',
+    revokeVerifiedProfile: 'Отозвать верификацию',
+    approveVerifiedProfile: 'Подтвердить верификацию профиля',
+    viewDoc: 'Просмотр документа',
+    cancel: 'Отмена',
+    submitting: 'Отправка...',
     badge: {
       verifiedProfile: 'Верифицированный профиль',
       phoneVerified: 'Телефон подтвержден',
@@ -7075,11 +7187,17 @@ const VERIFICATION_TRANSLATIONS = {
   },
   tr: {
     trustTitle: 'Güven ve Doğrulama',
+    trustSectionTitle: 'Güven ve Doğrulama',
     trustSubtitle: 'Doğrulanmış kimlik bilgilerini ve hesap güvenilirliğini inceleyin.',
+    trustSectionSubtitle: 'Güvenilir etkileşimleri sağlamak için kimlik ve yetki belgesi doğrulaması.',
     verified: 'Doğrulandı',
+    statusVerified: 'Doğrulandı',
     unverified: 'Doğrulanmadı',
+    statusUnverified: 'Doğrulanmadı',
     pending: 'İncelemede',
+    statusPending: 'İncelemede',
     rejected: 'Reddedildi',
+    statusRejected: 'Reddedildi',
     phone: 'Telefon Numarası',
     phoneDesc: 'Telefon numarası onaylandı.',
     phoneDescUnverified: 'Telefon numarası henüz onaylanmadı.',
@@ -7101,18 +7219,34 @@ const VERIFICATION_TRANSLATIONS = {
     requestVerification: 'Doğrulama Talep Et',
     uploadGovernmentId: 'Resmi Kimlik Yükle',
     uploadId: 'Kimlik Belgesi Yükle',
+    uploadDoc: 'Belge Yükle',
     clickToUpload: 'Kimlik belgenizi yüklemek için tıklayın',
+    uploadExperience: 'İş Deneyimi Kanıtı Yükle',
+    experienceModalDesc: 'İş sözleşmeleri, referans mektupları veya çalışma geçmişi belgelerini yükleyin.',
+    clickToUploadExperience: 'İş Deneyimi Kanıtı yüklemek için tıklayın',
+    uploadCertificates: 'Sertifika veya Ruhsat Yükle',
+    certificatesModalDesc: 'Mesleki sertifikalar, eğitim diplomaları veya ilgili akreditasyonları yükleyin.',
+    clickToUploadCertificates: 'Sertifika veya Ruhsat yüklemek için tıklayın',
     acceptedFormats: 'Kabul edilen formatlar: JPG, PNG, WebP veya PDF (Maks 10 MB)',
     privacyNotice: 'Belgeniz gizlidir ve yalnızca HomelyServ doğrulama ekibi tarafından incelenecektir.',
     optionalNotes: 'Notlar (İsteğe bağlı)',
     submitRequest: 'Talebi Gönder',
     invalidFileType: 'Geçersiz dosya türü.',
     fileTooLarge: 'Dosya çok büyük (Maks 10 MB).',
-    documentUploadSuccess: 'Kimlik belgesi başarıyla yüklendi ve onay bekliyor.',
+    documentUploadSuccess: 'Belge başarıyla yüklendi ve onay bekliyor.',
     identityModalDesc: 'Kimlik kartınızın veya pasaportunuzun net bir fotoğrafını veya PDF dosyasını yükleyin.',
     generalModalDesc: 'Doğrulama için lütfen gerekli ayrıntıları sağlayın.',
     requestSuccess: 'Doğrulama talebi başarıyla gönderildi.',
     requestError: 'Doğrulama talebi gönderilemedi. Lütfen tekrar deneyin.',
+    profileVerified: 'Doğrulanmış Profil',
+    profileNotVerified: 'Doğrulanmamış Profil',
+    adminVerifiedProfileTitle: 'Yetkili Doğrulanmış Profil Durumu',
+    adminVerifiedProfileDesc: 'Açık yönetici kararı. Yalnızca e-posta ve telefon doğrulamaları bu durumu sağlamaz.',
+    revokeVerifiedProfile: 'Doğrulanmış Durumu Kaldır',
+    approveVerifiedProfile: 'Doğrulanmış Profili Onayla',
+    viewDoc: 'Belgeyi Görüntüle',
+    cancel: 'İptal',
+    submitting: 'Gönderiliyor...',
     badge: {
       verifiedProfile: 'Doğrulanmış Profil',
       phoneVerified: 'Telefon Doğrulandı',
@@ -7122,11 +7256,17 @@ const VERIFICATION_TRANSLATIONS = {
   },
   de: {
     trustTitle: 'Vertrauen & Verifizierung',
+    trustSectionTitle: 'Vertrauen & Verifizierung',
     trustSubtitle: 'Überprüfen Sie verifizierte Nachweise und die Echtheit des Profils.',
+    trustSectionSubtitle: 'Überprüfung von Identität und Qualifikationen für vertrauensvolle Interaktionen.',
     verified: 'Verifiziert',
+    statusVerified: 'Verifiziert',
     unverified: 'Nicht verifiziert',
+    statusUnverified: 'Nicht verifiziert',
     pending: 'In Prüfung',
+    statusPending: 'In Prüfung',
     rejected: 'Abgelehnt',
+    statusRejected: 'Abgelehnt',
     phone: 'Telefonnummer',
     phoneDesc: 'Telefonnummer wurde bestätigt.',
     phoneDescUnverified: 'Telefonnummer wurde noch nicht bestätigt.',
@@ -7148,18 +7288,34 @@ const VERIFICATION_TRANSLATIONS = {
     requestVerification: 'Verifizierung beantragen',
     uploadGovernmentId: 'Amtlichen Ausweis hochladen',
     uploadId: 'Ausweisdokument hochladen',
+    uploadDoc: 'Dokument hochladen',
     clickToUpload: 'Klicken Sie hier, um Ihren Ausweis hochzuladen',
+    uploadExperience: 'Erfahrungsnachweis hochladen',
+    experienceModalDesc: 'Laden Sie Arbeitsverträge, Empfehlungsschreiben oder Arbeitsnachweise hoch.',
+    clickToUploadExperience: 'Klicken Sie hier, um einen Erfahrungsnachweis hochzuladen',
+    uploadCertificates: 'Zertifikat oder Lizenz hochladen',
+    certificatesModalDesc: 'Laden Sie Fachzertifikate, Schulungsnachweise oder Gewerbelizenzen hoch.',
+    clickToUploadCertificates: 'Klicken Sie hier, um ein Zertifikat oder eine Lizenz hochzuladen',
     acceptedFormats: 'Akzeptiert: JPG, PNG, WebP oder PDF (Max. 10 MB)',
     privacyNotice: 'Ihr Dokument ist privat und wird ausschließlich vom HomelyServ-Prüfteam eingesehen.',
     optionalNotes: 'Notizen (Optional)',
     submitRequest: 'Antrag einreichen',
     invalidFileType: 'Ungültiges Dateiformat.',
     fileTooLarge: 'Datei ist zu groß (Max. 10 MB).',
-    documentUploadSuccess: 'Ausweisdokument erfolgreich hochgeladen und in Prüfung.',
+    documentUploadSuccess: 'Dokument erfolgreich hochgeladen und in Prüfung.',
     identityModalDesc: 'Laden Sie ein deutliches Foto oder PDF Ihres amtlichen Ausweises oder Passes hoch.',
     generalModalDesc: 'Bitte geben Sie die erforderlichen Nachweise zur Prüfung an.',
     requestSuccess: 'Verifizierungsantrag erfolgreich eingereicht.',
     requestError: 'Antrag konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+    profileVerified: 'Verifiziertes Profil',
+    profileNotVerified: 'Unverifiziertes Profil',
+    adminVerifiedProfileTitle: 'Offizieller Verifizierungsstatus des Profils',
+    adminVerifiedProfileDesc: 'Ausdrückliche Entscheidung des Administrators. E-Mail- und Telefonprüfungen allein verleihen diesen Status nicht.',
+    revokeVerifiedProfile: 'Verifizierungsstatus widerrufen',
+    approveVerifiedProfile: 'Verifiziertes Profil genehmigen',
+    viewDoc: 'Dokument ansehen',
+    cancel: 'Abbrechen',
+    submitting: 'Wird übermittelt...',
     badge: {
       verifiedProfile: 'Verifiziertes Profil',
       phoneVerified: 'Telefon verifiziert',
@@ -7173,6 +7329,11 @@ Object.entries(VERIFICATION_TRANSLATIONS).forEach(([language, verificationCopy])
   const target = { en, ar, fr, ru, tr, de }[language];
   if (target && target.translation) {
     target.translation.verification = verificationCopy;
+    if (!target.translation.common) {
+      target.translation.common = {};
+    }
+    target.translation.common.cancel = target.translation.common.cancel || verificationCopy.cancel;
+    target.translation.common.submitting = target.translation.common.submitting || verificationCopy.submitting;
   }
 });
 
@@ -7345,6 +7506,64 @@ Object.entries(PREMIUM_SUBSCRIPTION_TRANSLATIONS).forEach(([language, subscripti
   const target = { en, ar, fr, ru, tr, de }[language];
   if (target && target.translation) {
     target.translation.premiumSubscription = subscriptionCopy;
+  }
+});
+
+const PAYMENT_MODAL_TRANSLATIONS = {
+  en: {
+    amount: 'Amount',
+    orderId: 'Order ID',
+    paymentSuccessful: 'Payment Successful!',
+    paymentSuccessDesc: 'Your payment has been processed successfully.',
+    selectPaymentMethod: 'Select Payment Method',
+    completePayment: 'Complete Payment'
+  },
+  ar: {
+    amount: 'المبلغ',
+    orderId: 'رقم الطلب',
+    paymentSuccessful: 'تم الدفع بنجاح!',
+    paymentSuccessDesc: 'تمت معالجة دفعتك بنجاح.',
+    selectPaymentMethod: 'اختر طريقة الدفع',
+    completePayment: 'إتمام الدفع'
+  },
+  fr: {
+    amount: 'Montant',
+    orderId: 'ID de commande',
+    paymentSuccessful: 'Paiement réussi !',
+    paymentSuccessDesc: 'Votre paiement a été traité avec succès.',
+    selectPaymentMethod: 'Sélectionnez un mode de paiement',
+    completePayment: 'Finaliser le paiement'
+  },
+  ru: {
+    amount: 'Сумма',
+    orderId: 'ID заказа',
+    paymentSuccessful: 'Оплата прошла успешно!',
+    paymentSuccessDesc: 'Ваш платёж успешно обработан.',
+    selectPaymentMethod: 'Выберите способ оплаты',
+    completePayment: 'Завершить платёж'
+  },
+  tr: {
+    amount: 'Tutar',
+    orderId: 'Sipariş Numarası',
+    paymentSuccessful: 'Ödeme Başarılı!',
+    paymentSuccessDesc: 'Ödemeniz başarıyla işlendi.',
+    selectPaymentMethod: 'Ödeme Yöntemini Seçin',
+    completePayment: 'Ödemeyi Tamamla'
+  },
+  de: {
+    amount: 'Betrag',
+    orderId: 'Bestell-ID',
+    paymentSuccessful: 'Zahlung erfolgreich!',
+    paymentSuccessDesc: 'Ihre Zahlung wurde erfolgreich verarbeitet.',
+    selectPaymentMethod: 'Zahlungsmethode auswählen',
+    completePayment: 'Zahlung abschließen'
+  }
+};
+
+Object.entries(PAYMENT_MODAL_TRANSLATIONS).forEach(([language, modalCopy]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    target.translation.paymentModal = modalCopy;
   }
 });
 

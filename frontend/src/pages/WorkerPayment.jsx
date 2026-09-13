@@ -10,7 +10,7 @@ import hireService from '../services/hireService';
 import workerEarningService from '../services/workerEarningService';
 import api from '../utils/api';
 import { formatCurrencyAmount, formatCurrencyTotals, getAccountCurrency, getStoredCurrency, groupCurrencyTotals } from '../utils/currencyPresentation';
-import { AlertTriangle, Briefcase, CheckCircle, Clock, CreditCard, Crown, DollarSign, Info, RefreshCw, Search, User, Wallet, X } from 'lucide-react';
+import { AlertTriangle, Briefcase, CheckCircle, Clock, CreditCard, Crown, DollarSign, Info, Search, User, Wallet, X } from 'lucide-react';
 
 const localeFor = (language) => (language === 'ar' ? 'ar-EG' : 'en-US');
 
@@ -108,10 +108,6 @@ const WorkerPayment = () => {
     return formatCurrencyTotals(groupCurrencyTotals(records, (record) => record.amount, resolveEarningCurrency), locale);
   };
 
-  const handleRefresh = () => {
-    loadEarningsData();
-  };
-
   const handleSubmitPeriod = async (record) => {
     if (!record || submittingId) return;
     if (!window.confirm(`${t('workerPayment.submit.confirmTitle')}\n\n${t('workerPayment.submit.confirmBody')}`)) return;
@@ -155,7 +151,7 @@ const WorkerPayment = () => {
         <PremiumSubscriptionSection />
 
         <section className="bg-slate-50 dark:bg-slate-950/30 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden" aria-labelledby="earnings-history-heading">
-          <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between"><h2 id="earnings-history-heading" className="text-xl font-semibold text-gray-800 dark:text-white">{t('workerPayment.paymentHistory.title')}</h2><button onClick={handleRefresh} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500" aria-label="Refresh"><RefreshCw size={18} /></button></div>
+          <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700"><h2 id="earnings-history-heading" className="text-xl font-semibold text-gray-800 dark:text-white">{t('workerPayment.paymentHistory.title')}</h2></div>
           <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row gap-4"><div className="flex-1 relative"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" placeholder={t('workerPayment.paymentHistory.searchPlaceholder')} value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" /></div><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full md:w-56 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"><option value="all">{t('workerPayment.filters.all')}</option>{['PENDING', 'AWAITING_CONFIRMATION', 'EARNED', 'PAID', 'ON_HOLD', 'DISPUTED', 'CANCELLED'].map((status) => <option key={status} value={status}>{t(`workerPayment.filters.${status}`)}</option>)}</select></div>
           {loading ? <div className="p-12 text-center text-gray-500">Loading earnings…</div> : filteredRecords.length === 0 ? <div className="p-12 text-center"><CreditCard size={32} className="text-gray-400 mx-auto mb-4" /><h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{t('workerPayment.noPayments')}</h3><p className="text-gray-500 dark:text-gray-400 text-sm">{t('workerPayment.noPaymentsDesc')}</p></div> : <div className="divide-y divide-gray-100 dark:divide-gray-700">{filteredRecords.map((record) => <div key={record.id} className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"><div><p className="text-xs text-gray-500">Amount</p><p className="font-semibold text-gray-900 dark:text-white">{formatEarningAmount(record.amount, record)}</p></div><div><p className="text-xs text-gray-500">Work period</p><p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(record.periodStart, language)} – {formatDate(record.periodEnd, language)}</p></div><div><p className="text-xs text-gray-500">Recorded</p><p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(record.earnedAt || record.confirmedAt || record.createdAt, language)}</p></div><div className="flex flex-col items-start gap-2"><span className={`px-3 py-1.5 rounded-full border text-xs font-medium inline-flex items-center gap-1.5 ${statusClass(record.status)}`}>{statusIcon(record.status)}{t(`workerPayment.status.${record.status}`, { defaultValue: record.status })}</span>{record.status === 'PENDING' && <button onClick={() => handleSubmitPeriod(record)} disabled={submittingId !== null} className="px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50">{submittingId === record.id ? t('workerPayment.submit.submitting') : t('workerPayment.submit.button')}</button>}</div></div>)}</div>}
           <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500">{t('workerPayment.showingResults', { count: filteredRecords.length })}</div>

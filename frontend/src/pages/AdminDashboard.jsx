@@ -594,13 +594,6 @@ const AdminDashboard = () => {
                 <h1 className="text-2xl font-bold text-black">{i18nT('adminCommand.title')}</h1>
                 <p className="text-black/70 mt-1">{i18nT('adminCommand.subtitle')}</p>
               </div>
-              <button
-                onClick={fetchData}
-                className="bg-black/20 hover:bg-black/30 text-black px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
-              >
-                <RefreshCw size={16} />
-                {i18nT('adminCommand.refresh')}
-              </button>
             </div>
           </div>
 

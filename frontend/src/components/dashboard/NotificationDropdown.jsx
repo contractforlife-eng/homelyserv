@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const NotificationDropdown = ({
   notifications,
@@ -14,6 +15,8 @@ const NotificationDropdown = ({
   getNotificationIcon,
   getNotificationBgColor
 }) => {
+  const { t: i18nT } = useTranslation();
+
   return (
     <div className="relative">
       <button
@@ -29,7 +32,7 @@ const NotificationDropdown = ({
       </button>
       
       {showNotifications && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-y-auto">
+        <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-y-auto">
           <div className="p-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl">
             <h4 className="font-semibold text-gray-800 flex items-center gap-2">
               <Bell size={16} />
@@ -54,7 +57,7 @@ const NotificationDropdown = ({
               <div className="p-8 text-center text-gray-500">
                 <div className="text-5xl mb-3">🔔</div>
                 <p className="font-medium">{t.noNotifications}</p>
-                <p className="text-sm mt-1">New notifications will appear here</p>
+                <p className="text-sm mt-1">{t?.emptyState || i18nT('notifications.emptyState')}</p>
               </div>
             ) : (
               notifications.slice(0, 10).map((notification) => (

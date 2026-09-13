@@ -22,7 +22,6 @@ import {
   Lock,
   User as UserIcon,
   Shield,
-  RefreshCw,
   Eye,
   ArrowLeftRight,
   Undo2
@@ -528,13 +527,6 @@ const AdminComplaints = () => {
               <h1 className="text-2xl font-bold text-black">{t.title}</h1>
               <p className="text-black/70 mt-1">{t.subtitle}</p>
             </div>
-            <button
-              onClick={() => { loadComplaints(); loadStats(); }}
-              className="bg-black/20 hover:bg-black/30 text-black px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
-            >
-              <RefreshCw size={16} />
-              {t.actions.refresh}
-            </button>
           </div>
         </div>
 

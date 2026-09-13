@@ -19,7 +19,6 @@ import {
   Star as StarIcon,
   CheckCircle,
   Eye,
-  RefreshCw,
   Crown,
   Search as SearchIcon,
   Users,
@@ -574,15 +573,6 @@ const MyHires = () => {
         title={t('myHiresPage.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
-        rightContent={
-          <button
-            onClick={handleRefresh}
-            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
-          >
-            <RefreshCw size={16} />
-            {t('myHiresPage.refresh')}
-          </button>
-        }
       />
 
       <div className="p-4 md:p-6 space-y-6">

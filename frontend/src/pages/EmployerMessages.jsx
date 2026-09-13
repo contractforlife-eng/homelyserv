@@ -49,8 +49,7 @@ import {
   Info,
   CheckCheck,
   Loader2,
-  AlertTriangle,
-  RefreshCw
+  AlertTriangle
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -91,7 +90,6 @@ const EmployerMessages = () => {
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [supportUsers, setSupportUsers] = useState([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -728,26 +726,6 @@ const EmployerMessages = () => {
     }
   };
 
-  const handleManualRefresh = async () => {
-    if (isRefreshing) return;
-    
-    setIsRefreshing(true);
-    
-    if (authUser) {
-      const userId = authUser.id;
-      const updatedConversations = await getUserConversations(userId);
-      setConversations(updatedConversations);
-      
-      if (selectedConversationId) {
-        const updatedMessages = await getConversationMessages(selectedConversationId);
-        setMessages(updatedMessages);
-        await markMessagesAsRead(selectedConversationId, userId);
-      }
-    }
-    
-    setIsRefreshing(false);
-  };
-
   const userProfileImage = authUser?.profileImage || null;
   const selectedConversation = conversations.find(c => c.id === selectedConversationId) || null;
 
@@ -772,16 +750,6 @@ const EmployerMessages = () => {
         title={t('employerMessages.title')}
         notificationUserId={authUser?.id}
         isPremium={userIsPremium}
-        rightContent={
-          <button
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
-            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-            {t('employerMessages.refresh')}
-          </button>
-        }
       />
 
         <div className="p-4 md:p-6">

@@ -1636,7 +1636,7 @@ const EmployerFamily = () => {
                     {editingTreePerson ? t('employerFamily.editMemberTitle') : t('employerFamily.tree.addPersonToTree')}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {t('employerFamily.tree.treeSubtitle')}
+                    {t('employerFamily.tree.subtitle', t('employerFamily.tree.treeSubtitle', { defaultValue: t('employerFamily.subtitle') }))}
                   </p>
                 </div>
                 <button

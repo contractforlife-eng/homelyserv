@@ -24,7 +24,6 @@ import {
   Star,
   AlertTriangle,
   Building2,
-  RefreshCw,
   Crown,
   Wallet,
   ArrowRight,
@@ -343,15 +342,6 @@ const AdminHires = () => {
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
         variant="admin"
-        rightContent={
-          <button
-            onClick={handleRefresh}
-            className="px-3 py-1.5 border border-yellow-500/30 rounded-lg text-sm font-medium text-yellow-400 hover:bg-yellow-500/10 transition-colors flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            {t.refresh}
-          </button>
-        }
       />
 
       <div className="p-4 md:p-6 space-y-6 bg-[#0a0a0a] min-h-screen">

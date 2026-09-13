@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
@@ -31,7 +31,6 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
-  Globe,
   X,
   FileCheck,
   Search,
@@ -660,12 +659,6 @@ const PaymentOptions = () => {
   // ============================================================
   // UI HELPERS
   // ============================================================
-  const toggleLanguage = () => {
-    const currentIndex = SUPPORTED_LANGUAGES.findIndex(item => item.code === language);
-    const nextLanguage = SUPPORTED_LANGUAGES[(currentIndex + 1) % SUPPORTED_LANGUAGES.length];
-    changeLanguageGlobal(nextLanguage.code);
-  };
-
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
     localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
@@ -845,7 +838,7 @@ const PaymentOptions = () => {
           authUser={authUser}
           handleLogout={handleLogout}
         />
-        <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
+        <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'} ml-0 rtl:mr-0 lg:rtl:ml-0`}>
           <div className="p-4 md:p-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">💳</div>
@@ -876,7 +869,7 @@ const PaymentOptions = () => {
         handleLogout={handleLogout}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
+      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'} ml-0 rtl:mr-0 lg:rtl:ml-0`}>
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -894,13 +887,7 @@ const PaymentOptions = () => {
               <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative">
                 <Bell size={20} className="text-gray-600 dark:text-gray-300" />
               </button>
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {SUPPORTED_LANGUAGES[(SUPPORTED_LANGUAGES.findIndex(item => item.code === language) + 1) % SUPPORTED_LANGUAGES.length].nativeName}
-              </button>
+              <LanguageSwitcher />
             </div>
           </div>
         </header>

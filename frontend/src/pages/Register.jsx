@@ -179,9 +179,9 @@ function Register() {
 
     if (formData.role === 'WORKER') {
       if (!formData.desiredJob) {
-        newErrors.desiredJob = t('register.jobRequired');
+        newErrors.desiredJob = t('jobRequired');
       } else if (!JOB_OPTIONS.some(job => job.value === formData.desiredJob)) {
-        newErrors.desiredJob = t('register.jobInvalid');
+        newErrors.desiredJob = t('jobInvalid');
       }
 
       if (formData.desiredJob === 'tutor') {
@@ -195,11 +195,11 @@ function Register() {
 
       const trimmedRate = String(formData.hourlyRate || '').trim();
       if (!trimmedRate) {
-        newErrors.hourlyRate = t('register.hourlyRateRequired');
+        newErrors.hourlyRate = t('hourlyRateRequired');
       } else {
         const rate = Number(trimmedRate);
         if (!Number.isFinite(rate) || rate <= 0) {
-          newErrors.hourlyRate = t('register.hourlyRateInvalid');
+          newErrors.hourlyRate = t('hourlyRateInvalid');
         }
       }
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
 import api from '../utils/api';
@@ -11,6 +12,7 @@ import VerificationBanner from './VerificationBanner';
 import { UserDisplayName } from './users';
 
 export default function Layout({ children, activeTab }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -269,7 +271,7 @@ export default function Layout({ children, activeTab }) {
               }}
             >
               <span style={{ fontSize: '18px' }}>🔄</span>
-              <span>Switch Role</span>
+              <span>{t('navigation.switchRole')}</span>
             </button>
           )}
         </div>

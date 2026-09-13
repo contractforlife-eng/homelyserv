@@ -434,15 +434,6 @@ const EmployerPayments = () => {
         title={t('employerPayments.title')}
         notificationUserId={authUser?.id}
         isPremium={isUserPremium(authUser?.id)}
-        rightContent={
-          <button
-            onClick={handleRefresh}
-            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            {t('employerPayments.refresh')}
-          </button>
-        }
       />
 
         <div className="p-4 lg:p-6">

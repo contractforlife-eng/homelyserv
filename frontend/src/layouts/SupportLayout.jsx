@@ -120,8 +120,8 @@ const SupportLayout = ({
         <MobileDrawerNav />
 
         <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0 pt-14 lg:pt-0`}>
+          sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'
+        } ml-0 rtl:mr-0 lg:rtl:ml-0 pt-14 lg:pt-0`}>
           <VerificationBanner />
           <DashboardHeader
             title={t(headerTitleKey)}

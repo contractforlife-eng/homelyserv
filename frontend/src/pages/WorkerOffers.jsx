@@ -24,7 +24,6 @@ import {
   Building2,
   Crown,
   AlertCircle,
-  RefreshCw,
   Inbox,
   XCircle,
   CheckCheck,
@@ -934,16 +933,6 @@ const WorkerOffers = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
               />
             </div>
-            <button
-              onClick={() => {
-                loadOffers(authUser);
-                setRefreshKey(prev => prev + 1);
-              }}
-              className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg transition flex items-center gap-2 text-sm"
-            >
-              <RefreshCw size={16} />
-              {t('workerOffers.refresh')}
-            </button>
           </div>
 
           {/* Tabs */}

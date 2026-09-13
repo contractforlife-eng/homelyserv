@@ -13,7 +13,6 @@ import {
   ChevronRight,
   MoreVertical,
   CheckCheck,
-  RefreshCw,
   Shield,
   Users,
   MessageSquare,
@@ -69,7 +68,6 @@ const SupportMessages = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [archiveError, setArchiveError] = useState('');
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
@@ -603,24 +601,6 @@ const emitTypingEvent = (isTyping) => {
     }
   };
 
-  const handleManualRefresh = async () => {
-    if (isRefreshing) return;
-
-    setIsRefreshing(true);
-
-    if (authUser) {
-      const mapped = await loadVisibleConversations();
-      setConversations(mapped);
-
-      if (selectedConversationId) {
-        const updatedMessages = await getConversationMessages(selectedConversationId);
-        setMessages(updatedMessages);
-        await markMessagesAsRead(selectedConversationId, authUser.id);
-      }
-    }
-
-    setIsRefreshing(false);
-  };
 // ============================================================
   // SELECTED CONVERSATION + DISPLAY HELPERS
   // ============================================================
@@ -979,15 +959,6 @@ return (
               >
                 <Plus size={16} />
                 {t.newConversation}
-              </button>
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                {isRefreshing ? i18nT('adminMessagesPage.refreshing') : t.refresh}
               </button>
             </div>
           </div>

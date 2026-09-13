@@ -88,9 +88,9 @@ const SupportSidebar = ({
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full bg-white dark:bg-[#1a1a2e] border-r border-green-500/20 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 rtl:right-0 rtl:left-auto h-full bg-white dark:bg-[#1a1a2e] border-r rtl:border-l rtl:border-r-0 border-green-500/20 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
-        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0'}`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-green-500/20">
           {!sidebarCollapsed && (

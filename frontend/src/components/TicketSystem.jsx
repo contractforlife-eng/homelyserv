@@ -23,7 +23,6 @@ import {
   Lock,
   User as UserIcon,
   Shield,
-  RefreshCw,
   RotateCcw,
   Calendar,
   Tag,
@@ -513,12 +512,6 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => { loadTickets(); }}
-              className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
-            >
-              <RefreshCw size={16} />
-            </button>
             <button
               onClick={() => setShowCreate(!showCreate)}
               className={`${th.headerBtn} px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm`}
