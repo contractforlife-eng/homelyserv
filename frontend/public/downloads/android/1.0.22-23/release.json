@@ -1,0 +1,14 @@
+{
+  "appName": "HomelyServ",
+  "versionName": "1.0.22",
+  "versionCode": 23,
+  "releaseDate": "2026-09-14",
+  "sizeBytes": 11161667,
+  "minAndroid": "Android 7.0",
+  "minSdk": 24,
+  "targetSdk": 36,
+  "packageName": "com.homelyserv.app",
+  "sha256": "28E6AE4ED4A9CB6DEA5EA8C917C50C755F83F27233BE41A874DAF212F1AA4695",
+  "signingCertificateSha256": "b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50",
+  "downloadUrl": "https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.22/HomelyServ-1.0.22-23.apk"
+}
