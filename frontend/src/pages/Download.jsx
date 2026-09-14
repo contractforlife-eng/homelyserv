@@ -219,7 +219,7 @@ const Download = () => {
             <p className="mb-3 text-xs sm:text-sm font-bold uppercase tracking-[0.18em] text-slate-900 bg-white/30 inline-block px-3.5 py-1 rounded-full border border-white/40 backdrop-blur-sm">
               {t('downloadPage.officialRelease')}
             </p>
-            <h1 className="max-w-2xl text-4xl font-black tracking-tight text-white sm:text-6xl">
+            <h1 className="max-w-2xl text-4xl font-black tracking-tight text-emerald-600 sm:text-6xl">
               {isIosVisitor ? t('downloadPage.iosTitle') : isAndroidVisitor ? t('downloadPage.androidVisitorTitle') : t('downloadPage.title')}
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-900 sm:text-lg">
