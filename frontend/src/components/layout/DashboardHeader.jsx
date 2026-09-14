@@ -76,7 +76,7 @@ const DashboardHeader = ({
   const isEmployer = effectiveVariant === 'employer';
   const isWorker = effectiveVariant === 'worker';
 
-  const headerVisibility = !isAdmin ? 'hidden lg:block' : '';
+  const headerVisibility = 'hidden lg:block';
   
   // Use centralized display name formatter
   const displayName = authUser?.fullName || authUser?.name

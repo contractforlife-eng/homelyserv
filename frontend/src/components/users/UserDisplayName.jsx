@@ -55,7 +55,7 @@ const UserDisplayName = ({
       >
         {displayNameText}
         {staff && (
-          <span className="text-red-500 dark:text-red-300">
+          <span className="text-red-600 dark:text-red-400">
             {' '}({staffIdentityTitle})
           </span>
         )}
