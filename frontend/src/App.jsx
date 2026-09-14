@@ -148,6 +148,25 @@ const HomeRedirect = () => {
   const token = useAuthStore(state => state.token);
 
   if (!isAuthenticated && !token) {
+    // Wait for pending auth/biometric initialization before deciding —
+    // prevents the Homepage from flashing on native during startup.
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">{t('sharedChrome.app.loading')}</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Mobile/native: guests go straight to Login (Intro overlay covers this transition)
+    if (Capacitor.isNativePlatform()) {
+      return <Navigate to="/login" replace />;
+    }
+
+    // Web: keep the public marketing Homepage
     return <Home />;
   }
 
