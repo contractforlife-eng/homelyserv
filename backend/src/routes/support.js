@@ -411,6 +411,12 @@ router.get('/users/:id', async (req, res) => {
 // GET /api/support/users/:id/stats
 // Get user statistics (read-only) for the support profile page.
 // Supports viewing counts only; no payment details are exposed.
+//
+// Backward compatibility: WORKER/EMPLOYER responses are unchanged
+// (complaintsCount, messagesCount, hiresCount, offersCount, paymentsCount).
+// For staff targets (SUPPORT / SUPPORT_HELPER) the response ADDITIVELY
+// includes support-workload counters derived from existing complaint fields
+// only (assignedSupport / assignedTo / status / escalatedBy).
 router.get('/users/:id/stats', requireAdminForSensitiveSupport, async (req, res) => {
   try {
     const { id } = req.params;
@@ -463,15 +469,48 @@ router.get('/users/:id/stats', requireAdminForSensitiveSupport, async (req, res)
       console.error('❌ Error counting messages:', e.message);
     }
 
+    const stats = {
+      complaintsCount,
+      messagesCount,
+      hiresCount,
+      offersCount,
+      paymentsCount,
+    };
+
+    // Additive support-workload counters for staff targets only.
+    // Proven OR pattern (assignedSupport + legacy assignedTo), same active
+    // statuses used by supHelpComplaintStats / supHelpDashboard.
+    if (user.role === 'SUPPORT' || user.role === 'SUPPORT_HELPER') {
+      const assignmentOr = [{ assignedSupport: id }, { assignedTo: id }];
+      const [assignedCount, inProgressCount, resolvedCount, escalatedCount] = await Promise.all([
+        prisma.complaint.count({
+          where: {
+            status: { notIn: ['RESOLVED', 'CLOSED'] },
+            OR: assignmentOr,
+          },
+        }),
+        prisma.complaint.count({
+          where: {
+            status: { in: ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER'] },
+            OR: assignmentOr,
+          },
+        }),
+        prisma.complaint.count({
+          where: { status: 'RESOLVED', OR: assignmentOr },
+        }),
+        prisma.complaint.count({
+          where: { escalatedBy: id },
+        }),
+      ]);
+      stats.assignedCount = assignedCount;
+      stats.inProgressCount = inProgressCount;
+      stats.resolvedCount = resolvedCount;
+      stats.escalatedCount = escalatedCount;
+    }
+
     return res.json({
       success: true,
-      stats: {
-        complaintsCount,
-        messagesCount,
-        hiresCount,
-        offersCount,
-        paymentsCount,
-      },
+      stats,
     });
   } catch (error) {
     console.error('❌ Error fetching user stats for support:', error);

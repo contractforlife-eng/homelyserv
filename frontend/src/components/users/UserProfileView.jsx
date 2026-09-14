@@ -952,13 +952,22 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               <FileText size={18} className="text-green-600" />
               {t.statistics}
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <UserStatsCard label={t.complaints} value={stats?.complaintsCount || 0} icon={AlertTriangle} color="text-red-600" bg="bg-red-50 dark:bg-red-900/30" />
-              <UserStatsCard label={t.messages} value={stats?.messagesCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
-              <UserStatsCard label={t.hires} value={stats?.hiresCount || 0} icon={Briefcase} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
-              <UserStatsCard label={t.offers} value={stats?.offersCount || 0} icon={FileText} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
-              <UserStatsCard label={t.payments} value={stats?.paymentsCount || 0} icon={CreditCard} color="text-teal-600" bg="bg-teal-50 dark:bg-teal-900/30" />
-            </div>
+            {(profileUser?.role === 'SUPPORT_HELPER' || profileUser?.role === 'SUPPORT') ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <UserStatsCard label={t.assigned || 'Assigned'} value={stats?.assignedCount || 0} icon={AlertTriangle} color="text-red-600" bg="bg-red-50 dark:bg-red-900/30" />
+                <UserStatsCard label={t.inProgress || 'In Progress'} value={stats?.inProgressCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
+                <UserStatsCard label={t.resolved || 'Resolved'} value={stats?.resolvedCount || 0} icon={Briefcase} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
+                <UserStatsCard label={t.escalated || 'Escalated'} value={stats?.escalatedCount || 0} icon={FileText} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <UserStatsCard label={t.complaints} value={stats?.complaintsCount || 0} icon={AlertTriangle} color="text-red-600" bg="bg-red-50 dark:bg-red-900/30" />
+                <UserStatsCard label={t.messages} value={stats?.messagesCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
+                <UserStatsCard label={t.hires} value={stats?.hiresCount || 0} icon={Briefcase} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
+                <UserStatsCard label={t.offers} value={stats?.offersCount || 0} icon={FileText} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
+                <UserStatsCard label={t.payments} value={stats?.paymentsCount || 0} icon={CreditCard} color="text-teal-600" bg="bg-teal-50 dark:bg-teal-900/30" />
+              </div>
+            )}
           </div>}
 
           {/* QUICK ACTIONS */}
