@@ -1,9 +1,23 @@
 import crypto from 'crypto';
+import axios from 'axios';
 import User from '../models/User.js';
 import {
   LINKING_TOKEN_TTL_SECONDS,
   getHomelyMindIntegrationSecret,
+  getHomelyMindUrl,
 } from '../config/homelyMindIntegration.js';
+
+const HOMELYMIND_NONCE_REGISTRATION_TIMEOUT_MS = 5000;
+
+let homelyMindHttpClient = axios;
+
+export function __setHomelyMindHttpClientForTests(httpClient) {
+  homelyMindHttpClient = httpClient;
+}
+
+export function __resetHomelyMindHttpClientForTests() {
+  homelyMindHttpClient = axios;
+}
 
 /**
  * HomelyMind account-link token issuer (Phase 1).
@@ -89,6 +103,69 @@ export function createLinkingTokenForUser(homelyServUserId, now = Date.now()) {
   };
 }
 
+function buildNonceRegistrationRequest(payload) {
+  const body = {
+    homelyServUserId: payload.homelyServUserId,
+    expiresAt: payload.expiresAt,
+    nonce: payload.nonce,
+  };
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const signature = crypto
+    .createHmac('sha256', getHomelyMindIntegrationSecret())
+    .update(`${timestamp}.${JSON.stringify(body)}`)
+    .digest('hex');
+
+  return {
+    body,
+    timestamp,
+    signature,
+  };
+}
+
+function isSuccessfulNonceRegistration(data) {
+  return data?.registered === true
+    || (data?.registered === false && data?.reason === 'already_registered');
+}
+
+function isTimeoutError(error) {
+  return error?.code === 'ECONNABORTED'
+    || error?.code === 'ETIMEDOUT'
+    || String(error?.message ?? '').toLowerCase().includes('timeout');
+}
+
+export async function registerHomelyMindAccountLinkNonce(payload, { httpClient = homelyMindHttpClient } = {}) {
+  const homelyMindUrl = getHomelyMindUrl();
+
+  if (!homelyMindUrl) {
+    return { ok: false, status: 502 };
+  }
+
+  const { body, timestamp, signature } = buildNonceRegistrationRequest(payload);
+
+  try {
+    const response = await httpClient.post(
+      `${homelyMindUrl}/api/v1/integrations/homelyserv/account-link/nonces`,
+      body,
+      {
+        timeout: HOMELYMIND_NONCE_REGISTRATION_TIMEOUT_MS,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-homelyserv-timestamp': timestamp,
+          'x-homelyserv-signature': signature,
+        },
+      }
+    );
+
+    if (response?.status >= 200 && response?.status < 300 && isSuccessfulNonceRegistration(response.data)) {
+      return { ok: true };
+    }
+
+    return { ok: false, status: 502 };
+  } catch (error) {
+    return { ok: false, status: isTimeoutError(error) ? 504 : 502 };
+  }
+}
+
 /**
  * POST /api/account-link/token
  *
@@ -112,7 +189,15 @@ export async function issueAccountLinkToken(req, res) {
     return res.status(401).json({ success: false, message: 'User not found' });
   }
 
-  const { token, expiresAtIso } = createLinkingTokenForUser(user._id.toString());
+  const { token, payload, expiresAtIso } = createLinkingTokenForUser(user._id.toString());
+  const nonceRegistration = await registerHomelyMindAccountLinkNonce(payload);
+
+  if (!nonceRegistration.ok) {
+    return res.status(nonceRegistration.status).json({
+      success: false,
+      message: 'Unable to issue account-link token',
+    });
+  }
 
   // Minimum information required by the client. No password/hash, no
   // unrelated user data. The role is display-only for HomelyMind and MUST

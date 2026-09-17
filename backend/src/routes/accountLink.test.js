@@ -12,6 +12,8 @@ import {
 } from '../config/homelyMindIntegration.js';
 import {
   decodeLinkingToken,
+  __resetHomelyMindHttpClientForTests,
+  __setHomelyMindHttpClientForTests,
   verifyLinkingTokenSignature,
 } from '../controllers/accountLinkController.js';
 
@@ -19,9 +21,22 @@ const JWT_SECRET = 'account-link-jwt-secret-value-for-tests';
 const INTEGRATION_SECRET = 'account-link-integration-secret-for-tests';
 const AUTH_USER_ID = 'account-link-user-1';
 const OTHER_USER_ID = 'account-link-user-2';
+const HOMELYMIND_URL = 'https://homelymind.test';
 
 const originalFindById = User.findById.bind(User);
 const originalRandomBytes = crypto.randomBytes;
+const originalDateNow = Date.now;
+
+let homelyMindRequests = [];
+
+function createHomelyMindHttpClient(handler = async () => ({ status: 200, data: { registered: true } })) {
+  return {
+    post: async (url, body, options) => {
+      homelyMindRequests.push({ url, body, options });
+      return handler(url, body, options);
+    },
+  };
+}
 
 function installUserStub() {
   User.findById = (id) => ({
@@ -52,10 +67,22 @@ function createAuthHeader(userId = AUTH_USER_ID) {
   return `Bearer ${token}`;
 }
 
-async function withServer(run) {
+async function withServer(run, options = {}) {
+  const homelyMindUrl = Object.prototype.hasOwnProperty.call(options, 'homelyMindUrl')
+    ? options.homelyMindUrl
+    : HOMELYMIND_URL;
+  const homelyMindHandler = options.homelyMindHandler;
+
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.HOMELYMIND_INTEGRATION_SECRET = INTEGRATION_SECRET;
+  if (homelyMindUrl === undefined) {
+    delete process.env.HOMELYMIND_URL;
+  } else {
+    process.env.HOMELYMIND_URL = homelyMindUrl;
+  }
   __resetHomelyMindIntegrationCacheForTests();
+  homelyMindRequests = [];
+  __setHomelyMindHttpClientForTests(createHomelyMindHttpClient(homelyMindHandler));
   installUserStub();
 
   const app = express();
@@ -69,6 +96,8 @@ async function withServer(run) {
   } finally {
     restoreUserStub();
     crypto.randomBytes = originalRandomBytes;
+    Date.now = originalDateNow;
+    __resetHomelyMindHttpClientForTests();
     __resetHomelyMindIntegrationCacheForTests();
     await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }
@@ -91,6 +120,18 @@ function signatureFor(payload) {
     .createHmac('sha256', INTEGRATION_SECRET)
     .update(`${payload.homelyServUserId}:${payload.expiresAt}:${payload.nonce}`)
     .digest('hex');
+}
+
+function nonceRegistrationSignatureFor(timestamp, body) {
+  return crypto
+    .createHmac('sha256', INTEGRATION_SECRET)
+    .update(`${timestamp}.${JSON.stringify(body)}`)
+    .digest('hex');
+}
+
+function assertNoTokenReturned(responseBody) {
+  assert.equal(responseBody.success, false);
+  assert.equal(responseBody.token, undefined);
 }
 
 test('POST /api/account-link/token rejects unauthenticated requests', async () => withServer(async (base) => {
@@ -123,6 +164,58 @@ test('authenticated user receives a minimal signed account-link token', async ()
   assert.ok(payload.expiresAt >= minExpectedExpiry);
   assert.ok(payload.expiresAt <= maxExpectedExpiry);
   assert.equal(new Date(payload.expiresAt).toISOString(), body.expiresAt);
+}));
+
+test('successful HomelyMind nonce registration returns the existing token response', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+  assert.equal(typeof body.token, 'string');
+  assert.equal(homelyMindRequests.length, 1);
+  assert.equal(homelyMindRequests[0].url, `${HOMELYMIND_URL}/api/v1/integrations/homelyserv/account-link/nonces`);
+}));
+
+test('HomelyMind registration receives the exact token payload values', async () => withServer(async (base) => {
+  const { body } = await requestToken(base);
+  const payload = decodeLinkingToken(body.token);
+  const registrationBody = homelyMindRequests[0].body;
+
+  assert.equal(registrationBody.homelyServUserId, AUTH_USER_ID);
+  assert.equal(registrationBody.expiresAt, payload.expiresAt);
+  assert.equal(registrationBody.nonce, payload.nonce);
+}));
+
+test('HomelyMind registration timestamp is Unix seconds', async () => withServer(async (base) => {
+  Date.now = () => 1_700_000_123_456;
+
+  const { response } = await requestToken(base);
+  const timestamp = homelyMindRequests[0].options.headers['x-homelyserv-timestamp'];
+
+  assert.equal(response.status, 200);
+  assert.equal(timestamp, '1700000123');
+  assert.match(timestamp, /^\d{10}$/);
+  assert.notEqual(timestamp, String(Date.now()));
+}));
+
+test('HomelyMind registration HMAC signs timestamp and JSON body', async () => withServer(async (base) => {
+  const { response } = await requestToken(base);
+  const request = homelyMindRequests[0];
+  const timestamp = request.options.headers['x-homelyserv-timestamp'];
+  const expectedSignature = nonceRegistrationSignatureFor(timestamp, request.body);
+
+  assert.equal(response.status, 200);
+  assert.equal(request.options.headers['x-homelyserv-signature'], expectedSignature);
+  assert.equal(request.options.headers['Content-Type'], 'application/json');
+  assert.equal(request.options.timeout, 5000);
+}));
+
+test('returned account-link token remains valid under existing verification logic', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+  const payload = decodeLinkingToken(body.token);
+
+  assert.equal(response.status, 200);
+  assert.equal(verifyLinkingTokenSignature(payload), true);
 }));
 
 test('nonces are generated with crypto.randomBytes and are unique', async () => withServer(async (base) => {
@@ -158,5 +251,73 @@ test('request body cannot override authenticated req.userId', async () => withSe
   assert.equal(response.status, 200);
   assert.equal(body.user.id, AUTH_USER_ID);
   assert.equal(payload.homelyServUserId, AUTH_USER_ID);
+  assert.equal(homelyMindRequests[0].body.homelyServUserId, AUTH_USER_ID);
   assert.notEqual(payload.homelyServUserId, OTHER_USER_ID);
+}));
+
+for (const status of [400, 401, 403, 500]) {
+  test(`HomelyMind HTTP ${status} prevents token issuance`, async () => withServer(async (base) => {
+    const { response, body } = await requestToken(base);
+
+    assert.equal(response.status, 502);
+    assertNoTokenReturned(body);
+  }, {
+    homelyMindHandler: async () => {
+      const error = new Error(`HTTP ${status}`);
+      error.response = { status, data: { registered: false } };
+      throw error;
+    },
+  }));
+}
+
+test('HomelyMind network failure prevents token issuance', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+
+  assert.equal(response.status, 502);
+  assertNoTokenReturned(body);
+}, {
+  homelyMindHandler: async () => {
+    throw new Error('socket hang up');
+  },
+}));
+
+test('HomelyMind timeout prevents token issuance with a timeout response', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+
+  assert.equal(response.status, 504);
+  assertNoTokenReturned(body);
+}, {
+  homelyMindHandler: async () => {
+    const error = new Error('timeout of 5000ms exceeded');
+    error.code = 'ECONNABORTED';
+    throw error;
+  },
+}));
+
+test('missing HOMELYMIND_URL prevents outbound registration and token issuance', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+
+  assert.equal(response.status, 502);
+  assertNoTokenReturned(body);
+  assert.equal(homelyMindRequests.length, 0);
+}, { homelyMindUrl: undefined }));
+
+test('malformed HomelyMind registration response prevents token issuance', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+
+  assert.equal(response.status, 502);
+  assertNoTokenReturned(body);
+}, {
+  homelyMindHandler: async () => ({ status: 200, data: { ok: true } }),
+}));
+
+test('exact duplicate HomelyMind registration response is accepted', async () => withServer(async (base) => {
+  const { response, body } = await requestToken(base);
+  const payload = decodeLinkingToken(body.token);
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+  assert.equal(verifyLinkingTokenSignature(payload), true);
+}, {
+  homelyMindHandler: async () => ({ status: 200, data: { registered: false, reason: 'already_registered' } }),
 }));
