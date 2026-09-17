@@ -41,7 +41,9 @@ import analyticsRoutes from './routes/analytics.js';
 import employerFamilyRoutes from './routes/employerFamily.js';
 import employerFamilyTreeRoutes from './routes/employerFamilyTree.js';
 import verificationRoutes from './routes/verification.js';
+import accountLinkRoutes from './routes/accountLink.js';
 import { requireAdmin } from './middleware/auth.js';
+import { getHomelyMindIntegrationSecret } from './config/homelyMindIntegration.js';
 import { setIo } from './lib/socket.js';
 import { emitToUser } from './lib/socket.js';
 import { canAccessConversation } from './routes/chat.js';
@@ -59,6 +61,10 @@ const __dirname = path.dirname(__filename);
 
 // Load .env from the backend root directory (one level up from src)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+if (process.env.NODE_ENV === 'production') {
+  getHomelyMindIntegrationSecret();
+}
 
 // Initialize Firebase Admin for FCM (best-effort; missing credentials do not crash startup)
 initializeFcm().catch(() => {});
@@ -388,6 +394,7 @@ app.use('/api/sidebar', sidebarRoutes);
 app.use('/api/public-support', publicSupportRoutes);
 app.use('/api/external-jobs', externalJobRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/account-link', accountLinkRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
