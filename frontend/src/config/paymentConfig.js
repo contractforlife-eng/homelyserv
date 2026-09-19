@@ -97,15 +97,12 @@ export const PAYMENT_CONFIG = {
 // PAYMENT METHODS
 // ============================================================
 export const PAYMENT_METHODS = {
-  PAYMOB: 'paymob',
   PAYPAL: 'paypal',
   VODAFONE_CASH: 'vodafone_cash',
   INSTAPAY: 'instapay',
   BANK_TRANSFER: 'bank_transfer',
   WALLET: 'wallet'  // For future use
 };
-
-export const PAYMOB_ENABLED = false;
 
 // ============================================================
 // PAYMENT STATUS
@@ -140,34 +137,6 @@ export const TRANSACTION_TYPES = {
 // PAYMENT METHOD DETAILS
 // ============================================================
 export const PAYMENT_METHOD_DETAILS = {
-  [PAYMENT_METHODS.PAYMOB]: {
-    name: 'Paymob',
-    icon: 'CreditCard',
-    description: 'Pay with credit card, debit card, or mobile wallet',
-    colors: 'from-blue-500 to-blue-600',
-    integrations: {
-      card: {
-        id: '2662716',
-        name: 'TAP ON PHONE',
-        description: 'Pay with credit or debit card'
-      },
-      wallet: {
-        id: '2662714',
-        name: 'WALLET',
-        description: 'Pay with mobile wallet (Vodafone Cash, Orange Money, etc.)'
-      },
-      link: {
-        id: '2662715',
-        name: 'PAYMENT LINK',
-        description: 'Pay with payment link'
-      },
-      cash: {
-        id: '3584707',
-        name: 'Cash Collection',
-        description: 'Pay with cash (collect from location)'
-      }
-    }
-  },
   [PAYMENT_METHODS.PAYPAL]: {
     name: 'PayPal',
     icon: 'Wallet',

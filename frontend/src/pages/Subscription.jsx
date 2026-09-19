@@ -1,4 +1,4 @@
-// src/pages/Subscription.jsx - UPDATED WITH PAYMOB & PAYPAL + PREMIUM DESIGN + WORKING NOTIFICATIONS
+// src/pages/Subscription.jsx - PAYPAL & MANUAL PAYMENT INTEGRATION + PREMIUM DESIGN
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -22,8 +22,8 @@ import {
 import {
   createSubscription
 } from '../utils/subscriptionService';
-import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
-import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
+import { createPayPalOrder } from '../services/paymentService';
+import { PAYMENT_METHODS } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -57,7 +57,6 @@ const Subscription = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
-  const [paymobIframe, setPaymobIframe] = useState(null);
   const [retryableStatus, setRetryableStatus] = useState(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
   const [subscriptionQuote, setSubscriptionQuote] = useState(null);
@@ -162,9 +161,10 @@ const Subscription = () => {
     : paymentMethods.filter(({ id }) => (
       id !== PAYMENT_METHODS.VODAFONE_CASH && id !== PAYMENT_METHODS.INSTAPAY
     ));
-  const planVisiblePaymentMethods = selectedPlan === 'annual'
+  const planVisiblePaymentMethods = (selectedPlan === 'annual'
     ? visiblePaymentMethods.filter(({ id }) => id === PAYMENT_METHODS.PAYPAL || id === PAYMENT_METHODS.BANK_TRANSFER)
-    : visiblePaymentMethods;
+    : visiblePaymentMethods
+  ).filter(({ id }) => id !== 'paymob');
 
   useEffect(() => {
     paypalAttemptKeyRef.current = null;
@@ -211,18 +211,7 @@ const Subscription = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.id, authUser?.email, authUser?.role, authUser?.countryCode, isAuthenticated, authLoading, navigate]);
 
-  // Handle Paymob iframe message
-  const handlePaymobMessage = (event) => {
-    if (event.data?.type === 'PAYMENT_COMPLETE') {
-      setPaymentSuccess(true);
-      setProcessing(false);
-      setPaymobIframe(null);
-      window.removeEventListener('message', handlePaymobMessage);
-      
-      // Process successful subscription
-      processSuccessfulSubscription(event.data);
-    }
-  };
+
 
   const processSuccessfulSubscription = (paymentData) => {
     try {
@@ -404,17 +393,7 @@ const Subscription = () => {
         ]
       };
 
-      if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        const result = await createPaymobPayment(price, orderId, customerData, { purpose: 'SUBSCRIPTION', plan: selectedPlan });
-        
-        if (result.success) {
-          setPaymobIframe(result.iframeUrl);
-          window.addEventListener('message', handlePaymobMessage);
-        } else {
-          throw new Error(result.error || t('subscriptionPaymentErrors.paymobFailed'));
-        }
-        
-      } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+      if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
         if (!paypalAttemptKeyRef.current) {
           paypalAttemptKeyRef.current = globalThis.crypto?.randomUUID?.()
             || `attempt-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
@@ -582,7 +561,6 @@ const Subscription = () => {
         clearInterval(paypalPollingRef.current);
         paypalPollingRef.current = null;
       }
-      window.removeEventListener('message', handlePaymobMessage);
       window.removeEventListener('message', handlePayPalReturnMessage);
     };
   }, []);
@@ -882,35 +860,6 @@ const Subscription = () => {
             </div>
           )}
         </div>
-
-      {/* Paymob Iframe Modal */}
-      {paymobIframe && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('subscriptionPage.payWithPaymob')}</h3>
-              <button
-                onClick={() => {
-                  setPaymobIframe(null);
-                  setProcessing(false);
-                  window.removeEventListener('message', handlePaymobMessage);
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 h-[500px]">
-              <iframe
-                src={paymobIframe}
-                className="w-full h-full border-0"
-                allow="payment"
-                title={t('subscriptionPage.paymobPaymentTitle')}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 };

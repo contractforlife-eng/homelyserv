@@ -51,7 +51,7 @@ PREMIUM MEMBERSHIP:
 - Users can view and manage their Premium plans inside the "Premium" section of their dashboard when signed in.
 
 PAYMENTS & TRANSACTIONS:
-- Payment options and currencies vary based on country, role, and transaction type (e.g. Paymob for EGP card/wallet, PayPal for international payments).
+- Payment options and currencies vary based on country, role, and transaction type (e.g. PayPal for online payments, or approved manual payment methods where available).
 - Pricing, deposits, and payment details are visible during the specific transaction flow when logged in.
 
 LOGIN & PASSWORD RECOVERY:

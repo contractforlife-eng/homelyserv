@@ -3,7 +3,6 @@ import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMet
 import { isPayPalNativeCurrency } from '../services/paypalFxService.js';
 
 export const PROVIDERS = Object.freeze({
-  PAYMOB: 'paymob',
   PAYPAL: 'paypal',
 });
 
@@ -26,20 +25,6 @@ const knownPurposes = new Set(Object.values(PAYMENT_PURPOSES));
 const hasValue = (value) => typeof value === 'string' && value.trim().length > 0;
 
 const getConfigurationContext = (provider) => {
-  if (provider === PROVIDERS.PAYMOB) {
-    const required = {
-      apiKey: hasValue(process.env.PAYMOB_API_KEY),
-      integrationId: hasValue(process.env.PAYMOB_INTEGRATION_ID),
-      iframeId: hasValue(process.env.PAYMOB_IFRAME_ID),
-      hmacSecret: hasValue(process.env.PAYMOB_HMAC_SECRET),
-    };
-    return {
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-      configured: Object.values(required).every(Boolean),
-      required,
-    };
-  }
-
   const required = {
     clientId: hasValue(process.env.PAYPAL_CLIENT_ID),
     secret: hasValue(process.env.PAYPAL_SECRET),
@@ -106,13 +91,11 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     });
   }
 
-  const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
-  const isPaymobEgp = isPaymob && normalizedCurrency === 'EGP';
   const isPayPal = normalizedProvider === PROVIDERS.PAYPAL;
   const isPayPalNative = isPayPal && isPayPalNativeCurrency(normalizedCurrency);
   const isPayPalFallback = isPayPal && !isPayPalNative;
 
-  if (!isPaymobEgp && !isPayPalNative && !isPayPalFallback) {
+  if (!isPayPalNative && !isPayPalFallback) {
     return unsupportedCapability({
       provider: normalizedProvider,
       purpose: normalizedPurpose,
@@ -126,7 +109,7 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     provider: normalizedProvider,
     purpose: normalizedPurpose,
     transactionCurrency: normalizedCurrency,
-    providerCurrency: isPaymobEgp ? 'EGP' : isPayPalNative ? normalizedCurrency : 'USD',
+    providerCurrency: isPayPalNative ? normalizedCurrency : 'USD',
     supported: true,
     enabled: configuration.configured,
     mode: isPayPalFallback

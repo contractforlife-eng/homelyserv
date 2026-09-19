@@ -120,7 +120,7 @@ export const recordCommissionPayment = async (req, res) => {
           transactionId: transactionIdNew,
           amount: Number(commissionAmount),
           currency: 'EGP',
-          paymentMethod: paymentMethod || 'paymob',
+          paymentMethod: paymentMethod || 'manual',
           status: 'completed',
           userId: String(employerId),
           workerId: String(workerId),

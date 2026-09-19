@@ -1,4 +1,4 @@
-// src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION - FIXED
+// src/pages/PaymentOptions.jsx - PAYPAL & MANUAL PAYMENT INTEGRATION
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchBankTransferCapability, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
+import { createPayPalOrder, capturePayPalOrder, fetchBankTransferCapability, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
@@ -65,7 +65,6 @@ const PaymentOptions = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paymobIframe, setPaymobIframe] = useState(null);
   const [pollingInterval, setPollingInterval] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paypalOrderId, setPaypalOrderId] = useState(null);
@@ -405,16 +404,7 @@ const PaymentOptions = () => {
     }
   };
 
-  // ============================================================
-  // PAYMOB HANDLER
-  // ============================================================
-  const handlePaymobMessage = (event) => {
-    if (event.data?.type === 'PAYMENT_COMPLETE') {
-      console.log('✅ Paymob payment complete:', event.data);
-      window.removeEventListener('message', handlePaymobMessage);
-      processSuccessfulPayment(event.data);
-    }
-  };
+
 
   // ============================================================
   // PAYPAL POPUP RETURN HANDLER
@@ -611,19 +601,7 @@ const PaymentOptions = () => {
       console.log('💰 Amount:', total);
       console.log('💳 Payment Method:', selectedMethod);
 
-      if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        console.log('🔄 Processing Paymob payment...');
-        const result = await createPaymobPayment(total, orderId, customerData);
-        console.log('📥 Paymob result:', result);
-        
-        if (result.success && result.iframeUrl) {
-          setPaymobIframe(result.iframeUrl);
-          window.addEventListener('message', handlePaymobMessage);
-        } else {
-          throw new Error(result.error || t('paymentOptionsPage.errors.paymobFailed'));
-        }
-        
-      } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+      if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
         console.log('🔄 Processing PayPal payment...');
         const result = await createPayPalOrder(total, orderId, customerData);
         console.log('📥 PayPal result:', result);
@@ -689,7 +667,6 @@ const PaymentOptions = () => {
     // Listen for PayPal popup return messages
     window.addEventListener('message', handlePayPalReturnMessage);
     return () => {
-      window.removeEventListener('message', handlePaymobMessage);
       window.removeEventListener('message', handlePayPalReturnMessage);
       if (pollingInterval) {
         clearInterval(pollingInterval);
@@ -1100,7 +1077,7 @@ const PaymentOptions = () => {
           </div>
 
           {/* PayPal Processing Modal */}
-          {selectedMethod === PAYMENT_METHODS.PAYPAL && isProcessing && !paymentSuccess && !paymobIframe && (
+          {selectedMethod === PAYMENT_METHODS.PAYPAL && isProcessing && !paymentSuccess && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1176,35 +1153,6 @@ const PaymentOptions = () => {
               {t('paymentOptionsPage.securityNotice')}
             </p>
           </div>
-
-          {/* Paymob Iframe Modal */}
-          {paymobIframe && (
-            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentOptionsPage.paymobTitle')}</h3>
-                  <button
-                    onClick={() => {
-                      setPaymobIframe(null);
-                      setIsProcessing(false);
-                      window.removeEventListener('message', handlePaymobMessage);
-                    }}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="p-4 h-[500px]">
-                  <iframe
-                    src={paymobIframe}
-                    className="w-full h-full border-0"
-                    allow="payment"
-                    title={t('paymentOptionsPage.paymobIframeTitle')}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>

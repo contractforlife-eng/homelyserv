@@ -57,63 +57,7 @@ export const fetchBankTransferCapability = async ({ purpose, plan, hireId } = {}
   return response.data?.bankTransfer || null;
 };
 
-// PURPOSE is the backend's explicit discriminator (PAYMENT_PURPOSES in
-// backend/src/config/subscription.js): SUBSCRIPTION or COMMISSION. The
-// backend is authoritative for amounts — a SUBSCRIPTION intent is priced by
-// the user's role and a COMMISSION intent by the hire's server-derived total.
-export const createPaymobPayment = async (amount, orderId, customerData, options = {}) => {
-  return createPaymentIntent({
-    amount: Number(amount),
-    paymentMethod: 'paymob',
-    purpose: options.purpose || 'COMMISSION',
-    plan: options.plan,
-    userEmail: customerData?.email || 'employer@example.com',
-    workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
-    userId: customerData?.userId,
-    workerId: customerData?.workerId,
-    jobTitle: customerData?.jobTitle || 'Service',
-    employerId: customerData?.employerId,
-    employerName: customerData?.employerName || 'Employer',
-    hireId: customerData?.hireId,
-    offerId: customerData?.offerId,
-    phone: customerData?.phone || '+201234567890',
-    description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
-  });
-};
 
-export const verifyPaymobPayment = async (paymentData) => {
-  try {
-    const { paymentId } = paymentData;
-    const response = await api.get(`/api/payments/status/${paymentId}`);
-    if (response.data.success && response.data.payment) {
-      return {
-        success: true,
-        payment: response.data.payment
-      };
-    }
-    return {
-      success: false,
-      error: 'Payment not found'
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message || 'Failed to verify Paymob payment'
-    };
-  }
-};
-
-export const processPaymobWebhook = async (webhookData) => {
-  try {
-    const response = await api.post('/api/payments/webhook', webhookData);
-    return response.data;
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message || 'Failed to process Paymob webhook'
-    };
-  }
-};
 
 export const createPayPalOrder = async (amount, orderId, customerData, options = {}) => {
   return createPaymentIntent({
@@ -395,9 +339,6 @@ const paymentService = {
   getPaymentStatus,
   getUserPayments,
   verifyPayment,
-  createPaymobPayment,
-  verifyPaymobPayment,
-  processPaymobWebhook,
   createPayPalOrder,
   capturePayPalOrder,
   processPayPalWebhook,

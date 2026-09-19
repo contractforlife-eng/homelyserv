@@ -2,25 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, CreditCard, Wallet, Building2, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../../services/paymentService';
-import { PAYMENT_METHODS, PAYMOB_ENABLED, PAYMENT_STATUS, TRANSACTION_TYPES } from '../../config/paymentConfig';
+import { createPayPalOrder, capturePayPalOrder } from '../../services/paymentService';
+import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../../config/paymentConfig';
 
 const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transactionType, onSuccess, onError }) => {
   const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [paymobIframe, setPaymobIframe] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   const paymentMethods = [
-    ...(PAYMOB_ENABLED ? [{
-      id: PAYMENT_METHODS.PAYMOB,
-      name: 'Paymob',
-      icon: CreditCard,
-      description: 'Credit cards, debit cards, and online banking',
-      colors: 'from-blue-500 to-blue-600'
-    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
@@ -28,7 +20,7 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
       description: 'PayPal balance, credit cards, and bank accounts',
       colors: 'from-blue-700 to-blue-800'
     }
-  ];
+  ].filter(({ id }) => id !== 'paymob');
 
   const handlePayment = async () => {
     if (!selectedMethod) {
@@ -40,21 +32,7 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
     setError(null);
 
     try {
-      if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        // Paymob Payment
-        const result = await createPaymobPayment(amount, orderId, customerData);
-        
-        if (result.success) {
-          // Show Paymob iframe
-          setPaymobIframe(result.iframeUrl);
-          
-          // Listen for payment completion
-          window.addEventListener('message', handlePaymobMessage);
-        } else {
-          throw new Error(result.error || 'Paymob payment failed');
-        }
-        
-      } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+      if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
         // PayPal Payment
         const result = await createPayPalOrder(amount, orderId, customerData);
         
@@ -74,19 +52,6 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
       setError(error.message);
       setProcessing(false);
       if (onError) onError(error);
-    }
-  };
-
-  const handlePaymobMessage = (event) => {
-    // Handle Paymob iframe response
-    if (event.data?.type === 'PAYMENT_COMPLETE') {
-      window.removeEventListener('message', handlePaymobMessage);
-      setSuccess(true);
-      setProcessing(false);
-      if (onSuccess) onSuccess(event.data);
-      setTimeout(() => {
-        onClose();
-      }, 3000);
     }
   };
 
@@ -124,12 +89,7 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
     }, 3000);
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('message', handlePaymobMessage);
-    };
-  }, []);
+
 
   if (!isOpen) return null;
 

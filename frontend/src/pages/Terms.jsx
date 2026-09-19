@@ -193,7 +193,7 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'Employers are charged the applicable platform recruitment commission of 15% of the agreed monthly salary, as displayed to the Employer at the time of payment. Payment is completed through payment methods and third-party payment providers made available by HomelyServ at the time of payment, which may currently include Paymob and PayPal.'
+            text: 'Employers are charged the applicable platform recruitment commission of 15% of the agreed monthly salary, as displayed to the Employer at the time of payment. Payment is completed through payment methods and third-party payment providers made available by HomelyServ at the time of payment, which may currently include PayPal and supported payment methods.'
           },
           {
             type: 'p',
@@ -595,7 +595,7 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'تُفرض على أصحاب العمل عمولة التوظيف السارية بنسبة 15% من المبلغ المعروض (الراتب الشهري المتفق عليه)، كما تظهر لصاحب العمل وقت الدفع. وتتم معالجة الدفع عبر وسائل ومزودي دفع خارجيين متاحين في وقت الدفع، وقد تشمل حاليًا Paymob و PayPal.'
+            text: 'تُفرض على أصحاب العمل عمولة التوظيف السارية بنسبة 15% من المبلغ المعروض (الراتب الشهري المتفق عليه)، كما تظهر لصاحب العمل وقت الدفع. وتتم معالجة الدفع عبر وسائل ومزودي دفع خارجيين متاحين في وقت الدفع، وقد تشمل حاليًا PayPal ووسائل الدفع المعتمدة.'
           },
           {
             type: 'p',

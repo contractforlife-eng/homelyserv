@@ -74,13 +74,6 @@ initializeFcm().catch(() => {});
 // ============================================================
 console.log('\n--- 🔌 GATEWAY CONNECTIONS ---');
 
-// Paymob Diagnostics
-if (process.env.PAYMOB_API_KEY && process.env.PAYMOB_INTEGRATION_ID) {
-  console.log(`💳 Paymob Gateway:   ✅ ACTIVE (Integration ID: ${process.env.PAYMOB_INTEGRATION_ID})`);
-} else {
-  console.log('💳 Paymob Gateway:   ❌ MISSING OR INCOMPLETE KEYS');
-}
-
 // PayPal Diagnostics
 if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET) {
   console.log(`💰 PayPal Gateway:   ✅ ACTIVE (Mode: ${process.env.PAYPAL_MODE || 'sandbox'})`);

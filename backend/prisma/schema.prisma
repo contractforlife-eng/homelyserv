@@ -184,7 +184,7 @@ model Payment {
   currency            String    @default("EGP") @map("currency")
   providerAmount      String?
   providerCurrency    String?
-  paymentMethod       String    @default("paymob") @map("paymentMethod")
+  paymentMethod       String    @default("paypal") @map("paymentMethod")
   status              String    @default("pending")
   userEmail           String?   @map("userEmail")
   userId              String?   @map("userId") @db.ObjectId

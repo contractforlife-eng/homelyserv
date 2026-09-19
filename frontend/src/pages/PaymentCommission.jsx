@@ -22,8 +22,8 @@ import {
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, getPaymentStatus } from '../services/paymentService';
-import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
+import { createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, getPaymentStatus } from '../services/paymentService';
+import { PAYMENT_METHODS } from '../config/paymentConfig';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import useAuthStore from '../store/authStore';
@@ -37,7 +37,6 @@ const PaymentCommission = () => {
   const [processing, setProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paymobIframe, setPaymobIframe] = useState(null);
   const paypalPollingRef = useRef(null);
   const paypalCaptureRequestedRef = useRef(false);
   const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
@@ -84,7 +83,7 @@ const PaymentCommission = () => {
       color: 'from-teal-500 to-teal-600',
       badge: t('bankTransfer.available')
     }] : [])
-  ];
+  ].filter(({ id }) => id !== 'paymob');
 
   useEffect(() => {
     // Check authentication
@@ -127,18 +126,7 @@ const PaymentCommission = () => {
     return () => { cancelled = true; };
   }, [commissionData?.hireId]);
 
-  // Handle Paymob iframe message
-  const handlePaymobMessage = (event) => {
-    if (event.data?.type === 'PAYMENT_COMPLETE') {
-      setPaymentSuccess(true);
-      setProcessing(false);
-      setPaymobIframe(null);
-      window.removeEventListener('message', handlePaymobMessage);
-      
-      // Process successful payment
-      processSuccessfulPayment(event.data);
-    }
-  };
+
 
   // Process successful payment
   const processSuccessfulPayment = async (paymentData) => {
@@ -243,17 +231,7 @@ const PaymentCommission = () => {
         ]
       };
 
-      if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        const result = await createPaymobPayment(commissionData.commissionAmount, orderId, customerData);
-        
-        if (result.success) {
-          setPaymobIframe(result.iframeUrl);
-          window.addEventListener('message', handlePaymobMessage);
-        } else {
-          throw new Error(result.error || t('paymentCommission.errors.paymobFailed'));
-        }
-        
-      } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+      if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
         paypalCaptureRequestedRef.current = false;
         const result = await createPayPalOrder(commissionData.commissionAmount, orderId, customerData);
         
@@ -362,7 +340,6 @@ const PaymentCommission = () => {
         clearInterval(paypalPollingRef.current);
         paypalPollingRef.current = null;
       }
-      window.removeEventListener('message', handlePaymobMessage);
     };
   }, []);
 
@@ -569,35 +546,6 @@ const PaymentCommission = () => {
           </div>
         </div>
       </div>
-
-      {/* Paymob Iframe Modal */}
-      {paymobIframe && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentCommission.payWithPaymob')}</h3>
-              <button
-                onClick={() => {
-                  setPaymobIframe(null);
-                  setProcessing(false);
-                  window.removeEventListener('message', handlePaymobMessage);
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 h-[500px]">
-              <iframe
-                src={paymobIframe}
-                className="w-full h-full border-0"
-                allow="payment"
-                title={t('paymentCommission.paymobIframeTitle')}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   </DashboardLayout>
   );

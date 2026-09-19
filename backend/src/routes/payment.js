@@ -197,102 +197,8 @@ const getClientUrl = () => {
   return 'http://localhost:5173';
 };
 
-// ============================================================
-// PAYMOB INTEGRATION
-// ============================================================
+// Paymob payment generation removed - Paymob provider deprecated
 
-const getPaymobAuthToken = async () => {
-  try {
-    const response = await axios.post('https://accept.paymob.com/api/auth/tokens', {
-      api_key: process.env.PAYMOB_API_KEY
-    });
-
-    if (response.data && response.data.token) {
-      console.log('✅ Paymob auth token obtained');
-      return response.data.token;
-    } else {
-      throw new Error('Failed to get Paymob token');
-    }
-  } catch (error) {
-    console.error('❌ Paymob auth error:', error.response?.data || error.message);
-    throw new Error('Paymob authentication failed');
-  }
-};
-
-const createPaymobOrder = async (authToken, providerAmount, orderId, customerData) => {
-  try {
-    const response = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
-      auth_token: authToken,
-      delivery_needed: false,
-      amount_cents: toMinorUnits(providerAmount, 'EGP'),
-      currency: 'EGP',
-      merchant_order_id: orderId,
-      items: [
-        {
-          name: customerData?.jobTitle || 'Service Payment',
-          amount_cents: toMinorUnits(providerAmount, 'EGP'),
-          description: customerData?.description || 'Payment for service',
-          quantity: 1
-        }
-      ],
-      shipping_data: {
-        first_name: customerData?.firstName || 'Customer',
-        last_name: customerData?.lastName || 'User',
-        email: customerData?.email || 'customer@example.com',
-        phone_number: customerData?.phone || '+201234567890'
-      }
-    });
-
-    if (response.data && response.data.id) {
-      console.log('✅ Paymob order created:', response.data.id);
-      return response.data;
-    } else {
-      throw new Error('Failed to create Paymob order');
-    }
-  } catch (error) {
-    console.error('❌ Paymob order error:', error.response?.data || error.message);
-    throw new Error('Paymob order creation failed');
-  }
-};
-
-const getPaymobPaymentKey = async (authToken, orderId, providerAmount, customerData) => {
-  try {
-    const integrationId = process.env.PAYMOB_INTEGRATION_ID;
-    const response = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
-      auth_token: authToken,
-      amount_cents: toMinorUnits(providerAmount, 'EGP'),
-      expiration: 3600,
-      order_id: orderId,
-      billing_data: {
-        first_name: customerData?.firstName || 'Customer',
-        last_name: customerData?.lastName || 'User',
-        email: customerData?.email || 'customer@example.com',
-        phone_number: customerData?.phone || '+201234567890',
-        apartment: 'NA',
-        floor: 'NA',
-        street: 'NA',
-        building: 'NA',
-        shipping_method: 'NA',
-        postal_code: 'NA',
-        city: customerData?.city || 'Cairo',
-        country: customerData?.country || 'EG'
-      },
-      currency: 'EGP',
-      integration_id: integrationId,
-      lock_order_when_paid: true
-    });
-
-    if (response.data && response.data.token) {
-      console.log('✅ Paymob payment key generated');
-      return response.data.token;
-    } else {
-      throw new Error('Failed to get Paymob payment key');
-    }
-  } catch (error) {
-    console.error('❌ Paymob payment key error:', error.response?.data || error.message);
-    throw new Error('Paymob payment key generation failed');
-  }
-};
 
 // ============================================================
 // PAYPAL INTEGRATION
@@ -334,7 +240,6 @@ const getPayPalAccessToken = async () => {
 const LEGACY_PAYPAL_EGP_TO_USD_NUMERATOR = 33;
 const LEGACY_PAYPAL_EGP_TO_USD_DENOMINATOR = 1000;
 const PAYPAL_PROVIDER_CURRENCY = 'USD';
-const PAYMOB_PROVIDER_CURRENCY = 'EGP';
 
 export const getExpectedPayPalCharge = (paymentAmount) => {
   const converted = multiplyMoneyByRatio(
@@ -363,16 +268,6 @@ const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency
     return {
       amount: formatMoneyDecimal(paymentAmount, paymentCurrency),
       currency: capability.providerCurrency,
-    };
-  }
-  if (paymentMethod === 'paymob') {
-    const currency = String(paymentCurrency || '').trim().toUpperCase();
-    if (currency !== PAYMOB_PROVIDER_CURRENCY) {
-      throw new Error('Paymob provider currency is not supported');
-    }
-    return {
-      amount: formatMoneyDecimal(paymentAmount, PAYMOB_PROVIDER_CURRENCY),
-      currency: PAYMOB_PROVIDER_CURRENCY,
     };
   }
   throw new Error('Unsupported payment method');
@@ -1054,8 +949,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     const purpose = requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION
       ? PAYMENT_PURPOSES.SUBSCRIPTION
       : PAYMENT_PURPOSES.COMMISSION;
-    const selectedPaymentMethod = paymentMethod || 'paymob';
-    if (!['paymob', 'paypal'].includes(selectedPaymentMethod)) {
+    const selectedPaymentMethod = paymentMethod || 'paypal';
+    if (selectedPaymentMethod !== 'paypal') {
       return res.status(400).json({ success: false, error: 'Unsupported payment method' });
     }
     let transactionCurrency = 'EGP';
@@ -1456,54 +1351,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
 
     let result;
 
-    if (selectedPaymentMethod === 'paymob') {
-      try {
-        const authToken = await getPaymobAuthToken();
-        const paymobOrder = await createPaymobOrder(authToken, payment.providerAmount, orderId, customerData);
-        const paymobOrderId = paymobOrder.id;
-        const paymentKey = await getPaymobPaymentKey(authToken, paymobOrderId, payment.providerAmount, customerData);
-
-        await prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            paymobOrderId: String(paymobOrderId),
-            status: 'processing'
-          }
-        });
-
-        const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey}`;
-
-        result = {
-          success: true,
-          orderId,
-          transactionId,
-          paymentId: transactionId,
-          iframeUrl: iframeUrl,
-          status: 'processing',
-          amount: payment.amount,
-          currency: payment.currency,
-          paymentMethod: 'paymob'
-        };
-
-        console.log('✅ Paymob payment created with iframe');
-
-      } catch (error) {
-        console.error('❌ Paymob integration error:', error);
-        await prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: 'failed',
-            metadata: { ...(payment.metadata || {}), error: error.message }
-          }
-        });
-
-        return res.status(500).json({
-          success: false,
-          error: error.message || 'Paymob payment failed'
-        });
-      }
-
-    } else if (selectedPaymentMethod === 'paypal') {
+    if (selectedPaymentMethod === 'paypal') {
       let paypalClaimToken = null;
       try {
         if (payment.paypalOrderId && payment.approvalUrl) {
@@ -2113,7 +1961,7 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
 /**
  * @deprecated Manual payment completion is obsolete. Payments are now captured
  * and verified automatically via the PayPal capture endpoint
- * (POST /api/payments/capture-paypal/:orderId) and Paymob, which already mark
+ * (POST /api/payments/capture-paypal/:orderId) or verified callbacks, which already mark
  * the payment completed and call updateHireAfterPayment(). There is NO manual
  * "Mark as Paid" UI anymore.
  *
