@@ -125,6 +125,7 @@ router.get('/users/:id', async (req, res) => {
         countryCode: true,
         countryName: true,
         language: true,
+        lastLogin: true,
         location: true,
         bio: true,
         skills: true,
