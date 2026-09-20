@@ -11,7 +11,7 @@ import { getUserIdentity, getUserIdentities, enrichMessageIdentities } from '../
 import { emitToUser } from '../lib/socket.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { sendPushToUser } from '../services/fcmService.js';
-import { getActivePremiumUserIds } from '../services/premiumService.js';
+import { getActivePremiumUserIds, getSubscriptionStaffDetail } from '../services/premiumService.js';
 import {
   supHelpListComplaints,
   supHelpGetComplaint,
@@ -199,12 +199,16 @@ router.get('/users/:id', async (req, res) => {
       console.error('Error fetching Mongoose user details for Sup-Help:', e.message);
     }
 
+    // Fetch subscription details for Premium status visibility
+    const subscription = await getSubscriptionStaffDetail(id);
+
     return res.json({
       success: true,
       user: {
         ...user,
         ...(mongooseUserObj || {}),
-        verification
+        verification,
+        subscription,
       }
     });
   } catch (error) {
