@@ -66,7 +66,6 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
 
   const isAdmin = variant === 'admin';
   const isSupHelp = variant === 'supHelp';
-  const canViewSubscription = isAdmin || isSupHelp || variant === 'support';
 
   const routes = {
     complaints: isAdmin ? '/admin/complaints' : '/support-complaints',
@@ -611,7 +610,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           </div>
 
           {/* AUTHORITATIVE PREMIUM VISIBILITY (read-only) */}
-          {canViewSubscription && <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          {isAdmin && <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <CreditCard size={18} className="text-amber-500" />

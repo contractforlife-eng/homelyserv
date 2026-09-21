@@ -379,9 +379,6 @@ router.get('/users/:id', async (req, res) => {
       console.error('❌ Error fetching Mongoose user details:', e.message);
     }
 
-    // Fetch subscription details for Premium status visibility (Sup-Admin/Support + Admin)
-    const subscription = await getSubscriptionStaffDetail(id);
-
     if (isSupport) {
       return res.json({
         success: true,
@@ -389,12 +386,12 @@ router.get('/users/:id', async (req, res) => {
           ...user,
           lastLogin,
           ...(mongooseUserObj || {}),
-          verification,
-          subscription,
+          verification
         }
       });
     }
 
+    const subscription = await getSubscriptionStaffDetail(id);
     return res.json({
       success: true,
       user: {
