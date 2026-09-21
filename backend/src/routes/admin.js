@@ -1765,8 +1765,8 @@ router.get('/internal-messages', async (req, res) => {
 
 // GET /api/admin/conversations/:conversationId/messages
 // Get messages for an admin-accessible conversation.
-// Access is verified: only ESCALATED, SUPPORT, or INTERNAL conversations
-// where the admin is a staff member.
+// ADMIN / Co-Admin may READ all conversation types (PRIVATE, SUPPORT,
+// INTERNAL, ESCALATED). This router is requireAdmin-only.
 router.get('/conversations/:conversationId/messages', async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -1777,12 +1777,21 @@ router.get('/conversations/:conversationId/messages', async (req, res) => {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    // Admin access rules:
+    // Admin access rules (READ-ONLY):
+    // ADMIN / Co-Admin may read the complete message history of ALL
+    // existing conversation types (PRIVATE, SUPPORT, INTERNAL, ESCALATED).
     // - ESCALATED: admin can access after escalation
     // - SUPPORT: admin can supervise
     // - INTERNAL: admin must be a staff member
+    // - PRIVATE: admin read-only bypass (e.g. legacy WORKER <-> ADMIN
+    //   threads classified as PRIVATE at creation). No type, participant,
+    //   or message data is modified here.
+    // This router is already requireAdmin-only, so this bypass cannot grant
+    // access to SUPPORT, SUPPORT_HELPER, WORKER, or EMPLOYER.
     let allowed = false;
-    if (conv.type === 'ESCALATED' && conv.escalatedAt) {
+    if (String(req.userRole || '').toUpperCase() === 'ADMIN') {
+      allowed = true;
+    } else if (conv.type === 'ESCALATED' && conv.escalatedAt) {
       allowed = true;
     } else if (conv.type === 'SUPPORT') {
       allowed = true;
