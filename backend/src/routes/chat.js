@@ -901,9 +901,7 @@ router.get('/staff-directory', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    const allowedStaffRoles = callerRole === 'SUPPORT_HELPER'
-      ? ['ADMIN', 'SUPPORT']
-      : ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
+    const allowedStaffRoles = ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
 
     const staff = await prisma.user.findMany({
       where: {
@@ -977,7 +975,7 @@ router.get('/support-users', authenticate, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       where: {
-        role: 'SUPPORT'
+        role: { in: ['SUPPORT', 'SUPPORT_HELPER', 'ADMIN'] }
       },
       select: {
         id: true,
