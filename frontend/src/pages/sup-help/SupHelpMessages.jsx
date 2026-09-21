@@ -1094,7 +1094,7 @@ const NewConversationModal = ({ onSelectUser, onClose, t, activeTab }) => {
           const needle = term.trim().toLowerCase();
           setUserList((response.data.staff || []).filter((staff) => {
             const role = String(staff.role || '').toUpperCase();
-            return ['SUPPORT', 'ADMIN', 'SUPPORT_HELPER'].includes(role)
+            return ['SUPPORT', 'ADMIN'].includes(role)
               && (!needle
                 || String(staff.fullName || '').toLowerCase().includes(needle)
                 || String(staff.email || '').toLowerCase().includes(needle));

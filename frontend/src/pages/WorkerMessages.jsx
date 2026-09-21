@@ -1091,7 +1091,7 @@ const WorkerMessages = () => {
           )}
           {showSupportModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 max-h-[85dvh] overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t('workerMessages.contactSupport')}</h3>
                   <button
@@ -1118,7 +1118,7 @@ const WorkerMessages = () => {
                         );
                         selectConversation(conversationId);
                       }}
-                      className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
+                      className="w-full p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
                     >
                       <UserAvatar
                         name={user.fullName}
