@@ -1134,7 +1134,7 @@ const NewConversationModal = ({ onSelectUser, onClose, t, activeTab }) => {
           />
         </div>
 
-        <div className="overflow-y-auto flex-1">
+        <div className="overflow-y-auto flex-1 min-h-0 max-h-[320px]">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>

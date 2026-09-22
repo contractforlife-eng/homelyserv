@@ -1094,7 +1094,7 @@ const NewConversationModal = ({ onSelectUser, onClose, t, activeTab }) => {
           const needle = term.trim().toLowerCase();
           setUserList((response.data.staff || []).filter((staff) => {
             const role = String(staff.role || '').toUpperCase();
-            return ['SUPPORT', 'ADMIN'].includes(role)
+            return ['SUPPORT', 'ADMIN', 'SUPPORT_HELPER'].includes(role)
               && (!needle
                 || String(staff.fullName || '').toLowerCase().includes(needle)
                 || String(staff.email || '').toLowerCase().includes(needle));
@@ -1151,7 +1151,7 @@ const NewConversationModal = ({ onSelectUser, onClose, t, activeTab }) => {
           />
         </div>
 
-        <div className="overflow-y-auto flex-1">
+        <div className="overflow-y-auto flex-1 min-h-0 max-h-[320px]">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>

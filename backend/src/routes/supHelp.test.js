@@ -718,7 +718,7 @@ test('Staff directory filters SUPPORT_HELPER discovery appropriately', async () 
     const helperId = '665f1a2b3c4d5e6f7a8b9c01';
     const supportId = '665f1a2b3c4d5e6f7a8b9c02';
 
-    // Helper calling staff-directory sees only ADMIN and SUPPORT
+    // Helper calling staff-directory sees ADMIN and SUPPORT (their own SUPPORT_HELPER entry is excluded)
     const { response: helperRes, body: helperBody } = await fetchJson(`${base}/api/chat/staff-directory`, {
       headers: { authorization: createAuthHeader(helperId, 'SUPPORT_HELPER') },
     });
