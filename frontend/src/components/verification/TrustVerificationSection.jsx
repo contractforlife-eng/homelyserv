@@ -50,6 +50,26 @@ const TrustVerificationSection = ({
   ).toUpperCase();
   const isEmployer = effectiveRole === 'EMPLOYER';
 
+  // ============================================================
+  // VIEWER (AUTHENTICATED SESSION) ROLE vs VIEWED PROFILE ROLE
+  // ------------------------------------------------------------
+  // `isAdmin` is a PRESENTATION flag: it also stays true for the
+  // SUPPORT variant so Sup-Admins keep their verification controls.
+  //
+  // API endpoint selection must follow the AUTHENTICATED VIEWER'S
+  // REAL role — never the presentation flag and never
+  // `variant === 'support'`:
+  //   ADMIN   -> /api/admin/*   (guarded by requireAdmin, ADMIN only)
+  //   SUPPORT -> /api/support/* (guarded by requireSupport, SUPPORT + ADMIN)
+  //
+  // This keeps Sup-Admins (SUPPORT) on the support-tier route whose
+  // least-privilege checks (non-staff targets only) already apply,
+  // while Co-Admins (ADMIN) keep using the ADMIN routes.
+  // ============================================================
+  const viewerRole = String(authUser?.role || '').toUpperCase();
+  const isCoAdminViewer = viewerRole === 'ADMIN';
+  const verificationApiBase = isCoAdminViewer ? '/api/admin' : '/api/support';
+
   const [submittingType, setSubmittingType] = useState(null);
   const [requestNote, setRequestNote] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -272,7 +292,9 @@ const TrustVerificationSection = ({
     try {
       setSubmittingType(type);
       const payload = { type, status };
-      const endpoint = isAdmin ? `/api/admin/users/${userId}/verification` : `/api/support/users/${userId}/verification`;
+      // Endpoint follows the authenticated viewer's real role (see
+      // verificationApiBase above), not the presentation `isAdmin` flag.
+      const endpoint = `${verificationApiBase}/users/${userId}/verification`;
 
       const res = await api.patch(endpoint, payload);
       if (res.data?.success) {
@@ -292,9 +314,9 @@ const TrustVerificationSection = ({
   const handleAdminViewDocument = async (type) => {
     try {
       setViewingDocType(type);
-      const endpoint = isAdmin
-        ? `/api/admin/verification/user/${userId}/document?type=${type}`
-        : `/api/support/verification/user/${userId}/document?type=${type}`;
+      // Endpoint follows the authenticated viewer's real role (see
+      // verificationApiBase above), not the presentation `isAdmin` flag.
+      const endpoint = `${verificationApiBase}/verification/user/${userId}/document?type=${type}`;
 
       const res = await api.get(endpoint);
       if (res.data?.success && res.data.signedUrl) {
