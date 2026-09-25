@@ -22,6 +22,12 @@ export const JOB_OPTIONS = [
   { value: 'event_planner', label: 'Event Planner' },
   { value: 'fitness_trainer', label: 'Fitness Trainer' },
   { value: 'psychotherapist', label: 'Psychotherapist' },
+  { value: 'mechanic', label: 'Mechanic' },
+  { value: 'excavation_worker', label: 'Excavation Worker' },
+  { value: 'butcher', label: 'Butcher' },
+  { value: 'construction_worker', label: 'Construction Worker' },
+  { value: 'doctor', label: 'Doctor' },
+  { value: 'satellite_dish_technician', label: 'Satellite Dish Installation Technician' },
   { value: 'other', label: 'Other' },
 ];
 

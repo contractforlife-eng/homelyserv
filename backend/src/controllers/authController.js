@@ -20,6 +20,7 @@ import {
   resolveAccountDefaultCurrency
 } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { isCanonicalDoctorSpecialty } from '../constants/doctorSpecialties.js';
 import { ROOT_ADMIN_EMAIL, createRootRecoveryTokenClaims, isRecoveryEmail, isRootRecoveryRequest, normalizeEmail } from '../security/rootAdmin.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
@@ -120,7 +121,7 @@ export const validatePhone = (phone) => {
 
 export const register = async (req, res) => {
   try {
-    const { fullName, email, password, role, phone, countryCode, countryName, location, desiredJob, hourlyRate, tutorSpecialization } = req.body;
+    const { fullName, email, password, role, phone, countryCode, countryName, location, desiredJob, hourlyRate, tutorSpecialization, doctorSpecialty, doctorSpecialtyCustom } = req.body;
 
     // ----------------------------------------------------------
     // PHONE - required for all new email/password registrations
@@ -170,6 +171,8 @@ export const register = async (req, res) => {
     let canonicalDesiredJob = '';
     let normalizedHourlyRate = '';
     let normalizedTutorSpecialization = '';
+    let normalizedDoctorSpecialty = '';
+    let normalizedDoctorSpecialtyCustom = '';
 
     if (normalizedRole === 'WORKER') {
       if (!desiredJob || typeof desiredJob !== 'string' || !isCanonicalWorkerJob(desiredJob)) {
@@ -189,6 +192,28 @@ export const register = async (req, res) => {
           });
         }
         normalizedTutorSpecialization = trimmedSpecialization;
+      }
+
+      if (canonicalDesiredJob === 'doctor') {
+        const trimmedSpecialty = String(doctorSpecialty || '').trim();
+        if (!trimmedSpecialty || !isCanonicalDoctorSpecialty(trimmedSpecialty)) {
+          return res.status(400).json({
+            success: false,
+            message: 'A valid medical specialty is required for doctors'
+          });
+        }
+        normalizedDoctorSpecialty = trimmedSpecialty;
+
+        if (normalizedDoctorSpecialty === 'other') {
+          const trimmedCustom = String(doctorSpecialtyCustom || '').trim();
+          if (!trimmedCustom || trimmedCustom.length > 100) {
+            return res.status(400).json({
+              success: false,
+              message: 'Custom medical specialty is required and must be 100 characters or fewer'
+            });
+          }
+          normalizedDoctorSpecialtyCustom = trimmedCustom;
+        }
       }
 
       const rateValue = hourlyRate;
@@ -242,7 +267,11 @@ export const register = async (req, res) => {
           countryCode: matchedCountry.code,
           countryName: matchedCountry.name
         }),
-        ...(canonicalDesiredJob === 'tutor' ? { tutorSpecialization: normalizedTutorSpecialization } : {})
+        ...(canonicalDesiredJob === 'tutor' ? { tutorSpecialization: normalizedTutorSpecialization } : {}),
+        ...(canonicalDesiredJob === 'doctor' ? {
+          doctorSpecialty: normalizedDoctorSpecialty,
+          doctorSpecialtyCustom: normalizedDoctorSpecialtyCustom
+        } : {})
       } : {})
     }));
 

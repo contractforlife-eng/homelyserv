@@ -16,6 +16,7 @@ import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { resolveAccountDefaultCurrency } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { isCanonicalDoctorSpecialty } from '../constants/doctorSpecialties.js';
 import { validatePhone } from '../controllers/authController.js';
 import { detectPlatform, extractAppVersion } from '../services/platformDetectionService.js';
 
@@ -254,7 +255,7 @@ router.post('/social-login', async (req, res) => {
 // Completes a brand-new Google Worker's required profile before User creation.
 router.post('/social-onboarding/complete', async (req, res) => {
   try {
-    const { onboardingToken, role, countryCode, phone, desiredJob, hourlyRate, tutorSpecialization } = req.body || {};
+    const { onboardingToken, role, countryCode, phone, desiredJob, hourlyRate, tutorSpecialization, doctorSpecialty, doctorSpecialtyCustom } = req.body || {};
     if (!onboardingToken) {
       return res.status(401).json({ success: false, message: 'Social onboarding token is required' });
     }
@@ -291,6 +292,8 @@ router.post('/social-onboarding/complete', async (req, res) => {
     let normalizedDesiredJob = '';
     let normalizedHourlyRate = '';
     let normalizedTutorSpecialization = '';
+    let normalizedDoctorSpecialty = '';
+    let normalizedDoctorSpecialtyCustom = '';
 
     if (normalizedRole === 'WORKER') {
       if (!isCanonicalWorkerJob(desiredJob)) {
@@ -310,6 +313,22 @@ router.post('/social-onboarding/complete', async (req, res) => {
           return res.status(400).json({ success: false, message: 'Specialization is required for tutors and must be 100 characters or fewer' });
         }
       }
+
+      if (normalizedDesiredJob === 'doctor') {
+        const trimmedSpecialty = String(doctorSpecialty || '').trim();
+        if (!trimmedSpecialty || !isCanonicalDoctorSpecialty(trimmedSpecialty)) {
+          return res.status(400).json({ success: false, message: 'A valid medical specialty is required for doctors' });
+        }
+        normalizedDoctorSpecialty = trimmedSpecialty;
+
+        if (normalizedDoctorSpecialty === 'other') {
+          const trimmedCustom = String(doctorSpecialtyCustom || '').trim();
+          if (!trimmedCustom || trimmedCustom.length > 100) {
+            return res.status(400).json({ success: false, message: 'Custom medical specialty is required and must be 100 characters or fewer' });
+          }
+          normalizedDoctorSpecialtyCustom = trimmedCustom;
+        }
+      }
     }
 
     const user = new User({
@@ -325,6 +344,10 @@ router.post('/social-onboarding/complete', async (req, res) => {
         hourlyRate: normalizedHourlyRate,
         hourlyRateCurrency: resolveAccountDefaultCurrency({ countryCode: matchedCountry.code, countryName: matchedCountry.name }),
         ...(normalizedDesiredJob === 'tutor' ? { tutorSpecialization: normalizedTutorSpecialization } : {}),
+        ...(normalizedDesiredJob === 'doctor' ? {
+          doctorSpecialty: normalizedDoctorSpecialty,
+          doctorSpecialtyCustom: normalizedDoctorSpecialtyCustom
+        } : {}),
       } : {}),
       profileImage: onboarding.profileImage || null,
       lastPlatform: detectPlatform(req),

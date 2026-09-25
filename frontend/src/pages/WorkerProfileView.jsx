@@ -16,6 +16,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
 import { formatExperienceDisplay } from '../utils/experienceDisplay';
 import { getTutorSpecializationLabel } from '../constants/tutorSpecializations';
+import { getDoctorSpecialtyLabel } from '../constants/doctorSpecialties';
 import {
   ArrowLeft,
   User,
@@ -220,6 +221,12 @@ const WorkerProfileView = () => {
       'event_planner': t('workerProfile.jobs.event_planner'),
       'fitness_trainer': t('workerProfile.jobs.fitness_trainer'),
       'psychotherapist': t('workerProfile.jobs.psychotherapist'),
+      'mechanic': t('workerProfile.jobs.mechanic'),
+      'excavation_worker': t('workerProfile.jobs.excavation_worker'),
+      'butcher': t('workerProfile.jobs.butcher'),
+      'construction_worker': t('workerProfile.jobs.construction_worker'),
+      'doctor': t('workerProfile.jobs.doctor'),
+      'satellite_dish_technician': t('workerProfile.jobs.satellite_dish_technician'),
       'other': t('workerProfile.jobs.other'),
       // Legacy values for backward compatibility
       'elderly_care': t('workerProfile.jobs.elderly_care'),
@@ -328,6 +335,9 @@ const WorkerProfileView = () => {
                   {getJobLabel(worker.desiredJob)}
                   {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
                     <> — {getTutorSpecializationLabel(worker.tutorSpecialization, t)}</>
+                  ) : null}
+                  {worker.desiredJob === 'doctor' && worker.doctorSpecialty ? (
+                    <> — {getDoctorSpecialtyLabel(worker.doctorSpecialty, worker.doctorSpecialtyCustom, t)}</>
                   ) : null}
                 </p>
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-teal-100">

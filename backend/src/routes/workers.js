@@ -13,6 +13,7 @@ import { getJwtSecret } from '../config/jwtSecret.js';
 import { buildWorkerProfileUpdate, profileUpdateErrorResponse } from '../services/userProfileUpdateService.js';
 import { ensureWorkerProfile } from '../services/workerProfileService.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { isCanonicalDoctorSpecialty } from '../constants/doctorSpecialties.js';
 import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
 import { getPublicVerification } from '../services/profileVerificationService.js';
 
@@ -214,7 +215,7 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'No updatable profile fields provided' });
     }
 
-    const existingUser = await User.findById(authenticatedUserId).select('desiredJob tutorSpecialization');
+    const existingUser = await User.findById(authenticatedUserId).select('desiredJob tutorSpecialization doctorSpecialty doctorSpecialtyCustom');
     if (!existingUser) {
       return res.status(404).json({
         success: false,
@@ -251,6 +252,53 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
         });
       }
       updates.tutorSpecialization = trimmedSpecialization;
+    }
+
+    const doctorSpecialtyProvided = Object.prototype.hasOwnProperty.call(req.body, 'doctorSpecialty');
+    const finalDoctorSpecialty = doctorSpecialtyProvided
+      ? String(req.body.doctorSpecialty || '')
+      : String(existingUser.doctorSpecialty || '');
+
+    const doctorSpecialtyCustomProvided = Object.prototype.hasOwnProperty.call(req.body, 'doctorSpecialtyCustom');
+    const finalDoctorSpecialtyCustom = doctorSpecialtyCustomProvided
+      ? String(req.body.doctorSpecialtyCustom || '')
+      : String(existingUser.doctorSpecialtyCustom || '');
+
+    if (finalDesiredJob === 'doctor') {
+      const trimmedSpecialty = finalDoctorSpecialty.trim();
+      if (!trimmedSpecialty || !isCanonicalDoctorSpecialty(trimmedSpecialty)) {
+        return res.status(400).json({
+          success: false,
+          message: 'A valid medical specialty is required for doctors'
+        });
+      }
+      if (doctorSpecialtyProvided) {
+        updates.doctorSpecialty = trimmedSpecialty;
+      }
+
+      if (trimmedSpecialty === 'other') {
+        const trimmedCustom = finalDoctorSpecialtyCustom.trim();
+        if (!trimmedCustom || trimmedCustom.length > 100) {
+          return res.status(400).json({
+            success: false,
+            message: 'Custom medical specialty is required and must be 100 characters or fewer'
+          });
+        }
+        if (doctorSpecialtyCustomProvided) {
+          updates.doctorSpecialtyCustom = trimmedCustom;
+        }
+      } else {
+        updates.doctorSpecialtyCustom = '';
+      }
+    } else {
+      if (doctorSpecialtyProvided) {
+        const trimmedSpecialty = String(req.body.doctorSpecialty || '').trim();
+        updates.doctorSpecialty = trimmedSpecialty;
+      }
+      if (doctorSpecialtyCustomProvided) {
+        const trimmedCustom = String(req.body.doctorSpecialtyCustom || '').trim();
+        updates.doctorSpecialtyCustom = trimmedCustom;
+      }
     }
     
     const user = await User.findByIdAndUpdate(

@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
-import { TUTOR_SPECIALIZATIONS, getTutorSpecializationLabel } from '../constants/tutorSpecializations';
+import { TUTOR_SPECIALIZATIONS, getTutorSpecializationLabel, resolveTutorSpecialization } from '../constants/tutorSpecializations';
+import { DOCTOR_SPECIALTIES, getDoctorSpecialtyLabel, resolveDoctorSpecialty } from '../constants/doctorSpecialties';
 import { fetchSubscriptionStatus } from '../services/paymentService';
 import { applyBackendSubscription } from '../utils/subscriptionService';
 import { normalizePremiumStatus } from '../utils/premiumStatus';
@@ -76,7 +77,9 @@ const WorkerProfile = () => {
     hourlyRateCurrency: getAccountCurrency(authUser),
     profileImage: '',
     desiredJob: '',
-    tutorSpecialization: ''
+    tutorSpecialization: '',
+    doctorSpecialty: '',
+    doctorSpecialtyCustom: ''
   });
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -209,7 +212,9 @@ const WorkerProfile = () => {
       hourlyRateCurrency: getInitialRateCurrency(authUser),
       profileImage: authUser.profileImage || '',
       desiredJob: authUser.desiredJob || '',
-      tutorSpecialization: authUser.tutorSpecialization || ''
+      tutorSpecialization: authUser.tutorSpecialization || '',
+      doctorSpecialty: authUser.doctorSpecialty || '',
+      doctorSpecialtyCustom: authUser.doctorSpecialtyCustom || ''
     });
     setRateDirty(false);
     initializedUserIdRef.current = userId;
@@ -231,7 +236,9 @@ const WorkerProfile = () => {
         hourlyRateCurrency: getInitialRateCurrency(authUser),
         profileImage: authUser.profileImage || '',
         desiredJob: authUser.desiredJob || '',
-        tutorSpecialization: authUser.tutorSpecialization || ''
+        tutorSpecialization: authUser.tutorSpecialization || '',
+        doctorSpecialty: authUser.doctorSpecialty || '',
+        doctorSpecialtyCustom: authUser.doctorSpecialtyCustom || ''
       });
       setImagePreview(authUser.profileImage || '');
       setPendingImageFile(null);
@@ -344,7 +351,9 @@ const WorkerProfile = () => {
         experience: formData.experience,
         profileImage: profileImageUrl,
         desiredJob: formData.desiredJob,
-        tutorSpecialization: formData.tutorSpecialization
+        tutorSpecialization: formData.tutorSpecialization,
+        doctorSpecialty: formData.doctorSpecialty,
+        doctorSpecialtyCustom: formData.doctorSpecialtyCustom
       });
 
       if (response.data.success) {
@@ -740,6 +749,64 @@ const WorkerProfile = () => {
                             </p>
                           )}
                           {!isEditing && !rawSpecialization && (
+                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('workerOwnProfile.notSpecified')}</p>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {formData.desiredJob === 'doctor' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('doctorSpecialty')}</label>
+                    {(() => {
+                      const rawSpecialty = formData.doctorSpecialty;
+                      const resolvedSpecialty = getDoctorSpecialtyLabel(rawSpecialty, formData.doctorSpecialtyCustom, t);
+                      const isCanonical = DOCTOR_SPECIALTIES.some(opt => opt.value === rawSpecialty);
+                      const selectValue = isCanonical ? rawSpecialty : (resolveDoctorSpecialty(rawSpecialty) || rawSpecialty);
+                      return (
+                        <>
+                          <div className="relative">
+                            <select
+                              name="doctorSpecialty"
+                              value={selectValue}
+                              onChange={handleInputChange}
+                              disabled={!isEditing}
+                              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                                isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                              }`}
+                            >
+                              <option value="">{t('selectDoctorSpecialty')}</option>
+                              {DOCTOR_SPECIALTIES.map((spec) => (
+                                <option key={spec.value} value={spec.value}>
+                                  {t(spec.labelKey)}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={18} className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                          </div>
+
+                          {isEditing && formData.doctorSpecialty === 'other' && (
+                            <div className="mt-2">
+                              <input
+                                type="text"
+                                name="doctorSpecialtyCustom"
+                                value={formData.doctorSpecialtyCustom}
+                                onChange={handleInputChange}
+                                maxLength={100}
+                                placeholder={t('doctorSpecialtyOtherPlaceholder')}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+                              />
+                            </div>
+                          )}
+
+                          {!isEditing && rawSpecialty && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              <span className="font-medium">{t('workerOwnProfile.selected')}:</span> {resolvedSpecialty}
+                            </p>
+                          )}
+                          {!isEditing && !rawSpecialty && (
                             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('workerOwnProfile.notSpecified')}</p>
                           )}
                         </>

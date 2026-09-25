@@ -154,6 +154,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  doctorSpecialty: {
+    type: String,
+    default: ''
+  },
+  doctorSpecialtyCustom: {
+    type: String,
+    default: ''
+  },
   language: {
     type: String,
     default: 'en'

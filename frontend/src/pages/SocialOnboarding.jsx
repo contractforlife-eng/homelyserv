@@ -8,6 +8,7 @@ import CountrySelect from '../components/CountrySelect';
 import { getCountryByCode } from '../utils/countries';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS } from '../constants/tutorSpecializations';
+import { DOCTOR_SPECIALTIES } from '../constants/doctorSpecialties';
 import { trackTikTokCompleteRegistration } from '../utils/tiktokPixel';
 
 const SocialOnboarding = () => {
@@ -25,6 +26,8 @@ const SocialOnboarding = () => {
     desiredJob: '',
     hourlyRate: '',
     tutorSpecialization: '',
+    doctorSpecialty: '',
+    doctorSpecialtyCustom: '',
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -78,6 +81,22 @@ const SocialOnboarding = () => {
       if (formData.desiredJob === 'tutor' && !formData.tutorSpecialization) {
         nextErrors.tutorSpecialization = t('tutorSpecializationRequired');
       }
+
+      if (formData.desiredJob === 'doctor') {
+        const trimmedSpecialty = String(formData.doctorSpecialty || '').trim();
+        if (!trimmedSpecialty) {
+          nextErrors.doctorSpecialty = t('doctorSpecialtyRequired');
+        } else if (!DOCTOR_SPECIALTIES.some((spec) => spec.value === trimmedSpecialty)) {
+          nextErrors.doctorSpecialty = t('doctorSpecialtyInvalid');
+        } else if (trimmedSpecialty === 'other') {
+          const trimmedCustom = String(formData.doctorSpecialtyCustom || '').trim();
+          if (!trimmedCustom) {
+            nextErrors.doctorSpecialtyCustom = t('doctorSpecialtyRequired');
+          } else if (trimmedCustom.length > 100) {
+            nextErrors.doctorSpecialtyCustom = t('doctorSpecialtyInvalid');
+          }
+        }
+      }
     }
 
     setErrors(nextErrors);
@@ -99,6 +118,10 @@ const SocialOnboarding = () => {
           desiredJob: formData.desiredJob,
           hourlyRate: formData.hourlyRate,
           ...(formData.desiredJob === 'tutor' ? { tutorSpecialization: formData.tutorSpecialization } : {}),
+          ...(formData.desiredJob === 'doctor' ? {
+            doctorSpecialty: formData.doctorSpecialty,
+            ...(formData.doctorSpecialty === 'other' ? { doctorSpecialtyCustom: formData.doctorSpecialtyCustom.trim() } : {})
+          } : {}),
         } : {}),
       });
 
@@ -215,6 +238,31 @@ const SocialOnboarding = () => {
                   {TUTOR_SPECIALIZATIONS.map((specialization) => <option key={specialization.value} value={specialization.value}>{t(specialization.labelKey)}</option>)}
                 </select>
                 {errors.tutorSpecialization && <p className="mt-1 text-sm text-red-500">{errors.tutorSpecialization}</p>}
+              </div>
+            )}
+
+            {formData.role === 'WORKER' && formData.desiredJob === 'doctor' && (
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('doctorSpecialty')} *</label>
+                <select value={formData.doctorSpecialty} onChange={(event) => updateField('doctorSpecialty', event.target.value)} className={`w-full appearance-none rounded-xl border bg-gray-50 px-3 py-3.5 dark:bg-gray-900/80 ${errors.doctorSpecialty ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <option value="">{t('selectDoctorSpecialty')}</option>
+                  {DOCTOR_SPECIALTIES.map((spec) => <option key={spec.value} value={spec.value}>{t(spec.labelKey)}</option>)}
+                </select>
+                {errors.doctorSpecialty && <p className="mt-1 text-sm text-red-500">{errors.doctorSpecialty}</p>}
+
+                {formData.doctorSpecialty === 'other' && (
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      maxLength={100}
+                      value={formData.doctorSpecialtyCustom}
+                      onChange={(event) => updateField('doctorSpecialtyCustom', event.target.value)}
+                      className={`w-full rounded-xl border bg-gray-50 px-4 py-3.5 dark:bg-gray-900/80 ${errors.doctorSpecialtyCustom ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
+                      placeholder={t('doctorSpecialtyOtherPlaceholder')}
+                    />
+                    {errors.doctorSpecialtyCustom && <p className="mt-1 text-sm text-red-500">{errors.doctorSpecialtyCustom}</p>}
+                  </div>
+                )}
               </div>
             )}
           </div>

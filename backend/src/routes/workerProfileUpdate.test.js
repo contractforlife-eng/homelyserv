@@ -38,6 +38,8 @@ const makeHarness = ({
     select: async () => ({
       desiredJob: state.desiredJob,
       tutorSpecialization: '',
+      doctorSpecialty: '',
+      doctorSpecialtyCustom: '',
     }),
   });
   User.findByIdAndUpdate = (userId, update, options) => {
@@ -241,3 +243,63 @@ test('self-heal failure surfaces through existing error handling after User save
     await harness.close();
   }
 });
+
+test('supports all six new canonical categories (mechanic, excavation_worker, butcher, construction_worker, doctor, satellite_dish_technician)', async () => {
+  const newJobs = [
+    'mechanic',
+    'excavation_worker',
+    'butcher',
+    'construction_worker',
+    'satellite_dish_technician',
+  ];
+
+  for (const job of newJobs) {
+    const harness = makeHarness();
+    try {
+      const { response, body } = await harness.request({ desiredJob: job });
+      assert.equal(response.status, 200, `Expected 200 for job ${job}`);
+      assert.equal(body.success, true);
+      assert.equal(harness.state.createdProfiles[0].category, job);
+    } finally {
+      await harness.close();
+    }
+  }
+});
+
+test('updating to doctor requires valid doctorSpecialty', async () => {
+  const harness = makeHarness();
+  try {
+    const missingSpecialty = await harness.request({ desiredJob: 'doctor' });
+    assert.equal(missingSpecialty.response.status, 400);
+    assert.equal(missingSpecialty.body.success, false);
+
+    const invalidSpecialty = await harness.request({ desiredJob: 'doctor', doctorSpecialty: 'invalid_specialty' });
+    assert.equal(invalidSpecialty.response.status, 400);
+    assert.equal(invalidSpecialty.body.success, false);
+
+    const validSpecialty = await harness.request({ desiredJob: 'doctor', doctorSpecialty: 'cardiology' });
+    assert.equal(validSpecialty.response.status, 200);
+    assert.equal(validSpecialty.body.success, true);
+    assert.equal(harness.state.createdProfiles[0].category, 'doctor');
+  } finally {
+    await harness.close();
+  }
+});
+
+test('updating to doctor with "other" specialty requires non-empty doctorSpecialtyCustom <= 100 chars', async () => {
+  const harness = makeHarness();
+  try {
+    const missingCustom = await harness.request({ desiredJob: 'doctor', doctorSpecialty: 'other' });
+    assert.equal(missingCustom.response.status, 400);
+
+    const tooLongCustom = await harness.request({ desiredJob: 'doctor', doctorSpecialty: 'other', doctorSpecialtyCustom: 'a'.repeat(101) });
+    assert.equal(tooLongCustom.response.status, 400);
+
+    const validCustom = await harness.request({ desiredJob: 'doctor', doctorSpecialty: 'other', doctorSpecialtyCustom: 'Immunology' });
+    assert.equal(validCustom.response.status, 200);
+    assert.equal(validCustom.body.success, true);
+  } finally {
+    await harness.close();
+  }
+});
+

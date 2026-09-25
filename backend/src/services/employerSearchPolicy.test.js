@@ -89,3 +89,17 @@ test('free-text job labels resolve exactly across all supported languages', () =
   assert.equal(resolveCanonicalJobLabel(' محمد '), null);
   assert.equal(resolveCanonicalJobLabel('محمد سائق ممتاز'), null);
 });
+
+test('job filters match the new canonical jobs including label casing and underscore/space handling', () => {
+  const doctorWorker = { desiredJob: 'doctor', skills: ['Cardiology'] };
+  assert.equal(matchesCanonicalJob(doctorWorker, 'Doctor'), true);
+  assert.equal(matchesCanonicalJob(doctorWorker, 'doctor'), true);
+
+  const excavationWorker = { desiredJob: 'excavation_worker', skills: [] };
+  assert.equal(matchesCanonicalJob(excavationWorker, 'Excavation Worker'), true);
+  assert.equal(matchesCanonicalJob(excavationWorker, 'excavation_worker'), true);
+
+  const mechanicWorker = { desiredJob: 'mechanic', skills: [] };
+  assert.equal(matchesCanonicalJob(mechanicWorker, 'Mechanic'), true);
+});
+

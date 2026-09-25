@@ -32,6 +32,7 @@ import {
 import employerService from '../services/employerService';
 import { resolveArabicJobAlias } from '../utils/arabicJobSearchAliases';
 import { getTutorSpecializationLabel } from '../constants/tutorSpecializations';
+import { getDoctorSpecialtyLabel } from '../constants/doctorSpecialties';
 import {
   compareWorkerRates,
   formatWorkerRate,
@@ -975,6 +976,9 @@ const EmployerSearch = () => {
                             {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
                               <span className="text-teal-600"> — {getTutorSpecializationLabel(worker.tutorSpecialization, t)}</span>
                             ) : null}
+                            {worker.desiredJob === 'doctor' && worker.doctorSpecialty ? (
+                              <span className="text-teal-600"> — {getDoctorSpecialtyLabel(worker.doctorSpecialty, worker.doctorSpecialtyCustom, t)}</span>
+                            ) : null}
                           </div>
 
                         {/* Location */}
@@ -1111,6 +1115,9 @@ const EmployerSearch = () => {
                                 {getJobLabel(worker.desiredJob)}
                                 {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
                                   <> — {getTutorSpecializationLabel(worker.tutorSpecialization, t)}</>
+                                ) : null}
+                                {worker.desiredJob === 'doctor' && worker.doctorSpecialty ? (
+                                  <> — {getDoctorSpecialtyLabel(worker.doctorSpecialty, worker.doctorSpecialtyCustom, t)}</>
                                 ) : null}
                               </span>
                            </div>

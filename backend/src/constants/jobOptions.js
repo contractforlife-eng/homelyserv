@@ -21,6 +21,12 @@ const CANONICAL_WORKER_JOBS = [
   'event_planner',
   'fitness_trainer',
   'psychotherapist',
+  'mechanic',
+  'excavation_worker',
+  'butcher',
+  'construction_worker',
+  'doctor',
+  'satellite_dish_technician',
   'other'
 ];
 

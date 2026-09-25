@@ -7,7 +7,10 @@ const JOB_LABELS_BY_LOCALE = {
     electrician: 'Electrician', cleaner: 'Cleaner', cook: 'Cook', tutor: 'Tutor', gardener: 'Gardener',
     portrait_painter: 'Portrait Painter', interior_designer: 'Interior Designer', dog_trainer: 'Dog Trainer',
     cat_trainer: 'Cat Trainer', housekeeping: 'Housekeeping', personal_assistant: 'Personal Assistant',
-    event_planner: 'Event Planner', fitness_trainer: 'Fitness Trainer', psychotherapist: 'Psychotherapist', other: 'Other'
+    event_planner: 'Event Planner', fitness_trainer: 'Fitness Trainer', psychotherapist: 'Psychotherapist',
+    mechanic: 'Mechanic', excavation_worker: 'Excavation Worker', butcher: 'Butcher',
+    construction_worker: 'Construction Worker', doctor: 'Doctor',
+    satellite_dish_technician: 'Satellite Dish Installation Technician', other: 'Other'
   },
   ar: {
     nanny: 'مربية أطفال', elderly_caregiver: 'مقدم رعاية مسنين', nurse: 'ممرض', driver: 'سائق',
@@ -15,7 +18,8 @@ const JOB_LABELS_BY_LOCALE = {
     cleaner: 'عامل نظافة', cook: 'طباخ', tutor: 'معلم', gardener: 'بستاني', portrait_painter: 'فنان رسام',
     interior_designer: 'مصمم داخلي', dog_trainer: 'مدرب كلاب', cat_trainer: 'مدرب قطط', housekeeping: 'خدمات المنزل',
     personal_assistant: 'مساعد شخصي', event_planner: 'منظم فعاليات', fitness_trainer: 'مدرب لياقة',
-    psychotherapist: 'معالج نفسي', other: 'أخرى'
+    psychotherapist: 'معالج نفسي', mechanic: 'ميكانيكي', excavation_worker: 'عامل حفر', butcher: 'جزار',
+    construction_worker: 'عامل بناء', doctor: 'طبيب', satellite_dish_technician: 'فني تركيب دش', other: 'أخرى'
   },
   fr: {
     nanny: 'Nounou', elderly_caregiver: 'Aide aux personnes âgées', nurse: 'Infirmier', driver: 'Chauffeur',
@@ -23,7 +27,10 @@ const JOB_LABELS_BY_LOCALE = {
     electrician: 'Électricien', cleaner: 'Agent de nettoyage', cook: 'Cuisinier', tutor: 'Tuteur', gardener: 'Jardinier',
     portrait_painter: 'Portraitmaler', interior_designer: 'Designer d’intérieur', dog_trainer: 'Dresseur de chiens',
     cat_trainer: 'Dresseur de chats', housekeeping: 'Ménage à domicile', personal_assistant: 'Assistant personnel',
-    event_planner: 'Organisateur d’événements', fitness_trainer: 'Coach sportif', psychotherapist: 'Psychothérapeute', other: 'Autre'
+    event_planner: 'Organisateur d’événements', fitness_trainer: 'Coach sportif', psychotherapist: 'Psychothérapeute',
+    mechanic: 'Mécanicien', excavation_worker: 'Terrassier', butcher: 'Boucher',
+    construction_worker: 'Ouvrier du bâtiment', doctor: 'Médecin',
+    satellite_dish_technician: 'Technicien d’installation d’antenne parabolique', other: 'Autre'
   },
   ru: {
     nanny: 'Няня', elderly_caregiver: 'Сиделка для пожилых', nurse: 'Медсестра', driver: 'Водитель',
@@ -31,7 +38,10 @@ const JOB_LABELS_BY_LOCALE = {
     electrician: 'Электрик', cleaner: 'Уборщик', cook: 'Повар', tutor: 'Репетитор', gardener: 'Садовник',
     portrait_painter: 'Художник-портретист', interior_designer: 'Дизайнер интерьера', dog_trainer: 'Кинолог',
     cat_trainer: 'Дрессировщик кошек', housekeeping: 'Уборка дома', personal_assistant: 'Личный помощник',
-    event_planner: 'Организатор мероприятий', fitness_trainer: 'Фитнес-тренер', psychotherapist: 'Психотерапевт', other: 'Другое'
+    event_planner: 'Организатор мероприятий', fitness_trainer: 'Фитнес-тренер', psychotherapist: 'Психотерапевт',
+    mechanic: 'Автомеханик', excavation_worker: 'Землекоп', butcher: 'Мясник',
+    construction_worker: 'Строитель', doctor: 'Врач',
+    satellite_dish_technician: 'Мастер по установке спутниковых антенн', other: 'Другое'
   },
   tr: {
     nanny: 'Dadı', elderly_caregiver: 'Yaşlı Bakıcısı', nurse: 'Hemşire', driver: 'Şoför',
@@ -39,7 +49,10 @@ const JOB_LABELS_BY_LOCALE = {
     electrician: 'Elektrikçi', cleaner: 'Temizlikçi', cook: 'Aşçı', tutor: 'Özel Öğretmen', gardener: 'Bahçıvan',
     portrait_painter: 'Portre Sanatçısı', interior_designer: 'İç Mimar', dog_trainer: 'Köpek Eğitmeni',
     cat_trainer: 'Kedi Eğitmeni', housekeeping: 'Ev Hizmetleri', personal_assistant: 'Kişisel Asistan',
-    event_planner: 'Etkinlik Planlayıcısı', fitness_trainer: 'Fitness Eğitmeni', psychotherapist: 'Psikoterapist', other: 'Diğer'
+    event_planner: 'Etkinlik Planlayıcısı', fitness_trainer: 'Fitness Eğitmeni', psychotherapist: 'Psikoterapist',
+    mechanic: 'Tamirci', excavation_worker: 'Kazı İşçisi', butcher: 'Kasap',
+    construction_worker: 'İnşaat İşçisi', doctor: 'Doktor',
+    satellite_dish_technician: 'Uydu Anteni Montaj Teknisyeni', other: 'Diğer'
   },
   de: {
     nanny: 'Kindermädchen', elderly_caregiver: 'Altenpfleger', nurse: 'Pflegekraft', driver: 'Fahrer',
@@ -47,7 +60,10 @@ const JOB_LABELS_BY_LOCALE = {
     electrician: 'Elektriker', cleaner: 'Reinigungskraft', cook: 'Koch', tutor: 'Privatlehrer', gardener: 'Gärtner',
     portrait_painter: 'Porträtmaler', interior_designer: 'Innenarchitekt', dog_trainer: 'Hundetrainer',
     cat_trainer: 'Katzentrainer', housekeeping: 'Haushaltsführung', personal_assistant: 'Persönlicher Assistent',
-    event_planner: 'Veranstaltungsplaner', fitness_trainer: 'Fitnesstrainer', psychotherapist: 'Psychotherapeut', other: 'Andere'
+    event_planner: 'Veranstaltungsplaner', fitness_trainer: 'Fitnesstrainer', psychotherapist: 'Psychotherapeut',
+    mechanic: 'Mechaniker', excavation_worker: 'Baggerführer / Erdarbeiter', butcher: 'Metzger',
+    construction_worker: 'Bauarbeiter', doctor: 'Arzt',
+    satellite_dish_technician: 'Satellitenanlagen-Monteur', other: 'Andere'
   }
 };
 

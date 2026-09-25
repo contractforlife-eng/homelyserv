@@ -50,7 +50,13 @@ export const TURKISH_PROFESSION_MAP = Object.freeze({
   house_manager: 'ev yöneticisi',
   personal_assistant: 'kişisel asistan',
   handyman: 'tamirat ustası',
-  painter: 'boyacı'
+  painter: 'boyacı',
+  mechanic: 'tamirci',
+  excavation_worker: 'kazı işçisi',
+  butcher: 'kasap',
+  construction_worker: 'inşaat işçisi',
+  doctor: 'doktor',
+  satellite_dish_technician: 'uydu montaj'
 });
 
 // Profession to Egypt query keyword mapping (English terms commonly indexed in Jooble EG)
@@ -73,7 +79,13 @@ export const EGYPT_PROFESSION_MAP = Object.freeze({
   house_manager: 'house manager',
   personal_assistant: 'personal assistant',
   handyman: 'handyman',
-  painter: 'painter'
+  painter: 'painter',
+  mechanic: 'mechanic',
+  excavation_worker: 'excavation',
+  butcher: 'butcher',
+  construction_worker: 'construction worker',
+  doctor: 'doctor',
+  satellite_dish_technician: 'technician'
 });
 
 /**

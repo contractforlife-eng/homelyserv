@@ -36,7 +36,13 @@ export const USAJOBS_PROFESSION_MAP = Object.freeze({
   house_manager: 'administrative assistant',
   gardener: 'groundskeeper',
   handyman: 'maintenance',
-  painter: 'painter'
+  painter: 'painter',
+  mechanic: 'mechanic',
+  excavation_worker: 'equipment operator',
+  butcher: 'meat cutter',
+  construction_worker: 'construction',
+  doctor: 'physician',
+  satellite_dish_technician: 'telecommunications technician'
 });
 
 /**
