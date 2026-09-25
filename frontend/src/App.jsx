@@ -20,6 +20,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import Download from './pages/Download';
 import DeleteAccount from './pages/DeleteAccount';
 import SocialOnboarding from './pages/SocialOnboarding';
+import Healthcare from './pages/Healthcare';
 
 // Common Protected Pages
 import MyHires from './pages/MyHires';
@@ -240,7 +241,7 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, loading, user, markStartupReady } = useAuth();
-  const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
+  const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help', '/healthcare']);
   const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
 
   const [showIntro, setShowIntro] = useState(() => Capacitor.isNativePlatform());
@@ -354,6 +355,7 @@ function App() {
       <Route path="/delete-account" element={<DeleteAccount />} />
       <Route path="/social-onboarding" element={<SocialOnboarding />} />
       <Route path="/download" element={<Download />} />
+      <Route path="/healthcare" element={<Healthcare />} />
 
       {/* ========== COMMON PROTECTED ROUTES ========== */}
       

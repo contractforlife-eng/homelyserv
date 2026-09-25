@@ -6,6 +6,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { HOME_TRANSLATIONS } from './homepageTranslations.js';
+import { HEALTHCARE_TRANSLATIONS } from './healthcareTranslations.js';
 
 // ---------------------------------------------------------------------------
 // Shared language metadata – used by every language selector in the app.
@@ -6948,6 +6949,13 @@ Object.entries(HOME_TRANSLATIONS).forEach(([language, homeCopy]) => {
   const target = { en, ar, fr, ru, tr, de }[language];
   if (target && target.translation) {
     target.translation.home = homeCopy;
+  }
+});
+
+Object.entries(HEALTHCARE_TRANSLATIONS).forEach(([language, healthcareCopy]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    target.translation.healthcarePage = healthcareCopy;
   }
 });
 

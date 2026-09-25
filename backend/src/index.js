@@ -42,6 +42,7 @@ import employerFamilyRoutes from './routes/employerFamily.js';
 import employerFamilyTreeRoutes from './routes/employerFamilyTree.js';
 import verificationRoutes from './routes/verification.js';
 import accountLinkRoutes from './routes/accountLink.js';
+import healthcareRoutes from './routes/healthcare.js';
 import { requireAdmin } from './middleware/auth.js';
 import { getHomelyMindIntegrationSecret } from './config/homelyMindIntegration.js';
 import { setIo } from './lib/socket.js';
@@ -388,6 +389,7 @@ app.use('/api/public-support', publicSupportRoutes);
 app.use('/api/external-jobs', externalJobRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/account-link', accountLinkRoutes);
+app.use('/api/healthcare', healthcareRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
