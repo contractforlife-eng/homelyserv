@@ -213,6 +213,13 @@ export default function Home() {
               >
                 {t('home.nav.services')}
               </a>
+              <Link
+                to="/healthcare"
+                className="hover:text-red-600 transition-colors py-1 font-semibold flex items-center gap-1 text-red-600"
+              >
+                <HeartPulse size={16} />
+                <span>Healthcare</span>
+              </Link>
               <a
                 href="#how-it-works"
                 onClick={(e) => scrollToSection(e, 'how-it-works')}
@@ -285,6 +292,13 @@ export default function Home() {
             >
               {t('home.nav.services')}
             </a>
+            <Link
+              to="/healthcare"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-md text-base font-semibold text-red-600 hover:bg-red-50"
+            >
+              Healthcare
+            </Link>
             <a
               href="#how-it-works"
               onClick={(e) => scrollToSection(e, 'how-it-works')}
@@ -1002,6 +1016,12 @@ export default function Home() {
                 <li>
                   <Link to="/register?role=worker" className="text-slate-300 hover:text-white transition">
                     {t('home.nav.findJobs')}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/healthcare" className="text-slate-300 hover:text-white transition flex items-center gap-1.5">
+                    <HeartPulse size={14} className="text-red-400" />
+                    <span>Healthcare Directory</span>
                   </Link>
                 </li>
                 <li>

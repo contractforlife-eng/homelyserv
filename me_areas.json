@@ -1,0 +1,6022 @@
+[
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": ""
+    },
+    "count": 3143
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": ""
+    },
+    "count": 3051
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Ain City"
+    },
+    "count": 169
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Mount Lebanon"
+    },
+    "count": 160
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": ""
+    },
+    "count": 123
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Masr El Gedida (Heliopolis)"
+    },
+    "count": 87
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Great Beirut"
+    },
+    "count": 82
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Metn"
+    },
+    "count": 82
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "South Lebanon"
+    },
+    "count": 68
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Beirut"
+    },
+    "count": 64
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mohandeseen"
+    },
+    "count": 63
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Salmiya"
+    },
+    "count": 58
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat Nasr (Nasr City)"
+    },
+    "count": 55
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": ""
+    },
+    "count": 55
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tagamoa El Khames (Fifth Settlement)"
+    },
+    "count": 53
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Keserwan"
+    },
+    "count": 52
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Mussafah"
+    },
+    "count": 51
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Maadi"
+    },
+    "count": 49
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Riffa"
+    },
+    "count": 47
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Bekaa"
+    },
+    "count": 47
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "North Lebanon"
+    },
+    "count": 45
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tanta"
+    },
+    "count": 43
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Dokki"
+    },
+    "count": 41
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Suez"
+    },
+    "count": 40
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Western Region"
+    },
+    "count": 33
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Manama"
+    },
+    "count": 33
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": ""
+    },
+    "count": 33
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "October (6th of October City)"
+    },
+    "count": 33
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Salalah"
+    },
+    "count": 32
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Beni Suef"
+    },
+    "count": 30
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sheikh Zayed"
+    },
+    "count": 29
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Port Said"
+    },
+    "count": 29
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Giza (Haram)"
+    },
+    "count": 28
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "North"
+    },
+    "count": 28
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Hurghada"
+    },
+    "count": 28
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat Al Ashir min Ramadan (10th of Ramadan City)"
+    },
+    "count": 26
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Fayoum"
+    },
+    "count": 26
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Baabda"
+    },
+    "count": 26
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Zagazig"
+    },
+    "count": 26
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mansoura"
+    },
+    "count": 25
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Ismailia"
+    },
+    "count": 25
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Salmaniya"
+    },
+    "count": 24
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Smouha"
+    },
+    "count": 23
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARSHA FIRST"
+    },
+    "count": 22
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Banha"
+    },
+    "count": 22
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Faisal"
+    },
+    "count": 22
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Jbeil"
+    },
+    "count": 21
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JUMEIRA FIRST"
+    },
+    "count": 21
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Asyut"
+    },
+    "count": 21
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Minya"
+    },
+    "count": 21
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Farwaniya"
+    },
+    "count": 20
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Sohar"
+    },
+    "count": 20
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qena"
+    },
+    "count": 20
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Waab"
+    },
+    "count": 20
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Obour"
+    },
+    "count": 20
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Shobra"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Shbin El Koom"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ruwi"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Shubra El Kheima"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MUHAISANAH SECOND"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "South"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Damietta"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Zinj"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": ""
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Arba'een"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Helwan"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Isa Town"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL KARAMA"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Luxor"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Muscat"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Fahaheel"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Hawally"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Aswan"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MURAQQABAT"
+    },
+    "count": 15
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Doha"
+    },
+    "count": 15
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Chouf"
+    },
+    "count": 15
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Abou Hammour"
+    },
+    "count": 15
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JABAL ALI FIRST"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Wakra"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kom Hamada"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Wust El Balad"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Danah"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sohag"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Marsa Matruh"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Khuwair"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Bateen"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "DUBAI INVESTMENT PARK FIRST"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Giza"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QUSAIS FIRST"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MIRDIF"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Duhail"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Jabriya"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Muharraq"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL WASL"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Seeb"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Aley"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mokattam"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZ THIRD"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat Sadat"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Seef"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kafr El Sheikh"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Hadayek Al Ahram (Hada'iq AlAhram)"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL SATWA"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Jahra"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "OUD METHA"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Agami"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Baniyas"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "AlMahalla Al Kubra"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM SUQEIM FIRST"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Saar"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Hadayek Al Quba"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL NAHDA SECOND"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM HURAIR SECOND"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Muttrah"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Industrial Area"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Hilal"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Old Airport"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL SAFA SECOND"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "WARSAN FIRST"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MANKHOOL"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JUMEIRA THIRD"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abbasiya"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Musheireb"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARSHA SOUTH FOURTH"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL GARHOUD"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Sadd"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Gharafa"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Mangaf"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL RIGGA"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Barka"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Damanhur"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Khoud"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mahattat El Ramel (Raml Station)"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sharm El Sheikh"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Rayyan"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Aziziah"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Muharraq"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BADA'A"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Maamoura"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Busaiteen"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Juffair"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL RAFFA"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Belbeis"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Khalifa City"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Imbaba"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Mohammed Bin Zayed"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kafr El Dawwar"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Hamad Town"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Sanad"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "DUBAI INVESTMENT PARK SECOND"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Mahbula"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Agouza"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Khalidiyah"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZ FOURTH"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Manyal"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "East Riffa"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM SUQEIM SECOND"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Damietta Al Jadida (New Damietta)"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL RASHIDIYA"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Nizwa"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Seef District"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Shorouk"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Hammad"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL WARQA'A FIRST"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Shbin Al Qanater"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Khan"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Ain Khalid"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Heliopolis"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Azaiba"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Gudaibiya"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Tubli"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Amiriya"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Qanatir Al Khayriyya"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Khor"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Minya Al Qamh"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Sabah Al-Salem"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Muharraq City"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mallawi"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Jidhafs"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Matariya"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NAIF"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Rawdat Al Khail"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Qurum"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Itay El Barud"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Mahooz"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARSHA SOUTH FIRST"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Ashmoun"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Jleeb Al Shuyoukh"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qalyub"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Wadi Kabir"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL JADAF"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Mafraq"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Nuaija"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARSHA THIRD"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Muaither"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZ FIRST"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sanbellawein"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "West Bay"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Salmabad"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mashtul as Souq"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sidi Bishr"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ghubrah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Masaken Sheraton"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Karama"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Madinat Khalifah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Salwa Road"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Madinat Zayed"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Khor Fakkan Port"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Moharam Bek"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Sharq"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Rehab"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Sitra"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Jleeb Al-Shuyoukh"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Ibrahimiyah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Menuf"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Dafna"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Falah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Fakous"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL NAHDA FIRST"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Bnaid Al-Qar"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Inshas Al Raml"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Suwaiq"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Khosous"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Hidd"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tagamoa Al Awal (First Settlement)"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM AL SHEIF"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Quesna"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "PORT SAEED"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL THANYAH FIRST"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Maidan Hawalli"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Wasitah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL SAFA FIRST"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Mountazah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Arish"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Mushrif"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Zamalek"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Saffaga (Safaga)"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JUMEIRA SECOND"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZ SECOND"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Meaizer"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Markhia"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Ain Shams"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Arad"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Badrashin"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "WADI AL SAFA 5"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Saadiyat Island"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Sur"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Budaiya"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JABAL ALI INDUSTRIAL FIRST"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sidi Gaber"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat Badr"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Najma"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tama"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Aziziya,Al Luqta"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Menia"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Mirgab"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "BURJ KHALIFA"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al 'Asafra"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Reem Island"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MERKADH"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sayyidah Zaynab"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Madinat Khalifah south"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MANAMA"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Fintas"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Girga"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Edfo"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Downtown"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Mirqab"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Victoria"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Shalalat (The Waterfalls)"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Suez Bridge"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "sohag"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARSHA SECOND"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Bu Kuwara"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Mabellah"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Cairo"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL HUDAIBA"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Jordan",
+      "area": ""
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "al Shahama"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Bawshar"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "RAS AL KHOR"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Miami"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Laurent"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tala"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Ayat"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Messaimer"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARSHA SOUTH THIRD"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Meet Ghamr"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Nasr"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Marg"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Jahra"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Bani Mazar"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MUHARRAQ"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Al Matamir"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM HURAIR FIRST"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ibri"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Awali"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Middle Region"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NADD HESSA"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Berket El Sabaa"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Desouk"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "BUISNESS BAY"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Kharga"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Oseem"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Balyana"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "HATTA"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "CORNICHE DEIRA"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Hoora"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Nozha El Gedida (New Nozha)"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Mansouria"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ibra"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Amerat"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Musannah"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Luqta"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Industrial"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Roushdy"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Salam 1"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Nahyan"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MUHAISANAH FOURTH"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mawaleh"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kafr El Zayat"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MAMZAR"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Rustaq"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Eastern Al Ain region"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "n/a"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Khanka"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Hail"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mohandesin"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Umm Lakhba"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Sinaw"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Gharrafah"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Menoufiya"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Sporting"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL THANYAH FIFTH"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Khaitan"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "New Zinj"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Bolqly"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Mahboula"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MARSA DUBAI"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Bahla"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QUSAIS SECOND"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NADD AL SHIBA THIRD"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tagamoa Al Thalath (Third Settlement)"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Belad Al Qadeem"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL SOUQ AL KABEER"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Rowdah"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MUTEENA"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Matay"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL HEBIAH FIRST"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Nubariya"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Nasr City"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Rashid (Rosetta)"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM SUQEIM THIRD"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Assiut"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Umm Salal"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Sha'ab"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Salwa"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "TRADE CENTER FIRST"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Mansoura"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QUSAIS IND. SECOND"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MANARA"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ZINJ"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tahta"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MIZHAR FIRST"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "5th Settlement"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "New Al Rayyan"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Bagour"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Souq"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL HEBIAH FOURTH"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Seeb"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Borg Al Arab"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Behaira"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Bughazal"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinaty"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Galali"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "BUDAIYA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "HAWALLY"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Wukair"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL YUFRAH 1"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QUSAIS IND. FIFTH"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Ruwais"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "New Salheya"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Masirah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Malawi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "6th October City"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Nagaa Hamadi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Madinat Qaboos"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Eqaila"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Shahamkha"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ghala"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Adliya"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "San Stefano"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Duqum"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Nag Hammadi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Fereej Al Asir, New Al Rayyan"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Saba Pasha"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "HAMAD TOWN"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kom Ombo"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "New Cairo"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Warraq"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Wakrah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Buraimi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "RIFFA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Aali"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Bu Sidra,Muaither"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Bin Omran"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "A'ALI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kafr Saad"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "AL SAYH"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Samalut"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Kharathiyat"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MADINAT HAMAD"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JABAL ALI INDUSTRIAL SECOND"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Haddaqah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Kabir"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Egaila"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Lusail"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Mathlath"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Homs"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Diyar"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NADD AL SHIBA SECOND"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Wadi El Seil"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ASKAR"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Flaminj"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kafr Saqr"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Sadad"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat As Salam (City of Peace)"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Buraymi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "As Saff"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qus"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Kinana"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Hadayek October (October Gardens)"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Ras Gharib"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "BUASHIRAH"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Gareeb"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Saham"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Messaieed"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Shabiya"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JUMEIRA ISLAND ONE"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "AL SHAAB - AL BAHARI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Tharmad"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "SALMIYA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "ABU HAIL"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "TUBLI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Alexandria"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Surra"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Sabah Al Salem"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "WADI ALAMARDI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "UMM NAHAD FIRST"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Maghaghah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Nakada"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Bayan"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Delengat"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Aja"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QUSAIS IND. FIRST"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Hawsh Eissa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Zallaq"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Amwaj"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Jalan Bani Bu Hassan"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ZAYED TOWN"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Umm Al Hassam"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Maidan Hawally"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Ghubra"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "TRADE CENTER SECOND"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Taba"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Borg El Arab"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Old Al Ghanim"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Masdar City"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Yahar"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Hawamdiyah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Sweihan"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Yas Island"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "New Salata"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Malaha"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Shebin El Kom"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Liwa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Bidaya"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Fayid"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Toukh"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "HOR AL ANZ"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Dakhla"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Wasta"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Gleem"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Khasab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Maraghah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MAMEER"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al-Riggae"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Abusidra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Nahda West"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Sar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Abughazal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Abu Dhabi Airport Area"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NADD AL SHIBA FOURTH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Gouna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "AL MUSALLA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Salam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Sayouf"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Salwa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL HEBIAH SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Talkha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "SEEF"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "HIDD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Bneid Al Gar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Fereej Abdel Aziz"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "HOR AL ANZ EAST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Seeb"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Nakla"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Port Zayed"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Kasaseen"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Muroor Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Hamriya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Bateel Street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ARAD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "AL JANABIYAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Wadi Adai"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MAQSHA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Suwaik, Ibri"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Salalah-Dhofar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mohandessin"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Salhya ElGedida"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Dakrnis"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Hiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Buraimi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Dring"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Muraygh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Yanqil"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Sufalat Ibra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Hamalah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "DHANK"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Wadi Al Jadid"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ENMA MALL"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Katim Area"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Buri"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Sheikh Zayed"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Matar Qadeem"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Mirqab Jadeed"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Nakheel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "al khaisa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Shohadaa (Martyrs)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qous"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "JIDALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Cairo Ismailia Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Bebba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL KHWANEEJ FIRST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Manzala"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JABAL ALI THIRD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kobri El Qobba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "SAIH SHUAIB 4"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Marsa Alam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Ganaklis"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MADINAT DUBAI AL MELAHEYAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Misfah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Rawd Al Faraj"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Hazm Al Markhia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Sinnaniyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Waraq"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Khabourah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Rahba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Seeb Town"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BARAHA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Qabil"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Shahanya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Segaya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "pearl city"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZE IND.FIRST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "CRING"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Fraskour"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Gobra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "LHASSAY"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "A'ali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Gala"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Liwa_"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Janabiyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Mahboula"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mokkatam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Qulj"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Alkhuwair"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MUHAISNAH FIRST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL KHAIRAN FIRST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Dhajeej"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Riffa (Lulu)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Qurtuba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mabela"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "HADAEQ SHEIKH MOHAMMED BIN RASHID"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ISA Town"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "QUDAIBIYA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qanater Gharb"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Atrium Mall"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Oasis Mall, Juffair"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Gazeera"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Bilad Al Qadeem"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mabeela"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Sanabis"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Rustaq"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL WARQA'A SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Malkiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mabella South"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Thumama"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "AL Messila"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL JAFILIYA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Nuaija East"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Riggae"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Safft alLaban"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Rusayl"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "RAS AL KHOR IND. SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Ayaat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Musna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qift"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ALKHARJIYAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Doha Ad Dawhah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "BANI JAMRAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Qibla"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Mahala Al Kobra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Bahrain City Center"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "RAS AL KHOR IND. THIRD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Ajban"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "EAST RIFFA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Um Al Hassam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Dukhan Highway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Khuwair"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Qalali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Sulaibikhat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Nuwaidrat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Fuleiwa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "WADI AL SAFA 3"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL HAMRIYA PORT"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Qayrawan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Western Region, Beda Zayed District"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Qutaifiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Maqsha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Simbel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "JALAN BANI BU HASSN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "NORTH GHUBRA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Riqae"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Saham - Sohar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Merghany"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Badrasheen"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat Nasr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Bidaya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Gharrafa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Muthair"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Magsha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Airport Street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Montaza"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "FARWANIYA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Manib"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Cring Hilal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Fashn"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Western Region, Delma Island"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Sharabiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "DIA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mutrah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "AL-HAMALA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Jelaiah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZE IND.THIRD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NADD AL HAMAR"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "As Salam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Dar Kuliab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL AWIR FIRST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Samalout"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Behbeit El Hagar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Western Region, Al Sila"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "AL Hail"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Darsait"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Bin Mahmoud"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Ain Sokhna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Madinat Hamad"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Shebin El Kanater"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Naga Hamady"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MADINAT AL MATAAR"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Muscat (Old Town)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "MENA JABAL ALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Shuwaikh Industrial Area"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Markaz Al Wasat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Duraz"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Maryah island"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "AL DAIH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Gharbia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Rihab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Manama / Bu Ghazal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MANAMA/ALFATEH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Sawadi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "A'Ali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Zinj"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Wardian"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Atareen"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Amrya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Exhibition Aveneu"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Alwusta"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mudhaibi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Dukhan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Shahaniya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Ardiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Azaiba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ma'Abela"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Edco"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Saada"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Sawadi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Dafna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Senaw"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Mowaihat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Jaber Al-Ali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL HAMRIYA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Qadsiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "ISA TOWN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "AALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Shatti Al Qurum"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Malaha Al Jadida"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "MUHARAAQ"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Villaggio Mall"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Jabryia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Mit Ghamr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Awamia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Maqam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Barka- Al Batina"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Bandar Qena"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al-Hidd"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Gouna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Mansuriya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Aspire Zone"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Araqi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Bolekly"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mabellah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Garden City"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "A'Ahli"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "ZA'ABEEL SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Wadi Hatat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Maysaloon"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Azaibah North"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Fereej Al Nasr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Safat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Quriyat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Helmeyet El Zaytoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al - Amrat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Sehla"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Andalous"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Qalubia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Nakhal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Hoora"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "SHUWAIKH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "al Raha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL SABKHA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "North Coast"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Zezenia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "IBRA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Darrasa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Azeba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Ar Rayyan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "WADI AL SAFA 2"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Ghanim"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Omraniya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "South Khalifeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Samalot"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Goubra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZE IND.FOURTH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Sabahiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "North Cost"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Fourosiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "DAR KULAIB"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Falaj Al Qubail"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Umm Ghuwailina"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Gerga"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Qusiyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Riffa Al Qadeem"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Sharq"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Daih"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Bu Ashira"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al-Gobrah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Markhiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "S.Sharqya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "El Alamein"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Atfeeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Tor Sinai"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Darkulaib"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Maqta"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Dana Mall (Lulu)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Meera"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Mamoura"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Samannud"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Gannayin"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kafr Al Dawar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL BUTEEN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mabelah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Azbat An Nakhl"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Fahad Al-Ahmad"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Thumrait"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "UMM ALHASSAM"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Port Fuad"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "WARSAN FOURTH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mawalih"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Manama- Bu Ashirah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Suwaik"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Qurqas"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Mawalah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Abu Sayba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "QALALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Qadam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Madinat 15 May"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Adwa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Dekheila"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Shuhada"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Obour"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Kuwait City"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "New Mirqab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "CBD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "area": "Noth"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Darb Al Ahmar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Abu Zaabal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL KHWANEEJ SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Abu Hamour,Lebday"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Suwaifiyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Nuzha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Ruwais"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Deshna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Dakhiliya Governorate"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL MURAR"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Qantarah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Amwaj Islands"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Ansab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Ghoubra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Khaisa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Baragil (El Baragil)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Ramada signal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Umm Alhassam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Keft"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Yarmouk"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Dekernes"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Manhal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Ferdous"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Hyat Plaza"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Al Ramli"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "SALMABAD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "New Minya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al khabourah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Amerya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Dakahlia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Azarita"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Al Luqta"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "NADD AL SHIBA FIRST"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Zayed Town"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Smoha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "SANAD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Kerdasa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Da?iya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "UM ALHUSSAM"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Al Tarif,Sohar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Al Buhayrah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Waha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "AL QOUZE IND.SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "Al Marfa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "Suwayq"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "JABAL ALI SECOND"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Manial"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al-Shaab Al-Bahri"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "area": "Al Rai"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "area": "Soudan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "area": "IBRI,ARAQI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "area": "RIGGAT AL BUTEEN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "area": "Wadi El Natrun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "area": "Manama -Al Suwayfiyah"
+    },
+    "count": 1
+  }
+]

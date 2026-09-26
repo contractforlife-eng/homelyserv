@@ -1,0 +1,5770 @@
+[
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Dubai"
+    },
+    "count": 1891
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Abu Dhabi"
+    },
+    "count": 1117
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Sharjah"
+    },
+    "count": 650
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Cairo"
+    },
+    "count": 426
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Giza"
+    },
+    "count": 325
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Doha"
+    },
+    "count": 307
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Muscat"
+    },
+    "count": 233
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Ajman"
+    },
+    "count": 196
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Ras al Khaimah"
+    },
+    "count": 151
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Heliopolis"
+    },
+    "count": 149
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Suez"
+    },
+    "count": 147
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Alexandria"
+    },
+    "count": 127
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Nasr City"
+    },
+    "count": 118
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Qatar"
+    },
+    "count": 118
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Manama"
+    },
+    "count": 114
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sharkia"
+    },
+    "count": 101
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mohandessin"
+    },
+    "count": 100
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Qalubia"
+    },
+    "count": 97
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Maadi"
+    },
+    "count": 95
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Hawally"
+    },
+    "count": 91
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "6th October City"
+    },
+    "count": 88
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "5th Settlement"
+    },
+    "count": 79
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Fujairah"
+    },
+    "count": 78
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dokki"
+    },
+    "count": 71
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Beni Suef"
+    },
+    "count": 68
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sohag"
+    },
+    "count": 66
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Port Said"
+    },
+    "count": 62
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Menufia"
+    },
+    "count": 61
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sheikh Zayed"
+    },
+    "count": 59
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ismailia"
+    },
+    "count": 59
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Gharbia"
+    },
+    "count": 59
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Faisal"
+    },
+    "count": 56
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Beheira"
+    },
+    "count": 55
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Qena"
+    },
+    "count": 54
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Haram"
+    },
+    "count": 54
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Damietta"
+    },
+    "count": 53
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Assiut"
+    },
+    "count": 52
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Shoubra"
+    },
+    "count": 51
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Fayoum"
+    },
+    "count": 51
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Menia"
+    },
+    "count": 47
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Riffa"
+    },
+    "count": 47
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirut"
+    },
+    "count": 45
+  },
+  {
+    "_id": {
+      "country": "United Arab Emirates",
+      "city": "Umm Al Quwain"
+    },
+    "count": 44
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Helwan"
+    },
+    "count": 43
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Aswan"
+    },
+    "count": 41
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Tanta"
+    },
+    "count": 41
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dakhlia"
+    },
+    "count": 40
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Semouha"
+    },
+    "count": 39
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Al Ahmadi"
+    },
+    "count": 38
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Red Sea"
+    },
+    "count": 36
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mansoura"
+    },
+    "count": 36
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Luxor"
+    },
+    "count": 36
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Farwaniya"
+    },
+    "count": 36
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Kuwait City"
+    },
+    "count": 35
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mokatam"
+    },
+    "count": 35
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Hurghada"
+    },
+    "count": 34
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zagazig"
+    },
+    "count": 33
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Banha"
+    },
+    "count": 32
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "10th of Ramadan City"
+    },
+    "count": 31
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Down Town"
+    },
+    "count": 30
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Obour City"
+    },
+    "count": 30
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Shoubra El Khimah"
+    },
+    "count": 29
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Saida"
+    },
+    "count": 29
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Al Sheikh"
+    },
+    "count": 27
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Minya"
+    },
+    "count": 27
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Muharraq"
+    },
+    "count": 26
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Hadayek Al Ahram"
+    },
+    "count": 26
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Rehab City"
+    },
+    "count": 24
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Baabda"
+    },
+    "count": 24
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Tripoli"
+    },
+    "count": 24
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Salalah"
+    },
+    "count": 23
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Shebein El Kawm"
+    },
+    "count": 23
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Hadayek Al Koba"
+    },
+    "count": 22
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Manial"
+    },
+    "count": 21
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Koum Hamada"
+    },
+    "count": 20
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Shourook"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Agamy"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zahle"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Sourthen"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Raml Station"
+    },
+    "count": 19
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jbeil"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ain Shams"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Gesr El Suez"
+    },
+    "count": 18
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hamra"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jounieh"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Hammad"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Mahla Al Kobra"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Belbis"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Matrouh"
+    },
+    "count": 17
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sheraton"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Isa Town"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Qaliub"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abbasya"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Al Doha"
+    },
+    "count": 16
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Sohar"
+    },
+    "count": 15
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Helmeit El Zeiton"
+    },
+    "count": 15
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Al Dawar"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Embaba"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Damanhour"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Marsa Matrouh"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Madinty"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Shebein Al Kanater"
+    },
+    "count": 14
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Achrafieh"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mashtoul Al Souq"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mataria"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Miami"
+    },
+    "count": 13
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Nabatieh"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abdeen"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Roushdy"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "1st Settlement"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Muharraq"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Jahra"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zamalek"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Batinah Region north"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "South Sinai"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Al Wakra"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Dhofar"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Salmiya"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Seef"
+    },
+    "count": 12
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Zinj"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Kanater Al Khairia"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Asafra"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Al Rayyan"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Sadat"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hadath"
+    },
+    "count": 11
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Berket Al Sabaa"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Marg"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Matn"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Moharam Bek"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Menia El Kamh"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Tyr"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Aley"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Awseem"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sayeda Zainab"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sedi Beshr"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Etai Al Baroud"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mallawi"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Menouf"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Saar"
+    },
+    "count": 10
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dekwaneh"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mosbeh"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Wasta"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hazmieh"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sedi Gaber"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Al Matamer"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mit Ghamr"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Quesna"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "New Nozha"
+    },
+    "count": 9
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dar Al Salam"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Seyouf"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Hamad Town"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Nag Hammadi"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sin El Fil"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ashrafieh"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sour"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zalka"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Ibrahimeya"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Madinat Al Salam"
+    },
+    "count": 8
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Salmaniya"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr El Zayat"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Koura"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Fakous"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Al Khor"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Tubli"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mansourieh"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sharm El Sheikh"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "San Stefano"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Ammreya"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Port Fouad"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Agouza"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Northen"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zgharta"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ashmon"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Gerga"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ezbeit El Nakhl"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Mubarak Al Kabeer"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Victoria"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Louran"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chouf"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Khosos"
+    },
+    "count": 7
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Safaga"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Sanad"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Badr City"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Batinah"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Toukh"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Seeb"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ras Ghareeb"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Salmabad"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": ""
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Batroun"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Anshas El Raml"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Arad"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dbayeh"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Wardian"
+    },
+    "count": 6
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Nobaria"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Sitra"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Wadi El Gedid"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Bahteam"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sporting"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Antielias"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Maghagha"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Tama"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Bani Mazar"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mikhael"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Quantarah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Ibri"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Gelim"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Mandara"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "North Sinai"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ballouneh"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Boulak Al Dakrour"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Busaiteen"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "3rd Settlement"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Baalbeck"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Bolekly"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ajaltoun"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Minya El Kmah"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Kebeer"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dekernis"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Omrania"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "North Coast"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Rashid"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Juffair"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Bahrain"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Shalalat"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chtaura"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Badrasheen"
+    },
+    "count": 5
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mostafa Kamel"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Monib"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Corniche El Mazraa"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mazraat Yachouh"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Senbelaween"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Sinaw"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al-Arbaeen"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kaha"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bourj Hammoud"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Bab Al Shariea"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Hidd"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Samalout"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mazraa"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "MANAMA"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Mangaf"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "SAIDA"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Fleming"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Warrak"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bauchrieh"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Fahaheel"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Menoufia"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Tala"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Jordan",
+      "city": "Amman"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sin El Fill"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Halba"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Saba Basha"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Jleeb Al Shuyoukh"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mar Elias"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Fintas"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Jidhafs"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Hawamdya"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Hadayek October"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Ayat"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Tahta"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Arish"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Azarita"
+    },
+    "count": 4
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "gerga"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Metn"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Aga"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dakahlia"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bir Hassan"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Koum Ombo"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Akkar"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Khalde"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jal AL Dib"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Mahboula"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Elbagour"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Montazah"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Samanoud"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Budaiya"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "15th May City"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dora"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Suwaiq"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Santa"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zefta"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Khanka"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Fashn"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Imbaba"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Batinah Region south"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Barja"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Janaklees"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Antelias"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Qalg"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abu Qurqas"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Okaybeh"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Kasr Al Eieny"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zarif"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abshway"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dyarb Negm"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Barka"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Fayed"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Ghareeb"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Keer"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ain Saade"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mikael"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Manzala"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Al Jahra"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bekaa"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Qous"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Garden City"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Salam 1"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ZINJ"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Housh Eissa"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jnah"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Elbalina"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Haret Hreik"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Delingat"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Jabriya"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Ibra"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sherbin"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Hanovil"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bchamoun"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Edfu"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Desouk"
+    },
+    "count": 3
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ard El Lewa`a"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Adonis"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Sharabia"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Jalan"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Fostat"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "AZ Zahiriyyah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Haret Hraik"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Sawah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Borg Al Arab"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Dar El Salam"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Hadka"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Mansouria"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "BUASHIRAH"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Hehia"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Shohada"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "BEIT MERI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Cleopatra"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghobeiry"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Amchit"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Idwah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Kosiah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Saida Nafisa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bint Jbeil"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Masirah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Shoukr"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Zallaq"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Liwa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Sur"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sedi Salem"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Aali"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Essna"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Saf"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "TUBLI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ASKAR"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Buraimi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Sharqiyah South"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mazboud"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hareit Hreik"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Koos"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mtayleb"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "JALL ED DIB"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Sharqya"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Hommos"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "BUDAIYA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Bahla"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Badaro"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chhim"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Western Bekaa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Dakhiliyah"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hammana"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Aramoun"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Nizwa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Faraskour"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Taba"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zezenia"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Alamin"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Dakhila"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Buraymi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ZAYED TOWN"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Matay"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Amiria"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "FARWANIYA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Amwaj"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Sadad"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "RIFFA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Betash"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Akhmim"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jal El Dib"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Belad Al Qadeem"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "BARJA"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Aley Main Road"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Eddfo"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Khanka"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Awali"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Galali"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Saft El Laban"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ramsis"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Diyar"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kaft"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Egaila"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Fanar"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jeb Jennine"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "suez"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "AL SAYH"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rabieh"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kousba"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ras Beirut"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Furn El Chebbak"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bourj Al Barajneh"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "A'ALI"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jdeideh"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Talkha"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Zeitoun"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghazir"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Behaira"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Tharmad"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zahraa Al Maadi"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kerdasa"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Duqum"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Edku"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "MADINAT HAMAD"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Fiyadieh"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jdita"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Belkas"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Baakline"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bikfaya"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Beba"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jbiel"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "HAMAD TOWN"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "New Zinj"
+    },
+    "count": 2
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Attarin"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "SANAD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Halat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Zawya Al Hamra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Fahahel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ezbet El Borg"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Saqr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Mandara"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Fiadiyeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Daqahleya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Min Al Hosn"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mahatet Masr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "New Menia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Burj El Barajneh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Awamia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "MUHARAAQ"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Hussainya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rayyak"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Furn Al Chebak"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zahle Highway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Abdo"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "A'Ali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Duraz"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Westa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Aaramoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Moassaset Al Zakah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "AL DAIH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ENMA MALL"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jal El dib"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Mirgab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Zinj"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sarba high way"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ISA TOWN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "zgharta"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Baouchrieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hamra - Sahat Snoubra Street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Teeg"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Borj Hammoud"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kobayet"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "EL Darb El Ahmar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Hamalah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr al sheikh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "MANAMA/ALFATEH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Salhia Elgdida"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sin el fill"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Khaitan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Byakout"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "New Sehaili"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kaskas"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Sail"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Manama / Bu Ghazal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mkalles"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Shayleh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kfarhbab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Bani Suef"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Qadam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Faqous"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Dhahirah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rabieh - Mar Elias Street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "AALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Al-Shaab Al-Bahri"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dekwaneh Blvd"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "HADATH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Antelies"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ain Sokhna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mkayel - Boueiz St."
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Rustaq"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zahraa El Maadi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abu Kebeer"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Batinah South"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dawhit Aramoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Future city"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirt"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bourj Abou Haidar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "A'Ahli"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rachaya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Deyrb Negm"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dhour Choueir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Zawya El Hamra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "DAR KULAIB"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Buraimi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sakletah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Naccache Main Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Safat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Manshya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Badrasheen"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mekhael"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Tebbin"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Gamalia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Sakr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Bidaya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "A'ali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Badrasheen"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghadir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kornayel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Anfeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Bashteel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chekka"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Iman"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Mahooz"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Rasheed"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zahlé Blvd"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "JIDALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Nasser City"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bouchrieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "AL-HAMALA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Karakoul El Drouz"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "HIDD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Riffa (Lulu)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Eqaila"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Shubra Khit"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Malawi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Khaldeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Naccache"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Oasis Mall, Juffair"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "QUDAIBIYA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Nakoura"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jdaidet marjaayoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mazraat Yashou3"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Etay El Baroud"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirut- Cornish Al Mazraa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mansourieh-Ain Saade"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Cornet Chehwane"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Basyoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Senania"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sil El Fill"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Khabourah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Darassa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jeddayel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Arbe`een"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Barbir- Noueiri"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "NORTH BATINAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Clemence"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Wadi El gedid"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Janabiyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Amyoun - El koura Highway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beit Al Chaar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "BOUCHRIYE"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Daih"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Bneid Al Gar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kobry Al Koba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Bagour"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rayak"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Atfeeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Gamgra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Dana Mall (Lulu)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bshamoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Janabiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "SEEF"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Wadi Al Gadid"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kabrit"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "PortTawfik"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Becharry"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr Saad"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Al Sharqiyah North"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "UM ALHUSSAM"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Haret Sakhr"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ARAD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirut - Corniche El Mazraa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mina El Hosn"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "ALKHARJIYAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Deir El Amar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Dhahira"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Tannourine"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Hehya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Wenget street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Masr El Kadema"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Saida - Hilalieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mount Lebanon Hospital"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bekaa Western"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Musna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Apis"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "New Damietta"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Saida Al Woustani Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Minieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kobayat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dahie"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kraytem - Labban St."
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Al Ruwais"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Darkulaib"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghbeiry"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dora - Main Street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ain Al Rimaneh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bourj El Barajneh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "CHHIM"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Sehab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hasbaya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kfars Aroun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "MAMEER"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Talet El Khayyat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghbaire"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Adounis"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Karantina"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "BUSAITEEN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Sharq"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "TRIPOLI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Borj Al Barajneh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Stanly"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Jazeera"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "LHASSAY"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chhim - Main Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mosbeh - Christ-Roi Main Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Behira"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mtayleb Main Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Ramada"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirut - Mar Elias"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Nachach"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Quryat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Herafyeen"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Bahrain City Center"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mazraaet Yachouh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Demerdash"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "BANI JAMRAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sarba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abu Fleo"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "HAZMIEH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ziydaniye"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Nabatieh El Fawka"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "North Sharqiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Al Ghandak Al Ghamik"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Qaluib"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Magsha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Saray El Kobba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Saida - Al Wistani Behind Mourjan Roundabout"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "tama"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Baragil"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Rod El Farag"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Keserwan - Ghadir High Way"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Riggae"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ramlet L Bayda"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mkayel"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Oman"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Al Mahboula"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Giza Square"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Malkiya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jbeil(Byblos)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Green Plaza"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Near Tyr Rest House"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "GHAZIYEH (EL)"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "MTAYLEB"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "New Salhia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "ZALKA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abshaway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Shohadaa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sodeco Square"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mastita"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Atrium Mall"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Sanabis"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "kobayat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Akaybeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Armant"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Deshna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Umm Alhassam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Talit Al Khayat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Cola"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Al Rai"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sedi Kerir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Buri"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "CHEKKA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Simble"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hazmieh - Damascus Road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Shatby"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "SALMABAD"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Abu Sayba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Maragha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "QALALI"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Gemmayze"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Corniche El Nile"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "sarba"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Tall Al Kabeer"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kobeyyet"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Malek El Saleh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mar Elias Cross"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Bu Ashira"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zouk Mosbeh High Way"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Sabah Al Salem"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Airport Highway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirut - Verdun St."
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "BEIRUT"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Khasab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Dik El Mehdi-Main Chaar main road"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Nuwaidrat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Cornich El Mazraa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Bayan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jeita"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Nehmeh Damour Highway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Dar Kuliab"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghbeiry Square"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Tebnin"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chouf - Semkanieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "AL JANABIYAH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Zeydenieh - Medhat Bacha St."
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "New Minya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Zaher"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Amrya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Barbir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Fatka"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Mostorod"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Zwair Village"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sidi Gaber"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "New Cairo"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ketermaya"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sennores"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Al Wakrah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rayfoun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Madinat Hamad"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jdaydet Ghazir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Burj Al Barajneh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "MAQSHA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Haret Sakher"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jezzine"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghazieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Gouna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bekaatet Achkout"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Baasir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Oman",
+      "city": "Yanqil"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kaslik seaside"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Jahayna"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bednayil"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Zayed Town"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sin El fill"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ansarieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Ramli"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Manara"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "BATROUN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Nahr El Mot"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Salfieh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Daher"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Qatar",
+      "city": "Dukhan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "safra"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Sirs Al Layyanah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Kharga"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Mahmoudia"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Manama- Bu Ashirah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "UMM ALHASSAM"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Sakhat Building"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Khalafawy"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mais El Jabal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Manama -Al Suwayfiyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Kafr El Sheikh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ramlet Bayda"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Khalde Highway"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Al Debyih"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Bir Abed"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Melaha El Gedida"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Um Al Hassam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Qalali"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Maqsha"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Mount Lebanon"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ras Al Nabeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Beliana"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Naher Ibrahim"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Furn El Chabbak"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Makassed Region"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ghbeireh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Riqae"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Wadi Al Natroon"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Ramlet Al Baida"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "NAAMEH"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Hadchit"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Faitroun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Triploi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Adma"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chhim - Hay El Shareif"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "AMIOUN"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jdeidet El Metn - Pierre Gemayel St."
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Choueifat"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Abo Zaebl"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Chiyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Kuwait",
+      "city": "Mubarak Al Kabir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Amyoun - El Koura - (Chekka"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al-Janain"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Betchay"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Marsa Alam"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Suqayyah"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Beirut-Mina Hoson"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Jdiedeh"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Keserwan"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Kfarsaroun"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Round About Ghazir"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Aaramoun - Main Street"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Al Sehla"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "AL MUSALLA"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "Al Dabaa"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Egypt",
+      "city": "El Kabary"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "Rachayya Al Wadi"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Seef District"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Bughazal"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "AANQOUN / Saida"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Sar"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Lebanon",
+      "city": "NAHR IBRAHIM"
+    },
+    "count": 1
+  },
+  {
+    "_id": {
+      "country": "Bahrain",
+      "city": "Hoora"
+    },
+    "count": 1
+  }
+]
