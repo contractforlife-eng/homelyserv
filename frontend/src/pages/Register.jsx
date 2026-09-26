@@ -481,26 +481,28 @@ function Register() {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 ${
+                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center ${
                     formData.role === 'WORKER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
                   }`}
                 >
-                  <Briefcase size={18} sm:size={20} className="mx-auto mb-1" />
-                  <span className="text-xs sm:text-sm font-medium">{t('jobSeeker')}</span>
+                  <Briefcase size={18} sm:size={20} className="mb-1" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('serviceProviderTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceProviderDesc')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'EMPLOYER' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 ${
+                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center ${
                     formData.role === 'EMPLOYER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
                   }`}
                 >
-                  <User size={18} sm:size={20} className="mx-auto mb-1" />
-                  <span className="text-xs sm:text-sm font-medium">{t('employer')}</span>
+                  <User size={18} sm:size={20} className="mb-1" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('serviceSeekerTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
                 </button>
               </div>
               {errors.role && (

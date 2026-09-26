@@ -176,13 +176,15 @@ const SocialOnboarding = () => {
             <div className="sm:col-span-2">
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('registerAs')} *</label>
               <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => updateField('role', 'EMPLOYER')} className={`rounded-xl border-2 p-3 text-sm font-semibold transition ${formData.role === 'EMPLOYER' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
-                  <User size={19} className="mx-auto mb-1" />
-                  {t('employer')}
+                <button type="button" onClick={() => updateField('role', 'EMPLOYER')} className={`rounded-xl border-2 p-3 text-center flex flex-col items-center transition ${formData.role === 'EMPLOYER' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
+                  <User size={19} className="mb-1" />
+                  <span className="text-sm font-semibold">{t('serviceSeekerTitle')}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
                 </button>
-                <button type="button" onClick={() => updateField('role', 'WORKER')} className={`rounded-xl border-2 p-3 text-sm font-semibold transition ${formData.role === 'WORKER' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
-                  <Briefcase size={19} className="mx-auto mb-1" />
-                  {t('jobSeeker')}
+                <button type="button" onClick={() => updateField('role', 'WORKER')} className={`rounded-xl border-2 p-3 text-center flex flex-col items-center transition ${formData.role === 'WORKER' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
+                  <Briefcase size={19} className="mb-1" />
+                  <span className="text-sm font-semibold">{t('serviceProviderTitle')}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceProviderDesc')}</span>
                 </button>
               </div>
               {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
