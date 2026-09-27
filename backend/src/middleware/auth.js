@@ -210,6 +210,19 @@ export const requireWorker = (req, res, next) => {
   });
 };
 
+// Helper for professional provider routes (Worker, Doctor, Teacher)
+export const requireProfessionalProvider = (req, res, next) => {
+  return authenticate(req, res, () => {
+    if (!['WORKER', 'DOCTOR', 'TEACHER'].includes(req.userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Professional provider role required.'
+      });
+    }
+    next();
+  });
+};
+
 // Helper for admin-only routes
 export const requireAdmin = (req, res, next) => {
   return authenticate(req, res, () => {
@@ -223,11 +236,26 @@ export const requireAdmin = (req, res, next) => {
   });
 };
 
+// Helper for doctor-only routes
+export const requireDoctor = (req, res, next) => {
+  return authenticate(req, res, () => {
+    if (req.userRole !== 'DOCTOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Doctor role required.'
+      });
+    }
+    next();
+  });
+};
+
 export default {
   authenticate,
   authorize,
   requireAuth,
   requireEmployer,
   requireWorker,
+  requireProfessionalProvider,
+  requireDoctor,
   requireAdmin
 };

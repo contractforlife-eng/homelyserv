@@ -162,7 +162,7 @@ export const register = async (req, res) => {
     // EMPLOYER registrations skip these checks entirely.
     // ----------------------------------------------------------
     const normalizedRole = (role || 'WORKER').toUpperCase();
-    if (!['WORKER', 'EMPLOYER'].includes(normalizedRole)) {
+    if (!['WORKER', 'EMPLOYER', 'STUDENT', 'DOCTOR', 'TEACHER'].includes(normalizedRole)) {
       return res.status(400).json({ success: false, message: 'Please select a valid account role' });
     }
     if (normalizeEmail(email) === ROOT_ADMIN_EMAIL) {

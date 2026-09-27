@@ -91,8 +91,12 @@ function Login() {
       navigate('/admin', { replace: true });
     } else if (role === 'EMPLOYER') {
       navigate('/employer-dashboard', { replace: true });
-    } else if (role === 'WORKER') {
+    } else if (role === 'DOCTOR') {
+      navigate('/doctor-dashboard', { replace: true });
+    } else if (role === 'WORKER' || role === 'TEACHER') {
       navigate('/worker-dashboard', { replace: true });
+    } else if (role === 'STUDENT') {
+      navigate('/', { replace: true });
     } else if (role === 'SUPPORT') {
       navigate('/support-dashboard', { replace: true });
     } else if (role === 'SUPPORT_HELPER') {

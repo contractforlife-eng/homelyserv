@@ -29,7 +29,11 @@ const Navbar = ({ user, onLogout }) => {
   const getDashboardPath = () => {
     if (!user) return '/login';
     switch (user.role) {
-      case 'WORKER': return '/worker-dashboard';
+      case 'DOCTOR':
+        return '/doctor-dashboard';
+      case 'WORKER':
+      case 'TEACHER':
+        return '/worker-dashboard';
       case 'EMPLOYER': return '/employer-dashboard';
       case 'ADMIN': return '/admin';
       default: return '/home';
@@ -39,7 +43,11 @@ const Navbar = ({ user, onLogout }) => {
   const getOffersPath = () => {
     if (!user) return '/login';
     switch (user.role) {
-      case 'WORKER': return '/worker/offers';
+      case 'DOCTOR':
+        return '/doctor-dashboard';
+      case 'WORKER':
+      case 'TEACHER':
+        return '/worker/offers';
       case 'EMPLOYER': return '/employer-search';
       default: return '/search';
     }
@@ -48,7 +56,11 @@ const Navbar = ({ user, onLogout }) => {
   const getMessagesPath = () => {
     if (!user) return '/login';
     switch (user.role) {
-      case 'WORKER': return '/worker-messages';
+      case 'DOCTOR':
+        return '/doctor-dashboard';
+      case 'WORKER':
+      case 'TEACHER':
+        return '/worker-messages';
       case 'EMPLOYER': return '/employer-messages';
       case 'ADMIN': return '/admin/messages';
       default: return '/messages';
@@ -58,7 +70,11 @@ const Navbar = ({ user, onLogout }) => {
   const getProfilePath = () => {
     if (!user) return '/login';
     switch (user.role) {
-      case 'WORKER': return '/worker-profile';
+      case 'DOCTOR':
+        return '/doctor-profile';
+      case 'WORKER':
+      case 'TEACHER':
+        return '/worker-profile';
       case 'EMPLOYER': return '/employer-profile';
       default: return '/profile';
     }
@@ -67,7 +83,11 @@ const Navbar = ({ user, onLogout }) => {
   const getSettingsPath = () => {
     if (!user) return '/login';
     switch (user.role) {
-      case 'WORKER': return '/worker-settings';
+      case 'DOCTOR':
+        return '/doctor-profile';
+      case 'WORKER':
+      case 'TEACHER':
+        return '/worker-settings';
       case 'EMPLOYER': return '/employer-settings';
       case 'ADMIN': return '/admin/settings';
       default: return '/settings';
@@ -122,7 +142,7 @@ const Navbar = ({ user, onLogout }) => {
               {t('offers')}
             </Link>
 
-            {user?.role === 'WORKER' && (
+            {(user?.role === 'WORKER' || user?.role === 'TEACHER') && (
               <Link 
                 to="/my-hires" 
                 className={`flex items-center gap-1 transition-colors ${

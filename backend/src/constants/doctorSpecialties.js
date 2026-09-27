@@ -16,6 +16,7 @@ export const CANONICAL_DOCTOR_SPECIALTIES = Object.freeze([
   'neurology',
   'urology',
   'psychiatry',
+  'psychotherapist',
   'physiotherapy',
   'radiology',
   'anesthesiology',

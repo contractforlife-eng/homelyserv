@@ -42,13 +42,17 @@ export const AuthProvider = ({ children }) => {
           ? '/admin'
           : role === 'EMPLOYER'
             ? '/employer-dashboard'
-            : role === 'WORKER'
-              ? '/worker-dashboard'
-              : role === 'SUPPORT'
-                ? '/support-dashboard'
-                : role === 'SUPPORT_HELPER'
-                  ? '/sup-help'
-                  : '/login';
+            : role === 'DOCTOR'
+              ? '/doctor-dashboard'
+              : (role === 'WORKER' || role === 'TEACHER')
+                ? '/worker-dashboard'
+                : role === 'STUDENT'
+                  ? '/'
+                  : role === 'SUPPORT'
+                    ? '/support-dashboard'
+                    : role === 'SUPPORT_HELPER'
+                      ? '/sup-help'
+                      : '/login';
         navigate(destination, { replace: true });
       }
     };

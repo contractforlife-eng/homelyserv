@@ -234,6 +234,9 @@ const SupportUsers = () => {
                 <option value="">{t.allRoles}</option>
                 <option value="WORKER">{t.workers}</option>
                 <option value="EMPLOYER">{t.employers}</option>
+                <option value="DOCTOR">{t.roleLabels.DOCTOR}</option>
+                <option value="TEACHER">{t.roleLabels.TEACHER}</option>
+                <option value="STUDENT">{t.roleLabels.STUDENT}</option>
               </select>
             </div>
           </div>

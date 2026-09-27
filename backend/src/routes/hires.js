@@ -16,7 +16,8 @@ import {
   authorize,
   requireAdmin,
   requireEmployer,
-  requireWorker
+  requireWorker,
+  requireProfessionalProvider
 } from '../middleware/auth.js';
 import {
   submitRating,
@@ -106,7 +107,7 @@ router.patch('/:hireId/hide', authenticate, hideHireFromEmployer);
 // ============================================================
 // Respond to Offer (accept/reject)
 // ============================================================
-router.put('/offer/:offerId/respond', requireWorker, respondToOffer);
+router.put('/offer/:offerId/respond', requireProfessionalProvider, respondToOffer);
 
 // ============================================================
 // Get All Hires (admin only)
@@ -115,6 +116,6 @@ router.get('/all', requireAdmin, getAllHires);
 
 router.get('/offers', authenticate, getMyOffers);
 
-router.put('/offer/:offerId/status', requireWorker, updateOfferStatus);
+router.put('/offer/:offerId/status', requireProfessionalProvider, updateOfferStatus);
 
 export default router;

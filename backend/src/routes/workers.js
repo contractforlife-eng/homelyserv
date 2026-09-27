@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import Conversation from '../models/Conversation.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import prisma from '../lib/prisma.js';
-import { authenticate, requireWorker } from '../middleware/auth.js';
+import { authenticate, requireWorker, requireProfessionalProvider } from '../middleware/auth.js';
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { canContactWorker } from '../services/paymentAuthService.js';
 import { isUserPremium } from '../services/premiumService.js';
@@ -38,7 +38,7 @@ const normalizeHourlyRate = (value) => {
 // ============================================================
 // Update authenticated Worker's advertised hourly rate
 // ============================================================
-router.patch('/hourly-rate', requireWorker, async (req, res) => {
+router.patch('/hourly-rate', requireProfessionalProvider, async (req, res) => {
   try {
     const body = req.body || {};
     const hasRate = Object.prototype.hasOwnProperty.call(body, 'hourlyRate');

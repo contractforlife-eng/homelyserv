@@ -99,8 +99,9 @@ export const sendOffer = async (req, res) => {
     if (!workerUser) {
       return res.status(404).json({ message: 'Worker not found' });
     }
-    if (workerUser.role !== 'WORKER') {
-      return res.status(400).json({ message: 'Offer target must be a Worker' });
+    const EMPLOYABLE_PROVIDER_ROLES = ['WORKER', 'DOCTOR', 'TEACHER'];
+    if (!EMPLOYABLE_PROVIDER_ROLES.includes(workerUser.role)) {
+      return res.status(400).json({ message: 'Offer target must be an employable service provider' });
     }
 
     let workerProfile = await prisma.workerProfile.findUnique({
@@ -791,7 +792,8 @@ export const updateOfferStatus = async (req, res) => {
       return res.status(404).json({ message: 'Offer not found' });
     }
 
-    if (req.userRole !== 'WORKER') {
+    const EMPLOYABLE_PROVIDER_ROLES = ['WORKER', 'DOCTOR', 'TEACHER'];
+    if (!EMPLOYABLE_PROVIDER_ROLES.includes(req.userRole)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 

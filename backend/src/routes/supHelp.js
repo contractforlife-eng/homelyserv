@@ -46,10 +46,10 @@ router.get('/users', async (req, res) => {
     const skip = (pageNumber - 1) * take;
 
     const where = {
-      role: { in: ['WORKER', 'EMPLOYER'] },
+      role: { in: ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'] },
     };
 
-    if (role && ['WORKER', 'EMPLOYER'].includes(role)) {
+    if (role && ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(role)) {
       where.role = role;
     }
 

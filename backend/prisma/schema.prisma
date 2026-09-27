@@ -379,6 +379,10 @@ model User {
   ReviewReviewer                   Review[]         @relation("ReviewReviewer")
   ReviewReviewee                   Review[]         @relation("ReviewReviewee")
   WorkerProfile                    WorkerProfile?
+  DoctorProfile                    DoctorProfile?
+  DoctorClinics                    DoctorClinic[]   @relation("DoctorClinics")
+  DoctorServices                   DoctorConsultationService[] @relation("DoctorServices")
+  DoctorSchedules                  DoctorSchedule[] @relation("DoctorSchedules")
   Payment                          Payment[]
   OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
   Subscription                     Subscription[]
@@ -454,6 +458,132 @@ model WorkerProfile {
   Hire            Hire[]
   Offer           Offer[]      @relation("WorkerOffers")
   User            User         @relation(fields: [userId], references: [id])
+}
+
+// ============================================================
+// DOCTOR PROFILE — Dedicated Professional Profile for Doctors
+// One-to-one with User (keyed by userId).
+// ============================================================
+model DoctorProfile {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String   @unique @db.ObjectId
+  professionalTitle  String   @default("")
+  specialty          String   @default("")
+  subspecialty       String   @default("")
+  bio                String   @default("")
+  yearsOfExperience  Int      @default(0)
+  languages          String[] @default([])
+  qualifications     String[] @default([])
+  licenseNumber      String   @default("")
+  licenseAuthority   String   @default("")
+  profileImage       String   @default("")
+  isProfileComplete  Boolean  @default(false)
+  isPublished        Boolean  @default(false)
+  searchVisibility   Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  User               User     @relation(fields: [userId], references: [id])
+
+  @@map("doctor_profiles")
+}
+
+// ============================================================
+// DOCTOR CONSULTATION TYPE — Modes of Professional Medical Services
+// ============================================================
+enum DoctorConsultationType {
+  CLINIC
+  HOME_VISIT
+  ONLINE
+}
+
+// ============================================================
+// DOCTOR CLINIC — Physical Practice Locations & Workplaces
+// ============================================================
+model DoctorClinic {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  doctorId        String   @db.ObjectId
+  clinicName      String
+  phone           String   @default("")
+  email           String   @default("")
+  addressLine     String
+  city            String
+  stateOrProvince String   @default("")
+  countryCode     String
+  postalCode      String   @default("")
+  latitude        Float?
+  longitude       Float?
+  timezone        String   @default("UTC")
+  instructions    String   @default("")
+  isActive        Boolean  @default(true)
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  Doctor          User     @relation("DoctorClinics", fields: [doctorId], references: [id])
+  Services        DoctorConsultationService[]
+  Schedules       DoctorSchedule[]
+
+  @@index([doctorId])
+  @@index([doctorId, isActive])
+  @@map("doctor_clinics")
+}
+
+// ============================================================
+// DOCTOR CONSULTATION SERVICE — Medical Service Offerings & Pricing
+// ============================================================
+model DoctorConsultationService {
+  id                 String                 @id @default(auto()) @map("_id") @db.ObjectId
+  doctorId           String                 @db.ObjectId
+  clinicId           String?                @db.ObjectId
+  consultationType   DoctorConsultationType
+  serviceName        String
+  description        String                 @default("")
+  durationMinutes    Int                    @default(30)
+  price              Float
+  currency           String                 @default("EGP")
+  followUpWindowDays Int                    @default(0)
+  followUpPrice      Float                  @default(0)
+  isActive           Boolean                @default(true)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  Doctor             User                   @relation("DoctorServices", fields: [doctorId], references: [id])
+  Clinic             DoctorClinic?          @relation(fields: [clinicId], references: [id])
+  Schedules          DoctorSchedule[]
+
+  @@index([doctorId])
+  @@index([doctorId, consultationType])
+  @@index([clinicId])
+  @@map("doctor_consultation_services")
+}
+
+// ============================================================
+// DOCTOR SCHEDULE — Weekly Availability Matrix
+// ============================================================
+model DoctorSchedule {
+  id                  String                     @id @default(auto()) @map("_id") @db.ObjectId
+  doctorId            String                     @db.ObjectId
+  clinicId            String?                    @db.ObjectId
+  serviceId           String?                    @db.ObjectId
+  consultationType    DoctorConsultationType
+  dayOfWeek           Int
+  startTime           String
+  endTime             String
+  slotDurationMinutes Int                        @default(30)
+  isActive            Boolean                    @default(true)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+
+  Doctor              User                       @relation("DoctorSchedules", fields: [doctorId], references: [id])
+  Clinic              DoctorClinic?              @relation(fields: [clinicId], references: [id])
+  Service             DoctorConsultationService? @relation(fields: [serviceId], references: [id])
+
+  @@index([doctorId])
+  @@index([doctorId, dayOfWeek])
+  @@index([clinicId])
+  @@index([serviceId])
+  @@map("doctor_schedules")
 }
 
 // ============================================================
@@ -541,6 +671,9 @@ enum Role {
   ADMIN
   SUPPORT
   SUPPORT_HELPER
+  DOCTOR
+  TEACHER
+  STUDENT
 }
 
 model Offer {

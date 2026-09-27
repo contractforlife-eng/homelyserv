@@ -38,6 +38,10 @@ import WorkerPayment from './pages/WorkerPayment';
 import WorkerJobs from './pages/WorkerJobs';
 import WorkerApplications from './pages/WorkerApplications';
 
+// Doctor Pages
+import DoctorDashboard from './pages/DoctorDashboard';
+import DoctorProfile from './pages/DoctorProfile';
+
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
 import EmployerFamily from './pages/EmployerFamily';
@@ -117,18 +121,20 @@ const MessagesRedirect = () => {
     // If user is null (during checkAuth), wait for user to be populated
     if (!user) return;
     
-const role = user.role?.toUpperCase();
-     if (role === 'WORKER') {
-       navigate('/worker-messages', { replace: true });
-     } else if (role === 'EMPLOYER') {
-       navigate('/employer-messages', { replace: true });
-     } else if (role === 'ADMIN') {
-       navigate('/admin/messages', { replace: true });
-     } else if (role === 'SUPPORT') {
-       navigate('/support-dashboard', { replace: true });
-     } else {
-       navigate('/login', { replace: true });
-     }
+    const role = user.role?.toUpperCase();
+    if (role === 'DOCTOR') {
+      navigate('/doctor-dashboard', { replace: true });
+    } else if (role === 'WORKER' || role === 'TEACHER') {
+      navigate('/worker-messages', { replace: true });
+    } else if (role === 'EMPLOYER') {
+      navigate('/employer-messages', { replace: true });
+    } else if (role === 'ADMIN') {
+      navigate('/admin/messages', { replace: true });
+    } else if (role === 'SUPPORT') {
+      navigate('/support-dashboard', { replace: true });
+    } else {
+      navigate('/login', { replace: true });
+    }
   }, [user, isAuthenticated, loading, navigate]);
 
   return (
@@ -174,7 +180,9 @@ const HomeRedirect = () => {
     const role = user.role?.toUpperCase();
     if (role === 'ADMIN') return <Navigate to="/admin" replace />;
     if (role === 'EMPLOYER') return <Navigate to="/employer-dashboard" replace />;
-    if (role === 'WORKER') return <Navigate to="/worker-dashboard" replace />;
+    if (role === 'DOCTOR') return <Navigate to="/doctor-dashboard" replace />;
+    if (role === 'WORKER' || role === 'TEACHER') return <Navigate to="/worker-dashboard" replace />;
+    if (role === 'STUDENT') return <Navigate to="/" replace />;
     if (role === 'SUPPORT') return <Navigate to="/support-dashboard" replace />;
     if (role === 'SUPPORT_HELPER') return <Navigate to="/sup-help" replace />;
     return <Navigate to="/login" replace />;
@@ -215,6 +223,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
    const userRole = user.role?.toUpperCase();
 
     if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+      // Allow transitional TEACHER access to WORKER provider routes
+      if (
+        requiredRole.toUpperCase() === 'WORKER' &&
+        userRole === 'TEACHER'
+      ) {
+        return children;
+      }
+
       // Allow ADMIN to access SUPPORT and SUPPORT_HELPER routes
       if (
         (requiredRole.toUpperCase() === 'SUPPORT' || requiredRole.toUpperCase() === 'SUPPORT_HELPER') &&
@@ -223,10 +239,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         return children;
       }
      
-     if (userRole === 'WORKER') {
+     if (userRole === 'DOCTOR') {
+       return <Navigate to="/doctor-dashboard" replace />;
+     } else if (userRole === 'WORKER' || userRole === 'TEACHER') {
        return <Navigate to="/worker-dashboard" replace />;
      } else if (userRole === 'EMPLOYER') {
        return <Navigate to="/employer-dashboard" replace />;
+     } else if (userRole === 'STUDENT') {
+       return <Navigate to="/" replace />;
      } else if (userRole === 'ADMIN') {
        return <Navigate to="/admin" replace />;
      }
@@ -391,6 +411,24 @@ function App() {
       <Route 
         path="/help" 
         element={<Help />} 
+      />
+
+      {/* ========== DOCTOR ROUTES ========== */}
+      <Route 
+        path="/doctor-dashboard" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-profile" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorProfile />
+          </ProtectedRoute>
+        } 
       />
 
       {/* ========== WORKER ROUTES ========== */}

@@ -746,6 +746,9 @@ const AdminUsers = () => {
                 <option value="all">{t.filters.all}</option>
                 <option value="worker">{t.filters.worker}</option>
                 <option value="employer">{t.filters.employer}</option>
+                <option value="doctor">{t.filters.doctor}</option>
+                <option value="teacher">{t.filters.teacher}</option>
+                <option value="student">{t.filters.student}</option>
                 <option value="support">{t.filters.support}</option>
                 <option value="support_helper">{t.filters.supportHelper}</option>
                 <option value="admin">{t.filters.admin}</option>
@@ -1130,8 +1133,8 @@ const AdminUsers = () => {
                     const currentRole = String(selectedUserForRole?.role || '').trim().toUpperCase();
                     const normalizedSelectedRole = String(selectedRole || '').trim().toUpperCase();
                     const roleOptions = isRootAdmin
-                      ? ['ADMIN', 'SUPPORT_HELPER', 'WORKER', 'EMPLOYER', 'SUPPORT']
-                      : ['SUPPORT_HELPER', 'WORKER', 'EMPLOYER', 'SUPPORT'];
+                      ? ['ADMIN', 'SUPPORT_HELPER', 'WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT', 'SUPPORT']
+                      : ['SUPPORT_HELPER', 'WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT', 'SUPPORT'];
 
                     return roleOptions.map((roleOption) => {
                       const isSelected = roleOption === normalizedSelectedRole;

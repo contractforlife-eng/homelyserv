@@ -20,7 +20,6 @@ const CANONICAL_WORKER_JOBS = [
   'personal_assistant',
   'event_planner',
   'fitness_trainer',
-  'psychotherapist',
   'mechanic',
   'excavation_worker',
   'butcher',

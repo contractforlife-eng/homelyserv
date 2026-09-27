@@ -185,7 +185,7 @@ router.get('/users', async (req, res) => {
     const where = {};
 
     if (isSupport) {
-      where.role = { in: ['WORKER', 'EMPLOYER'] };
+      where.role = { in: ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'] };
     } else if (role && (!isSupport || ['WORKER', 'EMPLOYER', 'SUPPORT', 'ADMIN'].includes(role))) {
       where.role = role;
     }

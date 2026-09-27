@@ -22,7 +22,8 @@ import {
   Sparkles,
   ChevronDown,
   BookOpen,
-  Stethoscope
+  Stethoscope,
+  GraduationCap
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
@@ -32,7 +33,6 @@ import { trackCompleteRegistration } from '../utils/metaPixel';
 import { trackTikTokCompleteRegistration } from '../utils/tiktokPixel';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS } from '../constants/tutorSpecializations';
-import { DOCTOR_SPECIALTIES } from '../constants/doctorSpecialties';
 
 function Register() {
   const navigate = useNavigate();
@@ -55,9 +55,7 @@ function Register() {
     role: 'WORKER',
     desiredJob: '',
     hourlyRate: '',
-    tutorSpecialization: '',
-    doctorSpecialty: '',
-    doctorSpecialtyCustom: ''
+    tutorSpecialization: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -197,22 +195,6 @@ function Register() {
         }
       }
 
-      if (formData.desiredJob === 'doctor') {
-        const trimmedSpecialty = String(formData.doctorSpecialty || '').trim();
-        if (!trimmedSpecialty) {
-          newErrors.doctorSpecialty = t('doctorSpecialtyRequired');
-        } else if (!DOCTOR_SPECIALTIES.some(spec => spec.value === trimmedSpecialty)) {
-          newErrors.doctorSpecialty = t('doctorSpecialtyInvalid');
-        } else if (trimmedSpecialty === 'other') {
-          const trimmedCustom = String(formData.doctorSpecialtyCustom || '').trim();
-          if (!trimmedCustom) {
-            newErrors.doctorSpecialtyCustom = t('doctorSpecialtyRequired');
-          } else if (trimmedCustom.length > 100) {
-            newErrors.doctorSpecialtyCustom = t('doctorSpecialtyInvalid');
-          }
-        }
-      }
-
       const trimmedRate = String(formData.hourlyRate || '').trim();
       if (!trimmedRate) {
         newErrors.hourlyRate = t('hourlyRateRequired');
@@ -259,12 +241,6 @@ function Register() {
         payload.hourlyRate = formData.hourlyRate;
         if (formData.desiredJob === 'tutor') {
           payload.tutorSpecialization = String(formData.tutorSpecialization || '').trim();
-        }
-        if (formData.desiredJob === 'doctor') {
-          payload.doctorSpecialty = String(formData.doctorSpecialty || '').trim();
-          if (payload.doctorSpecialty === 'other') {
-            payload.doctorSpecialtyCustom = String(formData.doctorSpecialtyCustom || '').trim();
-          }
         }
       }
 
@@ -477,32 +453,71 @@ function Register() {
             {/* Role Selection */}
             <div className="mb-3 sm:mb-4">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('registerAs')}</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center ${
+                  className={`sm:col-span-2 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
                     formData.role === 'WORKER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
                   }`}
                 >
-                  <Briefcase size={18} sm:size={20} className="mb-1" />
+                  <Briefcase className="w-5 h-5 mb-1 shrink-0" />
                   <span className="text-xs sm:text-sm font-semibold">{t('serviceProviderTitle')}</span>
                   <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceProviderDesc')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'EMPLOYER' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center ${
+                  className={`sm:col-span-2 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
                     formData.role === 'EMPLOYER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
                   }`}
                 >
-                  <User size={18} sm:size={20} className="mb-1" />
+                  <User className="w-5 h-5 mb-1 shrink-0" />
                   <span className="text-xs sm:text-sm font-semibold">{t('serviceSeekerTitle')}</span>
                   <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'DOCTOR' }))}
+                  className={`sm:col-span-2 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                    formData.role === 'DOCTOR'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <Stethoscope className="w-5 h-5 mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('doctorTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('doctorDesc')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'TEACHER' }))}
+                  className={`sm:col-span-3 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                    formData.role === 'TEACHER'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <BookOpen className="w-5 h-5 mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('teacherTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('teacherDesc')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'STUDENT' }))}
+                  className={`col-span-2 sm:col-span-3 max-w-[240px] sm:max-w-none justify-self-center w-full p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                    formData.role === 'STUDENT'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <GraduationCap className="w-5 h-5 mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('studentTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('studentDesc')}</span>
                 </button>
               </div>
               {errors.role && (
@@ -563,53 +578,6 @@ function Register() {
                     </div>
                     {errors.tutorSpecialization && (
                       <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.tutorSpecialization}</p>
-                    )}
-                  </div>
-                )}
-
-                {formData.role === 'WORKER' && formData.desiredJob === 'doctor' && (
-                  <div className="mb-3 sm:mb-4">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('doctorSpecialty')}</label>
-                    <div className="relative group mb-2">
-                      <Stethoscope size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
-                      <select
-                        name="doctorSpecialty"
-                        value={formData.doctorSpecialty}
-                        onChange={handleChange}
-                        className={`w-full pl-11 pr-10 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border appearance-none ${
-                          errors.doctorSpecialty ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                        } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200`}
-                      >
-                        <option value="">{t('selectDoctorSpecialty')}</option>
-                        {DOCTOR_SPECIALTIES.map((spec) => (
-                          <option key={spec.value} value={spec.value}>
-                            {t(spec.labelKey)}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={16} className="absolute right-3.5 top-3.5 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                    </div>
-                    {errors.doctorSpecialty && (
-                      <p className="mt-1 text-xs sm:text-sm text-red-500 mb-2">{errors.doctorSpecialty}</p>
-                    )}
-
-                    {formData.doctorSpecialty === 'other' && (
-                      <div className="mt-2">
-                        <input
-                          type="text"
-                          name="doctorSpecialtyCustom"
-                          value={formData.doctorSpecialtyCustom}
-                          onChange={handleChange}
-                          maxLength={100}
-                          className={`w-full px-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
-                            errors.doctorSpecialtyCustom ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                          } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                          placeholder={t('doctorSpecialtyOtherPlaceholder')}
-                        />
-                        {errors.doctorSpecialtyCustom && (
-                          <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.doctorSpecialtyCustom}</p>
-                        )}
-                      </div>
                     )}
                   </div>
                 )}

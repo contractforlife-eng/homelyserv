@@ -443,12 +443,12 @@ router.put('/users/:id/reset-password', async (req, res) => {
 
 // ============================================================
 // Change User Role (Admin Only)
-// Admin can set a user's role to WORKER, EMPLOYER, SUPPORT, or SUPPORT_HELPER.
+// Admin can set a user's role to WORKER, EMPLOYER, DOCTOR, TEACHER, STUDENT, SUPPORT, or SUPPORT_HELPER.
 // FORBIDDEN: changing any ADMIN, or the acting admin's own role.
 // On success the target user's tokenVersion is bumped, which
 // invalidates all of their existing JWTs immediately.
 // ============================================================
-const ALLOWED_ROLE_CHANGES = ['WORKER', 'EMPLOYER', 'SUPPORT', 'SUPPORT_HELPER'];
+const ALLOWED_ROLE_CHANGES = ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT', 'SUPPORT', 'SUPPORT_HELPER'];
 
 router.put('/users/:id/role', async (req, res) => {
   try {
@@ -475,7 +475,7 @@ router.put('/users/:id/role', async (req, res) => {
     if (![...ALLOWED_ROLE_CHANGES, 'ADMIN'].includes(normalizedRole)) {
       return res.status(400).json({
         success: false,
-          message: 'newRole must be one of: ADMIN, WORKER, EMPLOYER, SUPPORT, SUPPORT_HELPER'
+          message: 'newRole must be one of: ADMIN, WORKER, EMPLOYER, DOCTOR, TEACHER, STUDENT, SUPPORT, SUPPORT_HELPER'
       });
     }
 

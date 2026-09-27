@@ -69,7 +69,11 @@ router.get('/search', requireEmployer, async (req, res) => {
       }
     }
     
-    let filter = { role: 'WORKER' };
+    let filter = {
+      role: {
+        $in: ['WORKER', 'DOCTOR', 'TEACHER']
+      }
+    };
     
     if (query) {
       Object.assign(filter, buildWorkerTextSearchFilter(query));

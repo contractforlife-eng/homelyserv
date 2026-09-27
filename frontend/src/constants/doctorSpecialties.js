@@ -16,6 +16,7 @@ export const DOCTOR_SPECIALTIES = Object.freeze([
   { value: 'neurology', labelKey: 'doctorSpecialties.neurology' },
   { value: 'urology', labelKey: 'doctorSpecialties.urology' },
   { value: 'psychiatry', labelKey: 'doctorSpecialties.psychiatry' },
+  { value: 'psychotherapist', labelKey: 'doctorSpecialties.psychotherapist' },
   { value: 'physiotherapy', labelKey: 'doctorSpecialties.physiotherapy' },
   { value: 'radiology', labelKey: 'doctorSpecialties.radiology' },
   { value: 'anesthesiology', labelKey: 'doctorSpecialties.anesthesiology' },
