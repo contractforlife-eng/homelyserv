@@ -38,6 +38,8 @@ const TrustVerificationSection = ({
   isOwnProfile = false,
   isAdmin = false,
   staffMode = false,
+  doctorMode = false,
+  readOnly = false,
   onVerificationUpdated,
   className = ''
 }) => {
@@ -68,7 +70,32 @@ const TrustVerificationSection = ({
   // ============================================================
   const viewerRole = String(authUser?.role || '').toUpperCase();
   const isCoAdminViewer = viewerRole === 'ADMIN';
+  const isSupAdminViewer = viewerRole === 'SUPPORT';
+  const isSupHelpViewer = viewerRole === 'SUPPORT_HELPER';
   const verificationApiBase = isCoAdminViewer ? '/api/admin' : '/api/support';
+
+  // ============================================================
+  // DOCTOR ENDPOINT ROUTING
+  // ------------------------------------------------------------
+  // Doctor verification decisions live on Doctor-specific routes so they can
+  // be authorised separately from Worker/Employer verification:
+  //   self-service  -> /api/doctors/verification/...            (requireDoctor)
+  //   review        -> /api/{admin|support}/doctors/:id/...    (EQUAL authority)
+  //   Sup-Help      -> /api/sup-help/doctors/:id/...            (READ-ONLY)
+  // ============================================================
+  const reviewApiBase = doctorMode
+    ? (isSupHelpViewer ? '/api/sup-help' : verificationApiBase)
+    : verificationApiBase;
+
+  // Sup-Help is READ-ONLY for verification. This is presentation only; the
+  // backend independently rejects every Sup-Help write attempt.
+  const isViewerReadOnly = readOnly || isSupHelpViewer;
+
+  // Only an ADMIN or SUPPORT viewer may ever be shown a decision control.
+  const canReview = isAdmin && !isViewerReadOnly && (isCoAdminViewer || isSupAdminViewer);
+
+  // A Doctor may open their own evidence; a reviewer may open it for review.
+  const canViewDocuments = canReview || isViewerReadOnly || (isOwnProfile && doctorMode);
 
   const [submittingType, setSubmittingType] = useState(null);
   const [requestNote, setRequestNote] = useState('');
@@ -127,13 +154,21 @@ const TrustVerificationSection = ({
   // approval. Work Experience / Certifications are NOT applicable to staff.
   const isStaffRole = staffMode || ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'].includes(effectiveRole);
 
-  const sectionTitle = isStaffRole
-    ? t('verification.staffVerificationTitle', 'Staff Verification')
-    : t('verification.trustSectionTitle', 'Trust & Verification');
+  // A Doctor carries the same six signals as a Worker PLUS the authoritative
+  // Verified Profile decision, because only an administrator may grant it.
+  const showsAuthoritativeProfileRow = isStaffRole || doctorMode;
 
-  const sectionSubtitle = isStaffRole
-    ? t('verification.staffVerificationSubtitle', 'Verification of email, phone, and identity with administrative approval for staff accounts.')
-    : t('verification.trustSectionSubtitle', 'Verification of identity and credentials to ensure trusted interactions.');
+  const sectionTitle = doctorMode && !isStaffRole
+    ? t('verification.doctorTrustSectionTitle', 'Trust & Verification')
+    : isStaffRole
+      ? t('verification.staffVerificationTitle', 'Staff Verification')
+      : t('verification.trustSectionTitle', 'Trust & Verification');
+
+  const sectionSubtitle = doctorMode && !isStaffRole
+    ? t('verification.doctorTrustSectionSubtitle', 'Verification of identity and credentials to ensure trusted interactions.')
+    : isStaffRole
+      ? t('verification.staffVerificationSubtitle', 'Verification of email, phone, and identity with administrative approval for staff accounts.')
+      : t('verification.trustSectionSubtitle', 'Verification of identity and credentials to ensure trusted interactions.');
 
   const isOverallVerified = Boolean(
     v.isVerified === true ||
@@ -204,15 +239,22 @@ const TrustVerificationSection = ({
         uploadPrompt: t('verification.clickToUploadCertificates', 'Click to upload Certificate or License')
       }
     ] : []),
-    ...(isStaffRole ? [
+    ...(showsAuthoritativeProfileRow ? [
       {
         key: 'profile',
-        title: t('verification.staffAuthoritativeTitle', 'Authoritative Admin Verification'),
-        descVerified: t('verification.staffAuthoritativeDescVerified', 'Approved explicitly by an authorized administrator.'),
+        title: doctorMode
+          ? t('verification.authoritativeVerifiedProfile', 'Authoritative Verified Profile Status')
+          : t('verification.staffAuthoritativeTitle', 'Authoritative Admin Verification'),
+        descVerified: doctorMode
+          ? t('verification.authoritativeVerifiedProfileDescVerified', 'Approved explicitly by an authorized administrator.')
+          : t('verification.staffAuthoritativeDescVerified', 'Approved explicitly by an authorized administrator.'),
         descPending: t('verification.staffAuthoritativeDescPending', 'Submitted and awaiting administrative review.'),
-        descUnverified: t('verification.staffAuthoritativeDescUnverified', 'Awaiting explicit approval from an authorized administrator.'),
+        descUnverified: doctorMode
+          ? t('verification.authoritativeVerifiedProfileDescUnverified', 'Awaiting explicit approval from an authorized administrator. Email or phone verification alone never grants this status.')
+          : t('verification.staffAuthoritativeDescUnverified', 'Awaiting explicit approval from an authorized administrator.'),
         item: profileItem,
         icon: ShieldCheck,
+        // A Doctor can never self-request or self-approve this status.
         canRequest: false,
         requiresUpload: false
       }
@@ -244,6 +286,16 @@ const TrustVerificationSection = ({
       setSubmittingType(type);
       setFeedback(null);
 
+      // Doctor self-service uses the Doctor-specific endpoints. Both paths
+      // only ever move a category to PENDING for review — a Doctor can never
+      // change a status, and never verify themselves.
+      const uploadUrl = doctorMode
+        ? `/api/doctors/verification/${type}/document`
+        : '/api/verification/upload-document';
+      const requestUrl = doctorMode
+        ? '/api/doctors/verification/request'
+        : '/api/verification/request';
+
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -252,7 +304,7 @@ const TrustVerificationSection = ({
           formData.append('notes', requestNote.trim());
         }
 
-        const res = await api.post('/api/verification/upload-document', formData, {
+        const res = await api.post(uploadUrl, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
 
@@ -265,7 +317,7 @@ const TrustVerificationSection = ({
           if (onVerificationUpdated) onVerificationUpdated(res.data.verification);
         }
       } else {
-        const res = await api.post('/api/verification/request', {
+        const res = await api.post(requestUrl, {
           type,
           notes: requestNote
         });
@@ -288,17 +340,24 @@ const TrustVerificationSection = ({
     }
   };
 
-  const handleAdminUpdateVerification = async (type, status) => {
+  const handleAdminUpdateVerification = async (type, status, extra = {}) => {
+    if (!canReview) {
+      setFeedback({ type: 'error', message: t('verification.readOnlyNoPermission', 'You do not have permission to change verification status.') });
+      return;
+    }
     try {
       setSubmittingType(type);
-      const payload = { type, status };
       // Endpoint follows the authenticated viewer's real role (see
       // verificationApiBase above), not the presentation `isAdmin` flag.
-      const endpoint = `${verificationApiBase}/users/${userId}/verification`;
+      // For Doctors the decision is recorded on the Doctor route, which also
+      // writes the immutable audit entry.
+      const endpoint = doctorMode
+        ? `${reviewApiBase}/doctors/${userId}/verification`
+        : `${verificationApiBase}/users/${userId}/verification`;
 
-      const res = await api.patch(endpoint, payload);
+      const res = await api.patch(endpoint, { type, status, ...extra });
       if (res.data?.success) {
-        setFeedback({ type: 'success', message: 'Verification status updated successfully.' });
+        setFeedback({ type: 'success', message: t('verification.statusUpdatedSuccess', 'Verification status updated successfully.') });
         if (onVerificationUpdated) onVerificationUpdated(res.data.verification);
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('sidebar-counters:refresh'));
@@ -312,21 +371,26 @@ const TrustVerificationSection = ({
   };
 
   const handleAdminViewDocument = async (type) => {
+    if (!canViewDocuments) return;
     try {
       setViewingDocType(type);
-      // Endpoint follows the authenticated viewer's real role (see
-      // verificationApiBase above), not the presentation `isAdmin` flag.
-      const endpoint = `${verificationApiBase}/verification/user/${userId}/document?type=${type}`;
+      // A Doctor reads their own evidence from their own route; a reviewer
+      // (Admin, Sup-Admin, or read-only Sup-Help) reads the review route.
+      const endpoint = (isOwnProfile && doctorMode)
+        ? `/api/doctors/verification/${type}/document`
+        : doctorMode
+          ? `${reviewApiBase}/doctors/${userId}/verification/document?type=${type}`
+          : `${verificationApiBase}/verification/user/${userId}/document?type=${type}`;
 
       const res = await api.get(endpoint);
       if (res.data?.success && res.data.signedUrl) {
         window.open(res.data.signedUrl, '_blank', 'noopener,noreferrer');
       } else {
-        alert(res.data?.message || 'Document could not be retrieved.');
+        setFeedback({ type: 'error', message: res.data?.message || t('verification.documentUnavailable', 'Document could not be retrieved.') });
       }
     } catch (err) {
-      console.error('Admin view document error:', err);
-      alert(err.response?.data?.message || 'Failed to load document preview');
+      console.error('Verification document view error:', err);
+      setFeedback({ type: 'error', message: err.response?.data?.message || t('verification.documentLoadError', 'Failed to load document preview') });
     } finally {
       setViewingDocType(null);
     }
@@ -418,7 +482,7 @@ const TrustVerificationSection = ({
       </div>
 
       {/* Admin Overall Verified Profile Approval Panel */}
-      {isAdmin && (
+      {canReview && (
         <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -452,6 +516,14 @@ const TrustVerificationSection = ({
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Read-only notice (Sup-Help and any explicitly read-only viewer) */}
+      {isViewerReadOnly && !isOwnProfile && (
+        <div className="mt-4 p-3 rounded-xl flex items-center gap-2 text-xs bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700">
+          <Lock size={14} className="shrink-0" />
+          <span>{t('verification.readOnlyNotice', 'You have read-only access to verification. Only an authorized administrator can approve, reject, or change a verification status.')}</span>
         </div>
       )}
 
@@ -502,8 +574,8 @@ const TrustVerificationSection = ({
               <div className="flex flex-wrap items-center gap-2 self-end sm:self-center shrink-0">
                 {renderBadge(status)}
 
-                {/* Admin / Staff: View submitted document */}
-                {isAdmin && requiresUpload && (
+                {/* Reviewer / read-only staff: view the submitted document */}
+                {canViewDocuments && requiresUpload && (
                   <button
                     type="button"
                     onClick={() => handleAdminViewDocument(key)}
@@ -531,8 +603,9 @@ const TrustVerificationSection = ({
                   </button>
                 )}
 
-                {/* Admin Mode: Live Status Selector */}
-                {isAdmin && (
+                {/* Reviewer mode: live status selector. Only ever rendered for
+                    ADMIN and SUPPORT, which hold equal authority. */}
+                {canReview && (
                   <select
                     value={status}
                     onChange={(e) => handleAdminUpdateVerification(key, e.target.value)}

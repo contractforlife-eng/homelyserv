@@ -97,14 +97,14 @@ const withTeacherServer = async ({ mockUser = createMockUser() } = {}, run) => {
   }
 };
 
-test('1. TEACHER registration succeeds, persists User.role === TEACHER, and returns TEACHER token', async () => {
+test('1. TEACHER public registration is rejected with 400 and creates no user', async () => {
   const originalUserSave = User.prototype.save;
   const originalUserFindOne = User.findOne;
-  let savedUserDoc = null;
+  const savedRoles = [];
 
   User.findOne = async () => null; // Email not taken
   User.prototype.save = async function () {
-    savedUserDoc = this;
+    savedRoles.push(this.role);
     return this;
   };
 
@@ -124,16 +124,11 @@ test('1. TEACHER registration succeeds, persists User.role === TEACHER, and retu
         })
       });
 
-      assert.strictEqual(res.status, 201);
+      assert.strictEqual(res.status, 400);
       const data = await res.json();
-      assert.strictEqual(data.success, true);
-      assert.strictEqual(data.user.role, 'TEACHER');
-      assert.ok(savedUserDoc, 'User model instance must be saved');
-      assert.strictEqual(savedUserDoc.role, 'TEACHER');
-
-      // Decode the returned JWT
-      const decoded = jwt.verify(data.token, secret);
-      assert.strictEqual(decoded.role, 'TEACHER');
+      assert.strictEqual(data.success, false);
+      assert.match(data.message, /valid account role/i);
+      assert.deepEqual(savedRoles, [], 'blocked TEACHER registration must not create a user');
     });
   } finally {
     User.prototype.save = originalUserSave;
@@ -225,7 +220,7 @@ test('3. Authentication middleware attaches req.userRole === TEACHER and require
   });
 });
 
-test('4. WORKER, EMPLOYER, STUDENT, and DOCTOR registration behavior remains intact', async () => {
+test('4. WORKER and EMPLOYER registration behavior remains intact while STUDENT and DOCTOR are rejected', async () => {
   const originalUserSave = User.prototype.save;
   const originalUserFindOne = User.findOne;
   const savedRoles = [];
@@ -290,9 +285,10 @@ test('4. WORKER, EMPLOYER, STUDENT, and DOCTOR registration behavior remains int
           countryName: 'United Arab Emirates'
         })
       });
-      assert.strictEqual(resStudent.status, 201);
+      assert.strictEqual(resStudent.status, 400);
       const dataStudent = await resStudent.json();
-      assert.strictEqual(dataStudent.user.role, 'STUDENT');
+      assert.strictEqual(dataStudent.success, false);
+      assert.match(dataStudent.message, /valid account role/i);
 
       // 4. DOCTOR
       const resDoctor = await fetch(`${baseUrl}/api/auth/register`, {
@@ -308,11 +304,12 @@ test('4. WORKER, EMPLOYER, STUDENT, and DOCTOR registration behavior remains int
           countryName: 'United Arab Emirates'
         })
       });
-      assert.strictEqual(resDoctor.status, 201);
+      assert.strictEqual(resDoctor.status, 400);
       const dataDoctor = await resDoctor.json();
-      assert.strictEqual(dataDoctor.user.role, 'DOCTOR');
+      assert.strictEqual(dataDoctor.success, false);
+      assert.match(dataDoctor.message, /valid account role/i);
 
-      assert.deepEqual(savedRoles, ['WORKER', 'EMPLOYER', 'STUDENT', 'DOCTOR']);
+      assert.deepEqual(savedRoles, ['WORKER', 'EMPLOYER']);
     });
   } finally {
     User.prototype.save = originalUserSave;

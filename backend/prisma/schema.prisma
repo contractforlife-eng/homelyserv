@@ -465,23 +465,29 @@ model WorkerProfile {
 // One-to-one with User (keyed by userId).
 // ============================================================
 model DoctorProfile {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId             String   @unique @db.ObjectId
-  professionalTitle  String   @default("")
-  specialty          String   @default("")
-  subspecialty       String   @default("")
-  bio                String   @default("")
-  yearsOfExperience  Int      @default(0)
-  languages          String[] @default([])
-  qualifications     String[] @default([])
-  licenseNumber      String   @default("")
-  licenseAuthority   String   @default("")
-  profileImage       String   @default("")
-  isProfileComplete  Boolean  @default(false)
-  isPublished        Boolean  @default(false)
-  searchVisibility   Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                 String   @unique @db.ObjectId
+  professionalTitle      String   @default("")
+  specialty              String   @default("")
+  additionalSpecialties  String[] @default([])
+  subspecialty           String   @default("")
+  experienceSummary      String   @default("")
+  bio                    String   @default("")
+  yearsOfExperience      Int      @default(0)
+  languages              String[] @default([])
+  qualifications         String[] @default([])
+  education              String[] @default([])
+  certifications         String[] @default([])
+  licenseNumber          String   @default("")
+  licenseAuthority       String   @default("")
+  consultationFee        Float    @default(0)
+  examinationFee         Float    @default(0)
+  profileImage           String   @default("")
+  isProfileComplete      Boolean  @default(false)
+  isPublished            Boolean  @default(false)
+  searchVisibility       Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   User               User     @relation(fields: [userId], references: [id])
 

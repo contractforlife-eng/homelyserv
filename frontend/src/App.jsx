@@ -41,6 +41,7 @@ import WorkerApplications from './pages/WorkerApplications';
 // Doctor Pages
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorProfile from './pages/DoctorProfile';
+import DoctorClinics from './pages/DoctorClinics';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -427,6 +428,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-clinics" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorClinics />
           </ProtectedRoute>
         } 
       />

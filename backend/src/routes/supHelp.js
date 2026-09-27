@@ -6,6 +6,7 @@ import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import MongooseUser from '../models/User.js';
 import { getVerificationDetails } from '../services/profileVerificationService.js';
+import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
 import { ensureConversationMetadata, canAccessConversation, touchConversation, getConversationId } from '../routes/chat.js';
 import { getUserIdentity, getUserIdentities, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { emitToUser } from '../lib/socket.js';
@@ -24,6 +25,10 @@ import {
   supHelpComplaintStats,
   supHelpDashboard,
 } from '../controllers/complaintController.js';
+import {
+  getDoctorVerificationReadOnly,
+  getDoctorVerificationDocumentReadOnly,
+} from '../controllers/doctorVerificationController.js';
 
 const router = express.Router();
 
@@ -103,7 +108,7 @@ router.get('/users', async (req, res) => {
 // ============================================================
 
 // GET /api/sup-help/users/:id
-// Read-only safe profile for WORKER/EMPLOYER only
+// Read-only safe profile for WORKER/EMPLOYER/DOCTOR only
 router.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -172,7 +177,10 @@ router.get('/users/:id', async (req, res) => {
       });
     }
 
-    if (!['WORKER', 'EMPLOYER'].includes(user.role)) {
+    // DOCTOR is a first-class role and is readable by Sup-Help. Teacher and
+    // Student profiles remain out of the Sup-Help directory by design, and a
+    // Doctor is NEVER rendered through a WorkerProfile substitute.
+    if (!['WORKER', 'EMPLOYER', 'DOCTOR'].includes(user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Profile access is limited to platform users',
@@ -199,11 +207,16 @@ router.get('/users/:id', async (req, res) => {
       console.error('Error fetching Mongoose user details for Sup-Help:', e.message);
     }
 
+    // Real Doctor professional profile (Sup-Help sees it read-only; it is the
+    // same shape Admin and Sup-Admin receive).
+    const { DoctorProfile, doctorClinics } = await getDoctorStaffView(user.id);
+
     return res.json({
       success: true,
       user: {
         ...user,
         ...(mongooseUserObj || {}),
+        ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
         verification
       }
     });
@@ -212,6 +225,20 @@ router.get('/users/:id', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+
+// ============================================================
+// DOCTOR TRUST & VERIFICATION — SUP-HELP IS READ-ONLY
+// ============================================================
+// Sup-Help may SEE a Doctor's verification status, the audit trail, and the
+// documents permitted for support read-only viewing.
+//
+// There is deliberately NO PATCH/PUT/POST route for Sup-Help anywhere in this
+// file. Status changes, approvals and rejections are enforced server-side as
+// ADMIN/SUPPORT-only in doctorVerificationController.js, so hiding a button
+// is never the only protection.
+// ============================================================
+router.get('/doctors/:doctorId/verification', getDoctorVerificationReadOnly);
+router.get('/doctors/:doctorId/verification/document', getDoctorVerificationDocumentReadOnly);
 
 // ============================================================
 // INTERNAL STAFF MESSAGING (Phase 2C)

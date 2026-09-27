@@ -13,13 +13,17 @@ import {
   Building2,
   Stethoscope,
   MessageCircle,
-  Bell,
   ArrowRight,
   Shield,
   Sparkles,
   Info
 } from 'lucide-react';
 
+// The Doctor Dashboard is an overview surface only. Trust & Verification and
+// every Doctor profile section are rendered in exactly ONE place for the
+// Doctor: the Doctor Profile page (pages/DoctorProfile.jsx). The "Manage
+// Profile" shortcut in the welcome banner is the single navigation path to it,
+// so none of that content is duplicated here.
 const DoctorDashboard = () => {
   const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
@@ -56,7 +60,9 @@ const DoctorDashboard = () => {
       desc: t('doctorDashboard.clinicsDesc') || 'Manage clinic locations, reception details, and physical addresses.',
       icon: Building2,
       status: t('doctorNav.comingSoon') || 'Coming soon',
-      color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+      color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20',
+      // The Clinics module is live: the card is now real navigation.
+      path: '/doctor-clinics'
     },
     {
       id: 'consultationSettings',
@@ -119,32 +125,11 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* Primary Action Card: My Profile */}
-        <div className="bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 flex items-center justify-center flex-shrink-0">
-                <User size={28} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {t('doctorDashboard.myProfileCardTitle') || 'Doctor Professional Profile'}
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {t('doctorDashboard.myProfileCardDesc') || 'Set your professional medical title, canonical specialty, subspecialty, bio, years of practice, and licenses.'}
-                </p>
-              </div>
-            </div>
-
-            <Link
-              to="/doctor-profile"
-              className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-colors"
-            >
-              {t('doctorDashboard.editProfileBtn') || 'Edit Profile'}
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
+        {/* This dashboard is an overview surface only. All Doctor profile and
+            Trust & Verification content lives on the Doctor Profile page
+            (/doctor-profile), reachable from the "Manage Profile" shortcut in
+            the welcome banner above. Nothing about the profile, its sections,
+            its fees, its clinics, or its verification is duplicated here. */}
 
         {/* Future Modules Grid (Clean Placeholders) */}
         <div>
@@ -160,6 +145,40 @@ const DoctorDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {placeholderCards.map((card) => {
               const Icon = card.icon;
+              // Cards with a path are live modules and render as navigation.
+              // Every other card stays an inert placeholder.
+              if (card.path) {
+                return (
+                  <Link
+                    key={card.id}
+                    to={card.path}
+                    className="bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm flex flex-col justify-between transition-colors hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.color}`}>
+                          <Icon size={20} />
+                        </div>
+                        <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                          {t('doctorDashboard.moduleActive') || 'Active'}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white text-base">
+                        {card.title}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                        {card.desc}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                      <span>{t('doctorDashboard.openModuleBtn') || 'Open module'}</span>
+                      <ArrowRight size={14} />
+                    </div>
+                  </Link>
+                );
+              }
+
               return (
                 <div
                   key={card.id}

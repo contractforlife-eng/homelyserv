@@ -50,6 +50,8 @@ import { formatExperienceDisplay } from '../../utils/experienceDisplay';
 import { ensureConversationExists } from '../../utils/chatService';
 import VerifiedBadge from '../verification/VerifiedBadge';
 import TrustVerificationSection from '../verification/TrustVerificationSection';
+import DoctorProfileDetails from '../doctor/DoctorProfileDetails';
+import DoctorVerificationAuditTrail from '../verification/DoctorVerificationAuditTrail';
 import {
   UserAvatar,
   UserDisplayName,
@@ -123,6 +125,52 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   useEffect(() => {
     loadUser();
   }, [loadUser]);
+
+  // ============================================================
+  // TRUST & VERIFICATION PLUMBING
+  // ============================================================
+  // Falls back to the flat legacy fields only when the backend did not send a
+  // structured verification object. Doctors always receive the full object.
+  const resolveVerification = useCallback(() => {
+    if (profileUser?.verification) return profileUser.verification;
+    return {
+      isVerified: Boolean(
+        profileUser?.isVerified === true ||
+        profileUser?.verifiedProfileStatus === 'VERIFIED'
+      ),
+      verifiedProfileStatus:
+        profileUser?.verifiedProfileStatus || (profileUser?.isVerified ? 'VERIFIED' : 'NOT_VERIFIED'),
+      phoneVerified: profileUser?.phoneVerified,
+      emailVerified: profileUser?.emailVerified || !!profileUser?.email,
+      identityVerificationStatus: profileUser?.identityVerificationStatus,
+      experienceVerificationStatus: profileUser?.experienceVerificationStatus,
+      certificatesVerificationStatus: profileUser?.certificatesVerificationStatus
+    };
+  }, [profileUser]);
+
+  const applyVerificationUpdate = useCallback((updatedVerification) => {
+    if (!updatedVerification) return;
+    const isNowVerified = Boolean(
+      updatedVerification?.isVerified === true ||
+      updatedVerification?.profile?.status === 'VERIFIED'
+    );
+    setProfileUser(prev => ({
+      ...prev,
+      verification: updatedVerification,
+      isVerified: isNowVerified,
+      verifiedProfileStatus: isNowVerified
+        ? 'VERIFIED'
+        : (updatedVerification?.profile?.status || 'NOT_VERIFIED'),
+      phoneVerified: updatedVerification?.phone?.verified ?? prev.phoneVerified,
+      emailVerified: updatedVerification?.email?.verified ?? prev.emailVerified,
+      identityVerificationStatus:
+        updatedVerification?.identity?.status ?? prev.identityVerificationStatus,
+      experienceVerificationStatus:
+        updatedVerification?.experience?.status ?? prev.experienceVerificationStatus,
+      certificatesVerificationStatus:
+        updatedVerification?.certificates?.status ?? prev.certificatesVerificationStatus
+    }));
+  }, []);
 
   // ============================================================
   // LOAD PAYMENT HISTORY (read-only, role-shaped by the backend)
@@ -849,41 +897,45 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             </div>
           </div>
 
-          {/* TRUST & VERIFICATION STATUS */}
-          <TrustVerificationSection
-            userId={resolvedUserId}
-            userRole={profileUser?.role}
-            verification={profileUser.verification || {
-              isVerified: Boolean(profileUser.isVerified === true || profileUser.verifiedProfileStatus === 'VERIFIED' || profileUser.verification?.isVerified === true),
-              verifiedProfileStatus: profileUser.verifiedProfileStatus || (profileUser.isVerified ? 'VERIFIED' : 'NOT_VERIFIED'),
-              phoneVerified: profileUser.phoneVerified,
-              emailVerified: profileUser.emailVerified || !!profileUser.email,
-              identityVerificationStatus: profileUser.identityVerificationStatus,
-              experienceVerificationStatus: profileUser.experienceVerificationStatus,
-              certificatesVerificationStatus: profileUser.certificatesVerificationStatus
-            }}
-            isAdmin={isAdmin || variant === 'support'}
-            onVerificationUpdated={(updatedVerification) => {
-              const isNowVerified = Boolean(
-                updatedVerification?.isVerified === true ||
-                updatedVerification?.profile?.status === 'VERIFIED'
-              );
-              setProfileUser(prev => ({
-                ...prev,
-                verification: updatedVerification,
-                isVerified: isNowVerified,
-                verifiedProfileStatus: isNowVerified ? 'VERIFIED' : (updatedVerification?.profile?.status || 'NOT_VERIFIED'),
-                phoneVerified: updatedVerification?.phone?.verified ?? prev.phoneVerified,
-                emailVerified: updatedVerification?.email?.verified ?? prev.emailVerified,
-                identityVerificationStatus: updatedVerification?.identity?.status ?? prev.identityVerificationStatus,
-                experienceVerificationStatus: updatedVerification?.experience?.status ?? prev.experienceVerificationStatus,
-                certificatesVerificationStatus: updatedVerification?.certificates?.status ?? prev.certificatesVerificationStatus
-              }));
-            }}
-          />
+          {/* DOCTOR PROFILE — a Doctor is never shown as a Worker */}
+          {profileUser.role === 'DOCTOR' && (
+            <>
+              <DoctorProfileDetails
+                profile={profileUser.DoctorProfile}
+                clinics={profileUser.doctorClinics || []}
+              />
 
-          {/* WORKER PROFILE */}
-          {profileUser.WorkerProfile && (
+              {/* TRUST & VERIFICATION STATUS — Doctor */}
+              <TrustVerificationSection
+                userId={resolvedUserId}
+                userRole={profileUser?.role}
+                doctorMode={true}
+                readOnly={isSupHelp}
+                verification={resolveVerification()}
+                isAdmin={isAdmin || variant === 'support'}
+                onVerificationUpdated={applyVerificationUpdate}
+              />
+
+              <DoctorVerificationAuditTrail
+                doctorId={resolvedUserId}
+                apiBase={isSupHelp ? '/api/sup-help' : (isAdmin ? '/api/admin' : '/api/support')}
+              />
+            </>
+          )}
+
+          {/* TRUST & VERIFICATION STATUS — every non-Doctor role */}
+          {profileUser.role !== 'DOCTOR' && (
+            <TrustVerificationSection
+              userId={resolvedUserId}
+              userRole={profileUser?.role}
+              verification={resolveVerification()}
+              isAdmin={isAdmin || variant === 'support'}
+              onVerificationUpdated={applyVerificationUpdate}
+            />
+          )}
+
+          {/* WORKER PROFILE — strictly Worker-only, never used as a Doctor fallback */}
+          {profileUser.role === 'WORKER' && profileUser.WorkerProfile && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">

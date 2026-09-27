@@ -12,7 +12,6 @@ import {
   Building2,
   Stethoscope,
   MessageCircle,
-  Bell,
   Settings,
   HelpCircle,
   LogOut,
@@ -32,9 +31,13 @@ const DoctorSidebar = ({
   const location = useLocation();
   const { t } = useTranslation();
 
-  // Doctor Navigation items
-  // Functional items: Dashboard, My Profile
-  // Non-functional items: Disabled placeholders for future phases
+  // Doctor Navigation items.
+  // Agreed order: Dashboard, Profile, Messages, Appointments, Patients,
+  // Schedule, Clinics, Examination & Consultation Settings, Settings, Help.
+  // Notifications are intentionally NOT a sidebar item — they are surfaced
+  // through the notification bell in the top header.
+  // Functional: Dashboard, Profile, Clinics.
+  // Disabled placeholders: every remaining item (future phases).
   const menuItems = [
     {
       id: 'dashboard',
@@ -51,6 +54,14 @@ const DoctorSidebar = ({
       path: '/doctor-profile',
       active: location.pathname === '/doctor-profile',
       disabled: false
+    },
+    {
+      id: 'messages',
+      label: t('doctorNav.messages') || t('messages'),
+      icon: MessageCircle,
+      path: '#',
+      active: false,
+      disabled: true
     },
     {
       id: 'appointments',
@@ -80,30 +91,14 @@ const DoctorSidebar = ({
       id: 'clinics',
       label: t('doctorNav.clinics') || 'Clinics',
       icon: Building2,
-      path: '#',
-      active: false,
-      disabled: true
+      path: '/doctor-clinics',
+      active: location.pathname === '/doctor-clinics',
+      disabled: false
     },
     {
       id: 'consultationSettings',
       label: t('doctorNav.consultationSettings') || 'Consultation Settings',
       icon: Stethoscope,
-      path: '#',
-      active: false,
-      disabled: true
-    },
-    {
-      id: 'messages',
-      label: t('doctorNav.messages') || t('messages'),
-      icon: MessageCircle,
-      path: '#',
-      active: false,
-      disabled: true
-    },
-    {
-      id: 'notifications',
-      label: t('doctorNav.notifications') || t('notifications'),
-      icon: Bell,
       path: '#',
       active: false,
       disabled: true

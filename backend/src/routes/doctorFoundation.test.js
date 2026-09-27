@@ -5,6 +5,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import DoctorProfile from '../models/DoctorProfile.js';
+import DoctorClinic from '../models/DoctorClinic.js';
 import doctorsRouter from './doctors.js';
 import authRouter from './auth.js';
 
@@ -56,11 +57,12 @@ const createMockUser = (overrides = {}) => ({
   ...overrides
 });
 
-const withDoctorServer = async ({ mockUser = createMockUser(), initialProfile = null } = {}, run) => {
+const withDoctorServer = async ({ mockUser = createMockUser(), initialProfile = null, initialClinics = [] } = {}, run) => {
   const originalUserFindById = User.findById;
   const originalUserFindByIdAndUpdate = User.findByIdAndUpdate;
   const originalDoctorProfileFindOne = DoctorProfile.findOne;
   const originalDoctorProfileFindOneAndUpdate = DoctorProfile.findOneAndUpdate;
+  const originalClinicFind = DoctorClinic.find;
 
   let currentProfile = initialProfile ? { ...initialProfile } : null;
 
@@ -136,6 +138,20 @@ const withDoctorServer = async ({ mockUser = createMockUser(), initialProfile = 
     return currentProfile;
   };
 
+  // GET /api/doctors/profile also returns the Doctor's active clinics.
+  DoctorClinic.find = (filter = {}) => {
+    const matched = initialClinics.filter((clinic) => {
+      if (filter.doctorId && String(clinic.doctorId) !== String(filter.doctorId)) return false;
+      if (filter.isActive !== undefined && clinic.isActive !== filter.isActive) return false;
+      return true;
+    });
+    const chain = {
+      sort: () => chain,
+      lean: () => Promise.resolve(matched)
+    };
+    return chain;
+  };
+
   const app = express();
   app.use(express.json());
   app.use('/api/auth', authRouter);
@@ -150,6 +166,7 @@ const withDoctorServer = async ({ mockUser = createMockUser(), initialProfile = 
     User.findByIdAndUpdate = originalUserFindByIdAndUpdate;
     DoctorProfile.findOne = originalDoctorProfileFindOne;
     DoctorProfile.findOneAndUpdate = originalDoctorProfileFindOneAndUpdate;
+    DoctorClinic.find = originalClinicFind;
     await new Promise((resolve) => server.close(resolve));
   }
 };
@@ -403,14 +420,14 @@ test('15. Profile image update syncs to User record', async () => {
   });
 });
 
-test('16. DOCTOR registration persists User.role === DOCTOR and issues DOCTOR token', async () => {
+test('16. DOCTOR public registration is rejected with 400 and creates no user', async () => {
   const originalUserSave = User.prototype.save;
   const originalUserFindOne = User.findOne;
-  let savedUserDoc = null;
+  const savedRoles = [];
 
   User.findOne = async () => null; // Email not taken
   User.prototype.save = async function () {
-    savedUserDoc = this;
+    savedRoles.push(this.role);
     return this;
   };
 
@@ -430,15 +447,39 @@ test('16. DOCTOR registration persists User.role === DOCTOR and issues DOCTOR to
         })
       });
 
-      assert.strictEqual(res.status, 201);
+      assert.strictEqual(res.status, 400);
       const data = await res.json();
-      assert.strictEqual(data.success, true);
-      assert.strictEqual(data.user.role, 'DOCTOR');
-      assert.ok(savedUserDoc, 'User model instance must be saved');
-      assert.strictEqual(savedUserDoc.role, 'DOCTOR');
+      assert.strictEqual(data.success, false);
+      assert.match(data.message, /valid account role/i);
+      assert.deepEqual(savedRoles, [], 'blocked DOCTOR registration must not create a user');
 
-      // Decode the returned JWT
-      const decoded = jwt.verify(data.token, secret);
+      // Existing DOCTOR accounts keep logging in with a DOCTOR role/token.
+      const existingDoctor = createMockUser({
+        _id: DOCTOR_ID,
+        email: 'existing.doctor@homelyserv.test',
+        role: 'DOCTOR',
+        save: async function () { return this; },
+        toObject() { return { ...this }; }
+      });
+      const loginUser = async () => existingDoctor;
+      User.findOne = loginUser;
+
+      const bcrypt = (await import('bcryptjs')).default;
+      existingDoctor.password = await bcrypt.hash('DoctorPass123!', 10);
+
+      const resLogin = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          email: 'existing.doctor@homelyserv.test',
+          password: 'DoctorPass123!'
+        })
+      });
+
+      assert.strictEqual(resLogin.status, 200);
+      const loginData = await resLogin.json();
+      assert.strictEqual(loginData.user.role, 'DOCTOR');
+      const decoded = jwt.verify(loginData.token, secret);
       assert.strictEqual(decoded.role, 'DOCTOR');
     });
   } finally {
@@ -490,7 +531,7 @@ test('17. DOCTOR login returns DOCTOR role in user payload and JWT token', async
   }
 });
 
-test('18. WORKER, EMPLOYER, and STUDENT registration roles are preserved', async () => {
+test('18. WORKER and EMPLOYER registration roles are preserved and STUDENT registration is rejected', async () => {
   const originalUserSave = User.prototype.save;
   const originalUserFindOne = User.findOne;
   const savedRoles = [];
@@ -541,7 +582,7 @@ test('18. WORKER, EMPLOYER, and STUDENT registration roles are preserved', async
       const dataEmployer = await resEmployer.json();
       assert.strictEqual(dataEmployer.user.role, 'EMPLOYER');
 
-      // 3. STUDENT
+      // 3. STUDENT (public registration temporarily blocked)
       const resStudent = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -555,11 +596,12 @@ test('18. WORKER, EMPLOYER, and STUDENT registration roles are preserved', async
           countryName: 'United Arab Emirates'
         })
       });
-      assert.strictEqual(resStudent.status, 201);
+      assert.strictEqual(resStudent.status, 400);
       const dataStudent = await resStudent.json();
-      assert.strictEqual(dataStudent.user.role, 'STUDENT');
+      assert.strictEqual(dataStudent.success, false);
+      assert.match(dataStudent.message, /valid account role/i);
 
-      assert.deepEqual(savedRoles, ['WORKER', 'EMPLOYER', 'STUDENT']);
+      assert.deepEqual(savedRoles, ['WORKER', 'EMPLOYER']);
     });
   } finally {
     User.prototype.save = originalUserSave;
@@ -607,3 +649,81 @@ test('20. Authentication middleware attaches req.userRole === DOCTOR and require
   });
 });
 
+
+test('21. Doctor profile persists education, certifications and additional specialties', async () => {
+  await withDoctorServer({}, async (baseUrl, getProfile) => {
+    const res = await fetch(`${baseUrl}/api/doctors/profile`, {
+      method: 'PUT',
+      headers: authHeader({ userId: DOCTOR_ID, role: 'DOCTOR', tokenVersion: 0 }),
+      body: JSON.stringify({
+        professionalTitle: 'Consultant Pediatrician',
+        specialty: 'pediatrics',
+        additionalSpecialties: ['physiotherapy', 'other'],
+        experienceSummary: '10 years of paediatric practice.',
+        education: [' MBBCh, Cairo University, 2010 ', '   '],
+        certifications: [' Board Certified Pediatrics, 2016 ']
+      })
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.deepStrictEqual(body.profile.education, ['MBBCh, Cairo University, 2010']);
+    assert.deepStrictEqual(body.profile.certifications, ['Board Certified Pediatrics, 2016']);
+    assert.deepStrictEqual(body.profile.additionalSpecialties, ['physiotherapy', 'other']);
+    assert.strictEqual(body.profile.experienceSummary, '10 years of paediatric practice.');
+    assert.strictEqual(getProfile().specialty, 'pediatrics');
+  });
+});
+
+test('22. Additional specialties must use the canonical doctor specialty taxonomy', async () => {
+  await withDoctorServer({}, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/doctors/profile`, {
+      method: 'PUT',
+      headers: authHeader({ userId: DOCTOR_ID, role: 'DOCTOR', tokenVersion: 0 }),
+      body: JSON.stringify({ additionalSpecialties: ['psychotherapist', 'plumber'] })
+    });
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.strictEqual(body.success, false);
+    assert.match(body.message, /invalid medical specialty/i);
+  });
+});
+
+test('23. Psychotherapist remains a Doctor specialty and is never a Worker job type', async () => {
+  const { CANONICAL_DOCTOR_SPECIALTIES } = await import('../constants/doctorSpecialties.js');
+  assert.ok(CANONICAL_DOCTOR_SPECIALTIES.includes('psychotherapist'));
+  assert.strictEqual(CANONICAL_DOCTOR_SPECIALTIES.at(-1), 'other', '"other" must remain the final option');
+});
+
+test('24. GET /api/doctors/profile returns the Doctor active clinics', async () => {
+  const clinics = [{
+    _id: '507f1f77bcf86cd799439080',
+    doctorId: DOCTOR_ID,
+    clinicName: 'City Hospital',
+    phone: '+971500000000',
+    email: 'clinic@example.test',
+    addressLine: '1 Main St',
+    city: 'Dubai',
+    stateOrProvince: 'Dubai',
+    countryCode: 'AE',
+    postalCode: '00000',
+    timezone: 'GST',
+    instructions: '',
+    isActive: true,
+    isPrimary: true
+  }];
+
+  await withDoctorServer({ initialClinics: clinics }, async (baseUrl) => {
+    const res = await fetch(`${baseUrl}/api/doctors/profile`, {
+      method: 'GET',
+      headers: authHeader({ userId: DOCTOR_ID, role: 'DOCTOR', tokenVersion: 0 })
+    });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.user.role, 'DOCTOR');
+    assert.strictEqual(body.clinics.length, 1);
+    assert.strictEqual(body.clinics[0].clinicName, 'City Hospital');
+    assert.strictEqual(body.clinics[0].isPrimary, true);
+  });
+});

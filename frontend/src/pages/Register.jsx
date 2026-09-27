@@ -21,9 +21,7 @@ import {
   Home,
   Sparkles,
   ChevronDown,
-  BookOpen,
-  Stethoscope,
-  GraduationCap
+  BookOpen
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
@@ -453,7 +451,7 @@ function Register() {
             {/* Role Selection */}
             <div className="mb-3 sm:mb-4">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('registerAs')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
@@ -479,45 +477,6 @@ function Register() {
                   <User className="w-5 h-5 mb-1 shrink-0" />
                   <span className="text-xs sm:text-sm font-semibold">{t('serviceSeekerTitle')}</span>
                   <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'DOCTOR' }))}
-                  className={`sm:col-span-2 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
-                    formData.role === 'DOCTOR'
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  <Stethoscope className="w-5 h-5 mb-1 shrink-0" />
-                  <span className="text-xs sm:text-sm font-semibold">{t('doctorTitle')}</span>
-                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('doctorDesc')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'TEACHER' }))}
-                  className={`sm:col-span-3 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
-                    formData.role === 'TEACHER'
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  <BookOpen className="w-5 h-5 mb-1 shrink-0" />
-                  <span className="text-xs sm:text-sm font-semibold">{t('teacherTitle')}</span>
-                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('teacherDesc')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'STUDENT' }))}
-                  className={`col-span-2 sm:col-span-3 max-w-[240px] sm:max-w-none justify-self-center w-full p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
-                    formData.role === 'STUDENT'
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  <GraduationCap className="w-5 h-5 mb-1 shrink-0" />
-                  <span className="text-xs sm:text-sm font-semibold">{t('studentTitle')}</span>
-                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('studentDesc')}</span>
                 </button>
               </div>
               {errors.role && (

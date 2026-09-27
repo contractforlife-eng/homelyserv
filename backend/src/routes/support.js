@@ -11,12 +11,18 @@ import { createAndSendPasswordReset } from '../services/passwordResetTokenServic
 import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { isRootAdmin, isRootRecoveryTarget } from '../security/rootAdmin.js';
+import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
 import {
   adminUpdateVerification,
   getPendingVerifications,
   getVerificationDetails,
   adminGetLatestUserDocument
 } from '../services/profileVerificationService.js';
+import {
+  getDoctorVerificationForReview,
+  updateDoctorVerification,
+  getDoctorVerificationDocument
+} from '../controllers/doctorVerificationController.js';
 
 const supportResetAttempts = new Map();
 const SUPPORT_RESET_WINDOW_MS = 60 * 60 * 1000;
@@ -353,7 +359,10 @@ router.get('/users/:id', async (req, res) => {
       });
     }
 
-    if (isSupport && !['WORKER', 'EMPLOYER'].includes(user.role)) {
+    // DOCTOR is a first-class role. Sup-Admin must be able to open a real
+    // Doctor profile with the SAME visibility (and verification authority) as
+    // Admin, so a Doctor can never be hidden behind a WorkerProfile fallback.
+    if (isSupport && !['WORKER', 'EMPLOYER', 'DOCTOR'].includes(user.role)) {
       return res.status(403).json({ success: false, message: 'Profile access is limited to platform users' });
     }
 
@@ -380,12 +389,17 @@ router.get('/users/:id', async (req, res) => {
     }
 
     if (isSupport) {
+      // Real Doctor professional profile + clinics (read model shared with
+      // Admin and Sup-Help so a Doctor always renders as a Doctor).
+      const { DoctorProfile, doctorClinics } = await getDoctorStaffView(user.id);
+
       return res.json({
         success: true,
         user: {
           ...user,
           lastLogin,
           ...(mongooseUserObj || {}),
+          ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
           verification
         }
       });
@@ -1164,6 +1178,20 @@ router.get('/verification/user/:id/document', async (req, res) => {
     });
   }
 });
+
+// ============================================================
+// DOCTOR TRUST & VERIFICATION (Sup-Admin — Sup-Admin and Admin are EQUAL)
+// ------------------------------------------------------------
+// requireSupport admits SUPPORT (Sup-Admin) and ADMIN (Co-Admin), so Sup-Admin
+// reaches these handlers with exactly the same authority as Admin, including
+// approving the authoritative Verified Profile status.
+//
+// Sup-Help (SUPPORT_HELPER) cannot enter this router at all, and additionally
+// has no write handler for Doctor verification anywhere server-side.
+// ============================================================
+router.get('/doctors/:doctorId/verification', getDoctorVerificationForReview);
+router.patch('/doctors/:doctorId/verification', updateDoctorVerification);
+router.get('/doctors/:doctorId/verification/document', getDoctorVerificationDocument);
 
 router.get('/users/:id', async (req, res) => {
   try {

@@ -30,6 +30,7 @@ import { listAccountingEntries, getAccountingSummary, createAccountingEntry, upd
 import { completePaymentTransaction } from '../routes/payment.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
 import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryRequest, isRootRecoveryTarget } from '../security/rootAdmin.js';
+import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
 import {
   adminUpdateVerification,
   getPendingVerifications,
@@ -37,6 +38,11 @@ import {
   adminGetLatestUserDocument,
   adminGetLatestUserIdentityDocument
 } from '../services/profileVerificationService.js';
+import {
+  getDoctorVerificationForReview,
+  updateDoctorVerification,
+  getDoctorVerificationDocument
+} from '../controllers/doctorVerificationController.js';
 
 const router = express.Router();
 
@@ -179,9 +185,18 @@ router.get('/users/:id', async (req, res) => {
 
     const verification = getVerificationDetails(user);
 
+    // A Doctor must open as a real Doctor profile, never as a WorkerProfile
+    // substitute. Admin and Sup-Admin receive the identical Doctor read model.
+    const { DoctorProfile, doctorClinics } = await getDoctorStaffView(user._id);
+
     res.json({
       success: true,
-      user: { ...user.toObject(), subscription, verification }
+      user: {
+        ...user.toObject(),
+        ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
+        subscription,
+        verification
+      }
     });
   } catch (error) {
     console.error('Get user error:', error);
@@ -271,6 +286,22 @@ router.get('/verification/user/:id/document', async (req, res) => {
     });
   }
 });
+
+// ============================================================
+// DOCTOR TRUST & VERIFICATION
+// ------------------------------------------------------------
+// This whole router is ADMIN-only (router.use(requireAdmin)).
+// Sup-Admin (SUPPORT) reaches the IDENTICAL handlers, with IDENTICAL
+// authority, through /api/support/doctors/... — see support.js.
+// Sup-Help (SUPPORT_HELPER) is READ-ONLY and reaches only the GET routes
+// under /api/sup-help/doctors/...
+//
+// Role authority is enforced inside doctorVerificationController.js, not by
+// route placement alone.
+// ============================================================
+router.get('/doctors/:doctorId/verification', getDoctorVerificationForReview);
+router.patch('/doctors/:doctorId/verification', updateDoctorVerification);
+router.get('/doctors/:doctorId/verification/document', getDoctorVerificationDocument);
 
 // ============================================================
 // Suspend User (Admin Only) - FIXED: Better handling
