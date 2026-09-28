@@ -5,19 +5,24 @@ import { Link, useLocation } from 'react-router-dom';
 import { UserDisplayName } from '../users';
 import {
   Home,
-  User,
-  Calendar,
   Users,
+  Calendar,
   Clock,
   Building2,
-  Stethoscope,
-  MessageCircle,
   Settings,
   HelpCircle,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  FileText,
+  Pill,
+  Tag,
+  BarChart3,
+  Crown,
+  Stethoscope,
+  User,
+  MessageCircle
 } from 'lucide-react';
 
 const DoctorSidebar = ({
@@ -31,95 +36,169 @@ const DoctorSidebar = ({
   const location = useLocation();
   const { t } = useTranslation();
 
-  // Doctor Navigation items.
-  // Agreed order: Dashboard, Profile, Messages, Appointments, Patients,
-  // Schedule, Clinics, Examination & Consultation Settings, Settings, Help.
+  // Doctor navigation — Clinic Management System (CMS) structure.
+  //
+  //   DOCTOR               Dashboard, My Profile, Messages
+  //                        (pre-existing Doctor pages). Doctor Center and the
+  //                        legacy /doctor-schedule are intentionally NOT listed
+  //                        here; both stay reachable as legacy routes for old
+  //                        links/bookmarks.
+  //   CLINIC MANAGEMENT    Patients, Appointments, Consultations,
+  //                        Prescriptions, Clinics, Services & Fees, Schedule,
+  //                        Reports
+  //   HOMELYSERV           HomelyServ module (member messages + requests)
+  //   SYSTEM               Settings, Help
+  //   PREMIUM              Premium (always a separate, visible item)
+  //
+  // NOTE on Overview: /doctor-cms (the CMS Overview) is intentionally NOT
+  // listed. The Doctor Dashboard is the Doctor's main dashboard, so the CMS
+  // Overview duplicated it. The route and page still exist for compatibility
+  // and are NOT redirected; the final CMS structure is decided separately.
+  //
+  // NOTE on Schedule: the CMS Schedule (/doctor-cms/schedule) is now the ONLY
+  // Schedule entry in the sidebar. The legacy /doctor-schedule page still
+  // exists as a route, but is deliberately unlisted.
+  //
   // Notifications are intentionally NOT a sidebar item — they are surfaced
-  // through the notification bell in the top header.
-  // Functional: Dashboard, Profile, Clinics.
-  // Disabled placeholders: every remaining item (future phases).
-  const menuItems = [
+  // through the notification bell in the red top header.
+  const navGroups = [
     {
-      id: 'dashboard',
-      label: t('doctorNav.dashboard') || t('dashboard'),
-      icon: Home,
-      path: '/doctor-dashboard',
-      active: location.pathname === '/doctor-dashboard',
-      disabled: false
+      id: 'doctor',
+      label: t('doctorNav.sectionDoctor') || 'Doctor',
+      items: [
+        {
+          id: 'dashboard',
+          label: t('doctorNav.dashboard') || 'Dashboard',
+          icon: Home,
+          path: '/doctor-dashboard'
+        },
+        {
+          id: 'myProfile',
+          label: t('doctorNav.myProfile') || 'My Profile',
+          icon: User,
+          path: '/doctor-profile'
+        },
+        {
+          id: 'messages',
+          label: t('doctorNav.messages') || 'Messages',
+          icon: MessageCircle,
+          path: '/doctor-messages'
+        }
+      ]
     },
     {
-      id: 'profile',
-      label: t('doctorNav.myProfile') || t('myProfile') || 'My Profile',
-      icon: User,
-      path: '/doctor-profile',
-      active: location.pathname === '/doctor-profile',
-      disabled: false
+      id: 'clinicManagement',
+      label: t('doctorNav.sectionClinicManagement') || 'Clinic Management',
+      // No headerPath: the section label is a plain heading, so there is no
+      // navigation entry to the retired /doctor-cms Overview page.
+      items: [
+        {
+          id: 'patients',
+          label: t('doctorNav.patients') || 'Patients',
+          icon: Users,
+          path: '/doctor-cms/patients',
+          matchPrefix: true
+        },
+        {
+          id: 'appointments',
+          label: t('doctorNav.appointments') || 'Appointments',
+          icon: Calendar,
+          path: '/doctor-cms/appointments'
+        },
+        {
+          id: 'consultations',
+          label: t('doctorNav.consultations') || 'Consultations',
+          icon: FileText,
+          path: '/doctor-cms/consultations'
+        },
+        {
+          id: 'prescriptions',
+          label: t('doctorNav.prescriptions') || 'Prescriptions',
+          icon: Pill,
+          path: '/doctor-cms/prescriptions'
+        },
+        {
+          id: 'clinics',
+          label: t('doctorNav.clinics') || 'Clinics',
+          icon: Building2,
+          path: '/doctor-cms/clinics'
+        },
+        {
+          id: 'servicesFees',
+          label: t('doctorNav.servicesFees') || 'Services & Fees',
+          icon: Tag,
+          path: '/doctor-cms/services'
+        },
+        {
+          id: 'schedule',
+          label: t('doctorNav.schedule') || 'Schedule',
+          icon: Clock,
+          path: '/doctor-cms/schedule'
+        },
+        {
+          id: 'reports',
+          label: t('doctorNav.reports') || 'Reports',
+          icon: BarChart3,
+          path: '/doctor-cms/reports'
+        }
+      ]
     },
     {
-      id: 'messages',
-      label: t('doctorNav.messages') || t('messages'),
-      icon: MessageCircle,
-      path: '#',
-      active: false,
-      disabled: true
+      id: 'homelyserv',
+      label: t('doctorNav.sectionHomelyServ') || 'HomelyServ',
+      items: [
+        {
+          id: 'homelyserv',
+          label: t('doctorNav.homelyserv') || 'HomelyServ',
+          icon: Stethoscope,
+          path: '/doctor-homelyserv',
+          matchPrefix: true
+        }
+      ]
     },
     {
-      id: 'appointments',
-      label: t('doctorNav.appointments') || 'Appointments',
-      icon: Calendar,
-      path: '#',
-      active: false,
-      disabled: true
+      id: 'system',
+      label: t('doctorNav.sectionSystem') || 'System',
+      items: [
+        {
+          id: 'settings',
+          label: t('doctorNav.settings') || 'Settings',
+          icon: Settings,
+          path: '/doctor-settings'
+        },
+        {
+          id: 'help',
+          label: t('doctorNav.help') || 'Help',
+          icon: HelpCircle,
+          path: '/doctor-help'
+        }
+      ]
     },
     {
-      id: 'patients',
-      label: t('doctorNav.patients') || 'Patients',
-      icon: Users,
-      path: '#',
-      active: false,
-      disabled: true
-    },
-    {
-      id: 'schedule',
-      label: t('doctorNav.schedule') || 'Schedule',
-      icon: Clock,
-      path: '#',
-      active: false,
-      disabled: true
-    },
-    {
-      id: 'clinics',
-      label: t('doctorNav.clinics') || 'Clinics',
-      icon: Building2,
-      path: '/doctor-clinics',
-      active: location.pathname === '/doctor-clinics',
-      disabled: false
-    },
-    {
-      id: 'consultationSettings',
-      label: t('doctorNav.consultationSettings') || 'Consultation Settings',
-      icon: Stethoscope,
-      path: '#',
-      active: false,
-      disabled: true
-    },
-    {
-      id: 'settings',
-      label: t('doctorNav.settings') || t('settings'),
-      icon: Settings,
-      path: '#',
-      active: false,
-      disabled: true
-    },
-    {
-      id: 'help',
-      label: t('doctorNav.help') || t('help'),
-      icon: HelpCircle,
-      path: '#',
-      active: false,
-      disabled: true
+      id: 'premium',
+      label: t('doctorNav.sectionPremium') || 'Premium',
+      items: [
+        {
+          id: 'premium',
+          label: t('doctorNav.premium') || 'Premium',
+          icon: Crown,
+          path: '/doctor-premium'
+        }
+      ]
     }
   ];
+
+  // A nav item is active on its exact route. Parents that own a subtree
+  // (Patients workspace, HomelyServ module) also highlight for nested routes.
+  const isItemActive = (item) => (
+    location.pathname === item.path
+    || (item.matchPrefix === true && location.pathname.startsWith(`${item.path}/`))
+  );
+
+  const isGroupActive = (group) => (
+    group.items.some(isItemActive)
+    || (group.headerPath && location.pathname === group.headerPath)
+  );
 
   return (
     <>
@@ -139,38 +218,6 @@ const DoctorSidebar = ({
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l`}
       >
-        {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
-          <Link to="/doctor-dashboard" className="flex items-center gap-2 overflow-hidden">
-            <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center flex-shrink-0 text-white font-bold">
-              H
-            </div>
-            {!sidebarCollapsed && (
-              <div className="flex flex-col min-w-0">
-                <span className="font-bold text-gray-900 dark:text-white truncate">HomelyServ</span>
-                <span className="text-xs text-red-600 font-semibold tracking-wide uppercase">
-                  {t('doctorNav.doctorPortal') || 'Doctor Portal'}
-                </span>
-              </div>
-            )}
-          </Link>
-
-          <button
-            onClick={toggleSidebar}
-            className="hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            title={sidebarCollapsed ? 'Expand' : 'Collapse'}
-          >
-            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-
-          <button
-            onClick={toggleMobileMenu}
-            className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
         {/* Doctor Identity Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40">
           <div className="flex items-center gap-3">
@@ -191,56 +238,84 @@ const DoctorSidebar = ({
                   <UserDisplayName user={authUser} />
                 </p>
                 <p className="text-xs text-red-600 font-medium truncate">
-                  {t('doctorNav.doctorRole') || 'Doctor'}
+                  {t('doctorNav.clinicManagementSystem') || 'Clinic Management System'}
                 </p>
               </div>
             )}
+
+            <button
+              onClick={toggleSidebar}
+              className="hidden lg:flex p-1.5 rounded-lg flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              title={sidebarCollapsed ? 'Expand' : 'Collapse'}
+            >
+              {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+
+            <button
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-1.5 rounded-lg flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={20} />
+            </button>
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            if (item.disabled) {
-              return (
-                <div
-                  key={item.id}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 ${
-                    sidebarCollapsed ? 'justify-center' : ''
-                  }`}
-                  title={`${item.label} (${t('doctorNav.comingSoon') || 'Coming soon'})`}
-                >
-                  <Icon size={18} className="flex-shrink-0" />
-                  {!sidebarCollapsed && (
-                    <div className="flex items-center justify-between flex-1 min-w-0">
-                      <span className="truncate">{item.label}</span>
-                      <span className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                        {t('doctorNav.comingSoon') || 'Soon'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
+        {/* Navigation Items — grouped CMS sections */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {navGroups.map((group, groupIndex) => {
+            const groupActive = isGroupActive(group);
             return (
-              <Link
-                key={item.id}
-                to={item.path}
-                onClick={() => mobileMenuOpen && toggleMobileMenu()}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  sidebarCollapsed ? 'justify-center' : ''
-                } ${
-                  item.active
-                    ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600'
-                }`}
-                title={item.label}
-              >
-                <Icon size={18} className="flex-shrink-0" />
-                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-              </Link>
+              <div key={group.id}>
+                {/* Section label (also a link when the group has a landing page) */}
+                {!sidebarCollapsed ? (
+                  group.headerPath ? (
+                    <Link
+                      to={group.headerPath}
+                      onClick={() => mobileMenuOpen && toggleMobileMenu()}
+                      className={`mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                        groupActive
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-gray-400 hover:text-red-600 dark:hover:text-red-400'
+                      }`}
+                    >
+                      <span className="truncate">{group.label}</span>
+                    </Link>
+                  ) : (
+                    <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                      {group.label}
+                    </p>
+                  )
+                ) : (
+                  groupIndex > 0 && (
+                    <div className="my-2 border-t border-gray-200 dark:border-gray-700" />
+                  )
+                )}
+
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isItemActive(item);
+                    return (
+                      <Link
+                        key={item.id}
+                        to={item.path}
+                        onClick={() => mobileMenuOpen && toggleMobileMenu()}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          sidebarCollapsed ? 'justify-center' : ''
+                        } ${
+                          active
+                            ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600'
+                        }`}
+                        title={item.label}
+                      >
+                        <Icon size={18} className="flex-shrink-0" />
+                        {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

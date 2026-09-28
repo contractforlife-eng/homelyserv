@@ -20,7 +20,8 @@ import {
   Briefcase,
   Users,
   Headphones,
-  Globe
+  Globe,
+  Heart
 } from 'lucide-react';
 
 const MobileDrawerNav = () => {
@@ -53,6 +54,7 @@ const MobileDrawerNav = () => {
     { to: '/worker-complaints', icon: FileText, label: t('workerSidebar.complaints') },
     { to: '/worker-payment', icon: CreditCard, label: t('workerSidebar.payment') },
     { to: '/subscription', icon: Star, label: t('workerSidebar.premium') },
+    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/worker-settings', icon: Settings, label: t('workerSidebar.settings') },
     { to: '/help', icon: HelpCircle, label: t('workerSidebar.help') },
   ];
@@ -68,6 +70,7 @@ const MobileDrawerNav = () => {
     { to: '/employer-complaints', icon: FileText, label: t('employerSidebar.complaints') },
     { to: '/employer-payments', icon: CreditCard, label: t('employerSidebar.payment') },
     { to: '/subscription', icon: Star, label: t('employerSidebar.premium') },
+    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/employer-settings', icon: Settings, label: t('employerSidebar.settings') },
     { to: '/help', icon: HelpCircle, label: t('employerSidebar.help') },
   ];

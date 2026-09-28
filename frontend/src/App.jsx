@@ -26,6 +26,8 @@ import MyHires from './pages/MyHires';
 import Notifications from './pages/Notifications';
 import JobDetails from './pages/JobDetails';
 import Help from './pages/Help';
+import MedicalProfile from './pages/MedicalProfile';
+import PatientPrescriptions from './pages/PatientPrescriptions';
 
 // Worker Pages
 import WorkerDashboard from './pages/WorkerDashboard';
@@ -42,6 +44,32 @@ import WorkerApplications from './pages/WorkerApplications';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorProfile from './pages/DoctorProfile';
 import DoctorClinics from './pages/DoctorClinics';
+import DoctorSchedule from './pages/DoctorSchedule';
+import DoctorAppointments from './pages/DoctorAppointments';
+import DoctorPatients from './pages/DoctorPatients';
+import DoctorPatientDetails from './pages/DoctorPatientDetails';
+import DoctorConsultations from './pages/DoctorConsultations';
+import DoctorPrescriptions from './pages/DoctorPrescriptions';
+import PrintablePrescription from './pages/PrintablePrescription';
+import DoctorCenter from './pages/DoctorCenter';
+import DoctorMessages from './pages/DoctorMessages';
+import DoctorSettings from './pages/DoctorSettings';
+import DoctorHelp from './pages/DoctorHelp';
+
+// Clinic Management System (CMS) Pages — Doctor only.
+// These wrap / route into the EXISTING doctor functionality rather
+// than re-implementing it (patients, appointments, consultations,
+// prescriptions and clinics are reused as-is).
+import DoctorCmsOverview from './pages/DoctorCmsOverview';
+import DoctorCmsConsultations from './pages/DoctorCmsConsultations';
+import DoctorCmsPrescriptions from './pages/DoctorCmsPrescriptions';
+import DoctorCmsServicesFees from './pages/DoctorCmsServicesFees';
+import DoctorClinicPatientDetails from './pages/DoctorClinicPatientDetails';
+import DoctorCmsReports from './pages/DoctorCmsReports';
+import DoctorHomelyServ from './pages/DoctorHomelyServ';
+import DoctorHomelyServRequests from './pages/DoctorHomelyServRequests';
+import DoctorHomelyServProfile from './pages/DoctorHomelyServProfile';
+import DoctorPremium from './pages/DoctorPremium';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -413,6 +441,30 @@ function App() {
         path="/help" 
         element={<Help />} 
       />
+      <Route 
+        path="/medical-profile" 
+        element={
+          <ProtectedRoute>
+            <MedicalProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/my-prescriptions" 
+        element={
+          <ProtectedRoute>
+            <PatientPrescriptions />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/my-prescriptions/:prescriptionId/print" 
+        element={
+          <ProtectedRoute>
+            <PrintablePrescription role="patient" />
+          </ProtectedRoute>
+        } 
+      />
 
       {/* ========== DOCTOR ROUTES ========== */}
       <Route 
@@ -438,6 +490,260 @@ function App() {
             <DoctorClinics />
           </ProtectedRoute>
         } 
+      />
+      <Route 
+        path="/doctor-schedule" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorSchedule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-appointments" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorAppointments />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-patients" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPatients />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-patients/:patientId" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPatientDetails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-patients/:patientId/consultations" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorConsultations />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-patients/:patientId/consultations/:consultationId/prescriptions" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPrescriptions />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-patients/:patientId/consultations/:consultationId/prescriptions/:prescriptionId/print" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <PrintablePrescription role="doctor" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-center" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorCenter />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-messages" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorMessages />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-settings" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorSettings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-help" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorHelp />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========== DOCTOR — CLINIC MANAGEMENT SYSTEM (CMS) ========== */}
+      {/* Each CMS entry point reuses the existing Doctor feature. The
+          legacy /doctor-* paths above stay valid so nothing breaks. */}
+      <Route
+        path="/doctor-cms"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorCmsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/patients"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPatients />
+          </ProtectedRoute>
+        }
+      />
+      {/* Clinic Patient detail (Phase 1) — independent record, NOT a User.
+          Kept separate from /doctor-cms/patients/:patientId which is the
+          existing HomelyServ User-patient workspace. */}
+      <Route
+        path="/doctor-cms/clinic-patients/:patientId"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorClinicPatientDetails />
+          </ProtectedRoute>
+        }
+      />
+      {/* Clinical Consultations for a ClinicPatient. Same DoctorConsultations
+          workspace — the source is explicit in the route. */}
+      <Route
+        path="/doctor-cms/clinic-patients/:patientId/consultations"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorConsultations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/patients/:patientId"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPatientDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/appointments"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorAppointments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/consultations"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorCmsConsultations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/patients/:patientId/consultations"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorConsultations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/patients/:patientId/consultations/:consultationId/prescriptions"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPrescriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/prescriptions"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorCmsPrescriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/clinics"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorClinics />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/services"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorCmsServicesFees />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/schedule"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorSchedule />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-cms/reports"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorCmsReports />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* HomelyServ module — member service, separate from clinical records */}
+      <Route
+        path="/doctor-homelyserv"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorHomelyServ />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-homelyserv/messages"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorMessages />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-homelyserv/requests"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorHomelyServRequests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-homelyserv/profile"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorHomelyServProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Doctor Premium — dedicated page, reuses the existing subscription
+          architecture and server-authoritative Doctor price book. */}
+      <Route
+        path="/doctor-premium"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorPremium />
+          </ProtectedRoute>
+        }
       />
 
       {/* ========== WORKER ROUTES ========== */}

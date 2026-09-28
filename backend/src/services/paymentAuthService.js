@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { isUserPremium } from './premiumService.js';
+import { hasValidDoctorPatientRelationship } from './doctorPatientAccessService.js';
 
 const CUSTOMER_ROLES = new Set(['EMPLOYER', 'WORKER']);
 const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
@@ -121,6 +122,20 @@ export const resolveUserParty = async (identifier, db = prisma) => {
  */
 export const authorizePaidChatRelationship = async ({ senderId, senderRole, recipientId }, db = prisma) => {
   const role = normalizeRole(senderRole);
+
+  // Doctor <-> patient messaging. Contact is limited to users with an
+  // established clinical relationship (a CONFIRMED or COMPLETED
+  // DoctorAppointment in either direction). There is no paid-contact
+  // requirement: the doctor-patient relationship itself is the authorization.
+  // This must run BEFORE the customer-roles gate because DOCTOR is neither a
+  // customer nor staff role and would otherwise be blanket-allowed.
+  if (role === 'DOCTOR') {
+    const patientParty = await resolveUserParty(recipientId, db);
+    if (!patientParty) return { required: false, allowed: false };
+    const hasRelationship = await hasValidDoctorPatientRelationship(senderId, patientParty.userId);
+    return { required: false, allowed: hasRelationship };
+  }
+
   if (STAFF_ROLES.has(role) || !CUSTOMER_ROLES.has(role)) {
     return { required: false, allowed: true };
   }
@@ -156,6 +171,13 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
       ? await canContactWorker(recipient.userId, workerProfile.id, db)
       : false;
     return { required: true, allowed };
+  }
+
+  // Patient -> doctor sends fall through to the default customer treatment
+  // after the recipient-side doctor relationship check below.
+  if (recipient.role === 'DOCTOR') {
+    const hasRelationship = await hasValidDoctorPatientRelationship(recipient.userId, senderId);
+    return { required: false, allowed: hasRelationship };
   }
 
   return { required: false, allowed: true };

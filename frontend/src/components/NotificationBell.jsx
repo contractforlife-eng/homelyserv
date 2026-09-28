@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { useTranslation } from 'react-i18next';
 
-const NotificationBell = ({ userId: userIdProp, className = '' }) => {
+const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default' }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const authUserId = useAuthStore(state => state.user?.id);
@@ -189,16 +189,23 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
     return getTypeIcon(type);
   };
 
+  // Tone variants. The default tone is unchanged (light header).
+  // 'onRed' is used by the DOCTOR portal red top bar so the bell keeps
+  // readable contrast there. No other role is affected.
+  const isOnRedTone = tone === 'onRed';
+
   return (
     <div className={`relative ${className}`}>
       {/* Bell Button */}
       <button
         ref={bellRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className={`relative p-2 rounded-lg transition-colors ${
+          isOnRedTone ? 'hover:bg-white/15' : 'hover:bg-gray-100'
+        }`}
         aria-label={t('sharedChrome.notifications.title')}
       >
-        <Bell size={20} className="text-gray-600" />
+        <Bell size={20} className={isOnRedTone ? 'text-white' : 'text-gray-600'} />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}

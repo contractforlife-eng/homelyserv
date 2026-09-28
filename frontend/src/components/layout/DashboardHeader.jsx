@@ -62,19 +62,26 @@ const DashboardHeader = ({
   const profileImage = userProfileImage || authUser?.profileImage;
   const fullName = authUser?.fullName || t('sharedChrome.header.user');
   const resolvedPremiumBadgeText = premiumBadgeText || t('sharedChrome.header.premium');
-  // Role-aware variant: 'admin' is explicit (dark), otherwise derive from the
-  // authenticated role so Worker gets the red identity and Employer the teal one.
+  // Role-aware variant: 'admin' is explicit (dark), 'doctor' renders the
+  // Doctor portal red identity bar, otherwise derive from the authenticated
+  // role so Worker gets the red identity and Employer the teal one.
   const effectiveVariant =
     variant === 'admin'
       ? 'admin'
-      : authUser?.role === 'EMPLOYER'
-        ? 'employer'
-        : authUser?.role === 'ADMIN'
-          ? 'admin'
-          : 'worker';
+      : variant === 'doctor' || authUser?.role === 'DOCTOR'
+        ? 'doctor'
+        : authUser?.role === 'EMPLOYER'
+          ? 'employer'
+          : authUser?.role === 'ADMIN'
+            ? 'admin'
+            : 'worker';
   const isAdmin = effectiveVariant === 'admin';
   const isEmployer = effectiveVariant === 'employer';
   const isWorker = effectiveVariant === 'worker';
+  // Doctor portal pages share ONE red top bar so every DOCTOR route renders
+  // the same header shell (Dashboard, CMS modules, Premium, Settings, Help).
+  const isDoctor = effectiveVariant === 'doctor';
+  const isColoredBar = isAdmin || isDoctor;
 
   const headerVisibility = 'hidden lg:block';
   
@@ -87,7 +94,9 @@ const DashboardHeader = ({
     <header className={`sticky top-0 z-30 ${headerVisibility} ${
       isAdmin
         ? 'bg-[#1a1a1a] border-b border-yellow-500/20'
-        : 'bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'
+        : isDoctor
+          ? 'bg-gradient-to-r from-red-600 via-red-600 to-red-700 dark:from-red-700 dark:via-red-700 dark:to-red-800 border-b border-red-900/40'
+          : 'bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'
     }`}>
       <div className="flex items-center justify-between px-3 sm:px-4 py-3">
         {/* Left side - Menu button and title */}
@@ -98,16 +107,18 @@ const DashboardHeader = ({
             className={`p-2 rounded-lg transition-colors lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center ${
               isAdmin
                 ? 'hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500'
-                : isWorker
-                  ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300'
-                  : 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-600 dark:text-gray-300'
+                : isDoctor
+                  ? 'hover:bg-white/15 text-red-50 hover:text-white'
+                  : isWorker
+                    ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300'
+                    : 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-600 dark:text-gray-300'
             }`}
           >
             <Menu size={20} />
           </button>
           <div>
             <h2 className={`text-base sm:text-lg font-semibold ${
-              isAdmin ? 'text-white' : 'text-gray-800 dark:text-white'
+              isColoredBar ? 'text-white' : 'text-gray-800 dark:text-white'
             }`}>{title}</h2>
           </div>
         </div>
@@ -123,9 +134,11 @@ const DashboardHeader = ({
             } ${
               isAdmin
                 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
-                : isWorker
-                  ? 'bg-gradient-to-br from-red-500 to-red-600'
-                  : 'bg-gradient-to-br from-teal-500 to-teal-600'
+                : isDoctor
+                  ? 'bg-white/20 border border-white/40'
+                  : isWorker
+                    ? 'bg-gradient-to-br from-red-500 to-red-600'
+                    : 'bg-gradient-to-br from-teal-500 to-teal-600'
             }`}>
               {profileImage ? (
                 <img
@@ -143,24 +156,41 @@ const DashboardHeader = ({
                 name={displayName}
                 isPremium={isPremium}
                 size="md"
-                defaultNameClassName={isAdmin ? 'font-medium text-gray-300' : 'font-medium text-gray-700 dark:text-gray-200'}
+                defaultNameClassName={
+                  isAdmin
+                    ? 'font-medium text-gray-300'
+                    : isDoctor
+                      ? 'font-medium text-white'
+                      : 'font-medium text-gray-700 dark:text-gray-200'
+                }
               />
               {isPremium && (
                 <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${
                   isAdmin
                     ? 'bg-yellow-900/30 border border-yellow-500/30 text-yellow-400'
-                    : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+                    : isDoctor
+                      ? 'bg-white/20 border border-white/40 text-white'
+                      : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
                 }`}>
-                  <Crown size={10} className={isAdmin ? 'text-yellow-400' : 'text-yellow-500'} />
+                  <Crown size={10} className={
+                    isAdmin ? 'text-yellow-400' : isDoctor ? 'text-amber-200' : 'text-yellow-500'
+                  } />
                   {resolvedPremiumBadgeText}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Notifications */}
-          {showNotifications && !customNotificationComponent && notificationUserId && (
-            <NotificationBell userId={notificationUserId} />
+          {/* Notifications.
+              Doctor pages do not pass notificationUserId explicitly; the
+              bell falls back to the authenticated user id internally, so
+              it is enabled for the DOCTOR role here (top-header bell per
+              the Doctor portal spec — never a sidebar item). */}
+          {showNotifications && !customNotificationComponent && (notificationUserId || authUser?.role === 'DOCTOR') && (
+            <NotificationBell
+              userId={notificationUserId}
+              tone={isDoctor ? 'onRed' : 'default'}
+            />
           )}
 
           {/* Custom notification component */}

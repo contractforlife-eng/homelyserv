@@ -15,15 +15,22 @@ const MobileHeader = ({ title }) => {
   const isWorker = role === 'WORKER';
   const isEmployer = role === 'EMPLOYER';
   const isSupportHelper = role === 'SUPPORT_HELPER';
+  // DOCTOR uses the same red identity bar as the desktop Doctor header.
+  const isDoctor = role === 'DOCTOR';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-[#273449] border-b border-gray-200 dark:border-gray-700 lg:hidden">
+    <header className={`fixed top-0 left-0 right-0 z-40 border-b lg:hidden ${
+      isDoctor
+        ? 'bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 border-red-900/40'
+        : 'bg-white dark:bg-[#273449] border-gray-200 dark:border-gray-700'
+    }`}>
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-3">
           <button
             onClick={toggleMobileMenu}
             aria-label={t('sharedChrome.header.toggleMenu')}
             className={`p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              isDoctor ? 'hover:bg-white/15 text-white' :
               isWorker ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300' :
               isEmployer ? 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-600 dark:text-gray-300' :
               isSupportHelper ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300' :
@@ -33,15 +40,16 @@ const MobileHeader = ({ title }) => {
             <Menu size={22} />
           </button>
           <h1 className={`text-lg font-bold ${
-            isWorker ? 'text-red-600' : isEmployer ? 'text-teal-600' : isSupportHelper ? 'text-red-600' : 'text-gray-800 dark:text-white'
+            isDoctor ? 'text-white' : isWorker ? 'text-red-600' : isEmployer ? 'text-teal-600' : isSupportHelper ? 'text-red-600' : 'text-gray-800 dark:text-white'
           }`}>
             {title || t('appName')}
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          {authUser?.id && <NotificationBell userId={authUser.id} />}
+          {authUser?.id && <NotificationBell userId={authUser.id} tone={isDoctor ? 'onRed' : 'default'} />}
           <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ${
+            isDoctor ? 'bg-white/20 border border-white/40' :
             isWorker ? 'bg-gradient-to-br from-red-500 to-red-600' :
             isEmployer ? 'bg-gradient-to-br from-teal-500 to-teal-600' :
             'bg-gradient-to-br from-gray-500 to-gray-600'

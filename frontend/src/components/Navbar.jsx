@@ -256,6 +256,16 @@ const Navbar = ({ user, onLogout }) => {
                     <Settings size={16} />
                     {t('settings')}
                   </Link>
+                  {['WORKER', 'EMPLOYER', 'TEACHER', 'STUDENT'].includes(user?.role?.toUpperCase()) && (
+                    <Link
+                      to="/medical-profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <Heart size={16} className="text-rose-500" />
+                      {t('medicalProfile.pageTitle') || 'My Medical Profile'}
+                    </Link>
+                  )}
                   <hr className="my-1" />
                   <button
                     onClick={handleLogout}

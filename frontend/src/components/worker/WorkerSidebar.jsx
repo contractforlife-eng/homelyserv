@@ -22,7 +22,8 @@ import {
   Shield,
   AlertTriangle,
   CreditCard,
-  ClipboardList
+  ClipboardList,
+  Heart
 } from 'lucide-react';
 
 const WorkerSidebar = ({ 
@@ -58,6 +59,7 @@ const WorkerSidebar = ({
     { id: 'complaints', label: t('workerSidebar.complaints'), icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t('workerSidebar.payment'), icon: CreditCard, path: '/worker-payment' },
     { id: 'premium', label: t('workerSidebar.premium'), icon: Crown, path: '/subscription' },
+    { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
   ];
 
   const isActive = (path) => {

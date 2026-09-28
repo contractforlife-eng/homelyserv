@@ -24,7 +24,8 @@ import {
   X,
   PlusCircle,
   ClipboardList,
-  Users
+  Users,
+  Heart
 } from 'lucide-react';
 const EmployerSidebar = ({
   language,
@@ -60,6 +61,7 @@ const EmployerSidebar = ({
     { id: 'complaints', label: t('employerSidebar.complaints'), icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t('employerSidebar.payment'), icon: CreditCard, path: '/employer-payments' },
     { id: 'premium', label: t('employerSidebar.premium'), icon: Crown, path: '/subscription' },
+    { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
   ];
 
   const isActive = (path) => {
