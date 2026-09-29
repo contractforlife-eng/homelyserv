@@ -15,9 +15,10 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import api from '../utils/api';
+import { isMemberAppointment } from '../utils/doctorHomelyServ';
 import {
   Calendar, Loader2, AlertCircle, CheckCircle2, XCircle, ArrowRight,
-  Building2, Tag, Info
+  Building2, Tag, Info, Stethoscope
 } from 'lucide-react';
 
 const localeFor = (language) => (language === 'ar' ? 'ar-EG' : 'en-US');
@@ -45,7 +46,10 @@ const DoctorHomelyServRequests = () => {
       setLoading(true);
       setLoadError('');
       const res = await api.get('/api/doctors/appointments?status=PENDING');
-      setRequests(Array.isArray(res.data?.appointments) ? res.data.appointments : []);
+      const list = Array.isArray(res.data?.appointments) ? res.data.appointments : [];
+      // Member requests only: walk-in ClinicPatient appointments the doctor
+      // created himself are clinical records, not member requests.
+      setRequests(list.filter(isMemberAppointment));
     } catch (err) {
       setLoadError(err.response?.data?.message || t('doctorCms.requestsLoadError') || 'Failed to load appointment requests.');
     } finally {
@@ -150,6 +154,7 @@ const DoctorHomelyServRequests = () => {
                   <tr>
                     <th className="text-start font-medium px-4 py-3">{t('doctorCms.member') || 'Member'}</th>
                     <th className="text-start font-medium px-4 py-3">{t('doctorCms.requestedDateTime') || 'Requested Date & Time'}</th>
+                    <th className="text-start font-medium px-4 py-3">{t('doctorCms.appointmentType') || 'Type'}</th>
                     <th className="text-start font-medium px-4 py-3">{t('doctorCms.clinicLabel') || 'Clinic'}</th>
                     <th className="text-start font-medium px-4 py-3">{t('doctorCms.serviceLabel') || 'Service'}</th>
                     <th className="text-start font-medium px-4 py-3">{t('doctorCms.feeLabel') || 'Fee'}</th>
@@ -161,10 +166,18 @@ const DoctorHomelyServRequests = () => {
                   {sortedRequests.map((request) => (
                     <tr key={request._id} className="align-middle">
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                        {request.patientId?.fullName || t('doctorCms.member') || 'Member'}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span>{request.patientId?.fullName || t('doctorCms.member') || 'Member'}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            {t('doctorCms.statusPending') || 'Pending'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                         {formatRequestedAt(request.startsAt, i18n.language)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                        {t(`doctorSchedule.types.${request.consultationType}`) || request.consultationType}
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{request.clinicId?.clinicName || '—'}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{request.serviceId?.serviceName || '—'}</td>
@@ -184,12 +197,21 @@ const DoctorHomelyServRequests = () => {
             <ul className="lg:hidden divide-y divide-gray-100 dark:divide-gray-700">
               {sortedRequests.map((request) => (
                 <li key={request._id} className="p-4 space-y-2">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {request.patientId?.fullName || t('doctorCms.member') || 'Member'}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {request.patientId?.fullName || t('doctorCms.member') || 'Member'}
+                    </p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      {t('doctorCms.statusPending') || 'Pending'}
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                     <Calendar size={12} />
                     {formatRequestedAt(request.startsAt, i18n.language)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <Stethoscope size={12} />
+                    {t(`doctorSchedule.types.${request.consultationType}`) || request.consultationType}
                   </p>
                   {request.clinicId?.clinicName ? (
                     <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">

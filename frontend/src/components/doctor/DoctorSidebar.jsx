@@ -19,6 +19,7 @@ import {
   Pill,
   Tag,
   BarChart3,
+  Wallet,
   Crown,
   Stethoscope,
   User,
@@ -140,6 +141,12 @@ const DoctorSidebar = ({
           label: t('doctorNav.reports') || 'Reports',
           icon: BarChart3,
           path: '/doctor-cms/reports'
+        },
+        {
+          id: 'accounts',
+          label: t('doctorNav.accounts') || 'Accounts',
+          icon: Wallet,
+          path: '/doctor-cms/accounts'
         }
       ]
     },

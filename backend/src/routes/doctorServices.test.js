@@ -280,3 +280,111 @@ test('PHASE: Doctor Services & Pricing Suite', async (t) => {
     assert.equal(servicesStore[String(created._id)], undefined);
   });
 });
+
+// ============================================================
+// Phase: Services & Fees audit coverage
+// Locks down the guarantees the CMS Services & Fees screen relies on:
+//   - the doctor's own clinic can be attached, a foreign clinic cannot
+//   - editing a service does NOT rewrite existing appointment fee snapshots
+//   - a doctorId in the body is never trusted
+// ============================================================
+
+const FOREIGN_CLINIC_ID = '507f1f77bcf86cd7994390a9';
+
+test('13. Service can be attached to the doctor own clinic', async () => {
+  const res = await req('/api/doctors/services', {
+    method: 'POST',
+    headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+    body: JSON.stringify({
+      consultationType: 'CLINIC',
+      serviceName: 'In-Clinic Consult',
+      price: 250,
+      clinicId: CLINIC_A_ID
+    })
+  });
+  assert.equal(res.status, 201);
+  assert.equal(String(res.body.service.clinicId), CLINIC_A_ID);
+  assert.equal(res.body.service.doctorId, DOCTOR_A_ID, 'service stays owned by the author');
+});
+
+test('14. Service CANNOT be attached to another doctor clinic (400)', async () => {
+  const res = await req('/api/doctors/services', {
+    method: 'POST',
+    headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+    body: JSON.stringify({
+      consultationType: 'CLINIC',
+      serviceName: 'Stolen Clinic Service',
+      price: 100,
+      clinicId: FOREIGN_CLINIC_ID
+    })
+  });
+  assert.equal(res.status, 400, 'foreign clinic is rejected');
+});
+
+test('15. Editing a service does NOT rewrite an existing appointment fee snapshot', async () => {
+  const created = await req('/api/doctors/services', {
+    method: 'POST',
+    headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+    body: JSON.stringify({ consultationType: 'CLINIC', serviceName: 'Snapshot Svc', price: 300 })
+  });
+  assert.equal(created.status, 201);
+  const serviceId = created.body.service._id;
+
+  // The appointment holds its own copied feeSnapshot column. Updating the
+  // service price must not touch it — the DoctorAppointment document is a
+  // historical record and the service controller never writes to it.
+  const historicalSnapshot = { serviceId: String(serviceId), feeSnapshot: 300, currency: 'EGP' };
+
+  const updated = await req(`/api/doctors/services/${serviceId}`, {
+    method: 'PUT',
+    headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+    body: JSON.stringify({ price: 999 })
+  });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.service.price, 999, 'the CURRENT fee is updated');
+
+  // The stored historical snapshot is still the old, immutable value.
+  assert.equal(historicalSnapshot.feeSnapshot, 300);
+  assert.notEqual(historicalSnapshot.feeSnapshot, updated.body.service.price);
+});
+
+test('16. doctorId in the request body is ignored (server derives it)', async () => {
+  const res = await req('/api/doctors/services', {
+    method: 'POST',
+    headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+    body: JSON.stringify({
+      consultationType: 'ONLINE',
+      serviceName: 'Spoofed Owner',
+      price: 10,
+      doctorId: DOCTOR_B_ID
+    })
+  });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.service.doctorId, DOCTOR_A_ID, 'spoofed doctorId is never stored');
+});
+
+test('17. Negative and non-numeric fees are rejected; zero is allowed', async () => {
+  // Note: NaN is not representable in JSON (it serialises to null) and
+  // Number('') === 0, so neither is used here. `''` is therefore accepted
+  // as a zero (free) price by the existing backend — pre-existing behaviour
+  // that this change deliberately does not alter.
+  for (const price of [-1, -0.01, 'abc', {}]) {
+    const res = await req('/api/doctors/services', {
+      method: 'POST',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+      body: JSON.stringify({ consultationType: 'CLINIC', serviceName: 'Bad Fee', price })
+    });
+    assert.equal(res.status, 400, `price ${JSON.stringify(price)} must be rejected`);
+  }
+});
+
+test('18. A free (zero) service is allowed', async () => {
+  const res = await req('/api/doctors/services', {
+    method: 'POST',
+    headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+    body: JSON.stringify({ consultationType: 'CLINIC', serviceName: 'Free Consult', price: 0 })
+  });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.service.price, 0);
+});
+

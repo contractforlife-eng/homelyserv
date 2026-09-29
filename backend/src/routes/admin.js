@@ -1606,7 +1606,7 @@ router.get('/user-conversations', async (req, res) => {
       .filter(isValidObjectId))];
     const users = counterpartIds.length > 0
       ? await prisma.user.findMany({
-          where: { id: { in: counterpartIds, }, role: { in: ['EMPLOYER', 'WORKER'] } },
+          where: { id: { in: counterpartIds, }, role: { in: ['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'] } },
           select: { id: true, fullName: true, email: true, role: true, profileImage: true }
         })
       : [];

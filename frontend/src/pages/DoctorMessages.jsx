@@ -20,10 +20,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { UserAvatar } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import {
   Search, Send, MessageCircle, Loader2, AlertCircle, CheckCheck,
-  ArrowLeft, Ban, ShieldAlert, X
+  ArrowLeft, Ban, ShieldAlert, X, Headphones
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -33,9 +33,18 @@ import {
   createOptimisticMessage,
   reconcileOptimisticMessage,
   markOptimisticMessageFailed,
-  getBlockStatus
+  getBlockStatus,
+  ensureConversationExists
 } from '../utils/chatService';
 import { onSocketEvent, getSocket } from '../utils/socket';
+import { getRoleLabel } from '../utils/userDisplay';
+import api from '../utils/api';
+
+// Staff tiers a Doctor may contact, in display order. The LIST itself comes
+// from the server-authorized /api/chat/staff-directory response; this only
+// groups the results and supplies the existing localized role label
+// (Co-Admin / Sup-Admin / Sup-Help via sharedUserDisplay.roles.*).
+const DOCTOR_STAFF_GROUPS = ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
 
 const DoctorMessages = () => {
   const { t } = useTranslation();
@@ -298,6 +307,65 @@ const DoctorMessages = () => {
     }
   };
 
+  // ---------------- HomelyServ staff directory (existing chat system) ----------------
+  // The list is server-authorized: GET /api/chat/staff-directory returns only
+  // ADMIN / SUPPORT / SUPPORT_HELPER (never the caller, never other roles).
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [staffList, setStaffList] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffError, setStaffError] = useState('');
+  const [staffStartingId, setStaffStartingId] = useState(null);
+
+  const openStaffModal = useCallback(async () => {
+    setStaffModalOpen(true);
+    setStaffError('');
+    try {
+      setStaffLoading(true);
+      const res = await api.get('/api/chat/staff-directory');
+      setStaffList(Array.isArray(res.data?.staff) ? res.data.staff : []);
+    } catch (error) {
+      console.error('Error loading staff directory:', error);
+      setStaffError(error.response?.data?.error || t('doctorMessages.staffLoadError'));
+    } finally {
+      setStaffLoading(false);
+    }
+  }, [t]);
+
+  // Reuses the canonical conversation id (conv_<sorted pair>), so an
+  // existing thread is reopened instead of duplicated.
+  const startStaffConversation = async (staff) => {
+    if (!authUser?.id) return;
+    setStaffError('');
+    try {
+      setStaffStartingId(String(staff.id));
+      const conversationId = await ensureConversationExists(
+        authUser.id,
+        authUser.fullName || '',
+        'DOCTOR',
+        staff.id,
+        staff.fullName || '',
+        staff.role
+      );
+      const refreshed = await getUserConversations(authUser.id);
+      setConversations(Array.isArray(refreshed) ? refreshed : []);
+      setStaffModalOpen(false);
+      if (conversationId) selectConversation(conversationId);
+    } catch (error) {
+      console.error('Error starting staff conversation:', error);
+      setStaffError(error.response?.data?.error || t('doctorMessages.staffActionError'));
+    } finally {
+      setStaffStartingId(null);
+    }
+  };
+
+  const groupedStaff = DOCTOR_STAFF_GROUPS
+    .map((role) => ({ role, label: getRoleLabel(role), members: [] }))
+    .map((group) => ({
+      ...group,
+      members: staffList.filter((staff) => String(staff.role || '').toUpperCase() === group.role),
+    }))
+    .filter((group) => group.members.length > 0);
+
   return (
     <DashboardLayout requiredRole="DOCTOR">
       <DashboardHeader title={t('doctorMessages.pageTitle') || 'Messages'} />
@@ -306,15 +374,27 @@ const DoctorMessages = () => {
         {/* ---------------- Conversation list ---------------- */}
         <div className={`w-full flex flex-col border-e border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 lg:max-w-sm lg:min-w-[320px] ${selectedConversationId ? 'hidden lg:flex' : 'flex'}`}>
           <div className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold text-gray-900 dark:text-white">
                 {t('doctorMessages.conversations') || 'Conversations'}
               </h3>
-              {totalUnread > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">
-                  {totalUnread}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {totalUnread > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">
+                    {totalUnread}
+                  </span>
+                )}
+                {/* HomelyServ staff (Co-Admin / Sup-Admin / Sup-Help) through the
+                    EXISTING chat system and staff directory. */}
+                <button
+                  type="button"
+                  onClick={openStaffModal}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Headphones size={14} />
+                  {t('doctorMessages.contactStaff') || 'HomelyServ Staff'}
+                </button>
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -358,12 +438,15 @@ const DoctorMessages = () => {
                     selectedConversationId === conv.id ? 'bg-red-50 dark:bg-red-950/30' : ''
                   }`}
                 >
-                  <UserAvatar user={{ profileImage: conv.avatar, fullName: conv.otherUserName }} size="md" />
+                  <UserAvatar user={{ profileImage: conv.avatar, fullName: conv.otherUserName }} role={conv.otherUserRole} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {conv.otherUserName || t('doctorMessages.unknownUser') || 'User'}
-                      </p>
+                      <UserDisplayName
+                        name={conv.otherUserName}
+                        role={conv.otherUserRole}
+                        size="sm"
+                        defaultNameClassName="font-semibold text-gray-900 dark:text-white"
+                      />
                       <span className="text-[10px] text-gray-400 shrink-0">{formatTime(conv.lastMessageTime)}</span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
@@ -403,11 +486,14 @@ const DoctorMessages = () => {
                 >
                   <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
                 </button>
-                <UserAvatar user={{ profileImage: selectedConversation.avatar, fullName: selectedConversation.otherUserName }} size="sm" />
+                <UserAvatar user={{ profileImage: selectedConversation.avatar, fullName: selectedConversation.otherUserName }} role={selectedConversation.otherUserRole} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    {selectedConversation.otherUserName || t('doctorMessages.unknownUser') || 'User'}
-                  </p>
+                  <UserDisplayName
+                    name={selectedConversation.otherUserName}
+                    role={selectedConversation.otherUserRole}
+                    size="sm"
+                    defaultNameClassName="font-semibold text-gray-900 dark:text-white"
+                  />
                   {otherUserTyping && (
                     <p className="text-[11px] text-emerald-600">{t('doctorMessages.typing') || 'typing...'}</p>
                   )}
@@ -493,6 +579,90 @@ const DoctorMessages = () => {
           )}
         </div>
       </div>
+
+      {/* ---------------- HomelyServ staff picker (existing staff directory) ---------------- */}
+      {staffModalOpen ? (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                  {t('doctorMessages.contactStaff') || 'HomelyServ Staff'}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('doctorMessages.contactStaffDesc') || 'Start a conversation with a HomelyServ staff member.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStaffModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                aria-label={t('doctorMessages.close') || 'Close'}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4">
+              {staffError ? (
+                <p className="text-xs font-medium text-rose-600 dark:text-rose-400">{staffError}</p>
+              ) : null}
+
+              {staffLoading ? (
+                <div className="py-8 flex flex-col items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-red-600" />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    {t('doctorMessages.loading') || 'Loading...'}
+                  </p>
+                </div>
+              ) : groupedStaff.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+                  {t('doctorMessages.noStaffAvailable') || 'No HomelyServ staff are available right now.'}
+                </p>
+              ) : (
+                groupedStaff.map((group) => (
+                  <div key={group.role}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                      {group.label}
+                    </p>
+                    <div className="space-y-2">
+                      {group.members.map((staff) => (
+                        <button
+                          key={staff.id}
+                          type="button"
+                          disabled={staffStartingId === String(staff.id)}
+                          onClick={() => startStaffConversation(staff)}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/60 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-start disabled:opacity-60"
+                        >
+                          <UserAvatar
+                            name={staff.fullName}
+                            image={staff.profileImage || null}
+                            role={staff.role}
+                            size="md"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <UserDisplayName
+                              name={staff.fullName}
+                              role={staff.role}
+                              size="sm"
+                              defaultNameClassName="font-medium text-gray-900 dark:text-white"
+                            />
+                          </div>
+                          {staffStartingId === String(staff.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                          ) : (
+                            <Send size={14} className="text-red-600 rtl:rotate-180 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </DashboardLayout>
   );
 };

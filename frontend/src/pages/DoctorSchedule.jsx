@@ -316,7 +316,9 @@ const DoctorSchedule = () => {
                         {dayName}
                       </h2>
                       <span className="text-xs text-gray-400 font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800">
-                        {daySlots.length} {daySlots.length === 1 ? 'slot' : 'slots'}
+                        {daySlots.length} {daySlots.length === 1
+                          ? (t('doctorSchedule.slotCountOne') || 'slot')
+                          : (t('doctorSchedule.slotCountOther') || 'slots')}
                       </span>
                     </div>
 
@@ -372,7 +374,7 @@ const DoctorSchedule = () => {
                                   <span className="font-medium">{typeName}</span>
                                 </span>
                                 <span>•</span>
-                                <span>{slot.slotDurationMinutes} min</span>
+                                <span>{slot.slotDurationMinutes} {t('doctorSchedule.minutesShort') || 'min'}</span>
                               </div>
 
                               {/* Associated Clinic if present */}
@@ -380,7 +382,7 @@ const DoctorSchedule = () => {
                                 <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
                                   <Building2 size={13} className="flex-shrink-0 text-gray-400" />
                                   <span className="truncate">
-                                    {clinicInfo.clinicName || 'Clinic'} {clinicInfo.city ? `(${clinicInfo.city})` : ''}
+                                    {clinicInfo.clinicName || (t('doctorSchedule.clinic') || 'Clinic')} {clinicInfo.city ? `(${clinicInfo.city})` : ''}
                                   </span>
                                 </div>
                               )}
@@ -614,7 +616,7 @@ const DoctorSchedule = () => {
                   {t('doctorSchedule.deleteConfirmDesc') || 'This will remove the selected availability time slot from your schedule.'}
                 </p>
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-medium text-gray-900 dark:text-white">
-                  {t(`doctorSchedule.days.${deleteTarget.dayOfWeek}`)}: {deleteTarget.startTime} – {deleteTarget.endTime} ({deleteTarget.consultationType})
+                  {t(`doctorSchedule.days.${deleteTarget.dayOfWeek}`)}: {deleteTarget.startTime} – {deleteTarget.endTime} ({t(`doctorSchedule.types.${deleteTarget.consultationType}`) || deleteTarget.consultationType})
                 </div>
               </div>
 

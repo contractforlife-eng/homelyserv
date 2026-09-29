@@ -290,7 +290,7 @@ router.post('/messages/ensure', async (req, res) => {
       }
     } else if (normalizedTab === 'INTERNAL') {
       // Internal Conversations tab: platform users only (WORKER or EMPLOYER)
-      if (!['WORKER', 'EMPLOYER'].includes(targetRole)) {
+      if (!['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(targetRole)) {
         return res.status(403).json({ error: 'Invalid target role for Internal Conversations tab' });
       }
     } else {
@@ -439,7 +439,7 @@ router.get('/messages', async (req, res) => {
       const counterpartRole = (otherUser?.role || '').toUpperCase();
       if (counterpartRole === 'SUPPORT' || counterpartRole === 'ADMIN') {
         tab = 'SUPPORT';
-      } else if (counterpartRole === 'WORKER' || counterpartRole === 'EMPLOYER') {
+      } else if (['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(counterpartRole)) {
         tab = 'INTERNAL';
       } else if (conv.type === 'INTERNAL') {
         tab = 'SUPPORT';

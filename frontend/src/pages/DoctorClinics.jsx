@@ -72,7 +72,10 @@ const DoctorClinics = () => {
   const loadClinics = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/doctors/clinics');
+      // includeInactive=true so the doctor can also SEE deactivated clinics
+      // (inactive state + reactivate). The backend already supports this flag
+      // and still filters strictly by the authenticated doctorId.
+      const res = await api.get('/api/doctors/clinics?includeInactive=true');
       setClinics(Array.isArray(res.data?.clinics) ? res.data.clinics : []);
     } catch (err) {
       setErrorMessage(
@@ -251,6 +254,23 @@ const DoctorClinics = () => {
     }
   };
 
+  // Re-activate a soft-deleted clinic. The backend already accepts `isActive`
+  // on PUT and keeps all ownership rules, so no new endpoint is needed.
+  const handleReactivate = async (clinic) => {
+    const id = clinic._id || clinic.id;
+    try {
+      setErrorMessage('');
+      setSuccessMessage('');
+      await api.put(`/api/doctors/clinics/${id}`, { isActive: true });
+      setSuccessMessage(t('doctorClinics.reactivateSuccess') || 'Clinic reactivated.');
+      await loadClinics();
+    } catch (err) {
+      setErrorMessage(
+        err.response?.data?.message || t('doctorClinics.saveError') || 'Failed to update the clinic.'
+      );
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget || deleteBusy) return;
     const id = deleteTarget._id || deleteTarget.id;
@@ -381,6 +401,15 @@ const DoctorClinics = () => {
                               {t('doctorClinics.primaryBadge') || 'Primary'}
                             </span>
                           )}
+                          {clinic.isActive === false ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600">
+                              {t('doctorClinics.inactiveBadge') || 'Inactive'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
+                              {t('doctorClinics.activeBadge') || 'Active'}
+                            </span>
+                          )}
                         </div>
                         {addressParts && (
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">
@@ -391,7 +420,7 @@ const DoctorClinics = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {!clinic.isPrimary && (
+                      {!clinic.isPrimary && clinic.isActive !== false && (
                         <button
                           type="button"
                           onClick={() => handleMakePrimary(clinic)}
@@ -411,14 +440,25 @@ const DoctorClinics = () => {
                         <span>{t('doctorClinics.editBtn') || 'Edit'}</span>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => { setDeleteTarget(clinic); setErrorMessage(''); }}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-medium transition-colors"
-                      >
-                        <Trash2 size={14} />
-                        <span>{t('doctorClinics.deleteBtn') || 'Remove'}</span>
-                      </button>
+                      {clinic.isActive === false ? (
+                        <button
+                          type="button"
+                          onClick={() => handleReactivate(clinic)}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-medium transition-colors"
+                        >
+                          <CheckCircle size={14} />
+                          <span>{t('doctorClinics.reactivateBtn') || 'Reactivate'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setDeleteTarget(clinic); setErrorMessage(''); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-medium transition-colors"
+                        >
+                          <Trash2 size={14} />
+                          <span>{t('doctorClinics.deleteBtn') || 'Remove'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 

@@ -17,6 +17,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import api from '../utils/api';
+import { isMemberAppointment } from '../utils/doctorHomelyServ';
 import {
   Stethoscope, MessageCircle, Calendar, BadgeCheck, ArrowRight, Info
 } from 'lucide-react';
@@ -35,7 +36,9 @@ const DoctorHomelyServ = () => {
       setUnreadMessages(Number(summaryRes.value.data?.summary?.unreadMessages) || 0);
     }
     if (pendingRes.status === 'fulfilled') {
-      setPendingRequests(Array.isArray(pendingRes.value.data?.appointments) ? pendingRes.value.data.appointments.length : 0);
+      // Same rule as the Requests page: only HomelyServ-member requests.
+      const list = Array.isArray(pendingRes.value.data?.appointments) ? pendingRes.value.data.appointments : [];
+      setPendingRequests(list.filter(isMemberAppointment).length);
     }
   }, []);
 

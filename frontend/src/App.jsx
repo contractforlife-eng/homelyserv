@@ -47,6 +47,7 @@ import DoctorClinics from './pages/DoctorClinics';
 import DoctorSchedule from './pages/DoctorSchedule';
 import DoctorAppointments from './pages/DoctorAppointments';
 import DoctorPatients from './pages/DoctorPatients';
+import DoctorAccounts from './pages/DoctorAccounts';
 import DoctorPatientDetails from './pages/DoctorPatientDetails';
 import DoctorConsultations from './pages/DoctorConsultations';
 import DoctorPrescriptions from './pages/DoctorPrescriptions';
@@ -512,6 +513,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorPatients />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/doctor-cms/accounts" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorAccounts />
           </ProtectedRoute>
         } 
       />

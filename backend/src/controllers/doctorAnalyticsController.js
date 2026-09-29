@@ -106,7 +106,9 @@ export const getDoctorAnalytics = async (req, res) => {
           APPOINTMENTS_REQUESTED: appointmentsRequested,
           APPOINTMENTS_CONFIRMED: appointmentsConfirmed,
           APPOINTMENTS_COMPLETED: appointmentsCompleted,
-          PATIENTS_SERVED: patientsServedDistinct.length,
+          // `distinct` yields null for clinic-patient appointments
+          // (patientId is null there) — never counted as a patient.
+          PATIENTS_SERVED: patientsServedDistinct.filter(Boolean).length,
           CONSULTATIONS_SIGNED: consultationsSigned,
           PRESCRIPTIONS_ISSUED: prescriptionsIssued,
           SERVICES_ACTIVE: servicesActive

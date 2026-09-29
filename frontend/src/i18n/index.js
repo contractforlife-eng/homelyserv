@@ -7,6 +7,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { HOME_TRANSLATIONS } from './homepageTranslations.js';
 import DOCTOR_CMS_TRANSLATIONS, { DOCTOR_CMS_NAV_TRANSLATIONS, CLINIC_PATIENT_TRANSLATIONS } from './doctorCms.js';
+import DOCTOR_ACCOUNTS_TRANSLATIONS, { DOCTOR_ACCOUNTS_NAV_TRANSLATIONS } from './doctorAccounts.js';
 
 // ---------------------------------------------------------------------------
 // Shared language metadata – used by every language selector in the app.
@@ -67,6 +68,10 @@ const en = {
       emptyTitle: 'No clinics yet',
       emptyDesc: 'Add your first practice location so patients know where to find you.',
       primaryBadge: 'Primary',
+      activeBadge: 'Active',
+      inactiveBadge: 'Inactive',
+      reactivateBtn: 'Reactivate',
+      reactivateSuccess: 'Clinic reactivated.',
       makePrimaryBtn: 'Make primary',
       editBtn: 'Edit',
       deleteBtn: 'Remove',
@@ -154,6 +159,9 @@ const en = {
       timeRangeError: 'End time must be after start time.',
       overlapError: 'This slot overlaps with an existing availability slot on this day.',
       clinicRequiredForClinicType: 'Please select a clinic for clinic consultations.',
+      slotCountOne: 'slot',
+      slotCountOther: 'slots',
+      minutesShort: 'min',
       types: {
         CLINIC: 'Clinic Consultation',
         HOME_VISIT: 'Home Visit',
@@ -536,7 +544,8 @@ const en = {
       sectionPremium: 'Premium',
       homelyservMessages: 'Messages',
       homelyservRequests: 'Appointment Requests',
-      homelyservProfile: 'My HomelyServ Profile'
+      homelyservProfile: 'My HomelyServ Profile',
+      accounts: 'Accounts'
     },
     doctorCenter: {
       pageTitle: 'HomelyServ Doctor Center',
@@ -632,7 +641,13 @@ const en = {
       typing: 'typing...',
       blockedBanner: 'Messaging is unavailable for this conversation.',
       cannotReply: 'You cannot reply in this conversation.',
-      unknownUser: 'User'
+      unknownUser: 'User',
+      contactStaff: 'HomelyServ Staff',
+      contactStaffDesc: 'Start a conversation with a HomelyServ staff member.',
+      noStaffAvailable: 'No HomelyServ staff are available right now.',
+      staffLoadError: 'Failed to load staff contacts.',
+      staffActionError: 'Failed to start the conversation.',
+      close: 'Close'
     },
     doctorSettings: {
       pageTitle: 'Settings',
@@ -1744,6 +1759,10 @@ const ar = {
       emptyTitle: 'لا توجد عيادات بعد',
       emptyDesc: 'أضف أول موقع لممارستك ليعرف المرضى أين يجدونك.',
       primaryBadge: 'رئيسية',
+      activeBadge: 'نشط',
+      inactiveBadge: 'غير نشط',
+      reactivateBtn: 'إعادة التفعيل',
+      reactivateSuccess: 'تم إعادة تفعيل العيادة.',
       makePrimaryBtn: 'اجعلها رئيسية',
       editBtn: 'تعديل',
       deleteBtn: 'إزالة',
@@ -1831,6 +1850,9 @@ const ar = {
       timeRangeError: 'يجب أن يكون وقت الانتهاء بعد وقت البدء.',
       overlapError: 'تتعارض هذه الفترة مع فترة توافر أخرى موجودة في هذا اليوم.',
       clinicRequiredForClinicType: 'يرجى اختيار العيادة لاستشارات العيادة.',
+      slotCountOne: 'فترة',
+      slotCountOther: 'فترات',
+      minutesShort: 'دقيقة',
       types: {
         CLINIC: 'كشف في العيادة',
         HOME_VISIT: 'زيارة منزلية',
@@ -2295,7 +2317,13 @@ const ar = {
       typing: 'يكتب...',
       blockedBanner: 'المراسلة غير متاحة في هذه المحادثة.',
       cannotReply: 'لا يمكنك الرد في هذه المحادثة.',
-      unknownUser: 'مستخدم'
+      unknownUser: 'مستخدم',
+      contactStaff: 'فريق هوملي سيرف',
+      contactStaffDesc: 'ابدأ محادثة مع أحد أعضاء فريق هوملي سيرف.',
+      noStaffAvailable: 'لا يوجد أعضاء فريق هوملي سيرف متاحون حاليًا.',
+      staffLoadError: 'تعذر تحميل جهات الاتصال بالفريق.',
+      staffActionError: 'تعذر بدء المحادثة.',
+      close: 'إغلاق'
     },
     doctorSettings: {
       pageTitle: 'الإعدادات',
@@ -3356,6 +3384,10 @@ const fr = {
       emptyTitle: 'Aucune clinique',
       emptyDesc: 'Ajoutez votre premier lieu d’exercice pour que les patients sachent vous trouver.',
       primaryBadge: 'Principale',
+      activeBadge: 'Active',
+      inactiveBadge: 'Inactive',
+      reactivateBtn: 'Réactiver',
+      reactivateSuccess: 'Clinique réactivée.',
       makePrimaryBtn: 'Définir comme principale',
       editBtn: 'Modifier',
       deleteBtn: 'Retirer',
@@ -3443,6 +3475,9 @@ const fr = {
       timeRangeError: 'L’heure de fin doit être postérieure à l’heure de début.',
       overlapError: 'Ce créneau chevauche une disponibilité existante ce même jour.',
       clinicRequiredForClinicType: 'Veuillez sélectionner une clinique pour les consultations en cabinet.',
+      slotCountOne: 'créneau',
+      slotCountOther: 'créneaux',
+      minutesShort: 'min',
       types: {
         CLINIC: 'Consultation en clinique',
         HOME_VISIT: 'Visite à domicile',
@@ -3906,7 +3941,13 @@ const fr = {
       typing: 'en train d’écrire...',
       blockedBanner: 'La messagerie n’est pas disponible pour cette conversation.',
       cannotReply: 'Vous ne pouvez pas répondre dans cette conversation.',
-      unknownUser: 'Utilisateur'
+      unknownUser: 'Utilisateur',
+      contactStaff: 'Équipe HomelyServ',
+      contactStaffDesc: 'Démarrez une conversation avec un membre de l’équipe HomelyServ.',
+      noStaffAvailable: 'Aucun membre du personnel HomelyServ n’est disponible pour le moment.',
+      staffLoadError: 'Échec du chargement des contacts du personnel.',
+      staffActionError: 'Échec du démarrage de la conversation.',
+      close: 'Fermer'
     },
     doctorSettings: {
       pageTitle: 'Paramètres',
@@ -4948,6 +4989,10 @@ const ru = {
       emptyTitle: 'Клиник пока нет',
       emptyDesc: 'Добавьте первое место практики, чтобы пациенты знали, где вас найти.',
       primaryBadge: 'Основная',
+      activeBadge: 'Активна',
+      inactiveBadge: 'Неактивна',
+      reactivateBtn: 'Активировать',
+      reactivateSuccess: 'Клиника активирована.',
       makePrimaryBtn: 'Сделать основной',
       editBtn: 'Изменить',
       deleteBtn: 'Удалить',
@@ -5035,6 +5080,9 @@ const ru = {
       timeRangeError: 'Время окончания должно быть позже времени начала.',
       overlapError: 'Этот слот пересекается с существующим слотом доступности в этот день.',
       clinicRequiredForClinicType: 'Пожалуйста, выберите клинику для приёма в клинике.',
+      slotCountOne: 'слот',
+      slotCountOther: 'слотов',
+      minutesShort: 'мин',
       types: {
         CLINIC: 'Консультация в клинике',
         HOME_VISIT: 'Визит на дом',
@@ -5498,7 +5546,13 @@ const ru = {
       typing: 'печатает...',
       blockedBanner: 'Обмен сообщениями недоступен в этом диалоге.',
       cannotReply: 'Вы не можете ответить в этом диалоге.',
-      unknownUser: 'Пользователь'
+      unknownUser: 'Пользователь',
+      contactStaff: 'Команда HomelyServ',
+      contactStaffDesc: 'Начните разговор с сотрудником HomelyServ.',
+      noStaffAvailable: 'Сейчас нет доступных сотрудников HomelyServ.',
+      staffLoadError: 'Не удалось загрузить контакты команды.',
+      staffActionError: 'Не удалось начать разговор.',
+      close: 'Закрыть'
     },
     doctorSettings: {
       pageTitle: 'Настройки',
@@ -6538,6 +6592,10 @@ const tr = {
       emptyTitle: 'Henüz klinik yok',
       emptyDesc: 'Hastaların sizi bulabilmesi için ilk muayene yerinizi ekleyin.',
       primaryBadge: 'Ana Klinik',
+      activeBadge: 'Aktif',
+      inactiveBadge: 'Pasif',
+      reactivateBtn: 'Yeniden Aktifleştir',
+      reactivateSuccess: 'Klinik yeniden aktifleştirildi.',
       makePrimaryBtn: 'Ana klinik yap',
       editBtn: 'Düzenle',
       deleteBtn: 'Kaldır',
@@ -6625,6 +6683,9 @@ const tr = {
       timeRangeError: 'Bitiş saati başlangıç saatinden sonra olmalıdır.',
       overlapError: 'Bu aralık, bu gün için mevcut bir müsaitlik aralığıyla çakışıyor.',
       clinicRequiredForClinicType: 'Klinik muayenesi için lütfen bir klinik seçin.',
+      slotCountOne: 'slot',
+      slotCountOther: 'slot',
+      minutesShort: 'dk',
       types: {
         CLINIC: 'Klinik Muayenesi',
         HOME_VISIT: 'Ev Ziyareti',
@@ -7088,7 +7149,13 @@ const tr = {
       typing: 'yazıyor...',
       blockedBanner: 'Bu sohbette mesajlaşma kullanılamıyor.',
       cannotReply: 'Bu sohbette yanıt veremezsiniz.',
-      unknownUser: 'Kullanıcı'
+      unknownUser: 'Kullanıcı',
+      contactStaff: 'HomelyServ Ekibi',
+      contactStaffDesc: 'Bir HomelyServ çalışanıyla sohbet başlatın.',
+      noStaffAvailable: 'Şu anda müsait HomelyServ çalışanı yok.',
+      staffLoadError: 'Ekip kişileri yüklenemedi.',
+      staffActionError: 'Sohbet başlatılamadı.',
+      close: 'Kapat'
     },
     doctorSettings: {
       pageTitle: 'Ayarlar',
@@ -8128,6 +8195,10 @@ const de = {
       emptyTitle: 'Noch keine Klinik',
       emptyDesc: 'Fügen Sie Ihren ersten Praxisort hinzu, damit Patienten Sie finden.',
       primaryBadge: 'Hauptklinik',
+      activeBadge: 'Aktiv',
+      inactiveBadge: 'Inaktiv',
+      reactivateBtn: 'Reaktivieren',
+      reactivateSuccess: 'Klinik reaktiviert.',
       makePrimaryBtn: 'Als Hauptklinik festlegen',
       editBtn: 'Bearbeiten',
       deleteBtn: 'Entfernen',
@@ -8215,6 +8286,9 @@ const de = {
       timeRangeError: 'Die Endzeit muss nach der Startzeit liegen.',
       overlapError: 'Dieser Slot überschneidet sich mit einem bestehenden Verfügbarkeitsslot an diesem Tag.',
       clinicRequiredForClinicType: 'Bitte wählen Sie eine Klinik für Vor-Ort-Konsultationen.',
+      slotCountOne: 'Slot',
+      slotCountOther: 'Slots',
+      minutesShort: 'Min.',
       types: {
         CLINIC: 'Klinikkonsultation',
         HOME_VISIT: 'Hausbesuch',
@@ -8678,7 +8752,13 @@ const de = {
       typing: 'schreibt...',
       blockedBanner: 'Nachrichten sind in dieser Unterhaltung nicht verfügbar.',
       cannotReply: 'Sie können in dieser Unterhaltung nicht antworten.',
-      unknownUser: 'Benutzer'
+      unknownUser: 'Benutzer',
+      contactStaff: 'HomelyServ-Team',
+      contactStaffDesc: 'Starten Sie ein Gespräch mit einem HomelyServ-Mitarbeiter.',
+      noStaffAvailable: 'Derzeit ist kein HomelyServ-Mitarbeiter verfügbar.',
+      staffLoadError: 'Die Teamkontakte konnten nicht geladen werden.',
+      staffActionError: 'Das Gespräch konnte nicht gestartet werden.',
+      close: 'Schließen'
     },
     doctorSettings: {
       pageTitle: 'Einstellungen',
@@ -12434,6 +12514,26 @@ Object.entries(CLINIC_PATIENT_TRANSLATIONS).forEach(([language, patientCopy]) =>
 // defined inline in the resources; the remaining languages are merged
 // here so no raw translation key can ever surface in the sidebar.
 Object.entries(DOCTOR_CMS_NAV_TRANSLATIONS).forEach(([language, navCopy]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    target.translation.doctorNav = { ...target.translation.doctorNav, ...navCopy };
+  }
+});
+
+// ============================================================
+// DOCTOR ACCOUNTS — Doctor page + sidebar copy.
+// Merged into the EXISTING `doctorCms` / `doctorNav` namespaces so the
+// Accounts page shares this one i18n instance (same six languages, same
+// Arabic RTL handling). No second i18n system is introduced.
+// ============================================================
+Object.entries(DOCTOR_ACCOUNTS_TRANSLATIONS).forEach(([language, accountsCopy]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    target.translation.doctorCms = { ...target.translation.doctorCms, ...accountsCopy };
+  }
+});
+
+Object.entries(DOCTOR_ACCOUNTS_NAV_TRANSLATIONS).forEach(([language, navCopy]) => {
   const target = { en, ar, fr, ru, tr, de }[language];
   if (target && target.translation) {
     target.translation.doctorNav = { ...target.translation.doctorNav, ...navCopy };

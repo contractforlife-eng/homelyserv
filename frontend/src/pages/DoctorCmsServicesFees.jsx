@@ -43,6 +43,8 @@ const DoctorCmsServicesFees = () => {
 
   const [fees, setFees] = useState({ examinationFee: '', consultationFee: '', currency: 'EGP' });
   const [services, setServices] = useState([]);
+  const [clinics, setClinics] = useState([]);
+  const [togglingId, setTogglingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -53,9 +55,11 @@ const DoctorCmsServicesFees = () => {
     setLoading(true);
     setErrorMessage('');
     setServicesError('');
-    const [centerRes, servicesRes] = await Promise.allSettled([
+    const [centerRes, servicesRes, clinicsRes] = await Promise.allSettled([
       api.get('/api/doctors/medical-center'),
-      api.get('/api/doctors/services')
+      api.get('/api/doctors/services'),
+      // Own clinics only — used to resolve each service's clinicId to a name.
+      api.get('/api/doctors/clinics?includeInactive=true')
     ]);
 
     if (centerRes.status === 'fulfilled') {
@@ -75,12 +79,44 @@ const DoctorCmsServicesFees = () => {
       setServicesError(t('doctorCms.loadError') || 'Failed to load clinic operations data.');
     }
 
+    if (clinicsRes.status === 'fulfilled') {
+      setClinics(Array.isArray(clinicsRes.value.data?.clinics) ? clinicsRes.value.data.clinics : []);
+    }
+
     setLoading(false);
   }, [t]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Activate / Deactivate reuses the EXISTING dedicated endpoint
+  // PUT /api/doctors/services/:id/active. No new API, no duplicated
+  // validation — the backend keeps ownership and validation rules.
+  const handleToggleServiceActive = async (service) => {
+    if (togglingId) return;
+    setTogglingId(service._id);
+    setSuccessMessage('');
+    setErrorMessage('');
+    try {
+      await api.put(`/api/doctors/services/${service._id}/active`, {
+        isActive: !service.isActive
+      });
+      setSuccessMessage(
+        service.isActive
+          ? (t('doctorCms.serviceDeactivated') || 'Service deactivated.')
+          : (t('doctorCms.serviceActivated') || 'Service activated.')
+      );
+      const res = await api.get('/api/doctors/services');
+      setServices(Array.isArray(res.data?.services) ? res.data.services : []);
+    } catch (err) {
+      setErrorMessage(
+        err.response?.data?.message || t('doctorCms.serviceToggleError') || 'Failed to update the service.'
+      );
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const handleSaveFees = async (event) => {
     event.preventDefault();
@@ -247,7 +283,12 @@ const DoctorCmsServicesFees = () => {
             </p>
           ) : (
             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-              {services.map((service) => (
+              {services.map((service) => {
+                // Resolve the service's clinicId to the doctor's own clinic name.
+                const linkedClinic = service.clinicId
+                  ? clinics.find((c) => String(c._id) === String(service.clinicId))
+                  : null;
+                return (
                 <li key={service._id} className="py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-2">
@@ -270,13 +311,40 @@ const DoctorCmsServicesFees = () => {
                       <span className="font-semibold text-gray-700 dark:text-gray-300">
                         {service.price} {service.currency || fees.currency || 'EGP'}
                       </span>
+                      {linkedClinic && (
+                        <>
+                          <span aria-hidden="true">•</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Stethoscope size={12} />
+                            {linkedClinic.clinicName}
+                          </span>
+                        </>
+                      )}
                     </p>
                   </div>
-                  <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold shrink-0">
-                    {service.consultationType}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">
+                      {service.consultationType}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleServiceActive(service)}
+                      disabled={togglingId === service._id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors disabled:opacity-50"
+                    >
+                      {togglingId === service._id
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <Power size={12} />}
+                      <span className="hidden sm:inline">
+                        {service.isActive
+                          ? (t('doctorCms.deactivateService') || 'Deactivate')
+                          : (t('doctorCms.activateService') || 'Activate')}
+                      </span>
+                    </button>
+                  </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </section>

@@ -21,6 +21,9 @@ const ROLE_LABEL_KEYS = {
   SUPPORT_HELPER: 'sharedUserDisplay.roles.supportHelper',
   EMPLOYER: 'sharedUserDisplay.roles.employer',
   WORKER: 'sharedUserDisplay.roles.worker',
+  DOCTOR: 'sharedUserDisplay.roles.doctor',
+  TEACHER: 'sharedUserDisplay.roles.teacher',
+  STUDENT: 'sharedUserDisplay.roles.student',
   USER: 'sharedUserDisplay.roles.user',
   GUEST: 'sharedUserDisplay.roles.guest'
 };

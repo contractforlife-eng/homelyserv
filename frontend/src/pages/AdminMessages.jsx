@@ -42,7 +42,7 @@ import {
   reconcileOptimisticMessage,
   markOptimisticMessageFailed
 } from '../utils/chatService';
-import { getRoleColor } from '../utils/userDisplay';
+import { getRoleColor, getRoleLabel } from '../utils/userDisplay';
 import { onSocketEvent, getSocket } from '../utils/socket';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import usePresence from '../hooks/usePresence';
@@ -57,7 +57,7 @@ const SECTIONS = {
   USERS: 'users'
 };
 const STAFF_TARGET_ROLES = ['SUPPORT', 'SUPPORT_HELPER'];
-const USER_TARGET_ROLES = ['EMPLOYER', 'WORKER'];
+const USER_TARGET_ROLES = ['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'];
 
 // ============================================================
 // START CONVERSATION MODAL
@@ -966,7 +966,7 @@ const AdminMessages = () => {
 
     if (selectedConversation.type === 'USERS') {
       chatTitle = selectedConversation.user?.fullName || t.user;
-      chatSubtitle = i18nT('adminSidebar.users');
+      chatSubtitle = getRoleLabel(selectedConversation.user?.role);
       chatAvatarName = selectedConversation.user?.fullName || t.user;
       chatAvatarRole = selectedConversation.user?.role || 'USER';
       chatAvatarImage = getUserImage(selectedConversation.user);

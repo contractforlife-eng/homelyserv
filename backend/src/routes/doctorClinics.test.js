@@ -597,3 +597,146 @@ test('13. Invalid required payload is rejected with 4xx', async () => {
     assert.equal(res4.status, 400);
   });
 });
+
+// ============================================================
+// Phase: Clinics page audit coverage
+// The Clinics UI now requests ?includeInactive=true so the doctor can see
+// the Active/Inactive state and re-activate a soft-deleted clinic. These
+// tests lock down that flow plus ownership on the reactivation path.
+// ============================================================
+
+const seedMixedClinics = () => ([
+  {
+    _id: '507f1f77bcf86cd799439001',
+    doctorId: DOCTOR_A_ID,
+    clinicName: 'Downtown Clinic',
+    addressLine: 'Address 1',
+    city: 'Cairo',
+    countryCode: 'EG',
+    isActive: true,
+    isPrimary: true
+  },
+  {
+    _id: '507f1f77bcf86cd799439002',
+    doctorId: DOCTOR_A_ID,
+    clinicName: 'Closed Branch',
+    addressLine: 'Address 2',
+    city: 'Cairo',
+    countryCode: 'EG',
+    isActive: false
+  },
+  {
+    _id: '507f1f77bcf86cd799439003',
+    doctorId: DOCTOR_B_ID,
+    clinicName: 'Other Doctor Clinic',
+    addressLine: 'Address 3',
+    city: 'Berlin',
+    countryCode: 'DE',
+    isActive: false
+  }
+]);
+
+test('14. Doctor sees own active AND inactive clinics with correct isActive flags', async () => {
+  await withDoctorClinicsServer({ initialClinics: seedMixedClinics() }, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/doctors/clinics?includeInactive=true`, {
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' })
+    });
+    assert.equal(res.status, 200);
+    const { clinics, count } = await res.json();
+
+    // Only doctor A's own clinics, never doctor B's.
+    assert.equal(count, 2);
+    assert.ok(!clinics.some((c) => c.clinicName === 'Other Doctor Clinic'));
+
+    const downtown = clinics.find((c) => c.clinicName === 'Downtown Clinic');
+    const closed = clinics.find((c) => c.clinicName === 'Closed Branch');
+    assert.equal(downtown.isActive, true);
+    assert.equal(downtown.isPrimary, true, 'primary clinic is still identified');
+    assert.equal(closed.isActive, false, 'inactive clinic is visible to its owner');
+  });
+});
+
+test('15. Doctor can re-activate their own inactive clinic', async () => {
+  await withDoctorClinicsServer({ initialClinics: seedMixedClinics() }, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/doctors/clinics/507f1f77bcf86cd799439002`, {
+      method: 'PUT',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+      body: JSON.stringify({ isActive: true })
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.clinic.isActive, true);
+    assert.equal(body.clinic.clinicName, 'Closed Branch');
+  });
+});
+
+test('16. Doctor CANNOT re-activate or edit another doctor inactive clinic (404)', async () => {
+  await withDoctorClinicsServer({ initialClinics: seedMixedClinics() }, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/doctors/clinics/507f1f77bcf86cd799439003`, {
+      method: 'PUT',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+      body: JSON.stringify({ isActive: true })
+    });
+    assert.equal(res.status, 404, 'foreign clinic is never found');
+  });
+});
+
+test('17. Doctor CANNOT make another doctor clinic primary (404)', async () => {
+  await withDoctorClinicsServer({ initialClinics: seedMixedClinics() }, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/doctors/clinics/507f1f77bcf86cd799439003`, {
+      method: 'PUT',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+      body: JSON.stringify({ isPrimary: true })
+    });
+    assert.equal(res.status, 404);
+  });
+});
+
+test('18. Setting primary demotes the doctor previous primary (single primary invariant)', async () => {
+  await withDoctorClinicsServer({ initialClinics: seedMixedClinics() }, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/doctors/clinics/507f1f77bcf86cd799439002`, {
+      method: 'PUT',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+      body: JSON.stringify({ isPrimary: true })
+    });
+    assert.equal(res.status, 200);
+
+    const list = await fetch(`${baseUrl}/api/doctors/clinics?includeInactive=true`, {
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' })
+    });
+    const { clinics } = await list.json();
+    const primaries = clinics.filter((c) => c.isPrimary);
+    assert.equal(primaries.length, 1, 'exactly one primary clinic per doctor');
+    assert.equal(primaries[0].clinicName, 'Closed Branch');
+  });
+});
+
+test('19. Clinic response never leaks a doctorId from the request body', async () => {
+  await withDoctorClinicsServer({}, async ({ baseUrl }) => {
+    // A doctor trying to create a clinic owned by another doctor.
+    const res = await fetch(`${baseUrl}/api/doctors/clinics`, {
+      method: 'POST',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' }),
+      body: JSON.stringify({
+        clinicName: 'Spoofed Clinic',
+        addressLine: '1 Fake St',
+        city: 'Cairo',
+        countryCode: 'EG',
+        doctorId: DOCTOR_B_ID
+      })
+    });
+    assert.equal(res.status, 201);
+
+    // The stored clinic belongs to the AUTHENTICATED doctor, never the spoofed id.
+    const list = await fetch(`${baseUrl}/api/doctors/clinics`, {
+      headers: authHeader({ userId: DOCTOR_B_ID, role: 'DOCTOR' })
+    });
+    const bClinics = await list.json();
+    assert.ok(
+      !bClinics.clinics.some((c) => c.clinicName === 'Spoofed Clinic'),
+      'spoofed doctorId in the body must be ignored'
+    );
+  });
+});
+

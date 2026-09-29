@@ -234,9 +234,12 @@ const AppointmentCreateModal = ({
               <label className={LABEL_CLS}>{t('doctorCms.appointmentType') || 'Type'}</label>
               <select className={INPUT_CLS} value={consultationType} disabled={disabled}
                 onChange={(e) => setConsultationType(e.target.value)}>
-                <option value="CLINIC">CLINIC</option>
-                <option value="HOME_VISIT">HOME_VISIT</option>
-                <option value="TELEHEALTH">TELEHEALTH</option>
+                {/* Backend enum: DOCTOR_CONSULTATION_TYPES = CLINIC / HOME_VISIT / ONLINE.
+                    `doctorSchedule.types` is the shared dictionary already used by
+                    DoctorAppointments.jsx and DoctorPatients.jsx for these values. */}
+                <option value="CLINIC">{t('doctorSchedule.types.CLINIC') || 'CLINIC'}</option>
+                <option value="HOME_VISIT">{t('doctorSchedule.types.HOME_VISIT') || 'HOME_VISIT'}</option>
+                <option value="ONLINE">{t('doctorSchedule.types.ONLINE') || 'ONLINE'}</option>
               </select>
             </div>
           </div>

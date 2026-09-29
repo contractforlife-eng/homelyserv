@@ -164,8 +164,21 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
     const isMessageNotification = notification.type === 'NEW_MESSAGE'
       || notification.entityType === 'MESSAGE';
     const conversationId = notification.data?.conversationId || notification.entityId;
-    const route = isMessageNotification && authUserRole === 'SUPPORT'
-      ? `/support-messages${conversationId ? `?conversationId=${encodeURIComponent(conversationId)}` : ''}`
+    const conversationQuery = conversationId
+      ? `?conversationId=${encodeURIComponent(conversationId)}`
+      : '';
+    // Each staff tier opens its own existing Messages route. The page only
+    // selects a conversation returned by its authorized list.
+    const STAFF_MESSAGE_ROUTE_BY_ROLE = {
+      SUPPORT: '/support-messages',
+      ADMIN: '/admin/messages',
+      SUPPORT_HELPER: '/sup-help/messages',
+    };
+    const staffMessageRoute = isMessageNotification
+      ? STAFF_MESSAGE_ROUTE_BY_ROLE[String(authUserRole || '').toUpperCase()]
+      : undefined;
+    const route = staffMessageRoute
+      ? `${staffMessageRoute}${conversationQuery}`
       : getEntityRoute(notification);
     navigate(route);
     setIsOpen(false);

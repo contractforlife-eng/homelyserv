@@ -70,7 +70,10 @@ const DoctorHomelyServProfile = () => {
 
   const specialtyLabel = getDoctorSpecialtyLabel(
     profile?.specialty,
-    profile?.subspecialtyCustom || profile?.customSpecialty || '',
+    // `subspecialty` is the real free-text field on DoctorProfile. The
+    // previous expression read fields that do not exist on the model, so a
+    // doctor whose specialty is "other" always showed the generic label.
+    profile?.subspecialty || '',
     t
   );
 
@@ -145,6 +148,17 @@ const DoctorHomelyServProfile = () => {
                   )}
                 </div>
               </div>
+
+              {profile?.bio ? (
+                <div className="mt-5">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('doctorProfile.bio') || 'Professional Bio'}
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                    {profile.bio}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-4">

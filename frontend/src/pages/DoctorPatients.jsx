@@ -419,7 +419,7 @@ const DoctorPatients = () => {
         ) : (
           // ONE unified list. Each row keeps its own card style, data and
           // detail route; only the source badge is added.
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-3">
             {filteredUnified.map((row) => {
               if (row.source === 'CLINIC') {
                 const p = row.raw;
@@ -470,7 +470,7 @@ const DoctorPatients = () => {
                 <div
                   key={row.key}
                   onClick={() => navigate(`/doctor-patients/${patientId}`)}
-                  className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700/60 transition-all cursor-pointer flex flex-col justify-between"
+                  className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-red-300 transition-colors cursor-pointer flex flex-col justify-between"
                 >
                   <div className="space-y-4">
                     {/* Patient identity row */}
