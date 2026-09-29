@@ -770,7 +770,7 @@ router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, asy
 
     if (role1 === 'SUPPORT_HELPER' || role2 === 'SUPPORT_HELPER') {
       const otherRole = role1 === 'SUPPORT_HELPER' ? role2 : role1;
-      if (!['ADMIN', 'SUPPORT', 'SUP_ADMIN', 'WORKER', 'EMPLOYER'].includes(otherRole)) {
+      if (!['ADMIN', 'SUPPORT', 'SUP_ADMIN', 'WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(otherRole)) {
         return res.status(403).json({ error: 'Invalid target role for staff conversation' });
       }
     }
@@ -890,20 +890,27 @@ router.post('/conversations/:conversationId/archive', authenticate, async (req, 
 // ============================================================
 /**
  * GET /api/chat/staff-directory
- * Authorized staff picker for Support Messages: lists ADMIN/SUPPORT users
+ * Authorized staff picker, reused by Support Messages AND the Doctor
+ * Messages page. It lists ADMIN / SUPPORT / SUPPORT_HELPER users
  * (excluding the caller) with minimal safe fields only. Ordinary users
- * (WORKER/EMPLOYER) are never returned here.
+ * (WORKER/EMPLOYER/DOCTOR) are never returned here.
+ *
+ * Callers: staff (SUPPORT / ADMIN / SUPPORT_HELPER) as before, plus
+ * DOCTOR so a Doctor can reach HomelyServ staff (Co-Admin, Sup-Admin,
+ * Sup-Help) through the EXISTING chat system. WORKER/EMPLOYER remain
+ * rejected exactly as before — this widens caller roles only, never the
+ * returned rows or the authorization of anyone else.
  */
 router.get('/staff-directory', authenticate, async (req, res) => {
   try {
     const callerRole = String(req.userRole || '').toUpperCase();
-    if (!['SUPPORT', 'ADMIN', 'SUPPORT_HELPER'].includes(callerRole)) {
+    if (!['SUPPORT', 'ADMIN', 'SUPPORT_HELPER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(callerRole)) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    const allowedStaffRoles = callerRole === 'SUPPORT_HELPER'
-      ? ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER']
-      : ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
+    // Identical for every authorized caller: the same staff tiers are
+    // returned, always excluding the caller themselves.
+    const allowedStaffRoles = ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER'];
 
     const staff = await prisma.user.findMany({
       where: {

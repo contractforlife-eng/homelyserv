@@ -25,6 +25,7 @@ import {
   LayoutGrid,
   List,
   BarChart3,
+  Stethoscope,
   X,
   ChevronDown
 } from 'lucide-react';
@@ -981,6 +982,41 @@ const EmployerSearch = () => {
                             ) : null}
                           </div>
 
+                          {/* Doctor results carry the AUTHORITATIVE DoctorProfile
+                              card data (specialty, clinic, doctor-owned fees). */}
+                          {worker.doctor ? (
+                            <div className="mb-2 space-y-1">
+                              <div className="text-xs text-teal-700 dark:text-teal-400 font-medium truncate">
+                                <Stethoscope size={12} className="inline ms-1 me-1 align-[-2px]" />
+                                {worker.doctor.specialty
+                                  ? getDoctorSpecialtyLabel(worker.doctor.specialty, worker.doctor.subspecialty || '', t)
+                                  : (t('doctorCms.profileNoSpecialty') || 'No specialty set')}
+                              </div>
+                              {worker.doctor.clinic ? (
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                                  <MapPin size={12} className="flex-shrink-0" />
+                                  <span className="truncate">
+                                    {[worker.doctor.clinic.clinicName, worker.doctor.clinic.city]
+                                      .filter(Boolean)
+                                      .join(' — ')}
+                                  </span>
+                                </div>
+                              ) : null}
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-600 dark:text-gray-400">
+                                {Number(worker.doctor.examinationFee) ? (
+                                  <span>
+                                    {t('doctorCms.profileExaminationFee') || 'Examination Fee'}: {worker.doctor.examinationFee} EGP
+                                  </span>
+                                ) : null}
+                                {Number(worker.doctor.consultationFee) ? (
+                                  <span>
+                                    {t('doctorCms.profileConsultationFee') || 'Consultation Fee'}: {worker.doctor.consultationFee} EGP
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          ) : null}
+
                         {/* Location */}
                         <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
                           <MapPin size={12} className="flex-shrink-0" />
@@ -1125,6 +1161,45 @@ const EmployerSearch = () => {
                             <MapPin size={viewMode === 'compact' ? 12 : 14} />
                             <span className="truncate">{getWorkerDisplayLocation(worker)}</span>
                           </div>
+                          {/* Doctor results: authoritative DoctorProfile card data. */}
+                          {worker.doctor ? (
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                              <span className="flex items-center gap-2 truncate">
+                                <Stethoscope size={viewMode === 'compact' ? 12 : 14} />
+                                <span className="truncate">
+                                  {worker.doctor.specialty
+                                    ? getDoctorSpecialtyLabel(worker.doctor.specialty, worker.doctor.subspecialty || '', t)
+                                    : (t('doctorCms.profileNoSpecialty') || 'No specialty set')}
+                                </span>
+                              </span>
+                              {worker.doctor.clinic ? (
+                                <span className="flex items-center gap-2 truncate">
+                                  <MapPin size={viewMode === 'compact' ? 12 : 14} />
+                                  <span className="truncate">
+                                    {[worker.doctor.clinic.clinicName, worker.doctor.clinic.city]
+                                      .filter(Boolean)
+                                      .join(' — ')}
+                                  </span>
+                                </span>
+                              ) : null}
+                              {Number(worker.doctor.examinationFee) ? (
+                                <span className="flex items-center gap-2">
+                                  <DollarSign size={viewMode === 'compact' ? 12 : 14} />
+                                  <span className="truncate">
+                                    {t('doctorCms.profileExaminationFee') || 'Examination Fee'}: {worker.doctor.examinationFee} EGP
+                                  </span>
+                                </span>
+                              ) : null}
+                              {Number(worker.doctor.consultationFee) ? (
+                                <span className="flex items-center gap-2">
+                                  <DollarSign size={viewMode === 'compact' ? 12 : 14} />
+                                  <span className="truncate">
+                                    {t('doctorCms.profileConsultationFee') || 'Consultation Fee'}: {worker.doctor.consultationFee} EGP
+                                  </span>
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : null}
                           {viewMode !== 'compact' && (
                             <>
                               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">

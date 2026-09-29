@@ -5,6 +5,19 @@ import { hasValidDoctorPatientRelationship } from './doctorPatientAccessService.
 const CUSTOMER_ROLES = new Set(['EMPLOYER', 'WORKER']);
 const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
 
+// HomelyServ staff a Doctor may contact for platform/support matters.
+// Exactly the same role set the authorized staff directory exposes
+// (GET /api/chat/staff-directory): Co-Admin (ADMIN), Sup-Admin (SUPPORT)
+// and Sup-Help (SUPPORT_HELPER). The recipient role is ALWAYS resolved
+// from the database, never from a request body/query/URL value.
+const DOCTOR_STAFF_ROLES = new Set(['ADMIN', 'SUPPORT', 'SUPPORT_HELPER']);
+
+// Platform professionals a Doctor may contact for platform/support matters.
+// TEACHER and STUDENT receive EXACTLY the same semantics as DOCTOR below; this
+// set only widens which professional roles take that branch. It is not a
+// customer, staff, or payment role.
+const PROFESSIONAL_USER_ROLES = new Set(['DOCTOR', 'TEACHER', 'STUDENT']);
+
 const normalizeRole = (role) => String(role || '').trim().toUpperCase();
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
 
@@ -129,9 +142,17 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
   // requirement: the doctor-patient relationship itself is the authorization.
   // This must run BEFORE the customer-roles gate because DOCTOR is neither a
   // customer nor staff role and would otherwise be blanket-allowed.
-  if (role === 'DOCTOR') {
+  if (PROFESSIONAL_USER_ROLES.has(role)) {
     const patientParty = await resolveUserParty(recipientId, db);
     if (!patientParty) return { required: false, allowed: false };
+    // Doctor -> HomelyServ staff (Co-Admin / Sup-Admin / Sup-Help) is a
+    // platform-support channel, not a clinical relationship. The recipient
+    // role above comes from the database, so a crafted request cannot
+    // present a WORKER/EMPLOYER as staff. Every other recipient keeps the
+    // unchanged CONFIRMED/COMPLETED clinical-relationship rule.
+    if (DOCTOR_STAFF_ROLES.has(patientParty.role)) {
+      return { required: false, allowed: true };
+    }
     const hasRelationship = await hasValidDoctorPatientRelationship(senderId, patientParty.userId);
     return { required: false, allowed: hasRelationship };
   }

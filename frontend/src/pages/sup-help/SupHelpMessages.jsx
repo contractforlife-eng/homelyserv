@@ -60,7 +60,7 @@ export const getConversationTab = (conv) => {
   if (role === 'SUPPORT' || role === 'ADMIN') {
     return CONVERSATION_TABS.SUPPORT;
   }
-  if (role === 'WORKER' || role === 'EMPLOYER') {
+  if (['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(role)) {
     return CONVERSATION_TABS.INTERNAL;
   }
 
