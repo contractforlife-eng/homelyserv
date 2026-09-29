@@ -451,11 +451,11 @@ function Register() {
             {/* Role Selection */}
             <div className="mb-3 sm:mb-4">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('registerAs')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
-                  className={`sm:col-span-2 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
                     formData.role === 'WORKER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
@@ -468,7 +468,7 @@ function Register() {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'EMPLOYER' }))}
-                  className={`sm:col-span-2 p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
                     formData.role === 'EMPLOYER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
@@ -477,6 +477,24 @@ function Register() {
                   <User className="w-5 h-5 mb-1 shrink-0" />
                   <span className="text-xs sm:text-sm font-semibold">{t('serviceSeekerTitle')}</span>
                   <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
+                </button>
+                {/* Doctor — a first-class account role. No Doctor-specific field is
+                    collected here: professional details (specialty, license, fees)
+                    are completed later through the existing Doctor Profile system,
+                    and the account stays unverified until the existing verification
+                    process grants it. */}
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'DOCTOR' }))}
+                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                    formData.role === 'DOCTOR'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <Shield className="w-5 h-5 mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('doctorTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('doctorDesc')}</span>
                 </button>
               </div>
               {errors.role && (

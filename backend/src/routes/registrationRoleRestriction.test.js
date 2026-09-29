@@ -1,7 +1,8 @@
 // backend/src/routes/registrationRoleRestriction.test.js
-// Focused coverage for the temporary public-registration restriction:
-// WORKER and EMPLOYER stay open, DOCTOR/TEACHER/STUDENT are rejected
-// before any user document is created.
+// Focused coverage for the public-registration role policy:
+// WORKER, EMPLOYER and DOCTOR stay open; TEACHER/STUDENT are rejected
+// before any user document is created, and so are the privileged roles
+// ADMIN, SUPPORT and SUPPORT_HELPER.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
@@ -55,7 +56,9 @@ const basePayload = (overrides = {}) => ({
   ...overrides
 });
 
-const BLOCKED_ROLES = ['DOCTOR', 'TEACHER', 'STUDENT'];
+// Roles that must NEVER be publicly self-registered. DOCTOR is deliberately
+// absent: it is a first-class self-service account role.
+const BLOCKED_ROLES = ['TEACHER', 'STUDENT'];
 
 test('1. WORKER registration still succeeds and persists User.role === WORKER', async () => {
   await withRegistrationServer(async (baseUrl, savedRoles) => {
@@ -97,8 +100,53 @@ test('2. EMPLOYER registration still succeeds and persists User.role === EMPLOYE
   });
 });
 
+test('3. DOCTOR registration succeeds, persists User.role === DOCTOR, and needs no extra field', async () => {
+  await withRegistrationServer(async (baseUrl, savedRoles) => {
+    // Exactly the standard public fields. No specialty, license, clinic,
+    // consultation fee, address or verification document is required — the
+    // Doctor Profile system collects those after the account exists.
+    const res = await postRegister(
+      baseUrl,
+      basePayload({
+        fullName: 'Doctor User',
+        email: 'doctor.allowed@homelyserv.test',
+        role: 'DOCTOR'
+      })
+    );
+
+    assert.strictEqual(res.status, 201);
+    const data = await res.json();
+    assert.strictEqual(data.success, true);
+    assert.strictEqual(data.user.role, 'DOCTOR');
+    assert.deepStrictEqual(savedRoles, ['DOCTOR']);
+
+    // A self-registered Doctor is NOT privileged and NOT pre-verified.
+    assert.notStrictEqual(data.user.role, 'ADMIN');
+    assert.notStrictEqual(data.user.role, 'SUPPORT');
+    assert.notStrictEqual(data.user.role, 'SUPPORT_HELPER');
+  });
+});
+
+test('4. lowercase DOCTOR is accepted and normalised to DOCTOR', async () => {
+  await withRegistrationServer(async (baseUrl, savedRoles) => {
+    const res = await postRegister(
+      baseUrl,
+      basePayload({
+        fullName: 'Doctor Lowercase User',
+        email: 'doctor.lower@homelyserv.test',
+        role: 'doctor'
+      })
+    );
+
+    assert.strictEqual(res.status, 201);
+    const data = await res.json();
+    assert.strictEqual(data.user.role, 'DOCTOR');
+    assert.deepStrictEqual(savedRoles, ['DOCTOR']);
+  });
+});
+
 for (const [index, role] of BLOCKED_ROLES.entries()) {
-  test(`3.${index + 1} ${role} registration is rejected with 400 and creates no user`, async () => {
+  test(`5.${index + 1} ${role} registration is rejected with 400 and creates no user`, async () => {
     await withRegistrationServer(async (baseUrl, savedRoles) => {
       const res = await postRegister(
         baseUrl,
@@ -118,7 +166,7 @@ for (const [index, role] of BLOCKED_ROLES.entries()) {
   });
 }
 
-test('4. Blocked roles are rejected case-insensitively before user creation', async () => {
+test('6. Blocked roles are rejected case-insensitively before user creation', async () => {
   await withRegistrationServer(async (baseUrl, savedRoles) => {
     for (const [index, role] of BLOCKED_ROLES.entries()) {
       const res = await postRegister(
@@ -138,7 +186,7 @@ test('4. Blocked roles are rejected case-insensitively before user creation', as
   });
 });
 
-test('5. Unsupported roles remain rejected with 400 and create no user', async () => {
+test('7. Privileged roles (ADMIN, SUPPORT, SUPPORT_HELPER) remain rejected with 400 and create no user', async () => {
   await withRegistrationServer(async (baseUrl, savedRoles) => {
     for (const role of ['ADMIN', 'SUPPORT', 'SUPPORT_HELPER']) {
       const res = await postRegister(
