@@ -59,10 +59,12 @@ const countWhere = (list, filter) => list.filter((item) => {
 });
 
 DoctorAppointment.countDocuments = async (filter) => countWhere(appointments, filter).length;
-// Mimics real MongoDB `distinct`: a clinic-patient appointment (patientId
-// null) contributes a literal null value, which the controller must drop.
+// Mimics real MongoDB `distinct(field, filter)`: the requested field is read
+// per document, so a clinic-patient appointment (patientId null) contributes a
+// literal null to the patientId result — which the controller must drop — and
+// contributes its clinicPatientId to the clinicPatientId result.
 DoctorAppointment.distinct = async (field, filter) => {
-  const set = new Set(countWhere(appointments, filter).map((a) => a.patientId ?? null));
+  const set = new Set(countWhere(appointments, filter).map((a) => a[field] ?? null));
   return [...set];
 };
 DoctorAppointment.find = (filter) => ({
@@ -106,19 +108,44 @@ DoctorConsultationRecord.countDocuments = async (filter) => consultationRecords.
 
 // Clinic Patients (doctor-owned records). One is linked to the premium
 // doctor's HomelyServ patient e5 — the combined patient count must count
-// that entity exactly once.
+// that entity exactly once. Both are created long ago, so neither counts as
+// "registered today" unless a test adds its own record.
 const clinicPatientsStore = [
-  { doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null },
-  { doctorId: PREMIUM_DOCTOR_ID, linkedUserId: '507f1f77bcf86cd7994390e5' }
+  { _id: '507f1f77bcf86cd7994390d1', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date('2020-01-01T00:00:00.000Z') },
+  { _id: '507f1f77bcf86cd7994390d2', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: '507f1f77bcf86cd7994390e5', createdAt: new Date('2020-01-01T00:00:00.000Z') }
 ];
 ClinicPatient.countDocuments = async (filter) => (
   clinicPatientsStore.filter((p) => String(p.doctorId) === String(filter.doctorId)).length
 );
+// Honours the `_id: { $in: [...] }` filter the dashboard uses to resolve
+// `linkedUserId` for ONLY the clinic patients seen today.
 ClinicPatient.distinct = async (field, filter) => [...new Set(
   clinicPatientsStore
     .filter((p) => String(p.doctorId) === String(filter.doctorId) && p[field])
+    .filter((p) => {
+      if (!filter._id?.$in) return true;
+      return filter._id.$in.some((id) => String(id) === String(p._id));
+    })
     .map((p) => String(p[field]))
 )];
+// Supports the dashboard's `ClinicPatient.find({ doctorId, _id: { $in } })`
+// and `ClinicPatient.find({ doctorId, createdAt: { $gte, $lte } })` lookups.
+ClinicPatient.find = (filter = {}) => {
+  const rows = clinicPatientsStore
+    .filter((p) => {
+      if (filter.doctorId && String(p.doctorId) !== String(filter.doctorId)) return false;
+      if (filter._id?.$in && !filter._id.$in.some((id) => String(id) === String(p._id))) return false;
+      if (filter.createdAt) {
+        const created = p.createdAt ? new Date(p.createdAt) : null;
+        if (!created) return false;
+        if (filter.createdAt.$gte && created < filter.createdAt.$gte) return false;
+        if (filter.createdAt.$lte && created > filter.createdAt.$lte) return false;
+      }
+      return true;
+    })
+    .map((p) => ({ _id: p._id, linkedUserId: p.linkedUserId ?? null }));
+  return { select: () => Promise.resolve(rows) };
+};
 
 Prescription.countDocuments = async (filter) => (
   String(filter.doctorId) === PREMIUM_DOCTOR_ID && filter.status === 'ISSUED' ? 3 : 0
@@ -332,5 +359,295 @@ test('PHASE: Doctor Center (dashboard + analytics) Suite', async (t) => {
     assert.equal(res.body.summary.appointments.total, 0);
     assert.equal(res.body.summary.patientBreakdown.combined, 0);
     assert.equal(res.body.summary.consultations.signed, 0);
+  });
+
+  // ---- summary.today — Dashboard "work for TODAY" ----
+  // The window is the REQUESTED ?from/?to (the Dashboard sends browser-local
+  // start/end of day), so the tests drive it explicitly and deterministically.
+  const DAY = 24 * 60 * 60 * 1000;
+  const todayFrom = new Date(new Date().setHours(0, 0, 0, 0));
+  const todayTo = new Date(new Date().setHours(23, 59, 59, 999));
+  const todayQuery = `?from=${encodeURIComponent(todayFrom.toISOString())}`
+    + `&to=${encodeURIComponent(todayTo.toISOString())}`;
+  const todayReq = () => req(`/api/doctors/dashboard/summary${todayQuery}`, {
+    headers: authHeader({ userId: PREMIUM_DOCTOR_ID, role: 'DOCTOR' })
+  });
+
+  await t.test('10. today block: today pending/confirmed counted, yesterday excluded', async () => {
+    // The shared fixture uses `new Date()` (today). Add one of each status
+    // dated YESTERDAY — neither may appear in the today block.
+    appointments.push(
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390e7', status: 'PENDING', consultationType: 'CLINIC', startsAt: new Date(Date.now() - DAY) },
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390e8', status: 'CONFIRMED', consultationType: 'CLINIC', startsAt: new Date(Date.now() - DAY) }
+    );
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.ok(res.body.summary.today, 'today block must always be present');
+      // Fixture: 1 PENDING + 1 CONFIRMED today. Yesterday's are excluded.
+      assert.equal(res.body.summary.today.appointments.pending, 1);
+      assert.equal(res.body.summary.today.appointments.confirmed, 1);
+    } finally {
+      appointments.pop();
+      appointments.pop();
+    }
+  });
+
+  await t.test('11. today uniquePatients: CONFIRMED + COMPLETED count once, bad statuses do not', async () => {
+    appointments.push(
+      // Same patient as the fixture CONFIRMED one (e5) seen again today → once.
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390e5', status: 'COMPLETED', consultationType: 'CLINIC', startsAt: new Date() },
+      // A patient whose ONLY today appointment is PENDING → not counted.
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390e9', status: 'PENDING', consultationType: 'CLINIC', startsAt: new Date() },
+      // CANCELLED and NO_SHOW patients → not counted.
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390ea', status: 'CANCELLED', consultationType: 'CLINIC', startsAt: new Date() },
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390eb', status: 'NO_SHOW', consultationType: 'CLINIC', startsAt: new Date() },
+      // Yesterday COMPLETED patient → excluded from today.
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390ec', status: 'COMPLETED', consultationType: 'CLINIC', startsAt: new Date(Date.now() - DAY) }
+    );
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // Today has exactly 2 distinct HomelyServ patients: e5 (CONFIRMED +
+      // COMPLETED → once) and e6 (COMPLETED).
+      assert.equal(res.body.summary.today.uniquePatients, 2);
+    } finally {
+      for (let i = 0; i < 5; i += 1) appointments.pop();
+    }
+  });
+
+  await t.test('12. today uniquePatients: ClinicPatient appointments are included', async () => {
+    // d1 is a doctor-owned clinic patient with no HomelyServ link.
+    appointments.push({
+      doctorId: PREMIUM_DOCTOR_ID,
+      patientId: null,
+      clinicPatientId: '507f1f77bcf86cd7994390d1',
+      status: 'COMPLETED',
+      consultationType: 'CLINIC',
+      startsAt: new Date()
+    });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // 2 HomelyServ (e5, e6) + 1 clinic patient = 3. A patientId-only query
+      // would have returned 2 here.
+      assert.equal(res.body.summary.today.uniquePatients, 3);
+    } finally {
+      appointments.pop();
+    }
+  });
+
+  await t.test('13. today uniquePatients: HomelyServ + linked ClinicPatient count once', async () => {
+    // d2 is linked to e5, who is ALSO seen today as a HomelyServ patient
+    // (fixture CONFIRMED). Same real person → exactly one entity.
+    appointments.push({
+      doctorId: PREMIUM_DOCTOR_ID,
+      patientId: null,
+      clinicPatientId: '507f1f77bcf86cd7994390d2',
+      status: 'COMPLETED',
+      consultationType: 'CLINIC',
+      startsAt: new Date()
+    });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // 2 HomelyServ (e5, e6) + 1 linked clinic patient, minus the 1 overlap = 2.
+      assert.equal(res.body.summary.today.uniquePatients, 2);
+    } finally {
+      appointments.pop();
+    }
+  });
+
+  await t.test('14. today block does not leak across doctors', async () => {
+    const res = await req(`/api/doctors/dashboard/summary${todayQuery}`, {
+      headers: authHeader({ userId: FREE_DOCTOR_ID, role: 'DOCTOR' })
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.summary.today.appointments.pending, 0);
+    assert.equal(res.body.summary.today.appointments.confirmed, 0);
+    assert.equal(res.body.summary.today.uniquePatients, 0);
+  });
+
+  await t.test('15. all-time fields stay all-time while a today range is requested', async () => {
+    // Yesterday-only patients must remain in the all-time fields even though
+    // the request carried a today range — this protects Reports and Overview.
+    appointments.push(
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390ed', status: 'COMPLETED', consultationType: 'CLINIC', startsAt: new Date(Date.now() - DAY) },
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390ee', status: 'CONFIRMED', consultationType: 'CLINIC', startsAt: new Date(Date.now() - DAY) }
+    );
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // Today block ignores both yesterday patients.
+      assert.equal(res.body.summary.today.uniquePatients, 2);
+      // All-time relationship fields still include them (e5, e6, ed, ee).
+      assert.equal(res.body.summary.patients, 4);
+      assert.deepEqual(res.body.summary.patientBreakdown, {
+        homelyServ: 4,
+        clinicPatients: 2,
+        combined: 5
+      });
+      // The pre-existing ranged activity field still honours the range: only
+      // the three "today" fixture appointments are inside it.
+      assert.equal(res.body.summary.appointments.total, 3);
+    } finally {
+      appointments.pop();
+      appointments.pop();
+    }
+  });
+
+  // ---- "Patients Today" = appointments today (CONFIRMED/COMPLETED)
+  //      UNION clinic patients REGISTERED today, globally de-duplicated. ----
+  const addClinicPatient = (p) => { clinicPatientsStore.push(p); return p; };
+  const dropClinicPatients = (n) => { for (let i = 0; i < n; i += 1) clinicPatientsStore.pop(); };
+  // Baseline: the shared fixture has 2 HomelyServ patients seen today (e5
+  // CONFIRMED, e6 COMPLETED). The two seeded clinic patients were created in
+  // 2020, so they contribute nothing.
+  const TODAY_BASELINE = 2;
+
+  await t.test('16. ClinicPatient created today with NO appointment counts once', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d10', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE + 1);
+    } finally {
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('17. ClinicPatient created yesterday with NO appointment does not count', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d11', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date(Date.now() - DAY) });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE);
+    } finally {
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('18. two ClinicPatients created today, both unlinked, count twice', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d12', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d13', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE + 2);
+    } finally {
+      dropClinicPatients(2);
+    }
+  });
+
+  await t.test('19. today ClinicPatient linked to a patient already seen today counts once', async () => {
+    // e5 is ALREADY in today's count via the fixture CONFIRMED appointment.
+    // This clinic patient is linked to e5 → the same real person.
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d14', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: '507f1f77bcf86cd7994390e5', createdAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE);
+    } finally {
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('20. today-created ClinicPatient with a PENDING appointment counts once (not twice)', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d15', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    appointments.push({ doctorId: PREMIUM_DOCTOR_ID, patientId: null, clinicPatientId: '507f1f77bcf86cd7994390d15', status: 'PENDING', consultationType: 'CLINIC', startsAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // The PENDING appointment contributes nothing; the registration counts once.
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE + 1);
+    } finally {
+      appointments.pop();
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('21. today-created ClinicPatient with CANCELLED and NO_SHOW appointments counts once', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d16', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    appointments.push(
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: null, clinicPatientId: '507f1f77bcf86cd7994390d16', status: 'CANCELLED', consultationType: 'CLINIC', startsAt: new Date() },
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: null, clinicPatientId: '507f1f77bcf86cd7994390d16', status: 'NO_SHOW', consultationType: 'CLINIC', startsAt: new Date() }
+    );
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE + 1);
+    } finally {
+      appointments.pop();
+      appointments.pop();
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('22. today-created ClinicPatient seen via a COMPLETED appointment still counts once', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d17', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    appointments.push({ doctorId: PREMIUM_DOCTOR_ID, patientId: null, clinicPatientId: '507f1f77bcf86cd7994390d17', status: 'COMPLETED', consultationType: 'CLINIC', startsAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // Named by BOTH sources but the same record → exactly one.
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE + 1);
+    } finally {
+      appointments.pop();
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('23. existing patient with only PENDING/CANCELLED/NO_SHOW today is NOT counted', async () => {
+    appointments.push(
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390e9', status: 'PENDING', consultationType: 'CLINIC', startsAt: new Date() },
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390ea', status: 'CANCELLED', consultationType: 'CLINIC', startsAt: new Date() },
+      { doctorId: PREMIUM_DOCTOR_ID, patientId: '507f1f77bcf86cd7994390eb', status: 'NO_SHOW', consultationType: 'CLINIC', startsAt: new Date() }
+    );
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE);
+    } finally {
+      for (let i = 0; i < 3; i += 1) appointments.pop();
+    }
+  });
+
+  await t.test('24. another doctor\'s ClinicPatient created today is not counted', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d18', doctorId: FREE_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      // Ownership is doctorId-scoped, so the free doctor's record is invisible.
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE);
+    } finally {
+      dropClinicPatients(1);
+    }
+  });
+
+  await t.test('25. today block is always present and new registrations do not alter all-time fields', async () => {
+    addClinicPatient({ _id: '507f1f77bcf86cd7994390d19', doctorId: PREMIUM_DOCTOR_ID, linkedUserId: null, createdAt: new Date() });
+    try {
+      const res = await todayReq();
+      assert.equal(res.status, 200);
+      assert.ok(res.body.summary.today, 'today must always be present');
+      assert.equal(typeof res.body.summary.today.uniquePatients, 'number');
+      assert.equal(res.body.summary.today.uniquePatients, TODAY_BASELINE + 1);
+      // All-time patient fields are untouched by a today registration.
+      assert.equal(res.body.summary.patients, 2);
+      assert.deepEqual(res.body.summary.patientBreakdown, {
+        homelyServ: 2,
+        clinicPatients: 3,
+        combined: 4
+      });
+      // A no-range request still returns a fully-formed today block.
+      const noRange = await req('/api/doctors/dashboard/summary', {
+        headers: authHeader({ userId: PREMIUM_DOCTOR_ID, role: 'DOCTOR' })
+      });
+      assert.equal(noRange.status, 200);
+      assert.ok(noRange.body.summary.today.appointments);
+      assert.equal(typeof noRange.body.summary.today.uniquePatients, 'number');
+    } finally {
+      dropClinicPatients(1);
+    }
   });
 });

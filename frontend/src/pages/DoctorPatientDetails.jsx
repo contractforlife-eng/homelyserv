@@ -4,12 +4,13 @@
 // Displays non-medical patient overview and appointment history for a verified patient relationship.
 // If no confirmed/completed appointment relationship exists, shows not-found state with back navigation.
 // Displays an upcoming placeholder card for Phase 6 (Medical Record).
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
+import VisitPaymentRow from '../components/doctor/VisitPaymentRow';
 import api from '../utils/api';
 import {
   User,
@@ -37,6 +38,18 @@ import {
   FileQuestion
 } from 'lucide-react';
 
+// Shared read-only formatters for the appointment history rows. The endpoint
+// returns real `startsAt` / `endsAt` Date values (the previous code referenced
+// fields such as `appointmentDate` / `startTime` that do not exist).
+const fmtDateTime = (value) => {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB');
+};
+const fmtTime = (value) => {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 const DoctorPatientDetails = () => {
   const { patientId } = useParams();
   const navigate = useNavigate();
@@ -54,6 +67,52 @@ const DoctorPatientDetails = () => {
   const [medProfileLoading, setMedProfileLoading] = useState(true);
   const [medProfileStatus, setMedProfileStatus] = useState('loading');
   const [medProfileError, setMedProfileError] = useState('');
+
+  // ---- Per-visit payment state ----
+  // appointmentId (string) -> the RECEIVED DoctorIncome for that visit.
+  // Only RECEIVED counts: a PENDING or REFUNDED income leaves the visit payable.
+  const [paidByAppointment, setPaidByAppointment] = useState({});
+
+  const loadPaidIncome = useCallback(async () => {
+    try {
+      const res = await api.get('/api/doctor-accounts/income');
+      const rows = Array.isArray(res.data?.income) ? res.data.income : [];
+      const map = {};
+      for (const row of rows) {
+        if (row?.status !== 'RECEIVED') continue;
+        const raw = row.appointmentId;
+        const id = raw ? String(raw._id ? raw._id : raw) : '';
+        if (id) map[id] = { amount: row.amount, currency: row.currency };
+      }
+      setPaidByAppointment(map);
+    } catch (err) {
+      // A payment list that cannot be read must not break the page; the backend
+      // still refuses a duplicate payment via its unique appointment index.
+      console.error('Error loading visit payments:', err);
+      setPaidByAppointment({});
+    }
+  }, []);
+
+  // Visit numbering: an appointment IS a visit. Sort oldest first, then number
+  // sequentially. The number depends ONLY on the appointment list, never on a
+  // payment, so paying, refunding or adding a later appointment cannot renumber
+  // an existing visit. appointmentId breaks ties so the order is deterministic.
+  const visits = useMemo(() => {
+    const list = Array.isArray(appointments) ? [...appointments] : [];
+    list.sort((a, b) => {
+      const at = new Date(a?.startsAt || 0).getTime();
+      const bt = new Date(b?.startsAt || 0).getTime();
+      const av = Number.isNaN(at) ? 0 : at;
+      const bv = Number.isNaN(bt) ? 0 : bt;
+      if (bv !== av) return av - bv;
+      return String(a?.appointmentId || '').localeCompare(String(b?.appointmentId || ''));
+    });
+    return list.map((appointment, index) => ({
+      appointment,
+      visitNumber: index + 1,
+      paidIncome: paidByAppointment[String(appointment?.appointmentId || '')] || null
+    }));
+  }, [appointments, paidByAppointment]);
 
   const loadData = useCallback(async () => {
     try {
@@ -117,6 +176,7 @@ const DoctorPatientDetails = () => {
   useEffect(() => {
     if (patientId) {
       loadData();
+      loadPaidIncome();
     }
   }, [loadData, patientId]);
 
@@ -626,30 +686,47 @@ const DoctorPatientDetails = () => {
                 </p>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {appointments.map((appt) => (
+                  {visits.map(({ appointment: appt, visitNumber, paidIncome }) => (
                     <div
-                      key={appt._id}
+                      key={appt.appointmentId || visitNumber}
                       className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
+                          {/* Visit number is derived from the appointment order
+                              only — never from payments. */}
+                          <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                            {t('doctorPatients.visitLabel', { n: visitNumber })}
+                          </span>
                           <span className="font-medium text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            {appt.appointmentDate}
+                            {/* Real endpoint field is `startsAt` (the old code
+                                read a non-existent `appointmentDate`). */}
+                            {fmtDateTime(appt.startsAt)}
                           </span>
                           <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                             <Clock className="w-3 h-3 text-slate-400" />
-                            {appt.startTime} - {appt.endTime}
+                            {fmtTime(appt.startsAt)} - {fmtTime(appt.endsAt)}
                           </span>
                           {getStatusBadge(appt.status)}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                            paidIncome
+                              ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                              : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          }`}>
+                            {paidIncome
+                              ? t('doctorPatients.paid')
+                              : t('doctorPatients.unpaid')}
+                          </span>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                           {getConsultationBadge(appt.consultationType)}
-                          {appt.clinicId && (
+                          {/* Real endpoint field is `clinic.clinicName`. */}
+                          {appt.clinic?.clinicName && (
                             <span className="flex items-center gap-1">
                               <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                              {appt.clinicId.name || t('doctorPatients.clinic')}
+                              {appt.clinic.clinicName}
                             </span>
                           )}
                           {appt.homeAddress && (
@@ -658,6 +735,17 @@ const DoctorPatientDetails = () => {
                             </span>
                           )}
                         </div>
+
+                        {/* Per-visit payment: this appointment's own Paid control.
+                            A paid sibling visit never affects this one. */}
+                        <VisitPaymentRow
+                          appointment={appt}
+                          visitNumber={visitNumber}
+                          paidIncome={paidIncome}
+                          patientType="HOMELY"
+                          patientId={patientId}
+                          onPaid={loadPaidIncome}
+                        />
                       </div>
                     </div>
                   ))}

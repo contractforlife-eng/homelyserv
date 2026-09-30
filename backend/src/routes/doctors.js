@@ -158,6 +158,24 @@ router.get('/patients/:patientId/medical-profile', requireDoctor, getDoctorPatie
 // ============================================================
 router.get('/clinic-patients', requireDoctor, getClinicPatients);
 router.post('/clinic-patients', requireDoctor, createClinicPatient);
+
+// ClinicPatient consultations (additive). The patient is identified by the
+// `clinicPatientId` QUERY param and scoped to the logged-in doctor.
+// Same lifecycle (DRAFT -> SIGNED -> AMENDED) as HomelyServ.
+//
+// These literal routes MUST stay declared ABOVE `/clinic-patients/:patientId`.
+// Express matches in declaration order, so the parameterised route would
+// otherwise swallow the literal `consultations` segment (`:patientId =
+// "consultations"`), dispatching every request here to
+// `getClinicPatientById` and answering 404 "Clinic patient not found".
+router.get('/clinic-patients/consultations', requireDoctor, getDoctorPatientConsultations);
+router.get('/clinic-patients/consultations/:id', requireDoctor, getDoctorPatientConsultationById);
+router.post('/clinic-patients/consultations', requireDoctor, createDoctorConsultation);
+router.put('/clinic-patients/consultations/:id', requireDoctor, updateDoctorConsultation);
+router.delete('/clinic-patients/consultations/:id', requireDoctor, deleteDoctorConsultationDraft);
+router.post('/clinic-patients/consultations/:id/sign', requireDoctor, signDoctorConsultation);
+router.post('/clinic-patients/consultations/:id/amend', requireDoctor, createDoctorConsultationAmendment);
+
 router.get('/clinic-patients/:patientId', requireDoctor, getClinicPatientById);
 router.put('/clinic-patients/:patientId', requireDoctor, updateClinicPatient);
 
@@ -192,16 +210,9 @@ router.delete('/patients/:patientId/consultations/:id', requireDoctor, deleteDoc
 router.post('/patients/:patientId/consultations/:id/sign', requireDoctor, signDoctorConsultation);
 router.post('/patients/:patientId/consultations/:id/amend', requireDoctor, createDoctorConsultationAmendment);
 
-// ClinicPatient consultations (additive). The patient is identified by the
-// `clinicPatientId` QUERY param and scoped to the logged-in doctor.
-// Same lifecycle (DRAFT -> SIGNED -> AMENDED) as HomelyServ.
-router.get('/clinic-patients/consultations', requireDoctor, getDoctorPatientConsultations);
-router.get('/clinic-patients/consultations/:id', requireDoctor, getDoctorPatientConsultationById);
-router.post('/clinic-patients/consultations', requireDoctor, createDoctorConsultation);
-router.put('/clinic-patients/consultations/:id', requireDoctor, updateDoctorConsultation);
-router.delete('/clinic-patients/consultations/:id', requireDoctor, deleteDoctorConsultationDraft);
-router.post('/clinic-patients/consultations/:id/sign', requireDoctor, signDoctorConsultation);
-router.post('/clinic-patients/consultations/:id/amend', requireDoctor, createDoctorConsultationAmendment);
+// NOTE: the ClinicPatient consultation routes live ABOVE
+// `/clinic-patients/:patientId` so the literal `consultations` segment is
+// matched before the parameterised route can swallow it.
 
 // Doctor Prescriptions endpoints (Phase 9)
 router.get('/patients/:patientId/consultations/:consultationId/prescriptions', requireDoctor, getDoctorConsultationPrescriptions);

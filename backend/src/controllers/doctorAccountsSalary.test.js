@@ -185,6 +185,51 @@ DoctorIncome.distinct = async () => [];
 DoctorExpense.aggregate = emptyAggregate;
 DoctorExpense.countDocuments = async () => 0;
 DoctorExpense.distinct = async () => [];
+
+// ---- DoctorExpense list store (GET /expenses regression) ----
+// `DoctorExpense` stores its date in `expenseDate` and has NO `incomeDate`
+// field. This mock deliberately mirrors Mongo: a filter on a field the
+// document does not have matches NOTHING, so the old implementation
+// (filtering expenses by `incomeDate`) returns an empty list.
+let expenses = [];
+const matchExpenses = (f = {}) => expenses.filter((e) => {
+  if (f.doctorId && String(e.doctorId) !== String(f.doctorId)) return false;
+  if (f.category && e.category !== f.category) return false;
+  const bound = f.expenseDate;
+  if (bound) {
+    const t = new Date(e.expenseDate).getTime();
+    if (bound.$gte && t < new Date(bound.$gte).getTime()) return false;
+    if (bound.$lte && t > new Date(bound.$lte).getTime()) return false;
+  }
+  // A range bound on a field this document does not have can never be
+  // satisfied by a stored value, exactly like MongoDB.
+  const wrong = f.incomeDate;
+  if (wrong) {
+    if (e.incomeDate === undefined || e.incomeDate === null) return false;
+    const t = new Date(e.incomeDate).getTime();
+    if (wrong.$gte && t < new Date(wrong.$gte).getTime()) return false;
+    if (wrong.$lte && t > new Date(wrong.$lte).getTime()) return false;
+  }
+  return true;
+});
+DoctorExpense.find = (f = {}) => {
+  const chain = {};
+  chain.select = () => chain;
+  chain.populate = () => chain;
+  chain.sort = () => chain;
+  chain.lean = () => Promise.resolve(matchExpenses(f));
+  chain.then = (r, j) => Promise.resolve(matchExpenses(f)).then(r, j);
+  return chain;
+};
+
+const seedExpense = ({ amount, date, category = 'RENT', currency = 'EGP' }) => {
+  const record = {
+    _id: oid(), doctorId: DOCTOR_ID, category, description: 'Test expense',
+    amount, currency, expenseDate: date, notes: ''
+  };
+  expenses.push(record);
+  return record;
+};
 DoctorAppointment.distinct = async () => [];
 DoctorAppointment.countDocuments = async () => 0;
 ClinicPatient.countDocuments = async () => 0;
@@ -435,4 +480,133 @@ test('SETTLEMENT snapshots the fixed monthly gross, not a prorated one', async (
     assert.equal(again.status, 201, 'a REVERSED period can be settled again');
     assert.equal(again.body.settlement.grossSalary, 8000, 'the replacement uses the fixed monthly salary');
   });
+});
+
+// ============================================================
+// EXPENSE LIST DATE FILTER — regression
+// ============================================================
+// DoctorExpense stores its date in `expenseDate` and has NO `incomeDate`
+// field. GET /expenses once reused the income date filter, so it queried
+// `{ doctorId, incomeDate: {...} }` against a collection that has no such
+// field. MongoDB cannot satisfy a range comparison against a missing field,
+// so the list came back EMPTY even though the expense was saved correctly.
+// The range must be applied to `expenseDate`.
+test('GET /expenses filters by expenseDate, not incomeDate', async (t) => {
+  const listExpenses = async (qs) => {
+    const res = await req(`/expenses${qs}`, { headers: doctorAuth() });
+    assert.equal(res.status, 200, `GET /expenses${qs} should succeed`);
+    return res.body;
+  };
+
+  await t.test('an expense inside the requested range is returned', async () => {
+    expenses = [];
+    const inside = seedExpense({ amount: 500, date: D(2026, 8, 15) });
+    const body = await listExpenses(`?from=${fmt(sep(1))}&to=${fmt(sep(30))}`);
+    assert.equal(body.count, 1, 'a covering range must return the stored expense');
+    assert.equal(body.expenses[0]._id, inside._id);
+  });
+
+  await t.test('the returned expense is keyed on expenseDate', async () => {
+    expenses = [];
+    seedExpense({ amount: 500, date: D(2026, 8, 15) });
+    const body = await listExpenses(`?from=${fmt(sep(1))}&to=${fmt(sep(30))}`);
+    const row = body.expenses[0];
+    assert.equal(row.expenseDate instanceof Date || typeof row.expenseDate === 'string', true);
+    assert.equal(new Date(row.expenseDate).toISOString().slice(0, 10), '2026-09-15');
+    assert.equal(row.incomeDate, undefined, 'an expense never carries an incomeDate');
+  });
+
+  await t.test('an expense outside the requested range is excluded', async () => {
+    expenses = [];
+    seedExpense({ amount: 500, date: D(2026, 8, 15) });   // September
+    seedExpense({ amount: 700, date: D(2026, 7, 10) });   // August
+    const body = await listExpenses(`?from=${fmt(sep(1))}&to=${fmt(sep(30))}`);
+    assert.equal(body.count, 1, 'only the September expense is in the September range');
+    assert.equal(body.expenses[0].amount, 500);
+  });
+
+  await t.test('a non-covering range returns nothing', async () => {
+    expenses = [];
+    seedExpense({ amount: 500, date: D(2026, 8, 15) });
+    const body = await listExpenses(`?from=${fmt(oct(1))}&to=${fmt(oct(31))}`);
+    assert.equal(body.count, 0);
+  });
+
+  await t.test('GET /expenses without from/to still returns everything', async () => {
+    expenses = [];
+    seedExpense({ amount: 500, date: D(2026, 8, 15) });
+    seedExpense({ amount: 700, date: D(2026, 7, 10) });
+    const body = await listExpenses('');
+    assert.equal(body.count, 2, 'no range means unbounded on both sides');
+  });
+
+  await t.test('an open-ended bound is honoured on the side given', async () => {
+    expenses = [];
+    seedExpense({ amount: 500, date: D(2026, 8, 15) });
+    seedExpense({ amount: 700, date: D(2026, 7, 10) });
+    const body = await listExpenses(`?from=${fmt(sep(1))}`);
+    assert.equal(body.count, 1, 'from-only excludes everything before the bound');
+    assert.equal(body.expenses[0].amount, 500);
+  });
+
+  await t.test('another doctor\'s expense is never returned', async () => {
+    expenses = [];
+    expenses.push({
+      _id: oid(), doctorId: '507f1f77bcf86cd7994390ff', category: 'RENT',
+      description: 'Other doctor', amount: 999, currency: 'EGP',
+      expenseDate: D(2026, 8, 15), notes: ''
+    });
+    const body = await listExpenses(`?from=${fmt(sep(1))}&to=${fmt(sep(30))}`);
+    assert.equal(body.count, 0, 'ownership is still scoped by doctorId');
+  });
+
+  await t.test('an invalid range is still rejected with 400', async () => {
+    const res = await req('/expenses?from=not-a-date', { headers: doctorAuth() });
+    assert.equal(res.status, 400);
+  });
+
+  await t.test('an inverted range is still rejected with 400', async () => {
+    const res = await req(`/expenses?from=${fmt(sep(30))}&to=${fmt(sep(1))}`, { headers: doctorAuth() });
+    assert.equal(res.status, 400);
+  });
+
+  await t.test('the summary still reads expenses by expenseDate', async () => {
+    expenses = [];
+    // The summary uses its own expenseDate bound and must stay correct.
+    DoctorExpense.aggregate = async (pipeline) => {
+      const match = (pipeline?.[0]?.$match) || {};
+      const rows = matchExpenses(match);
+      const byCurrency = {};
+      for (const r of rows) byCurrency[r.currency] = (byCurrency[r.currency] || 0) + r.amount;
+      return Object.entries(byCurrency).map(([k, total]) => ({ _id: k, total }));
+    };
+    try {
+      seedExpense({ amount: 500, date: D(2026, 8, 15) });
+      const res = await req(`/summary?from=${fmt(sep(1))}&to=${fmt(sep(30))}`, { headers: doctorAuth() });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.summary.expenses.EGP, 500, 'Other Expenses still totals the expense');
+    } finally {
+      DoctorExpense.aggregate = emptyAggregate;
+    }
+  });
+
+  await t.test('income still filters by incomeDate and is unaffected', async () => {
+    DoctorIncome.find = () => {
+      const chain = {};
+      chain.select = () => chain;
+      chain.sort = () => chain;
+      chain.lean = () => Promise.resolve([]);
+      chain.then = (r, j) => Promise.resolve([]).then(r, j);
+      return chain;
+    };
+    try {
+      const res = await req(`/income?from=${fmt(sep(1))}&to=${fmt(sep(30))}`, { headers: doctorAuth() });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.count, 0);
+    } finally {
+      delete DoctorIncome.find;
+    }
+  });
+
+  expenses = [];
 });

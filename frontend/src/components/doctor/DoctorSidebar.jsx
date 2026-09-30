@@ -15,8 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  FileText,
-  Pill,
   Tag,
   BarChart3,
   Wallet,
@@ -105,18 +103,6 @@ const DoctorSidebar = ({
           label: t('doctorNav.appointments') || 'Appointments',
           icon: Calendar,
           path: '/doctor-cms/appointments'
-        },
-        {
-          id: 'consultations',
-          label: t('doctorNav.consultations') || 'Consultations',
-          icon: FileText,
-          path: '/doctor-cms/consultations'
-        },
-        {
-          id: 'prescriptions',
-          label: t('doctorNav.prescriptions') || 'Prescriptions',
-          icon: Pill,
-          path: '/doctor-cms/prescriptions'
         },
         {
           id: 'clinics',

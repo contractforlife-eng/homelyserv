@@ -534,3 +534,76 @@ test('D3. SIGNED cannot be deleted (400); DRAFT delete works (200)', async () =>
   });
 });
 
+// ============================================
+// ROUTE-ORDER REGRESSION
+//
+// Express matches in DECLARATION order. The generic
+// `/clinic-patients/:patientId` route used to be declared before the literal
+// `/clinic-patients/consultations` route, so it captured the literal
+// `consultations` segment (`:patientId = "consultations"`) and dispatched
+// every list request to `getClinicPatientById`, which answered
+// 404 "Clinic patient not found" — the ClinicPatient consultation workspace
+// was completely unreachable.
+//
+// The POST tests above could not catch this: a GET-only wildcard route does
+// not shadow POST/PUT/DELETE. These GET tests pin the fix.
+// ============================================
+
+test('R1. GET ClinicPatient consultation LIST reaches the consultation controller, not getClinicPatientById', async () => {
+  await withServer(baseSeed, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}${CLINIC_URL()}?clinicPatientId=${CLINIC_PATIENT_A}`, {
+      method: 'GET',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' })
+    });
+
+    // Shadowed routing answers 404 "Clinic patient not found" because
+    // "consultations" is not a valid ObjectId. Reaching the controller
+    // answers 200 with the consultation payload shape.
+    assert.equal(res.status, 200, 'must not be intercepted by /clinic-patients/:patientId');
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.ok(Array.isArray(data.consultations), 'controller payload, not a patient payload');
+    assert.equal(data.patient, undefined, 'must NOT be the getClinicPatientById shape');
+    assert.notEqual(data.message, 'Clinic patient not found');
+  });
+});
+
+test('R2. A real ClinicPatient GET by id still resolves to getClinicPatientById', async () => {
+  await withServer(baseSeed, async ({ baseUrl }) => {
+    const res = await fetch(`${baseUrl}/api/doctors/clinic-patients/${CLINIC_PATIENT_A}`, {
+      method: 'GET',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' })
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.ok(data.patient, 'the :patientId route must keep working for real ids');
+    assert.equal(String(data.patient.patientId), CLINIC_PATIENT_A);
+    assert.equal(data.consultations, undefined, 'not the consultation controller');
+  });
+});
+
+test('R3. Literal consultations segment is routed by method, not captured as :patientId', async () => {
+  await withServer(baseSeed, async ({ baseUrl }) => {
+    // A real ObjectId is still a valid :patientId, and the literal segment
+    // is not — so the literal route must be reachable and the objectId one
+    // must not swallow it. Confirm the literal GET list route is dispatched.
+    const list = await fetch(`${baseUrl}${CLINIC_URL()}?clinicPatientId=${CLINIC_PATIENT_A}`, {
+      method: 'GET',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' })
+    });
+    assert.equal(list.status, 200);
+
+    // A bogus literal must NOT be treated as a patient lookup success.
+    const bogus = await fetch(`${baseUrl}${CLINIC_URL()}?clinicPatientId=not-an-id`, {
+      method: 'GET',
+      headers: authHeader({ userId: DOCTOR_A_ID, role: 'DOCTOR' })
+    });
+    assert.equal(bogus.status, 404);
+    const body = await bogus.json();
+    assert.equal(body.message, 'Clinic patient not found',
+      'malformed clinicPatientId is rejected by the consultation scope check');
+  });
+});
+
+

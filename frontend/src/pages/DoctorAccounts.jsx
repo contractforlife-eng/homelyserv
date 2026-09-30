@@ -122,6 +122,29 @@ const resolvePresetRange = (preset) => {
 };
 
 /**
+ * Expand a LOCAL calendar date (YYYY-MM-DD) into a real instant.
+ *
+ * WHY: the backend parses ?from/?to with `Date.parse`, and a bare
+ * 'YYYY-MM-DD' is interpreted as UTC midnight — never the doctor's local
+ * midnight. That silently truncated every range: "Today" became
+ * midnight-to-midnight and dropped any income carrying a time-of-day.
+ * Sending explicit instants keeps the intended local calendar day intact.
+ *
+ * The upper bound is the END of its local day (23:59:59.999) so a whole
+ * calendar day is inclusive, exactly like the Doctor Dashboard does.
+ */
+const localDayStartIso = (ymd) => {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, 0, 0, 0, 0).toISOString();
+};
+const localDayEndIso = (ymd) => {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
+};
+
+/**
  * Convert a backend { CURRENCY: amount } map into sorted display rows.
  * This is a RENAME of the server's buckets — amounts are never combined,
  * so two currencies can never be added together here.
@@ -282,7 +305,12 @@ const DoctorAccounts = () => {
 
   const rangeParams = useMemo(() => {
     if (resolvedRange.error || !resolvedRange.from || !resolvedRange.to) return null;
-    return { from: resolvedRange.from, to: resolvedRange.to };
+    // Calendar-day semantics above are unchanged; only the wire format is.
+    // A bare 'YYYY-MM-DD' would be read by the backend as UTC midnight.
+    const from = localDayStartIso(resolvedRange.from);
+    const to = localDayEndIso(resolvedRange.to);
+    if (!from || !to) return null;
+    return { from, to };
   }, [resolvedRange]);
 
   // ---------------- Data ----------------
@@ -1068,6 +1096,17 @@ const DoctorAccounts = () => {
                   >
                     {t(`doctorCms.incomeStatus${record.status.charAt(0)}${record.status.slice(1).toLowerCase()}`)}
                   </span>
+                  {/* Only RECEIVED counts toward Total Income / Net Balance. The
+                      amount stays visible, but a doctor must not have to infer
+                      from a distant footnote that this row is excluded. */}
+                  {record.status !== 'RECEIVED' && (
+                    <span
+                      className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium border border-dashed border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300"
+                      title={t('doctorCms.summaryIncomeReceivedOnly')}
+                    >
+                      {t('doctorCms.incomeNotInTotals')}
+                    </span>
+                  )}
                   <RowActions
                     type="income"
                     record={record}

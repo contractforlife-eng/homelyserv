@@ -15,13 +15,14 @@
 // no exam findings, no visit symptoms/vitals, no prescriptions and no
 // appointments live here. A "Future Clinical Activity" placeholder
 // marks where those will appear in later phases.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
 import AppointmentCreateModal from '../components/doctor/cms/AppointmentCreateModal';
+import VisitPaymentRow from '../components/doctor/VisitPaymentRow';
 import {
   ArrowRight, Loader2, AlertCircle, Phone, Mail, MapPin, Stethoscope,
   User, Pencil, Save, X, CheckCircle2, History, StickyNote, CalendarClock
@@ -46,21 +47,47 @@ const fmtTime = (v) => {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const AppointmentRow = ({ appt, notRecorded }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
-    <div className="min-w-0">
-      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-        {fmtDate(appt.startsAt)} · {fmtTime(appt.startsAt)} – {fmtTime(appt.endsAt)}
-      </p>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {appt.clinic?.clinicName || notRecorded} · {appt.consultationType}
-      </p>
+// One appointment = one visit. The row shows the visit number and the payment
+// state for THAT appointment only; a paid sibling visit never hides this control.
+const AppointmentRow = ({ appt, notRecorded, visitNumber, paidIncome, paidLabel, unpaidLabel, visitLabel, patientId, onPaid }) => (
+  <div className="py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+          {visitNumber > 0 && (
+            <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+              {visitLabel}
+            </span>
+          )}
+          {fmtDate(appt.startsAt)} · {fmtTime(appt.startsAt)} – {fmtTime(appt.endsAt)}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {appt.clinic?.clinicName || notRecorded} · {appt.consultationType}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+          paidIncome
+            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+        }`}>
+          {paidIncome ? paidLabel : unpaidLabel}
+        </span>
+        <span className={`self-start sm:self-auto px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+          STATUS_STYLES[appt.status] || STATUS_STYLES.PENDING
+        }`}>
+          {appt.status}
+        </span>
+      </div>
     </div>
-    <span className={`self-start sm:self-auto px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-      STATUS_STYLES[appt.status] || STATUS_STYLES.PENDING
-    }`}>
-      {appt.status}
-    </span>
+    <VisitPaymentRow
+      appointment={appt}
+      visitNumber={visitNumber}
+      paidIncome={paidIncome}
+      patientType="CLINIC"
+      patientId={patientId}
+      onPaid={onPaid}
+    />
   </div>
 );
 
@@ -184,6 +211,55 @@ const DoctorClinicPatientDetails = () => {
   const [pastAppts, setPastAppts] = useState([]);
   const [showCreateAppt, setShowCreateAppt] = useState(false);
 
+  // ---- Per-visit payment state ----
+  // appointmentId (string) -> the RECEIVED DoctorIncome for that visit.
+  // Only RECEIVED counts: a PENDING or REFUNDED income leaves the visit payable.
+  const [paidByAppointment, setPaidByAppointment] = useState({});
+
+  const loadPaidIncome = useCallback(async () => {
+    try {
+      const res = await api.get('/api/doctor-accounts/income');
+      const rows = Array.isArray(res.data?.income) ? res.data.income : [];
+      const map = {};
+      for (const row of rows) {
+        if (row?.status !== 'RECEIVED') continue;
+        const raw = row.appointmentId;
+        const id = raw ? String(raw._id ? raw._id : raw) : '';
+        if (id) map[id] = { amount: row.amount, currency: row.currency };
+      }
+      setPaidByAppointment(map);
+    } catch (err) {
+      // A payment list that cannot be read must not break the Patient File; the
+      // backend still refuses a duplicate via its unique appointment index.
+      console.error('Error loading visit payments:', err);
+      setPaidByAppointment({});
+    }
+  }, []);
+
+  // Visit numbering: an appointment IS a visit. The Upcoming and Past sections
+  // are the SAME list split by time, so both are combined and numbered ONCE, by
+  // `startsAt` ascending. The number depends ONLY on the appointment list, never
+  // on a payment, so paying, refunding or adding a later appointment cannot
+  // renumber an existing visit. `appointmentId` breaks ties deterministically.
+  const { upcomingVisits, pastVisits } = useMemo(() => {
+    const byStarts = (a, b) => {
+      const at = new Date(a?.startsAt || 0).getTime();
+      const bt = new Date(b?.startsAt || 0).getTime();
+      const av = Number.isNaN(at) ? 0 : at;
+      const bv = Number.isNaN(bt) ? 0 : bt;
+      if (av !== bv) return av - bv;
+      return String(a?.appointmentId || '').localeCompare(String(b?.appointmentId || ''));
+    };
+    const all = [...upcomingAppts, ...pastAppts].sort(byStarts);
+    const numberOf = new Map(all.map((a, i) => [String(a?.appointmentId || ''), i + 1]));
+    const decorate = (list) => list.map((a) => ({
+      appointment: a,
+      visitNumber: numberOf.get(String(a?.appointmentId || '')) || 0,
+      paidIncome: paidByAppointment[String(a?.appointmentId || '')] || null
+    }));
+    return { upcomingVisits: decorate(upcomingAppts), pastVisits: decorate(pastAppts) };
+  }, [upcomingAppts, pastAppts, paidByAppointment]);
+
   const loadAppointments = useCallback(async () => {
     try {
       const res = await api.get(`/api/doctors/clinic-patients/${patientId}/appointments`);
@@ -223,7 +299,8 @@ const DoctorClinicPatientDetails = () => {
 
   useEffect(() => {
     loadAppointments();
-  }, [loadAppointments]);
+      loadPaidIncome();
+  }, [loadAppointments, loadPaidIncome]);
 
   const flash = (msg) => {
     setNotice(msg);
@@ -617,22 +694,44 @@ const DoctorClinicPatientDetails = () => {
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 pt-3">
                   {t('doctorCms.upcomingAppointments') || 'Upcoming'}
                 </p>
-                {upcomingAppts.length === 0 ? (
+                {upcomingVisits.length === 0 ? (
                   <p className="text-sm text-slate-400 dark:text-slate-500 py-3">{notRecorded}</p>
                 ) : (
-                  upcomingAppts.map((a) => (
-                    <AppointmentRow key={a.appointmentId} appt={a} notRecorded={notRecorded} />
+                  upcomingVisits.map(({ appointment: a, visitNumber, paidIncome }) => (
+                    <AppointmentRow
+                      key={a.appointmentId}
+                      appt={a}
+                      notRecorded={notRecorded}
+                      visitNumber={visitNumber}
+                      paidIncome={paidIncome}
+                      paidLabel={t('doctorPatients.paid')}
+                      unpaidLabel={t('doctorPatients.unpaid')}
+                      visitLabel={t('doctorPatients.visitLabel', { n: visitNumber })}
+                      patientId={patientId}
+                      onPaid={loadPaidIncome}
+                    />
                   ))
                 )}
 
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 pt-4">
                   {t('doctorCms.pastAppointments') || 'Recent / Past'}
                 </p>
-                {pastAppts.length === 0 ? (
+                {pastVisits.length === 0 ? (
                   <p className="text-sm text-slate-400 dark:text-slate-500 py-3">{notRecorded}</p>
                 ) : (
-                  pastAppts.map((a) => (
-                    <AppointmentRow key={a.appointmentId} appt={a} notRecorded={notRecorded} />
+                  pastVisits.map(({ appointment: a, visitNumber, paidIncome }) => (
+                    <AppointmentRow
+                      key={a.appointmentId}
+                      appt={a}
+                      notRecorded={notRecorded}
+                      visitNumber={visitNumber}
+                      paidIncome={paidIncome}
+                      paidLabel={t('doctorPatients.paid')}
+                      unpaidLabel={t('doctorPatients.unpaid')}
+                      visitLabel={t('doctorPatients.visitLabel', { n: visitNumber })}
+                      patientId={patientId}
+                      onPaid={loadPaidIncome}
+                    />
                   ))
                 )}
               </div>

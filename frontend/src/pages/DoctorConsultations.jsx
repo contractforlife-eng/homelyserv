@@ -3,7 +3,7 @@
 // Allows viewing consultation history, creating new DRAFT for confirmed/completed appointments,
 // editing/saving/deleting DRAFTs, signing records (immutable), and creating amendments.
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -51,9 +51,22 @@ const DoctorConsultations = () => {
   // The patient SOURCE is explicit in the route, never inferred:
   //   /doctor-cms/patients/:patientId/consultations            -> HomelyServ
   //   /doctor-cms/clinic-patients/:patientId/consultations     -> ClinicPatient
+  //
+  // Both routes declare their id as `:patientId`, so the SOURCE must be read
+  // from the path prefix. Previously this read a `clinicPatientId` param that
+  // no route declares, so `isClinicPatient` was always false and ClinicPatients
+  // were sent to the HomelyServ endpoints (which correctly 404 -> "Patient not
+  // found"). The prefix is the same explicit marker the routes already use.
   const { patientId } = useParams();
-  const { clinicPatientId } = useParams();
-  const isClinicPatient = Boolean(clinicPatientId);
+  const location = useLocation();
+
+  const isClinicPatient = location.pathname.startsWith(
+    '/doctor-cms/clinic-patients/'
+  );
+
+  // For a ClinicPatient the id arrives as `:patientId` but must be used as the
+  // clinicPatientId reference; for a HomelyServ patient `patientId` is used as-is.
+  const clinicPatientId = isClinicPatient ? patientId : undefined;
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -107,23 +120,68 @@ const DoctorConsultations = () => {
   const consultRecordUrl = (id, suffix = '') =>
     `${consultBase}/${id}${suffix}${consultQuery}`;
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setErrorMessage('');
+  // The consultation list endpoint deliberately 404s when the patient has no
+  // CONFIRMED/COMPLETED appointment yet (the backend relationship gate). That is
+  // NOT a missing patient, so it is never reported as "Patient not found".
+  const isRelationshipRequired = (err) => (
+    err?.response?.status === 404 &&
+    String(err?.response?.data?.message || '').trim().toLowerCase() === 'patient not found'
+  );
 
-      if (isClinicPatient) {
+  // A consultation list 404 can also mean the request came from a doctor who does
+  // not own this ClinicPatient. Matched exactly so unrelated errors are untouched.
+  const isClinicPatientNotFound = (err) => (
+    err?.response?.status === 404 &&
+    String(err?.response?.data?.message || '').trim().toLowerCase() === 'clinic patient not found'
+  );
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage('');
+
+    if (isClinicPatient) {
+      try {
         // ClinicPatient: patient + appointments + consultations, all scoped
         // to the logged-in doctor by the backend.
+        //
+        // Each request is handled on its own. Only the PATIENT lookup may report
+        // "Patient not found"; the consultation list 404s for a patient who simply
+        // has no confirmed/completed appointment yet, and must not blank the page.
         const [patientRes, apptsRes, consultsRes] = await Promise.all([
-          api.get(`/api/doctors/clinic-patients/${clinicPatientId}`),
-          api.get(`/api/doctors/clinic-patients/${clinicPatientId}/appointments`),
-          api.get(consultListUrl)
+          api.get(`/api/doctors/clinic-patients/${clinicPatientId}`).catch((err) => {
+            if (err.response?.status === 404) {
+              setErrorMessage(t('doctorPatients.patientNotFound') || 'Patient not found');
+            } else {
+              setErrorMessage(
+                err.response?.data?.message || t('doctorConsultations.loadError') || 'Failed to load consultations.'
+              );
+            }
+            return null;
+          }),
+          api.get(`/api/doctors/clinic-patients/${clinicPatientId}/appointments`).catch((err) => {
+            setErrorMessage(
+              err.response?.data?.message || t('doctorConsultations.loadError') || 'Failed to load consultations.'
+            );
+            return null;
+          }),
+          api.get(consultListUrl).catch((err) => {
+            // The backend relationship gate. The patient loaded fine.
+            setErrorMessage(
+              isRelationshipRequired(err)
+                ? (t('doctorCms.consultationRelationshipRequired')
+                  || 'A consultation is available only after the patient has a confirmed or completed appointment.')
+                : isClinicPatientNotFound(err)
+                  ? (t('doctorCms.clinicPatientNotFound') || 'Clinic patient not found.')
+                  : (err.response?.data?.message || t('doctorConsultations.loadError') || 'Failed to load consultations.')
+            );
+            return null;
+          })
         ]);
-        setPatient(patientRes.data?.patient || null);
+
+        setPatient(patientRes?.data?.patient || null);
         // The ClinicPatient appointments endpoint returns { upcoming, past }.
-        const up = Array.isArray(apptsRes.data?.upcoming) ? apptsRes.data.upcoming : [];
-        const past = Array.isArray(apptsRes.data?.past) ? apptsRes.data.past : [];
+        const up = Array.isArray(apptsRes?.data?.upcoming) ? apptsRes.data.upcoming : [];
+        const past = Array.isArray(apptsRes?.data?.past) ? apptsRes.data.past : [];
         setAppointments([...up, ...past].map((a) => ({
           appointmentId: a.appointmentId,
           startsAt: a.startsAt,
@@ -132,12 +190,15 @@ const DoctorConsultations = () => {
           consultationType: a.consultationType
         })));
         setConsultations(
-          Array.isArray(consultsRes.data?.consultations) ? consultsRes.data.consultations : []
+          Array.isArray(consultsRes?.data?.consultations) ? consultsRes.data.consultations : []
         );
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      // ---- HomelyServ patient: existing behaviour, unchanged ----
+      return;
+    }
+    // ---- HomelyServ patient: existing behaviour, unchanged ----
+    try {
       const [patientRes, apptsRes, consultsRes] = await Promise.all([
         api.get(`/api/doctors/patients/${patientId}`),
         api.get(`/api/doctors/patients/${patientId}/appointments`),

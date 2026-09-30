@@ -54,10 +54,20 @@ const parseDateBound = (raw, field) => {
 };
 
 /**
- * Build the shared incomeDate range filter from ?from / ?to.
+ * Build the shared range filter for ?from / ?to against `dateField`.
  * Returns { error } on invalid input, otherwise { filter }.
+ *
+ * The date FIELD is supplied by the caller: `DoctorIncome` stores
+ * `incomeDate`, `DoctorExpense` stores `expenseDate`. Filtering one
+ * collection on the other's field name matches nothing in MongoDB (the field
+ * is absent, so a $gte/$lte on it can never be satisfied), which silently
+ * returned an empty list.
+ *
+ * Bound semantics are unchanged: both bounds optional, `from > to` rejected,
+ * a missing bound means "unbounded on that side", and no range at all yields
+ * an empty filter.
  */
-const buildIncomeDateFilter = (query) => {
+const buildDateRangeFilter = (query, dateField) => {
   const fromParsed = parseDateBound(query?.from, 'from');
   if (fromParsed.error) return { error: fromParsed.error };
   const toParsed = parseDateBound(query?.to, 'to');
@@ -71,7 +81,7 @@ const buildIncomeDateFilter = (query) => {
   if (!from && !to) return { filter: {} };
   return {
     filter: {
-      incomeDate: {
+      [dateField]: {
         ...(from ? { $gte: from } : {}),
         ...(to ? { $lte: to } : {})
       }
@@ -159,7 +169,7 @@ export const getDoctorIncome = async (req, res) => {
   try {
     const doctorId = req.userId;
 
-    const { error, filter: dateFilter } = buildIncomeDateFilter(req.query || {});
+    const { error, filter: dateFilter } = buildDateRangeFilter(req.query || {}, 'incomeDate');
     if (error) {
       return res.status(400).json({ success: false, message: error });
     }
@@ -811,8 +821,9 @@ export const getDoctorExpenses = async (req, res) => {
   try {
     const doctorId = req.userId;
 
-    // Same date-bound validation as the Income list.
-    const { error, filter: dateFilter } = buildIncomeDateFilter(req.query || {});
+    // Same date-bound validation as the Income list, against this collection's
+    // OWN date field: DoctorExpense stores `expenseDate`.
+    const { error, filter: dateFilter } = buildDateRangeFilter(req.query || {}, 'expenseDate');
     if (error) {
       return res.status(400).json({ success: false, message: error });
     }
@@ -2036,6 +2047,19 @@ export const getDoctorEmployeeSalaryPeriod = async (req, res) => {
 const utcMonthNumber = (date) =>
   (date.getUTCFullYear() * 12) + date.getUTCMonth();
 
+// Half a day. Every real-world UTC offset is smaller than 12 hours, so
+// shifting an instant by ±12h before reading its UTC month always lands in
+// the calendar month the CALLER intended, whether the caller sent a bare
+// 'YYYY-MM-DD' (parsed as UTC midnight) or a browser-local day boundary
+// (which in a timezone ahead of UTC falls on the previous UTC day).
+const MONTH_SKEW_MS = 12 * 60 * 60 * 1000;
+
+/** UTC month number of `date` after applying a signed day-level skew. */
+const calendarMonthNumber = (date, skewMs = 0) => {
+  const shifted = new Date(date.getTime() + skewMs);
+  return (shifted.getUTCFullYear() * 12) + shifted.getUTCMonth();
+};
+
 /**
  * FIXED MONTHLY SALARY — the one and only Doctor Accounts salary rule.
  *
@@ -2066,18 +2090,28 @@ const fixedMonthlySalary = (monthlySalary, startDate, periodStart, periodEnd) =>
   const salary = Number(monthlySalary || 0);
   if (!Number.isFinite(salary) || salary <= 0) return 0;
 
-  // Normalise to UTC calendar-day midnights so no timezone can move a boundary.
-  const start = utcDayStart(startDate);
-  const from = utcDayStart(periodStart);
-  const to = utcDayStart(periodEnd);
+  // NOTE: these are the RAW request instants — deliberately NOT floored to a
+  // UTC day. The caller sends browser-LOCAL day boundaries, so a local
+  // 00:00 in a timezone ahead of UTC lands on the PREVIOUS UTC day (a local
+  // Sep 1 00:00 +02:00 is Aug 31 22:00Z). Flooring that to Aug 31 made
+  // September accrue as [August..September] = 2 months, doubling every
+  // salary. Month membership is therefore resolved with a half-day skew
+  // instead (see `calendarMonthNumber`), which tolerates any real timezone
+  // offset (all are < 12h) while still reading the intended local day.
+  const start = new Date(startDate);
+  const from = new Date(periodStart);
+  const to = new Date(periodEnd);
   if (from.getTime() > to.getTime()) return 0;
 
   // The employee cannot be paid for a month that ends before they started.
   const effectiveFrom = from.getTime() > start.getTime() ? from : start;
 
-  // Inclusive month range: [monthOf(effectiveFrom), monthOf(to)].
-  const firstMonth = utcMonthNumber(effectiveFrom);
-  const lastMonth = utcMonthNumber(to);
+  // Inclusive month range: [monthOf(effectiveFrom), monthOf(to)]. The upper
+  // bound is skewed backwards and the lower bound forwards, so an end-of-day
+  // instant late in a month and a start-of-day instant early in a month both
+  // resolve to the month the caller actually selected.
+  const firstMonth = calendarMonthNumber(effectiveFrom, MONTH_SKEW_MS);
+  const lastMonth = calendarMonthNumber(to, -MONTH_SKEW_MS);
   const eligibleMonths = lastMonth - firstMonth + 1;
   if (eligibleMonths <= 0) return 0;
 
@@ -2107,11 +2141,20 @@ const toCurrencyTotals = (rows) => {
  */
 export const getDoctorAccountsSummary = async (req, res) => {
   try {
-    const doctorId = req.userId;
+    // Mongoose does NOT cast aggregation pipelines, so the raw JWT string would
+    // never match the ObjectId `doctorId` stored on DoctorIncome/DoctorExpense
+    // and both totals silently came back empty. `find`, `countDocuments` and
+    // `distinct` cast on their own, which is why salary was unaffected. Cast
+    // once here, reusing the existing validation convention.
+    const doctorId = isValidObjectId(String(req.userId))
+      ? new mongoose.Types.ObjectId(String(req.userId))
+      : req.userId;
 
     // Same date-bound validation as the Income/Expense lists and the
     // Doctor dashboard. Both bounds optional; `from > to` is rejected.
-    const { error, filter: rangeFilter } = buildIncomeDateFilter(req.query || {});
+    // `incomeDate` here is the INCOME field; the expense side of this summary
+    // uses its own `expenseDate` bound further below, unchanged.
+    const { error, filter: rangeFilter } = buildDateRangeFilter(req.query || {}, 'incomeDate');
     if (error) {
       return res.status(400).json({ success: false, message: error });
     }

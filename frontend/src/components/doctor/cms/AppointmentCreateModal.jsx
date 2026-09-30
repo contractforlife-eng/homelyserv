@@ -219,7 +219,7 @@ const AppointmentCreateModal = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={LABEL_CLS}>{t('doctorCms.clinic') || 'Clinic'}</label>
+              <label className={LABEL_CLS}>{t('doctorCms.clinicLabel') || 'Clinic'}</label>
               <select className={INPUT_CLS} value={clinicId} disabled={disabled}
                 onChange={(e) => setClinicId(e.target.value)}>
                 <option value="">{t('doctorCms.noClinic') || 'No clinic'}</option>

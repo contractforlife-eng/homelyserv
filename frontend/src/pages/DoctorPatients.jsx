@@ -160,6 +160,7 @@ const DoctorPatients = () => {
     return unifiedPatients.filter((row) => row.name.toLowerCase().includes(q));
   }, [unifiedPatients, searchQuery]);
 
+
   const formatDob = (value) => {
     if (!value) return '';
     const d = new Date(value);

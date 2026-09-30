@@ -6,7 +6,7 @@
 // Trust & Verification + profile content remains ONLY on the
 // Doctor Profile page (single navigation path preserved).
 // ============================================================
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
@@ -16,7 +16,7 @@ import api from '../utils/api';
 import {
   User, Calendar, Users, Clock, Building2, FileText, Pill, Tag,
   MessageCircle, Crown, Settings, ArrowRight, Sparkles, Loader2,
-  AlertCircle, CheckCircle2, Hourglass
+  AlertCircle, CheckCircle2, Hourglass, Wallet
 } from 'lucide-react';
 
 const DoctorDashboard = () => {
@@ -28,40 +28,67 @@ const DoctorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
+  // Browser-local calendar-day boundaries for TODAY — the same wall-clock the
+  // appointment screens display and the exact convention DoctorCmsReports
+  // already uses in `presetRange('today')`. No date library, and deliberately
+  // NOT the server clock, `dayKeyOf`, `User.settings.timezone` or
+  // `DoctorClinic.timezone`: the doctor sees their own today.
+  const todayRange = useMemo(() => {
+    const now = new Date();
+    return {
+      from: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      to: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    };
+  }, []);
+
   const loadSummary = useCallback(async () => {
     try {
       setLoading(true);
       setLoadError('');
-      const res = await api.get('/api/doctors/dashboard/summary');
+      // ?from/?to scope ONLY the new summary.today block (and the pre-existing
+      // activity range the Reports screen already uses). The all-time fields
+      // — summary.patients and summary.patientBreakdown — stay all-time.
+      const query = `?from=${encodeURIComponent(todayRange.from.toISOString())}`
+        + `&to=${encodeURIComponent(todayRange.to.toISOString())}`;
+      const res = await api.get(`/api/doctors/dashboard/summary${query}`);
       setSummary(res.data?.summary || null);
     } catch (err) {
       setLoadError(err.response?.data?.message || t('doctorDashboard.summaryLoadError') || 'Failed to load dashboard summary.');
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, todayRange]);
 
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
 
+  // The three operational cards are TODAY-scoped. Their fallback is a plain 0
+  // on purpose: falling back to the all-time `summary.appointments.*` values
+  // would silently render lifetime totals as if they were today's.
   const statCards = summary ? [
     {
-      id: 'pending', icon: Hourglass, value: summary.appointments?.pending ?? 0,
+      id: 'pending', icon: Hourglass, value: summary.today?.appointments?.pending ?? 0,
       label: t('doctorDashboard.statPending') || 'Pending Requests', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
       path: '/doctor-appointments'
     },
     {
-      id: 'confirmed', icon: Calendar, value: summary.appointments?.confirmed ?? 0,
+      id: 'confirmed', icon: Calendar, value: summary.today?.appointments?.confirmed ?? 0,
       label: t('doctorDashboard.statConfirmed') || 'Confirmed', color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20',
       path: '/doctor-appointments'
     },
     {
-      id: 'patients', icon: Users, value: summary.patients ?? 0,
-      label: t('doctorDashboard.statPatients') || 'Patients', color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/20',
+      id: 'patients', icon: Users, value: summary.today?.uniquePatients ?? 0,
+      // Explicit "Today" wording: this card counts patients with activity
+      // TODAY, not the doctor's all-time patient roster. Localised like every
+      // other label — never hardcoded in JSX.
+      label: t('doctorDashboard.statPatientsToday') || 'Patients Today',
+      color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/20',
       path: '/doctor-patients'
     },
     {
+      // Unread Messages is an inbox backlog, NOT daily work — it deliberately
+      // stays all-time.
       id: 'unread', icon: MessageCircle, value: summary.unreadMessages ?? 0,
       label: t('doctorDashboard.statUnread') || 'Unread Messages', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
       path: '/doctor-messages'
@@ -110,6 +137,14 @@ const DoctorDashboard = () => {
       title: t('doctorNav.settings') || 'Settings',
       desc: t('doctorDashboard.settingsDesc') || 'Appearance, language, and notification preferences.',
       path: '/doctor-settings'
+    },
+    {
+      // Existing, fully-functional module (sidebar entry + /doctor-cms/accounts
+      // route already live). Pure navigation — no API call, no statistic.
+      id: 'accounts', icon: Wallet, color: 'text-violet-600 bg-violet-50 dark:bg-violet-900/20',
+      title: t('doctorNav.accounts') || 'Accounts',
+      desc: t('doctorDashboard.accountsDesc') || 'Track income, expenses, staff, and clinic finances.',
+      path: '/doctor-cms/accounts'
     }
   ];
 
