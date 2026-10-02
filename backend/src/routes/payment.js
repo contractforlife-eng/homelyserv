@@ -865,7 +865,7 @@ router.get('/providers', authenticate, async (req, res) => {
         where: { id: String(req.userId) },
         select: { role: true, countryCode: true },
       });
-      if (!user || !['EMPLOYER', 'WORKER', 'DOCTOR'].includes(user.role)) {
+      if (!user || !['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER'].includes(user.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
       currency = resolveSubscriptionPriceBook({ user, plan: selectedPlan.id }).currency;
@@ -976,7 +976,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         where: { id: String(req.userId) },
         select: { role: true, countryCode: true }
       });
-      if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR'].includes(dbUser.role)) {
+      if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER'].includes(dbUser.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
       let resolvedSubscription;
@@ -2519,7 +2519,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
       where: { id: String(req.userId) },
       select: { role: true, countryCode: true },
     });
-    if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR'].includes(dbUser.role)) {
+    if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER'].includes(dbUser.role)) {
       return { error: 'Role is not eligible for Premium', status: 403 };
     }
 
@@ -2804,7 +2804,7 @@ const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId
       where: { id: String(req.userId) },
       select: { role: true, countryCode: true },
     });
-    if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR'].includes(dbUser.role)) {
+    if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER'].includes(dbUser.role)) {
       return { error: 'Role is not eligible for Premium', status: 403 };
     }
 
@@ -3098,7 +3098,7 @@ router.post('/manual', authenticate, async (req, res) => {
         where: { id: String(req.userId) },
         select: { role: true, countryCode: true },
       });
-      if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR'].includes(dbUser.role)) {
+      if (!dbUser || !['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER'].includes(dbUser.role)) {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
 

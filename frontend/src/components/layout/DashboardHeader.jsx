@@ -62,13 +62,13 @@ const DashboardHeader = ({
   const profileImage = userProfileImage || authUser?.profileImage;
   const fullName = authUser?.fullName || t('sharedChrome.header.user');
   const resolvedPremiumBadgeText = premiumBadgeText || t('sharedChrome.header.premium');
-  // Role-aware variant: 'admin' is explicit (dark), 'doctor' renders the
-  // Doctor portal red identity bar, otherwise derive from the authenticated
+  // Role-aware variant: 'admin' is explicit (dark), 'doctor' and 'teacher' render the
+  // portal red identity bar, otherwise derive from the authenticated
   // role so Worker gets the red identity and Employer the teal one.
   const effectiveVariant =
     variant === 'admin'
       ? 'admin'
-      : variant === 'doctor' || authUser?.role === 'DOCTOR'
+      : variant === 'doctor' || variant === 'teacher' || authUser?.role === 'DOCTOR' || authUser?.role === 'TEACHER'
         ? 'doctor'
         : authUser?.role === 'EMPLOYER'
           ? 'employer'
@@ -78,8 +78,8 @@ const DashboardHeader = ({
   const isAdmin = effectiveVariant === 'admin';
   const isEmployer = effectiveVariant === 'employer';
   const isWorker = effectiveVariant === 'worker';
-  // Doctor portal pages share ONE red top bar so every DOCTOR route renders
-  // the same header shell (Dashboard, CMS modules, Premium, Settings, Help).
+  // Doctor and Teacher portal pages share ONE red top bar so every DOCTOR/TEACHER route renders
+  // the same header shell (Dashboard, Profile, Premium, Settings, Help).
   const isDoctor = effectiveVariant === 'doctor';
   const isColoredBar = isAdmin || isDoctor;
 
@@ -182,11 +182,11 @@ const DashboardHeader = ({
           </div>
 
           {/* Notifications.
-              Doctor pages do not pass notificationUserId explicitly; the
+              Doctor and Teacher pages do not pass notificationUserId explicitly; the
               bell falls back to the authenticated user id internally, so
-              it is enabled for the DOCTOR role here (top-header bell per
-              the Doctor portal spec — never a sidebar item). */}
-          {showNotifications && !customNotificationComponent && (notificationUserId || authUser?.role === 'DOCTOR') && (
+              it is enabled for DOCTOR and TEACHER roles here (top-header bell per
+              the professional portal spec — never a sidebar item). */}
+          {showNotifications && !customNotificationComponent && (notificationUserId || authUser?.role === 'DOCTOR' || authUser?.role === 'TEACHER') && (
             <NotificationBell
               userId={notificationUserId}
               tone={isDoctor ? 'onRed' : 'default'}

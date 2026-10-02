@@ -14,6 +14,8 @@ import {
 import EmployerSidebar from '../employer/EmployerSidebar';
 import WorkerSidebar from '../worker/WorkerSidebar';
 import DoctorSidebar from '../doctor/DoctorSidebar';
+import TeacherSidebar from '../teacher/TeacherSidebar';
+import StudentSidebar from '../student/StudentSidebar';
 import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
 import VerificationBanner from '../VerificationBanner';
@@ -127,9 +129,15 @@ const DashboardLayout = ({
       ? AdminSidebar 
       : authUser?.role === 'DOCTOR'
         ? DoctorSidebar
-        : WorkerSidebar;
+        : authUser?.role === 'TEACHER'
+          ? TeacherSidebar
+          : authUser?.role === 'STUDENT'
+            ? StudentSidebar
+            : WorkerSidebar;
   const isWorkerEmployer = authUser?.role === 'WORKER' || authUser?.role === 'EMPLOYER';
   const isDoctor = authUser?.role === 'DOCTOR';
+  const isTeacher = authUser?.role === 'TEACHER';
+  const isStudent = authUser?.role === 'STUDENT';
   const isAdmin = authUser?.role === 'ADMIN';
 
   // Provide layout state to children (DashboardHeader and page content).

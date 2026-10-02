@@ -4,17 +4,22 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import authRouter from './auth.js';
-import { requireProfessionalProvider } from '../middleware/auth.js';
+import TeacherProfile from '../models/TeacherProfile.js';
+import teachersRouter from './teachers.js';
+import {
+  SUBSCRIPTION_PRICE_BOOKS,
+  resolveSubscriptionPriceBook,
+  SUBSCRIPTION_PRICE_BOOK_VERSION
+} from '../config/subscriptionPriceBooks.js';
 
 const secret = 'teacher-foundation-test-secret-2026';
 process.env.JWT_SECRET = secret;
 
-const TEACHER_ID = '507f1f77bcf86cd799439054';
-const WORKER_ID = '507f1f77bcf86cd799439052';
-const DOCTOR_ID = '507f1f77bcf86cd799439050';
-const STUDENT_ID = '507f1f77bcf86cd799439055';
-const EMPLOYER_ID = '507f1f77bcf86cd799439053';
+const TEACHER_ID = '507f1f77bcf86cd799439070';
+const OTHER_TEACHER_ID = '507f1f77bcf86cd799439071';
+const WORKER_ID = '507f1f77bcf86cd799439072';
+const EMPLOYER_ID = '507f1f77bcf86cd799439073';
+const DOCTOR_ID = '507f1f77bcf86cd799439074';
 
 const createToken = (payload) => jwt.sign(payload, secret, { expiresIn: '1h' });
 
@@ -37,304 +42,177 @@ const wrapQuery = (doc) => ({
   }
 });
 
-const createMockUser = (overrides = {}) => ({
+const createMockTeacherUser = (overrides = {}) => ({
   _id: TEACHER_ID,
-  fullName: 'Prof. Test Teacher',
+  fullName: 'Prof. Al-Mansoor',
   email: 'teacher@homelyserv.test',
   role: 'TEACHER',
   tokenVersion: 0,
   isSuspended: false,
-  countryCode: 'AE',
-  countryName: 'United Arab Emirates',
+  city: 'Cairo',
+  countryCode: 'EG',
+  countryName: 'Egypt',
+  profileImage: '',
+  isVerified: true,
   ...overrides
 });
 
-const withTeacherServer = async ({ mockUser = createMockUser() } = {}, run) => {
-  const originalUserFindById = User.findById;
+const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialProfile = null } = {}, run) => {
+  const originalFindById = User.findById;
+  const originalProfileFindOne = TeacherProfile.findOne;
+  let currentProfile = initialProfile ? { ...initialProfile } : null;
 
   User.findById = (id) => {
-    const idStr = String(id);
-    if (idStr === TEACHER_ID) {
+    if (String(id) === String(WORKER_ID)) {
+      return wrapQuery({ ...mockUser, _id: WORKER_ID, role: 'WORKER' });
+    }
+    if (String(id) === String(DOCTOR_ID)) {
+      return wrapQuery({ ...mockUser, _id: DOCTOR_ID, role: 'DOCTOR' });
+    }
+    if (String(id) === String(EMPLOYER_ID)) {
+      return wrapQuery({ ...mockUser, _id: EMPLOYER_ID, role: 'EMPLOYER' });
+    }
+    if (String(id) === String(mockUser._id)) {
       return wrapQuery(mockUser);
-    }
-    if (idStr === WORKER_ID) {
-      return wrapQuery(createMockUser({ _id: WORKER_ID, email: 'worker@homelyserv.test', role: 'WORKER' }));
-    }
-    if (idStr === DOCTOR_ID) {
-      return wrapQuery(createMockUser({ _id: DOCTOR_ID, email: 'doctor@homelyserv.test', role: 'DOCTOR' }));
-    }
-    if (idStr === STUDENT_ID) {
-      return wrapQuery(createMockUser({ _id: STUDENT_ID, email: 'student@homelyserv.test', role: 'STUDENT' }));
-    }
-    if (idStr === EMPLOYER_ID) {
-      return wrapQuery(createMockUser({ _id: EMPLOYER_ID, email: 'employer@homelyserv.test', role: 'EMPLOYER' }));
     }
     return wrapQuery(null);
   };
 
+  TeacherProfile.findOne = (filter) => {
+    if (currentProfile && String(filter.userId) === String(currentProfile.userId)) {
+      return Promise.resolve({
+        ...currentProfile,
+        toObject() { return { ...currentProfile }; },
+        save() { return Promise.resolve(this); }
+      });
+    }
+    return Promise.resolve(null);
+  };
+
   const app = express();
   app.use(express.json());
-  app.use('/api/auth', authRouter);
+  app.use('/api/teachers', teachersRouter);
 
-  // Test route guarded by requireProfessionalProvider
-  app.get('/api/test-provider-guard', requireProfessionalProvider, (req, res) => {
-    return res.status(200).json({
-      success: true,
-      userRole: req.userRole,
-      userId: req.userId
-    });
+  const server = await new Promise((resolve) => {
+    const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
 
-  const server = app.listen(0);
-  const { port } = server.address();
-  const baseUrl = `http://localhost:${port}`;
-
   try {
-    await run(baseUrl);
+    const port = server.address().port;
+    await run(`http://127.0.0.1:${port}`, {
+      getProfile: () => currentProfile,
+      setProfile: (p) => { currentProfile = p; }
+    });
   } finally {
+    User.findById = originalFindById;
+    TeacherProfile.findOne = originalProfileFindOne;
     await new Promise((resolve) => server.close(resolve));
-    User.findById = originalUserFindById;
   }
 };
 
-test('1. TEACHER public registration is rejected with 400 and creates no user', async () => {
-  const originalUserSave = User.prototype.save;
-  const originalUserFindOne = User.findOne;
-  const savedRoles = [];
+test('Teacher Foundation Tests', async (t) => {
+  await t.test('1. Teacher Premium Pricing is exactly 75/250/1800 EGP', () => {
+    const egypt = SUBSCRIPTION_PRICE_BOOKS.EGYPT;
+    assert.equal(egypt.plans.weekly.prices.TEACHER, 75);
+    assert.equal(egypt.plans.monthly.prices.TEACHER, 250);
+    assert.equal(egypt.plans.annual.prices.TEACHER, 1800);
 
-  User.findOne = async () => null; // Email not taken
-  User.prototype.save = async function () {
-    savedRoles.push(this.role);
-    return this;
-  };
-
-  try {
-    await withTeacherServer({}, async (baseUrl) => {
-      const res = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          fullName: 'Prof. Mary Teacher',
-          email: 'prof.mary@homelyserv.test',
-          password: 'Password123!',
-          role: 'TEACHER',
-          phone: '+971501234567',
-          countryCode: 'AE',
-          countryName: 'United Arab Emirates'
-        })
-      });
-
-      assert.strictEqual(res.status, 400);
-      const data = await res.json();
-      assert.strictEqual(data.success, false);
-      assert.match(data.message, /valid account role/i);
-      assert.deepEqual(savedRoles, [], 'blocked TEACHER registration must not create a user');
-    });
-  } finally {
-    User.prototype.save = originalUserSave;
-    User.findOne = originalUserFindOne;
-  }
-});
-
-test('2. TEACHER login returns TEACHER role in user payload and JWT token', async () => {
-  const originalUserFindOne = User.findOne;
-  const originalUserSave = User.prototype.save;
-  const bcrypt = (await import('bcryptjs')).default;
-  const hashedPassword = await bcrypt.hash('TeacherPass123!', 10);
-
-  const teacherDoc = createMockUser({
-    _id: TEACHER_ID,
-    email: 'registered.teacher@homelyserv.test',
-    password: hashedPassword,
-    role: 'TEACHER',
-    save: async function () { return this; },
-    toObject() { return { ...this }; }
+    const legacy = SUBSCRIPTION_PRICE_BOOKS.LEGACY_EGP;
+    assert.equal(legacy.plans.weekly.prices.TEACHER, 75);
+    assert.equal(legacy.plans.monthly.prices.TEACHER, 250);
+    assert.equal(legacy.plans.annual.prices.TEACHER, 1800);
   });
 
-  User.findOne = async () => teacherDoc;
-  User.prototype.save = async function () { return this; };
-
-  try {
-    await withTeacherServer({}, async (baseUrl) => {
-      const res = await fetch(`${baseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          email: 'registered.teacher@homelyserv.test',
-          password: 'TeacherPass123!'
-        })
-      });
-
-      assert.strictEqual(res.status, 200);
-      const data = await res.json();
-      assert.strictEqual(data.success, true);
-      assert.strictEqual(data.user.role, 'TEACHER');
-
-      const decoded = jwt.verify(data.token, secret);
-      assert.strictEqual(decoded.role, 'TEACHER');
+  await t.test('2. resolveSubscriptionPriceBook resolves TEACHER role correctly', () => {
+    const quote = resolveSubscriptionPriceBook({
+      user: { role: 'TEACHER', countryCode: 'EG' },
+      plan: 'monthly'
     });
-  } finally {
-    User.findOne = originalUserFindOne;
-    User.prototype.save = originalUserSave;
-  }
-});
-
-test('3. Authentication middleware attaches req.userRole === TEACHER and requireProfessionalProvider allows TEACHER', async () => {
-  await withTeacherServer({}, async (baseUrl) => {
-    // TEACHER succeeds (200) and exposes req.userRole === 'TEACHER'
-    const resTeacher = await fetch(`${baseUrl}/api/test-provider-guard`, {
-      method: 'GET',
-      headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER', tokenVersion: 0 })
-    });
-    assert.strictEqual(resTeacher.status, 200);
-    const dataTeacher = await resTeacher.json();
-    assert.strictEqual(dataTeacher.userRole, 'TEACHER');
-
-    // WORKER succeeds (200)
-    const resWorker = await fetch(`${baseUrl}/api/test-provider-guard`, {
-      method: 'GET',
-      headers: authHeader({ userId: WORKER_ID, role: 'WORKER', tokenVersion: 0 })
-    });
-    assert.strictEqual(resWorker.status, 200);
-
-    // DOCTOR succeeds (200)
-    const resDoctor = await fetch(`${baseUrl}/api/test-provider-guard`, {
-      method: 'GET',
-      headers: authHeader({ userId: DOCTOR_ID, role: 'DOCTOR', tokenVersion: 0 })
-    });
-    assert.strictEqual(resDoctor.status, 200);
-
-    // STUDENT receives 403
-    const resStudent = await fetch(`${baseUrl}/api/test-provider-guard`, {
-      method: 'GET',
-      headers: authHeader({ userId: STUDENT_ID, role: 'STUDENT', tokenVersion: 0 })
-    });
-    assert.strictEqual(resStudent.status, 403);
-
-    // EMPLOYER receives 403
-    const resEmployer = await fetch(`${baseUrl}/api/test-provider-guard`, {
-      method: 'GET',
-      headers: authHeader({ userId: EMPLOYER_ID, role: 'EMPLOYER', tokenVersion: 0 })
-    });
-    assert.strictEqual(resEmployer.status, 403);
+    assert.equal(quote.role, 'TEACHER');
+    assert.equal(quote.amount, 250);
+    assert.equal(quote.currency, 'EGP');
+    assert.equal(quote.priceBookVersion, SUBSCRIPTION_PRICE_BOOK_VERSION);
   });
-});
 
-test('4. WORKER and EMPLOYER registration behavior remains intact while STUDENT and DOCTOR are rejected', async () => {
-  const originalUserSave = User.prototype.save;
-  const originalUserFindOne = User.findOne;
-  const savedRoles = [];
+  await t.test('3. GET /api/teachers/profile returns teacher profile and verification', async () => {
+    await withTeacherServer({
+      initialProfile: {
+        userId: TEACHER_ID,
+        title: 'Mathematics Tutor',
+        mainSubject: 'mathematics',
+        additionalSubjects: ['physics'],
+        teachingLevels: ['secondary', 'high_school'],
+        hourlyRate: 150
+      }
+    }, async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/api/teachers/profile`, {
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' })
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.success, true);
+      assert.equal(data.user.role, 'TEACHER');
+      assert.equal(data.profile.mainSubject, 'mathematics');
+      assert.equal(data.profile.hourlyRate, 150);
+      assert.ok(data.verification, 'verification details must be present');
+    });
+  });
 
-  User.findOne = async () => null;
-  User.prototype.save = async function () {
-    savedRoles.push(this.role);
-    return this;
-  };
-
-  try {
+  await t.test('4. requireTeacher rejects non-TEACHER roles with 403', async () => {
     await withTeacherServer({}, async (baseUrl) => {
-      // 1. WORKER
-      const resWorker = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          fullName: 'Worker User',
-          email: 'worker.check@homelyserv.test',
-          password: 'Password123!',
-          role: 'WORKER',
-          phone: '+971501234567',
-          countryCode: 'AE',
-          countryName: 'United Arab Emirates',
-          desiredJob: 'cleaner',
-          hourlyRate: 50
-        })
+      const workerRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        headers: authHeader({ userId: WORKER_ID, role: 'WORKER' })
       });
-      assert.strictEqual(resWorker.status, 201);
-      const dataWorker = await resWorker.json();
-      assert.strictEqual(dataWorker.user.role, 'WORKER');
+      assert.equal(workerRes.status, 403);
 
-      // 2. EMPLOYER
-      const resEmployer = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          fullName: 'Employer User',
-          email: 'employer.check@homelyserv.test',
-          password: 'Password123!',
-          role: 'EMPLOYER',
-          phone: '+971501234567',
-          countryCode: 'AE',
-          countryName: 'United Arab Emirates'
-        })
+      const doctorRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        headers: authHeader({ userId: DOCTOR_ID, role: 'DOCTOR' })
       });
-      assert.strictEqual(resEmployer.status, 201);
-      const dataEmployer = await resEmployer.json();
-      assert.strictEqual(dataEmployer.user.role, 'EMPLOYER');
+      assert.equal(doctorRes.status, 403);
 
-      // 3. STUDENT
-      const resStudent = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          fullName: 'Student User',
-          email: 'student.check@homelyserv.test',
-          password: 'Password123!',
-          role: 'STUDENT',
-          phone: '+971501234567',
-          countryCode: 'AE',
-          countryName: 'United Arab Emirates'
-        })
+      const employerRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        headers: authHeader({ userId: EMPLOYER_ID, role: 'EMPLOYER' })
       });
-      assert.strictEqual(resStudent.status, 400);
-      const dataStudent = await resStudent.json();
-      assert.strictEqual(dataStudent.success, false);
-      assert.match(dataStudent.message, /valid account role/i);
-
-      // 4. DOCTOR
-      const resDoctor = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          fullName: 'Doctor User',
-          email: 'doctor.check@homelyserv.test',
-          password: 'Password123!',
-          role: 'DOCTOR',
-          phone: '+971501234567',
-          countryCode: 'AE',
-          countryName: 'United Arab Emirates'
-        })
-      });
-      assert.strictEqual(resDoctor.status, 400);
-      const dataDoctor = await resDoctor.json();
-      assert.strictEqual(dataDoctor.success, false);
-      assert.match(dataDoctor.message, /valid account role/i);
-
-      assert.deepEqual(savedRoles, ['WORKER', 'EMPLOYER']);
+      assert.equal(employerRes.status, 403);
     });
-  } finally {
-    User.prototype.save = originalUserSave;
-    User.findOne = originalUserFindOne;
-  }
-});
+  });
 
-test('5. Unsupported registration role is rejected with 400', async () => {
-  await withTeacherServer({}, async (baseUrl) => {
-    const res = await fetch(`${baseUrl}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        fullName: 'Invalid Role User',
-        email: 'invalid@homelyserv.test',
-        password: 'Password123!',
-        role: 'ASTRONAUT',
-        phone: '+971501234567',
-        countryCode: 'AE',
-        countryName: 'United Arab Emirates'
-      })
+  await t.test('5. Unauthenticated request to /api/teachers/profile returns 401', async () => {
+    await withTeacherServer({}, async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/api/teachers/profile`);
+      assert.equal(res.status, 401);
     });
-    assert.strictEqual(res.status, 400);
-    const data = await res.json();
-    assert.strictEqual(data.success, false);
-    assert.match(data.message, /valid account role/i);
+  });
+
+  await t.test('6. PUT /api/teachers/profile rejects invalid main subject', async () => {
+    await withTeacherServer({}, async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          mainSubject: 'astrology_wizardry'
+        })
+      });
+      assert.equal(res.status, 400);
+      const data = await res.json();
+      assert.equal(data.success, false);
+      assert.match(data.message, /invalid teacher subject/i);
+    });
+  });
+
+  await t.test('7. PUT /api/teachers/profile rejects negative hourly rate', async () => {
+    await withTeacherServer({}, async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          hourlyRate: -50
+        })
+      });
+      assert.equal(res.status, 400);
+      const data = await res.json();
+      assert.equal(data.success, false);
+      assert.match(data.message, /non-negative/i);
+    });
   });
 });

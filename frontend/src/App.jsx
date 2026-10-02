@@ -44,6 +44,27 @@ import WorkerApplications from './pages/WorkerApplications';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorProfile from './pages/DoctorProfile';
 import DoctorClinics from './pages/DoctorClinics';
+
+// Teacher Pages
+import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherProfile from './pages/TeacherProfile';
+import TeacherStudents from './pages/TeacherStudents';
+import TeacherGroups from './pages/TeacherGroups';
+import TeacherLessons from './pages/TeacherLessons';
+import TeacherSchedule from './pages/TeacherSchedule';
+import TeacherMessages from './pages/TeacherMessages';
+import TeacherAccounts from './pages/TeacherAccounts';
+import TeacherProgress from './pages/TeacherProgress';
+import TeacherPromotionHistory from './pages/TeacherPromotionHistory';
+
+// Student Pages
+import StudentDashboard from './pages/StudentDashboard';
+import StudentProfile from './pages/StudentProfile';
+import StudentMyTeacher from './pages/StudentMyTeacher';
+import StudentFindTeacher from './pages/StudentFindTeacher';
+import StudentLessons from './pages/StudentLessons';
+import StudentSchedule from './pages/StudentSchedule';
+import StudentProgress from './pages/StudentProgress';
 import DoctorSchedule from './pages/DoctorSchedule';
 import DoctorAppointments from './pages/DoctorAppointments';
 import DoctorPatients from './pages/DoctorPatients';
@@ -153,7 +174,9 @@ const MessagesRedirect = () => {
     const role = user.role?.toUpperCase();
     if (role === 'DOCTOR') {
       navigate('/doctor-dashboard', { replace: true });
-    } else if (role === 'WORKER' || role === 'TEACHER') {
+    } else if (role === 'TEACHER') {
+      navigate('/teacher-messages', { replace: true });
+    } else if (role === 'WORKER') {
       navigate('/worker-messages', { replace: true });
     } else if (role === 'EMPLOYER') {
       navigate('/employer-messages', { replace: true });
@@ -210,8 +233,9 @@ const HomeRedirect = () => {
     if (role === 'ADMIN') return <Navigate to="/admin" replace />;
     if (role === 'EMPLOYER') return <Navigate to="/employer-dashboard" replace />;
     if (role === 'DOCTOR') return <Navigate to="/doctor-dashboard" replace />;
-    if (role === 'WORKER' || role === 'TEACHER') return <Navigate to="/worker-dashboard" replace />;
-    if (role === 'STUDENT') return <Navigate to="/" replace />;
+    if (role === 'TEACHER') return <Navigate to="/teacher-dashboard" replace />;
+    if (role === 'WORKER') return <Navigate to="/worker-dashboard" replace />;
+    if (role === 'STUDENT') return <Navigate to="/student-dashboard" replace />;
     if (role === 'SUPPORT') return <Navigate to="/support-dashboard" replace />;
     if (role === 'SUPPORT_HELPER') return <Navigate to="/sup-help" replace />;
     return <Navigate to="/login" replace />;
@@ -252,14 +276,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
    const userRole = user.role?.toUpperCase();
 
     if (requiredRole && userRole !== requiredRole.toUpperCase()) {
-      // Allow transitional TEACHER access to WORKER provider routes
-      if (
-        requiredRole.toUpperCase() === 'WORKER' &&
-        userRole === 'TEACHER'
-      ) {
-        return children;
-      }
-
       // Allow ADMIN to access SUPPORT and SUPPORT_HELPER routes
       if (
         (requiredRole.toUpperCase() === 'SUPPORT' || requiredRole.toUpperCase() === 'SUPPORT_HELPER') &&
@@ -270,7 +286,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
      
      if (userRole === 'DOCTOR') {
        return <Navigate to="/doctor-dashboard" replace />;
-     } else if (userRole === 'WORKER' || userRole === 'TEACHER') {
+     } else if (userRole === 'TEACHER') {
+       return <Navigate to="/teacher-dashboard" replace />;
+     } else if (userRole === 'WORKER') {
        return <Navigate to="/worker-dashboard" replace />;
      } else if (userRole === 'EMPLOYER') {
        return <Navigate to="/employer-dashboard" replace />;
@@ -584,6 +602,146 @@ function App() {
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorHelp />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========== TEACHER ROUTES ========== */}
+      <Route 
+        path="/teacher-dashboard" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-profile" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-students" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherStudents />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-groups" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherGroups />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-lessons" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherLessons />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-schedule" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherSchedule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-messages" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherMessages />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-accounts" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherAccounts />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-progress" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherProgress />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher-promotion-history" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherPromotionHistory />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========== STUDENT ROUTES ========== */}
+      <Route 
+        path="/student-dashboard" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-profile" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-teacher" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentMyTeacher />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-lessons" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentLessons />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-schedule" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentSchedule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-progress" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentProgress />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-find-teacher" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentFindTeacher />
           </ProtectedRoute>
         } 
       />

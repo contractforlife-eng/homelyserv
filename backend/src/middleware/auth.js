@@ -249,6 +249,32 @@ export const requireDoctor = (req, res, next) => {
   });
 };
 
+// Helper for teacher-only routes
+export const requireTeacher = (req, res, next) => {
+  return authenticate(req, res, () => {
+    if (req.userRole !== 'TEACHER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Teacher role required.'
+      });
+    }
+    next();
+  });
+};
+
+// Helper for student-only routes
+export const requireStudent = (req, res, next) => {
+  return authenticate(req, res, () => {
+    if (req.userRole !== 'STUDENT') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Student role required.'
+      });
+    }
+    next();
+  });
+};
+
 export default {
   authenticate,
   authorize,
@@ -257,5 +283,8 @@ export default {
   requireWorker,
   requireProfessionalProvider,
   requireDoctor,
+  requireTeacher,
+  requireStudent,
   requireAdmin
 };
+

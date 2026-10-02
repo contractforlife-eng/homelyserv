@@ -2,11 +2,11 @@ import { normalizeCountryCode } from '../utils/currencyMetadata.js';
 
 export const SUBSCRIPTION_PRICE_BOOK_VERSION = '2026-09-v2';
 
-// Worker/Employer pricing is unchanged. DOCTOR is added to the same role-aware
-// price book so Doctor Premium can reuse the existing subscription/fulfillment
+// Worker/Employer pricing is unchanged. DOCTOR and TEACHER are added to the same role-aware
+// price book so Doctor and Teacher Premium can reuse the existing subscription/fulfillment
 // architecture without a second system. Worker Premium pricing must remain
-// EXACTLY as it was; the DOCTOR rows below are additive only.
-const ROLES = Object.freeze({ EMPLOYER: 'EMPLOYER', WORKER: 'WORKER', DOCTOR: 'DOCTOR' });
+// EXACTLY as it was; the DOCTOR and TEACHER rows below are additive only.
+const ROLES = Object.freeze({ EMPLOYER: 'EMPLOYER', WORKER: 'WORKER', DOCTOR: 'DOCTOR', TEACHER: 'TEACHER' });
 
 const freezeBook = (market, currency, plans) => Object.freeze({
   market,
@@ -22,13 +22,13 @@ const freezeBook = (market, currency, plans) => Object.freeze({
 // This is configuration foundation only. It is intentionally not imported by
 // payment creation or fulfillment code in this phase.
 export const SUBSCRIPTION_PRICE_BOOKS = Object.freeze({
-  // DOCTOR Premium pricing (official): weekly 75 EGP, monthly 250 EGP,
-  // yearly 1800 EGP. Non-Egypt markets keep the same EGP Doctor pricing
-  // until a dedicated Doctor FX decision exists.
+  // DOCTOR / TEACHER Premium pricing (official): weekly 75 EGP, monthly 250 EGP,
+  // yearly 1800 EGP. Non-Egypt markets keep the same EGP Doctor/Teacher pricing
+  // until a dedicated FX decision exists.
   EGYPT: freezeBook('EGYPT', 'EGP', {
-    weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75, DOCTOR: 75 } },
-    monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200, DOCTOR: 250 } },
-    annual: { durationDays: 365, prices: { EMPLOYER: 2700, WORKER: 1800, DOCTOR: 1800 } },
+    weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75, DOCTOR: 75, TEACHER: 75 } },
+    monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200, DOCTOR: 250, TEACHER: 250 } },
+    annual: { durationDays: 365, prices: { EMPLOYER: 2700, WORKER: 1800, DOCTOR: 1800, TEACHER: 1800 } },
   }),
   USA: freezeBook('USA', 'USD', {
     weekly: { durationDays: 7, prices: { EMPLOYER: 5.99, WORKER: 3.99 } },
@@ -58,9 +58,9 @@ export const SUBSCRIPTION_PRICE_BOOKS = Object.freeze({
   // Legacy users without a country retain the current purchasable price book.
   // Annual is a future display-only quote until the purchase flow is reviewed.
   LEGACY_EGP: freezeBook('LEGACY_EGP', 'EGP', {
-    weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75, DOCTOR: 75 } },
-    monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200, DOCTOR: 250 } },
-    annual: { durationDays: 365, prices: { EMPLOYER: 2700, WORKER: 1800, DOCTOR: 1800 } },
+    weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75, DOCTOR: 75, TEACHER: 75 } },
+    monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200, DOCTOR: 250, TEACHER: 250 } },
+    annual: { durationDays: 365, prices: { EMPLOYER: 2700, WORKER: 1800, DOCTOR: 1800, TEACHER: 1800 } },
   }),
 });
 

@@ -74,12 +74,14 @@ const Subscription = () => {
 
   const rawRole = (authUser?.role || 'WORKER').toUpperCase();
   const isDoctor = rawRole === 'DOCTOR';
+  const isTeacher = rawRole === 'TEACHER';
   const isEmployer = rawRole === 'EMPLOYER';
-  const isWorker = !isDoctor && !isEmployer;
-  const userRole = isDoctor ? 'DOCTOR' : isEmployer ? 'EMPLOYER' : 'WORKER';
+  const isWorker = !isDoctor && !isTeacher && !isEmployer;
+  const userRole = isDoctor ? 'DOCTOR' : isTeacher ? 'TEACHER' : isEmployer ? 'EMPLOYER' : 'WORKER';
 
   const getRolePremiumTitle = () => {
     if (isDoctor) return t('subscriptionPage.roles.doctorPremium', 'Doctor Premium');
+    if (isTeacher) return t('subscriptionPage.roles.teacherPremium', 'Teacher Premium');
     if (isEmployer) return t('subscriptionPage.roles.employerPremium', 'Employer Premium');
     return t('subscriptionPage.roles.workerPremium', 'Worker Premium');
   };
@@ -226,7 +228,7 @@ const Subscription = () => {
     try {
       if (!selectedPlanQuote) throw new Error('Subscription quote unavailable');
       const userId = authUser.id || authUser.email;
-      const defaultName = isDoctor ? 'Doctor' : isEmployer ? 'Employer' : 'Worker';
+      const defaultName = isDoctor ? 'Doctor' : isTeacher ? 'Teacher' : isEmployer ? 'Employer' : 'Worker';
       const subscription = createSubscription(
         userId,
         authUser.email,
@@ -559,6 +561,10 @@ const Subscription = () => {
   const handleGoBack = () => {
     if (isDoctor) {
       navigate('/doctor-dashboard');
+      return;
+    }
+    if (isTeacher) {
+      navigate('/teacher-dashboard');
       return;
     }
     navigate(isEmployer ? '/employer-dashboard' : '/worker-dashboard');

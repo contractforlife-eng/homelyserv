@@ -603,9 +603,36 @@ export const updateProfile = async (req, res) => {
 
     const updates = {};
     if (fullName !== undefined) updates.fullName = fullName;
-    if (phone !== undefined) updates.phone = phone;
     if (language !== undefined) updates.language = language;
     if (profileImage !== undefined) updates.profileImage = profileImage;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (phone !== undefined) {
+      const phoneError = validatePhone(phone);
+      if (phoneError) {
+        return res.status(400).json({
+          success: false,
+          message: phoneError
+        });
+      }
+
+      const trimmedPhone = String(phone).trim();
+      const currentPhone = String(user.phone || '').trim();
+
+      if (trimmedPhone !== currentPhone) {
+        updates.phone = trimmedPhone;
+        updates.phoneVerified = false;
+        updates.phoneVerifiedAt = null;
+        updates.phoneVerificationStatus = 'NOT_VERIFIED';
+      }
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
@@ -614,18 +641,8 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    Object.assign(user, updates);
+    await user.save();
 
     const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;

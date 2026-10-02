@@ -93,10 +93,12 @@ function Login() {
       navigate('/employer-dashboard', { replace: true });
     } else if (role === 'DOCTOR') {
       navigate('/doctor-dashboard', { replace: true });
-    } else if (role === 'WORKER' || role === 'TEACHER') {
+    } else if (role === 'TEACHER') {
+      navigate('/teacher-dashboard', { replace: true });
+    } else if (role === 'WORKER') {
       navigate('/worker-dashboard', { replace: true });
     } else if (role === 'STUDENT') {
-      navigate('/', { replace: true });
+      navigate('/student-dashboard', { replace: true });
     } else if (role === 'SUPPORT') {
       navigate('/support-dashboard', { replace: true });
     } else if (role === 'SUPPORT_HELPER') {

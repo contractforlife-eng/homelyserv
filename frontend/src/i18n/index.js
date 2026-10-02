@@ -8,6 +8,8 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import { HOME_TRANSLATIONS } from './homepageTranslations.js';
 import DOCTOR_CMS_TRANSLATIONS, { DOCTOR_CMS_NAV_TRANSLATIONS, CLINIC_PATIENT_TRANSLATIONS } from './doctorCms.js';
 import DOCTOR_ACCOUNTS_TRANSLATIONS, { DOCTOR_ACCOUNTS_NAV_TRANSLATIONS } from './doctorAccounts.js';
+import TEACHER_TRANSLATIONS from './teacherTranslations.js';
+import STUDENT_TRANSLATIONS from './studentTranslations.js';
 
 // ---------------------------------------------------------------------------
 // Shared language metadata – used by every language selector in the app.
@@ -12867,6 +12869,32 @@ Object.entries(DOCTOR_ACCOUNTS_NAV_TRANSLATIONS).forEach(([language, navCopy]) =
   const target = { en, ar, fr, ru, tr, de }[language];
   if (target && target.translation) {
     target.translation.doctorNav = { ...target.translation.doctorNav, ...navCopy };
+  }
+});
+
+// ============================================================
+// TEACHER SYSTEM — translations for teacherNav, teacherDashboard,
+// teacherProfile, and teacherTaxonomy across all 6 languages.
+// ============================================================
+Object.entries(TEACHER_TRANSLATIONS).forEach(([language, translations]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    Object.entries(translations).forEach(([ns, copy]) => {
+      target.translation[ns] = { ...target.translation[ns], ...copy };
+    });
+  }
+});
+
+// ============================================================
+// STUDENT SYSTEM — translations for studentNav, studentDashboard,
+// and studentProfile across all 6 languages.
+// ============================================================
+Object.entries(STUDENT_TRANSLATIONS).forEach(([language, translations]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    Object.entries(translations).forEach(([ns, copy]) => {
+      target.translation[ns] = { ...target.translation[ns], ...copy };
+    });
   }
 });
 
