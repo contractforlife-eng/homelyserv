@@ -42,7 +42,10 @@ import {
   Apple,
   HelpCircle,
   Activity,
-  Clock
+  Clock,
+  Stethoscope,
+  GraduationCap,
+  School
 } from 'lucide-react';
 
 // ============================================================
@@ -74,6 +77,9 @@ const RoleBadge = ({ role, label }) => {
     SUPPORT_HELPER: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700',
     EMPLOYER: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700',
     WORKER: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700',
+    DOCTOR: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700',
+    TEACHER: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700',
+    STUDENT: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700',
   };
 
   const icons = {
@@ -82,6 +88,9 @@ const RoleBadge = ({ role, label }) => {
     SUPPORT_HELPER: Shield,
     EMPLOYER: Briefcase,
     WORKER: HardHat,
+    DOCTOR: Stethoscope,
+    TEACHER: GraduationCap,
+    STUDENT: School,
   };
 
   const Icon = icons[role] || UserIcon;
@@ -613,6 +622,9 @@ const AdminUsers = () => {
     total: users.length,
     workers: users.filter(u => u.role === 'WORKER').length,
     employers: users.filter(u => u.role === 'EMPLOYER').length,
+    doctors: users.filter(u => u.role === 'DOCTOR').length,
+    teachers: users.filter(u => u.role === 'TEACHER').length,
+    students: users.filter(u => u.role === 'STUDENT').length,
     support: users.filter(u => u.role === 'SUPPORT').length,
     supportHelper: users.filter(u => u.role === 'SUPPORT_HELPER').length,
     admins: users.filter(u => u.role === 'ADMIN').length,
@@ -662,7 +674,7 @@ const AdminUsers = () => {
         )}
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
           <StatCard
             icon={Users}
             label={t.stats.total}
@@ -683,6 +695,27 @@ const AdminUsers = () => {
             value={stats.employers}
             color="text-green-600"
             bgColor="bg-green-50 dark:bg-green-900/20"
+          />
+          <StatCard
+            icon={Stethoscope}
+            label={t.stats.doctors}
+            value={stats.doctors}
+            color="text-cyan-600"
+            bgColor="bg-cyan-50 dark:bg-cyan-900/20"
+          />
+          <StatCard
+            icon={GraduationCap}
+            label={t.stats.teachers}
+            value={stats.teachers}
+            color="text-violet-600"
+            bgColor="bg-violet-50 dark:bg-violet-900/20"
+          />
+          <StatCard
+            icon={School}
+            label={t.stats.students}
+            value={stats.students}
+            color="text-indigo-600"
+            bgColor="bg-indigo-50 dark:bg-indigo-900/20"
           />
           <StatCard
             icon={UserCheck}
