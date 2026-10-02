@@ -44,7 +44,7 @@ export const toIdentityObject = (user, isPremium = false) => {
     role: user.role || 'USER',
     image: user.profileImage || user.image || null,
     email: user.email || null,
-    isPremium: ['EMPLOYER', 'WORKER'].includes(user.role) && isPremium === true,
+    isPremium: ['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(user.role) && isPremium === true,
   };
 };
 

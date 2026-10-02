@@ -8,7 +8,7 @@ import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
-import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries, activateManualPremium, deactivateManualPremium, getManualPremiumState, isManualPremiumTargetRole } from '../services/premiumService.js';
+import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries, activateManualPremium, deactivateManualPremium, getManualPremiumState, isManualPremiumTargetRole, MANUAL_PREMIUM_TARGET_ROLES } from '../services/premiumService.js';
 import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
@@ -1961,7 +1961,13 @@ router.patch('/users/:userId/premium', async (req, res) => {
     }
 
     if (!isManualPremiumTargetRole(targetUser.role)) {
-      return res.status(403).json({ success: false, message: 'Manual Premium is available only for Employer and Worker accounts' });
+      // Derived from the shared allowlist so this message can never drift from
+      // the roles the backend actually accepts.
+      const supportedRoles = MANUAL_PREMIUM_TARGET_ROLES.join(', ');
+      return res.status(403).json({
+        success: false,
+        message: `Manual Premium is not available for ${String(targetUser.role || 'UNKNOWN').toUpperCase()} accounts. Supported accounts: ${supportedRoles}`,
+      });
     }
 
     if (action === 'activate') {

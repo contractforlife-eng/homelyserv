@@ -5,8 +5,9 @@ import useAuthStore from '../store/authStore';
 
 const SUBSCRIPTION_KEY = 'homelyserv_subscriptions';
 const SUBSCRIPTION_PLANS = {
-  weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75 } },
-  monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200 } }
+  weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75, DOCTOR: 75 } },
+  monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200, DOCTOR: 250 } },
+  annual: { durationDays: 365, prices: { EMPLOYER: 2700, WORKER: 1800, DOCTOR: 1800 } }
 };
 
 // Max number of records kept in the localStorage mirror (excluding the current user).

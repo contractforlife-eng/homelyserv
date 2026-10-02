@@ -136,7 +136,7 @@ const DoctorCmsOverview = () => {
     { id: 'schedule', icon: Clock, label: t('doctorNav.schedule') || 'Schedule', path: '/doctor-cms/schedule' },
     { id: 'reports', icon: BarChart3, label: t('doctorNav.reports') || 'Reports', path: '/doctor-cms/reports' },
     { id: 'homelyserv', icon: LayoutGrid, label: t('doctorNav.homelyserv') || 'HomelyServ', path: '/doctor-homelyserv' },
-    { id: 'premium', icon: Crown, label: t('doctorNav.premium') || 'Premium', path: '/doctor-premium' }
+    { id: 'premium', icon: Crown, label: t('doctorNav.premium') || 'Premium', path: '/subscription' }
   ];
 
   const doctorName = getDisplayName(authUser) || authUser?.fullName || '';

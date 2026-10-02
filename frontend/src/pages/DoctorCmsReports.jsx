@@ -330,7 +330,7 @@ const DoctorCmsReports = () => {
               <TrendingUp size={16} className="text-red-500" />
               {t('doctorCms.last30Days') || 'Last 30 days'}
             </h3>
-            <Link to="/doctor-premium" className="text-xs font-medium text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+            <Link to="/subscription" className="text-xs font-medium text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
               <Crown size={12} />
               {t('doctorNav.premium') || 'Premium'}
             </Link>
@@ -348,7 +348,7 @@ const DoctorCmsReports = () => {
                 {t('doctorCms.reportsPremiumRequired') || 'Upgrade to Doctor Premium to unlock Profile Performance analytics.'}
               </p>
               <Link
-                to="/doctor-premium"
+                to="/subscription"
                 className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-sm font-semibold shadow-sm hover:from-amber-600 hover:to-amber-700 transition-all"
               >
                 <Crown size={16} />

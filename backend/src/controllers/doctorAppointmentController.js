@@ -132,6 +132,25 @@ export const getDoctorAppointmentById = async (req, res) => {
 };
 
 /**
+ * Shared overlap check.
+ *
+ * A doctor cannot hold two live appointments over the same window. This is
+ * the SINGLE implementation used by both the Doctor-side create endpoint and
+ * the patient-facing booking endpoint, so the race-condition protection can
+ * never drift between the two entry points.
+ *
+ * "Live" = PENDING or CONFIRMED. Terminal appointments (COMPLETED /
+ * CANCELLED / NO_SHOW) never block a new booking.
+ */
+export const findOverlappingAppointments = (doctorId, startDate, endDate) =>
+  DoctorAppointment.find({
+    doctorId,
+    status: { $in: ['PENDING', 'CONFIRMED'] },
+    startsAt: { $lt: endDate },
+    endsAt: { $gt: startDate }
+  });
+
+/**
  * POST /api/doctors/appointments
  * Create a new appointment for the Doctor.
  */
@@ -314,14 +333,9 @@ export const createDoctorAppointment = async (req, res) => {
       }
     }
 
-    // Overlap protection:
-    // Check if the doctor already has a non-cancelled appointment overlapping with [startDate, endDate)
-    const activeDoctorAppointments = await DoctorAppointment.find({
-      doctorId,
-      status: { $in: ['PENDING', 'CONFIRMED'] },
-      startsAt: { $lt: endDate },
-      endsAt: { $gt: startDate }
-    });
+    // Overlap protection: uses the SHARED helper, so the patient-facing
+    // booking endpoint is protected by exactly the same rule.
+    const activeDoctorAppointments = await findOverlappingAppointments(doctorId, startDate, endDate);
 
     if (activeDoctorAppointments.length > 0) {
       return res.status(400).json({

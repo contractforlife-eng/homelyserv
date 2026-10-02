@@ -52,6 +52,7 @@ const WorkerSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t('workerSidebar.dashboard'), icon: Home, path: '/worker-dashboard' },
     { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs' },
+    { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
     { id: 'myApplications', label: t('workerSidebar.myApplications'), icon: ClipboardList, path: '/worker-applications' },
     { id: 'profile', label: t('workerSidebar.myProfile'), icon: User, path: '/worker-profile' },
     { id: 'offers', label: t('workerSidebar.myOffers'), icon: Briefcase, path: '/worker/offers' },
@@ -59,7 +60,6 @@ const WorkerSidebar = ({
     { id: 'complaints', label: t('workerSidebar.complaints'), icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t('workerSidebar.payment'), icon: CreditCard, path: '/worker-payment' },
     { id: 'premium', label: t('workerSidebar.premium'), icon: Crown, path: '/subscription' },
-    { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
   ];
 
   const isActive = (path) => {

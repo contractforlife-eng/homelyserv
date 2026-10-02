@@ -8,6 +8,12 @@ import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import useAuthStore from '../store/authStore';
+import VerifiedBadge from '../components/verification/VerifiedBadge';
+// Same canonical Doctor specialty list the Doctor profile/registration surface
+// uses. NOT a second hardcoded list — values, labels and ordering come from
+// the single shared constant, and the placeholder reuses the existing
+// `doctorProfile.selectSpecialty` key so no new translations are introduced.
+import { DOCTOR_SPECIALTIES, getDoctorSpecialtyLabel } from '../constants/doctorSpecialties';
 import api from '../utils/api';
 import {
   Heart,
@@ -28,10 +34,634 @@ import {
   X,
   FileText,
   History,
-  Pill
+  Pill,
+  Search,
+  Stethoscope,
+  Languages,
+  MapPin,
+  Award,
+  Building2,
+  Wallet
 } from 'lucide-react';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+
+// Shared field styling, matching the existing Medical Profile inputs.
+const SEARCH_INPUT_CLS =
+  'w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500';
+const SEARCH_LABEL_CLS = 'block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5';
+
+/**
+ * FIND A DOCTOR — patient-facing discovery section.
+ *
+ * Rendered as a tab for Premium users AND directly under the paywall for
+ * non-Premium users, because Doctor search is a discovery function and is
+ * deliberately NOT Premium-gated.
+ *
+ * Calls the authenticated /api/doctor-search/doctors endpoint, which returns
+ * PUBLIC doctor card data only (same isPublished / searchVisibility opt-in
+ * gate as Employer Search). No patient or private data is involved.
+ */
+const FindADoctorSection = () => {
+  const { t } = useTranslation();
+  const [q, setQ] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState('');
+  const [bookingDoctor, setBookingDoctor] = useState(null);
+  const [myAppointments, setMyAppointments] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // The patient's own requests, so a PENDING booking is visibly waiting for
+  // doctor confirmation. Strictly the signed-in user's own data.
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/api/doctor-search/doctors/appointments/mine')
+      .then((res) => {
+        if (!cancelled) setMyAppointments(Array.isArray(res.data?.appointments) ? res.data.appointments : []);
+      })
+      .catch(() => { if (!cancelled) setMyAppointments([]); });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const searchDoctors = async (e) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.get('/api/doctor-search/doctors', {
+        params: {
+          ...(q.trim() ? { q: q.trim() } : {}),
+          ...(specialty.trim() ? { specialty: specialty.trim() } : {}),
+          ...(country.trim() ? { country: country.trim() } : {}),
+          ...(city.trim() ? { city: city.trim() } : {})
+        }
+      });
+      setDoctors(Array.isArray(res.data?.doctors) ? res.data.doctors : []);
+      setSearched(true);
+    } catch (err) {
+      console.error('Error searching doctors:', err);
+      setDoctors([]);
+      setSearched(true);
+      setError(err.response?.data?.message || t('findADoctor.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          {t('findADoctor.title') || 'Find a Doctor'}
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          {t('findADoctor.subtitle') ||
+            'Search HomelyServ doctors by name, specialty, country, or city.'}
+        </p>
+      </div>
+      <DoctorSearchForm
+        q={q} setQ={setQ}
+        specialty={specialty} setSpecialty={setSpecialty}
+        country={country} setCountry={setCountry}
+        city={city} setCity={setCity}
+        loading={loading} onSubmit={searchDoctors}
+      />
+      <DoctorSearchResults
+        doctors={doctors} loading={loading} searched={searched} error={error}
+        onBook={setBookingDoctor}
+      />
+      <MyDoctorAppointments appointments={myAppointments} />
+      {bookingDoctor && (
+        <BookAppointmentModal
+          doctor={bookingDoctor}
+          onClose={() => setBookingDoctor(null)}
+          onBooked={() => { setBookingDoctor(null); setReloadKey((k) => k + 1); }}
+        />
+      )}
+    </div>
+  );
+};
+
+/** Search controls for Find a Doctor. */
+const DoctorSearchForm = ({ q, setQ, specialty, setSpecialty, country, setCountry, city, setCity, loading, onSubmit }) => {
+  const { t } = useTranslation();
+  return (
+    <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="sm:col-span-2">
+        <label className={SEARCH_LABEL_CLS} htmlFor="doctor-q">
+          {t('findADoctor.searchPlaceholder') || 'Search by doctor name'}
+        </label>
+        <input
+          id="doctor-q"
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t('findADoctor.searchPlaceholder') || 'Search by doctor name'}
+          className={SEARCH_INPUT_CLS}
+        />
+      </div>
+      <div>
+        <label className={SEARCH_LABEL_CLS} htmlFor="doctor-specialty">
+          {t('findADoctor.specialty') || 'Specialty'}
+        </label>
+        <select
+          id="doctor-specialty"
+          value={specialty}
+          onChange={(e) => setSpecialty(e.target.value)}
+          className={SEARCH_INPUT_CLS}
+        >
+          <option value="">
+            {t('doctorProfile.selectSpecialty') || '-- Select Medical Specialty --'}
+          </option>
+          {DOCTOR_SPECIALTIES.map((spec) => (
+            <option key={spec.value} value={spec.value}>
+              {t(spec.labelKey, spec.value)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className={SEARCH_LABEL_CLS} htmlFor="doctor-country">
+          {t('findADoctor.country') || 'Country'}
+        </label>
+        <input id="doctor-country" type="text" value={country}
+          onChange={(e) => setCountry(e.target.value)} className={SEARCH_INPUT_CLS} />
+      </div>
+      <div>
+        <label className={SEARCH_LABEL_CLS} htmlFor="doctor-city">
+          {t('findADoctor.city') || 'City'}
+        </label>
+        <input id="doctor-city" type="text" value={city}
+          onChange={(e) => setCity(e.target.value)} className={SEARCH_INPUT_CLS} />
+      </div>
+      <div className="sm:col-span-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2.5 transition-colors"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search size={16} />}
+          {t('findADoctor.search') || 'Search'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+/**
+ * A single Doctor result card.
+ *
+ * One component serves BOTH states: the normal card is a clean, professional
+ * medical card, and a Premium doctor gets the same structure with a restrained
+ * radiant-purple treatment (static glow + border gradient + badge + avatar
+ * highlight). No animation, so it never harms performance or causes motion.
+ *
+ * `isPremium` comes from the server-computed flag on the card — it is never
+ * derived from ids, names, emails or any client-side heuristic.
+ */
+const DoctorCard = ({ doc, onBook }) => {
+  const { t } = useTranslation();
+  const isPremium = doc.isPremium === true;
+
+  const shellCls = isPremium
+    ? 'relative rounded-2xl border-2 border-purple-400 dark:border-purple-500 bg-purple-50/70 dark:bg-purple-950/30 shadow-[0_0_20px_rgba(168,85,247,0.35)] hover:shadow-[0_0_26px_rgba(168,85,247,0.45)] transition-shadow'
+    : 'rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm';
+
+  const innerCls = 'p-4';
+
+  const avatarRingCls = isPremium
+    ? 'w-14 h-14 rounded-xl ring-4 ring-violet-300/70 dark:ring-violet-700/70 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 flex items-center justify-center flex-shrink-0'
+    : 'w-14 h-14 rounded-xl ring-1 ring-slate-200 dark:ring-slate-700 bg-red-50 dark:bg-red-950/40 text-red-600 flex items-center justify-center flex-shrink-0';
+
+  const chipCls = isPremium
+    ? 'inline-flex items-center gap-1.5 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 px-2.5 py-1.5 text-xs font-medium text-violet-700 dark:text-violet-300'
+    : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300';
+
+  const specialties = [doc.subspecialty, ...(Array.isArray(doc.additionalSpecialties) ? doc.additionalSpecialties : [])]
+    .filter(Boolean)
+    .map((value) => getDoctorSpecialtyLabel(value, '', t));
+
+  return (
+    <li>
+      <div className={shellCls}>
+        <div className={innerCls}>
+          {/* Header: avatar + identity + badges */}
+          <div className="flex items-start gap-3">
+            <div className="relative flex-shrink-0">
+              {doc.profileImage ? (
+                <img
+                  src={doc.profileImage}
+                  alt={doc.fullName}
+                  className={`h-14 w-14 rounded-xl object-cover ${isPremium ? 'ring-4 ring-violet-300/70 dark:ring-violet-700/70' : 'ring-1 ring-slate-200 dark:ring-slate-700'}`}
+                />
+              ) : (
+                <div className={avatarRingCls}>
+                  <User className="h-7 w-7" />
+                </div>
+              )}
+              {isPremium && (
+                <span
+                  className="absolute -bottom-1.5 -right-1.5 rounded-full bg-violet-600 p-1.5 shadow-lg ring-2 ring-white dark:ring-slate-900"
+                  aria-hidden="true"
+                >
+                  <Crown size={12} className="text-white" />
+                </span>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                  Dr. {doc.fullName}
+                </p>
+                <VerifiedBadge
+                  verification={doc.verification || { isVerified: doc.isVerified }}
+                  isVerified={doc.isVerified}
+                  size="xs"
+                />
+                {isPremium && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                    <Crown size={10} className="flex-shrink-0" />
+                    {t('findADoctor.premium') || 'Premium'}
+                  </span>
+                )}
+              </div>
+              {doc.professionalTitle && (
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {doc.professionalTitle}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Main specialty */}
+          {doc.specialty && (
+            <p className="mt-3 flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
+              <Stethoscope size={15} className={isPremium ? 'flex-shrink-0 text-violet-600 dark:text-violet-400' : 'flex-shrink-0 text-red-500'} />
+              <span>{getDoctorSpecialtyLabel(doc.specialty, doc.subspecialty || '', t)}</span>
+            </p>
+          )}
+
+          {/* Subspecialty / additional specialties */}
+          {specialties.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {specialties.map((label, index) => (
+                <span
+                  key={`${doc.id}-sp-${index}`}
+                  className="inline-flex max-w-full items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Professional info blocks */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {doc.yearsOfExperience != null && (
+              <span className={chipCls}>
+                <Award size={13} className="flex-shrink-0" />
+                {t('findADoctor.experience') || 'Experience'}: {doc.yearsOfExperience}
+              </span>
+            )}
+            {doc.consultationFee > 0 && (
+              <span className={chipCls}>
+                <Stethoscope size={13} className="flex-shrink-0" />
+                {t('findADoctor.consultationFee') || 'Consultation Fee'}: {doc.consultationFee}
+              </span>
+            )}
+            {doc.examinationFee > 0 && (
+              <span className={chipCls}>
+                <Wallet size={13} className="flex-shrink-0" />
+                {t('findADoctor.examinationFee') || 'Examination Fee'}: {doc.examinationFee}
+              </span>
+            )}
+          </div>
+
+          {/* Languages (kept exactly as stored — free text) */}
+          {Array.isArray(doc.languages) && doc.languages.length > 0 && (
+            <p className="mt-3 flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Languages size={14} className="mt-px flex-shrink-0" />
+              <span>
+                {t('findADoctor.languages') || 'Languages'}: {doc.languages.join(', ')}
+              </span>
+            </p>
+          )}
+
+          {/* Clinic — name, city, country (user data, never translated) */}
+          {doc.clinic && (doc.clinic.clinicName || doc.clinic.city) && (
+            <p className="mt-1.5 flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Building2 size={14} className="mt-px flex-shrink-0" />
+              <span>
+                {[doc.clinic.clinicName, [doc.clinic.city, doc.clinic.countryCode].filter(Boolean).join(', ')]
+                  .filter(Boolean)
+                  .join(' — ')}
+              </span>
+            </p>
+          )}
+
+          {doc.bio && (
+            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{doc.bio}</p>
+          )}
+
+          {/* Primary CTA */}
+          <div className="mt-4 flex justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => onBook?.(doc)}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 sm:w-auto ${
+                isPremium
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 focus:ring-violet-500'
+                  : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+              }`}
+            >
+              <Calendar size={16} />
+              {t('findADoctor.bookAppointment') || 'Book Appointment'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+};
+/** Doctor result cards for Find a Doctor (public card data only). */
+const DoctorSearchResults = ({ doctors, loading, searched, error, onBook }) => {
+  const { t } = useTranslation();
+  if (error) {
+    return (
+      <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+        <p className="text-xs text-rose-700 dark:text-rose-300">{error}</p>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10">
+        <Loader2 className="w-6 h-6 animate-spin text-red-600" />
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+          {t('findADoctor.loading') || 'Searching doctors...'}
+        </p>
+      </div>
+    );
+  }
+  if (searched && doctors.length === 0) {
+    return (
+      <p className="text-sm text-slate-500 dark:text-slate-400 py-4">
+        {t('findADoctor.noResults') || 'No doctors found.'}
+      </p>
+    );
+  }
+  if (doctors.length === 0) return null;
+  return (
+    <ul className="space-y-3">
+      {doctors.map((doc) => (
+        <DoctorCard key={doc.id} doc={doc} onBook={onBook} />
+      ))}
+    </ul>
+  );
+};
+
+const BOOK_INPUT_CLS =
+  'w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100';
+
+/** Date/time/reason picker inside the booking modal. */
+const BookingSlotPicker = ({ dates, selectedDate, setSelectedDate, timesForDate, selectedSlot, setSelectedSlot, reason, setReason, fmtTime }) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div>
+        <label className={SEARCH_LABEL_CLS} htmlFor="book-date">
+          {t('findADoctor.selectDate') || 'Select Date'}
+        </label>
+        <select id="book-date" value={selectedDate}
+          onChange={(e) => { setSelectedDate(e.target.value); setSelectedSlot(null); }}
+          className={BOOK_INPUT_CLS}>
+          <option value="">{t('findADoctor.selectDate') || 'Select Date'}</option>
+          {dates.map((d) => (<option key={d} value={d}>{d}</option>))}
+        </select>
+      </div>
+      {selectedDate && (
+        <div>
+          <label className={SEARCH_LABEL_CLS} htmlFor="book-time">
+            {t('findADoctor.selectTime') || 'Select Time'}
+          </label>
+          <select id="book-time" value={selectedSlot?.startsAt || ''}
+            onChange={(e) => setSelectedSlot(timesForDate.find((s) => s.startsAt === e.target.value) || null)}
+            className={BOOK_INPUT_CLS}>
+            <option value="">{t('findADoctor.selectTime') || 'Select Time'}</option>
+            {timesForDate.map((s) => (
+              <option key={s.startsAt} value={s.startsAt}>{fmtTime(s.startsAt)}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div>
+        <label className={SEARCH_LABEL_CLS} htmlFor="book-reason">
+          {t('findADoctor.reason') || 'Reason (optional)'}
+        </label>
+        <input id="book-reason" type="text" value={reason}
+          onChange={(e) => setReason(e.target.value)} className={BOOK_INPUT_CLS} />
+      </div>
+    </>
+  );
+};
+
+/**
+ * BOOK APPOINTMENT — a HomelyServ user books themselves with a doctor.
+ *
+ * Only slots published by the doctor's ACTIVE DoctorSchedule are offered; the
+ * server re-validates the slot and derives `patientId` from the session, so the
+ * client cannot choose a patient, a doctor, or a price.
+ */
+const BookAppointmentModal = ({ doctor, onClose, onBooked }) => {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [slots, setSlots] = useState([]);
+  const [consultationFee, setConsultationFee] = useState(0);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    api.get(`/api/doctor-search/doctors/${doctor.id}/availability`)
+      .then((res) => {
+        if (cancelled) return;
+        setSlots(Array.isArray(res.data?.slots) ? res.data.slots : []);
+        setConsultationFee(Number(res.data?.consultationFee) || 0);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.response?.data?.message || t('findADoctor.bookingFailed'));
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [doctor?.id, t]);
+
+  const dates = [...new Set(slots.map((s) => String(s.startsAt).slice(0, 10)))];
+  const timesForDate = selectedDate
+    ? slots.filter((s) => String(s.startsAt).slice(0, 10) === selectedDate)
+    : [];
+
+  const submit = async () => {
+    if (!selectedSlot) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await api.post(`/api/doctor-search/doctors/${doctor.id}/appointments`, {
+        scheduleId: selectedSlot.scheduleId,
+        startsAt: selectedSlot.startsAt,
+        reason: reason.trim() || undefined
+      });
+      setSuccess(true);
+      setTimeout(() => onBooked?.(), 1200);
+    } catch (err) {
+      setError(err.response?.data?.message || t('findADoctor.bookingFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const fmtTime = (iso) =>
+    new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 shadow-xl">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+              {t('findADoctor.bookAppointment') || 'Book Appointment'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Dr. {doctor.fullName}</p>
+            {consultationFee > 0 && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t('findADoctor.consultationFee') || 'Consultation Fee'}: {consultationFee}
+              </p>
+            )}
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-10">
+            <Loader2 className="w-6 h-6 animate-spin text-red-600" />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              {t('findADoctor.loadingAvailability') || 'Loading availability...'}
+            </p>
+          </div>
+        )}
+        {!loading && success && (
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
+            <p className="text-xs text-emerald-700 dark:text-emerald-300">
+              {t('findADoctor.bookingSuccess') || 'Booking successful.'}
+            </p>
+          </div>
+        )}
+        {!loading && !success && (
+          <div className="space-y-3">
+            {error && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                <p className="text-xs text-rose-700 dark:text-rose-300">{error}</p>
+              </div>
+            )}
+            {slots.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400 py-4">
+                {t('findADoctor.noAvailability') || 'No available appointments.'}
+              </p>
+            ) : (
+              <BookingSlotPicker
+                dates={dates}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                timesForDate={timesForDate}
+                selectedSlot={selectedSlot}
+                setSelectedSlot={setSelectedSlot}
+                reason={reason}
+                setReason={setReason}
+                fmtTime={fmtTime}
+              />
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={onClose}
+                className="rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+                {t('doctorCms.accountsCancel') || 'Cancel'}
+              </button>
+              <button type="button" onClick={submit} disabled={!selectedSlot || submitting}
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2.5">
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {t('findADoctor.confirmBooking') || 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * MY DOCTOR APPOINTMENTS — the patient's own requests.
+ * A PENDING row says it is waiting for doctor confirmation, because the
+ * patient only enters the Doctor's Patients list once the doctor confirms
+ * (the existing CONFIRMED/COMPLETED relationship rule, unchanged).
+ */
+const MyDoctorAppointments = ({ appointments }) => {
+  const { t } = useTranslation();
+  if (!Array.isArray(appointments) || appointments.length === 0) return null;
+  const fmt = (value) => {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString();
+  };
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+        {t('findADoctor.myAppointments') || 'My Appointments'}
+      </h3>
+      <ul className="space-y-2">
+        {appointments.map((a) => (
+          <li key={a._id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium text-slate-900 dark:text-white">
+                {a.doctor ? `Dr. ${a.doctor.fullName}` : '-'}
+              </p>
+              <span className="text-[11px] px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {a.status}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{fmt(a.startsAt)}</p>
+            {a.clinic?.clinicName && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {a.clinic.clinicName}{a.clinic.city ? ` - ${a.clinic.city}` : ''}
+              </p>
+            )}
+            {a.feeSnapshot > 0 && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t('findADoctor.consultationFee') || 'Consultation Fee'}: {a.feeSnapshot} {a.currency}
+              </p>
+            )}
+            {a.status === 'PENDING' && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                {t('findADoctor.pendingConfirmation') || 'Waiting for doctor confirmation.'}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const MedicalProfile = () => {
   const { t } = useTranslation();
@@ -389,7 +1019,24 @@ const MedicalProfile = () => {
                   </span>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('findADoctor')}
+                className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+                  activeTab === 'findADoctor'
+                    ? 'border-red-600 text-red-600 dark:text-red-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                <Search className="w-4 h-4" />
+                <span>{t('findADoctor.tab') || 'Find a Doctor'}</span>
+              </button>
             </div>
+
+            {/* TAB 4: FIND A DOCTOR (public discovery, not Premium-gated) */}
+            {activeTab === 'findADoctor' && (
+              <FindADoctorSection />
+            )}
 
             {/* TAB 3: PATIENT PRESCRIPTIONS (READ-ONLY, ISSUED ONLY) */}
             {activeTab === 'prescriptions' && (

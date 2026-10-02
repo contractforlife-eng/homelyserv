@@ -115,10 +115,22 @@ export const normalizePlanProjection = (plan) => {
   return plan ? 'legacy_unknown' : null;
 };
 
-export const isManualPremiumTargetRole = (role) => {
-  const normalizedRole = String(role || '').trim().toUpperCase();
-  return normalizedRole === 'EMPLOYER' || normalizedRole === 'WORKER';
-};
+// Consumer account types that may hold Premium. Staff/internal roles
+// (ADMIN, SUPPORT, SUPPORT_HELPER) are intentionally NOT Premium subscribers
+// and must never become eligible by broadening this list.
+export const MANUAL_PREMIUM_TARGET_ROLES = Object.freeze([
+  'WORKER',
+  'EMPLOYER',
+  'DOCTOR',
+  'TEACHER',
+  'STUDENT',
+]);
+
+const MANUAL_PREMIUM_TARGET_ROLE_SET = new Set(MANUAL_PREMIUM_TARGET_ROLES);
+
+export const isManualPremiumTargetRole = (role) => (
+  MANUAL_PREMIUM_TARGET_ROLE_SET.has(String(role || '').trim().toUpperCase())
+);
 
 export const isActiveSubscriptionRow = (subscription, now = new Date()) => (
   subscription?.status === 'active'

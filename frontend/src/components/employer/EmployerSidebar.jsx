@@ -52,6 +52,7 @@ const EmployerSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t('employerSidebar.dashboard'), icon: Home, path: '/employer-dashboard' },
     { id: 'myFamily', label: t('employerSidebar.myFamily'), icon: Users, path: '/employer-family' },
+    { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
     { id: 'postJob', label: t('employerSidebar.postJob'), icon: PlusCircle, path: '/employer-post-job' },
     { id: 'myJobs', label: t('employerSidebar.myJobs'), icon: ClipboardList, path: '/employer-jobs' },
     { id: 'profile', label: t('employerSidebar.myProfile'), icon: User, path: '/employer-profile' },
@@ -61,7 +62,6 @@ const EmployerSidebar = ({
     { id: 'complaints', label: t('employerSidebar.complaints'), icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t('employerSidebar.payment'), icon: CreditCard, path: '/employer-payments' },
     { id: 'premium', label: t('employerSidebar.premium'), icon: Crown, path: '/subscription' },
-    { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
   ];
 
   const isActive = (path) => {

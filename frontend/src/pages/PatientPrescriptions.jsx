@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
-import { Pill, ArrowLeft, AlertCircle, Loader2, Printer, FileText } from 'lucide-react';
+import { Pill, ArrowLeft, AlertCircle, Loader2, Printer, FileText, Crown, ArrowRight } from 'lucide-react';
 
 const PatientPrescriptions = () => {
   const navigate = useNavigate();
@@ -17,18 +17,24 @@ const PatientPrescriptions = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isPremiumDenied, setIsPremiumDenied] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
 
   const loadPrescriptions = useCallback(async () => {
     try {
       setLoading(true);
       setErrorMessage('');
+      setIsPremiumDenied(false);
       const res = await api.get('/api/medical/prescriptions');
       setPrescriptions(Array.isArray(res.data?.prescriptions) ? res.data.prescriptions : []);
     } catch (err) {
-      setErrorMessage(
-        err.response?.data?.message || t('doctorPrescriptions.loadError') || 'Failed to load prescriptions.'
-      );
+      if (err.response?.status === 403 && err.response?.data?.code === 'PREMIUM_REQUIRED') {
+        setIsPremiumDenied(true);
+      } else {
+        setErrorMessage(
+          err.response?.data?.message || t('doctorPrescriptions.loadError') || 'Failed to load prescriptions.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -49,25 +55,55 @@ const PatientPrescriptions = () => {
       />
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
-        <button
-          onClick={() => {
-            if (selectedRecord) {
-              setSelectedRecord(null);
-            } else {
-              navigate(-1);
-            }
-          }}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-          <span>
-            {selectedRecord
-              ? t('medicalProfile.rxBackToList') || 'Back to Prescriptions'
-              : t('medicalProfile.rxBack') || 'Back'}
-          </span>
-        </button>
+        {!isPremiumDenied && (
+          <button
+            onClick={() => {
+              if (selectedRecord) {
+                setSelectedRecord(null);
+              } else {
+                navigate(-1);
+              }
+            }}
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+            <span>
+              {selectedRecord
+                ? t('medicalProfile.rxBackToList') || 'Back to Prescriptions'
+                : t('medicalProfile.rxBack') || 'Back'}
+            </span>
+          </button>
+        )}
 
-        {errorMessage && (
+        {/* NON-PREMIUM PAYWALL STATE */}
+        {!loading && isPremiumDenied && (
+          <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200 dark:border-amber-900/50 rounded-2xl p-8 sm:p-12 text-center space-y-6">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
+              <Crown className="w-8 h-8" />
+            </div>
+            <div className="max-w-md mx-auto space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                {t('medicalProfile.premiumRequiredTitle') || 'Premium Feature'}
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {t('medicalProfile.premiumRequiredDesc') ||
+                  'My Medical Profile is exclusively available to HomelyServ Premium members. Upgrade your account to maintain a secure personal health profile.'}
+              </p>
+            </div>
+            <div>
+              <button
+                onClick={() => navigate('/subscription')}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 transition-all cursor-pointer"
+              >
+                <Crown className="w-4 h-4" />
+                <span>{t('medicalProfile.upgradeToPremium') || 'Upgrade to Premium'}</span>
+                <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {errorMessage && !isPremiumDenied && (
           <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
             <p className="text-sm text-rose-700 dark:text-rose-300">{errorMessage}</p>

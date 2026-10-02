@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import DoctorAppointment from '../models/DoctorAppointment.js';
 import DoctorConsultationRecord from '../models/DoctorConsultationRecord.js';
 import PatientMedicalProfile from '../models/PatientMedicalProfile.js';
+import prisma from '../lib/prisma.js';
 import doctorsRouter from './doctors.js';
 import medicalRouter from './medical.js';
 
@@ -22,6 +23,18 @@ const WORKER_ROLE_ID = '507f1f77bcf86cd799439075';
 const EMPLOYER_ROLE_ID = '507f1f77bcf86cd799439076';
 const TEACHER_ROLE_ID = '507f1f77bcf86cd799439077';
 const STUDENT_ROLE_ID = '507f1f77bcf86cd799439078';
+
+// Mock active subscription for PATIENT_A_ID and PATIENT_B_ID by default
+const premiumPatientIds = new Set([PATIENT_A_ID, PATIENT_B_ID]);
+prisma.subscription = {
+  findMany: async ({ where } = {}) => {
+    const ids = where?.userId?.in || [];
+    return ids.filter((id) => premiumPatientIds.has(String(id))).map((userId) => ({ userId }));
+  }
+};
+prisma.manualPremiumGrant = {
+  findMany: async () => []
+};
 
 const APPT_CONFIRMED_ID = '507f1f77bcf86cd799439080';
 const APPT_COMPLETED_ID = '507f1f77bcf86cd799439081';
@@ -721,5 +734,23 @@ test('PHASE 8: Doctor Consultation Records Suite', async (t) => {
     assert.equal(rec.prescriptions, undefined);
     assert.equal(rec.drugName, undefined);
     assert.equal(rec.dosage, undefined);
+  });
+
+  await t.test('36. Non-premium patient cannot list consultations (403 PREMIUM_REQUIRED)', async () => {
+    const res = await req('/api/medical/consultations', {
+      headers: authHeader({ userId: WORKER_ROLE_ID, role: 'WORKER' })
+    });
+    assert.equal(res.status, 403);
+    assert.equal(res.body.code, 'PREMIUM_REQUIRED');
+    assert.equal(res.body.message, 'Doctor Consultations are a Premium-only feature.');
+  });
+
+  await t.test('37. Non-premium patient cannot view consultation detail (403 PREMIUM_REQUIRED)', async () => {
+    const res = await req(`/api/medical/consultations/${createdDraftId}`, {
+      headers: authHeader({ userId: WORKER_ROLE_ID, role: 'WORKER' })
+    });
+    assert.equal(res.status, 403);
+    assert.equal(res.body.code, 'PREMIUM_REQUIRED');
+    assert.equal(res.body.message, 'Doctor Consultations are a Premium-only feature.');
   });
 });

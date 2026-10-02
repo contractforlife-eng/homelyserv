@@ -17,98 +17,32 @@ import {
   isIntentionalWorkerSearch
 } from '../services/employerSearchPolicy.js';
 import { getPublicVerification } from '../services/profileVerificationService.js';
-import DoctorProfile from '../models/DoctorProfile.js';
-import DoctorClinic from '../models/DoctorClinic.js';
+// Doctor card construction now lives in the shared service, so this router and
+// the patient-facing Doctor Search expose the SAME fields and the SAME
+// isPublished / searchVisibility opt-in gate. Behaviour here is unchanged.
+import {
+  DOCTOR_CARD_FIELDS,
+  buildDoctorCard,
+  attachDoctorCards,
+  escapeRegExp
+} from '../services/doctorSearchService.js';
 
 const router = express.Router();
 
 // ============================================================
 // DOCTOR RESULTS (HomelyServ Doctor search)
-// Doctors are already part of the search role set. This helper attaches
-// the AUTHORITATIVE DoctorProfile card data (specialty, professional
-// title, biography, examinationFee, consultationFee) plus the primary
-// active DoctorClinic — exactly the same sources the Doctor CMS
-// "My HomelyServ Profile" and "Services & Fees" pages read.
-//
-// Rules:
-//  - Two batched queries total (no N+1), resolved only for DOCTOR results.
-//  - Nothing existing is overwritten: worker fields, search filters,
-//    sorting, contact-unlocking and Premium ranking are untouched.
-//  - No doctor data is exposed unless the doctor opted in through the
-//    EXISTING DoctorProfile visibility flags (isPublished / searchVisibility).
-//  - DoctorConsultationService prices are NEVER used here; only the
-//    DoctorProfile examination/consultation fees.
+// The Doctor card itself (DOCTOR_CARD_FIELDS, buildDoctorCard,
+// attachDoctorCards, escapeRegExp) now lives in
+// services/doctorSearchService.js so this router and the patient-facing
+// Doctor Search share ONE visibility rule. Behaviour here is unchanged:
+//   - Two batched queries total (no N+1), only for DOCTOR results.
+//   - Worker fields, search filters, sorting, contact-unlocking and
+//     Premium ranking are untouched.
+//   - A doctor is exposed only when the doctor opted in via the EXISTING
+//     DoctorProfile flags (isPublished / searchVisibility).
+//   - DoctorConsultationService prices are NEVER used; only the
+//     DoctorProfile examination/consultation fees.
 // ============================================================
-const DOCTOR_CARD_FIELDS =
-  'userId professionalTitle specialty additionalSpecialties subspecialty bio yearsOfExperience languages profileImage examinationFee consultationFee isPublished searchVisibility';
-
-const buildDoctorCard = (workerObj, doctorProfileByUserId, primaryClinicByDoctorId) => {
-  const profile = doctorProfileByUserId.get(String(workerObj._id || workerObj.id));
-  if (!profile) return undefined;
-  if (!profile.isPublished && !profile.searchVisibility) return undefined;
-
-  const clinic = primaryClinicByDoctorId.get(String(profile.userId)) || null;
-
-  return {
-    fullName: workerObj.fullName || '',
-    profileImage: workerObj.profileImage || profile.profileImage || '',
-    professionalTitle: profile.professionalTitle || '',
-    specialty: profile.specialty || '',
-    additionalSpecialties: Array.isArray(profile.additionalSpecialties) ? profile.additionalSpecialties : [],
-    subspecialty: profile.subspecialty || '',
-    bio: profile.bio || '',
-    yearsOfExperience: profile.yearsOfExperience ?? null,
-    languages: Array.isArray(profile.languages) ? profile.languages : [],
-    // Authoritative doctor-owned fees (never service prices).
-    examinationFee: Number(profile.examinationFee) || 0,
-    consultationFee: Number(profile.consultationFee) || 0,
-    clinic: clinic
-      ? {
-        clinicName: clinic.clinicName || '',
-        addressLine: clinic.addressLine || '',
-        city: clinic.city || '',
-        countryCode: clinic.countryCode || '',
-        isPrimary: clinic.isPrimary === true
-      }
-      : null
-  };
-};
-
-const attachDoctorCards = async (resultList) => {
-  const doctorUserIds = resultList
-    .filter((worker) => worker.role === 'DOCTOR')
-    .map((worker) => String(worker._id || worker.id || ''))
-    .filter(Boolean);
-
-  if (doctorUserIds.length === 0) return;
-
-  const [doctorProfiles, doctorClinics] = await Promise.all([
-    DoctorProfile.find({ userId: { $in: doctorUserIds } })
-      .select(DOCTOR_CARD_FIELDS)
-      .lean(),
-    DoctorClinic.find({ doctorId: { $in: doctorUserIds }, isActive: true })
-      .select('doctorId clinicName addressLine city countryCode isPrimary')
-      .sort({ isPrimary: -1, createdAt: 1 })
-      .lean()
-  ]);
-
-  const doctorProfileByUserId = new Map(doctorProfiles.map((profile) => [String(profile.userId), profile]));
-  const primaryClinicByDoctorId = new Map();
-  doctorClinics.forEach((clinic) => {
-    const key = String(clinic.doctorId);
-    if (!primaryClinicByDoctorId.has(key)) primaryClinicByDoctorId.set(key, clinic);
-  });
-
-  resultList.forEach((workerObj) => {
-    const card = buildDoctorCard(workerObj, doctorProfileByUserId, primaryClinicByDoctorId);
-    if (card) workerObj.doctor = card;
-  });
-};
-
-const escapeRegExp = (string) => {
-  if (!string) return '';
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-};
 
 // ============================================================
 // Search Workers

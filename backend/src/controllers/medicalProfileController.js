@@ -415,6 +415,15 @@ export const deleteMyMedicalProfile = async (req, res) => {
  */
 export const getPatientConsultations = async (req, res) => {
   try {
+    const premium = await isUserPremium(req.userId);
+    if (!premium) {
+      return res.status(403).json({
+        success: false,
+        code: 'PREMIUM_REQUIRED',
+        message: 'Doctor Consultations are a Premium-only feature.'
+      });
+    }
+
     const patientId = req.userId;
     const DoctorConsultationRecord = (await import('../models/DoctorConsultationRecord.js')).default;
 
@@ -447,6 +456,15 @@ export const getPatientConsultations = async (req, res) => {
  */
 export const getPatientConsultationById = async (req, res) => {
   try {
+    const premium = await isUserPremium(req.userId);
+    if (!premium) {
+      return res.status(403).json({
+        success: false,
+        code: 'PREMIUM_REQUIRED',
+        message: 'Doctor Consultations are a Premium-only feature.'
+      });
+    }
+
     const patientId = req.userId;
     const { id } = req.params;
 
@@ -496,6 +514,15 @@ export const getPatientConsultationById = async (req, res) => {
  */
 export const getPatientPrescriptions = async (req, res) => {
   try {
+    const premium = await isUserPremium(req.userId);
+    if (!premium) {
+      return res.status(403).json({
+        success: false,
+        code: 'PREMIUM_REQUIRED',
+        message: 'My Prescriptions is a Premium-only feature.'
+      });
+    }
+
     const patientId = req.userId;
     const Prescription = (await import('../models/Prescription.js')).default;
 
@@ -527,6 +554,15 @@ export const getPatientPrescriptions = async (req, res) => {
  */
 export const getPatientPrescriptionById = async (req, res) => {
   try {
+    const premium = await isUserPremium(req.userId);
+    if (!premium) {
+      return res.status(403).json({
+        success: false,
+        code: 'PREMIUM_REQUIRED',
+        message: 'My Prescriptions is a Premium-only feature.'
+      });
+    }
+
     const patientId = req.userId;
     const { id } = req.params;
 

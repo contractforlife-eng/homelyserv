@@ -12,6 +12,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { isUserPremium } from '../utils/subscriptionService';
 import api from '../utils/api';
 import {
   User, Calendar, Users, Clock, Building2, FileText, Pill, Tag,
@@ -19,10 +21,15 @@ import {
   AlertCircle, CheckCircle2, Hourglass, Wallet
 } from 'lucide-react';
 
-const DoctorDashboard = () => {
+const DoctorDashboardContent = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore((state) => state.user);
+  const dashboard = useDashboard();
+  const userId = authUser?.id || authUser?._id;
+  const isPremium = (dashboard.premiumStatus?.known === true && dashboard.premiumStatus?.isPremium === true)
+    || (userId ? isUserPremium(userId) : false)
+    || authUser?.isPremium === true;
 
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -149,114 +156,118 @@ const DoctorDashboard = () => {
   ];
 
   return (
-    <DashboardLayout requiredRole="DOCTOR">
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-        <DashboardHeader title={t('doctorDashboard.headerTitle') || 'Doctor Dashboard'} />
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <DashboardHeader title={t('doctorDashboard.headerTitle') || 'Doctor Dashboard'} />
 
-        {/* Welcome Doctor Banner */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 text-white shadow-sm relative overflow-hidden">
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider mb-2">
-                <Sparkles size={14} />
-                {t('doctorDashboard.professionalPortalBadge') || 'Doctor Portal'}
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                {t('doctorDashboard.welcomeTitle', { name: authUser?.fullName || 'Doctor' }) || `Welcome, Dr. ${authUser?.fullName || ''}`}
-              </h1>
-              <p className="mt-1 text-red-100 text-sm max-w-xl">
-                {t('doctorDashboard.welcomeSubtitle') || 'Manage your medical specialty, credentials, and practice information. Complete your profile to get ready for consultations.'}
-              </p>
+      {/* Welcome Doctor Banner */}
+      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 text-white shadow-sm relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Sparkles size={14} />
+              {t('doctorDashboard.professionalPortalBadge') || 'Doctor Portal'}
             </div>
-
-            <Link
-              to="/doctor-profile"
-              className="inline-flex items-center justify-center gap-2 bg-white text-red-600 hover:bg-red-50 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm"
-            >
-              <User size={18} />
-              {t('doctorDashboard.manageProfileBtn') || 'Manage Profile'}
-              <ArrowRight size={16} className="rtl:rotate-180" />
-            </Link>
+            <h1 className={`text-2xl sm:text-3xl font-bold ${isPremium ? 'text-[#F5C542]' : ''}`}>
+              {t('doctorDashboard.welcomeTitle', { name: authUser?.fullName || 'Doctor' }) || `Welcome, Dr. ${authUser?.fullName || ''}`}
+            </h1>
+            <p className="mt-1 text-red-100 text-sm max-w-xl">
+              {t('doctorDashboard.welcomeSubtitle') || 'Manage your medical specialty, credentials, and practice information. Complete your profile to get ready for consultations.'}
+            </p>
           </div>
+
+          <Link
+            to="/doctor-profile"
+            className="inline-flex items-center justify-center gap-2 bg-white text-red-600 hover:bg-red-50 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm"
+          >
+            <User size={18} />
+            {t('doctorDashboard.manageProfileBtn') || 'Manage Profile'}
+            <ArrowRight size={16} className="rtl:rotate-180" />
+          </Link>
         </div>
+      </div>
 
-        {/* Real summary stats (backend-derived) */}
-        {loading ? (
-          <div className="py-10 flex flex-col items-center justify-center">
-            <Loader2 className="w-7 h-7 animate-spin text-red-600 mb-2" />
-            <p className="text-sm text-gray-500">{t('doctorDashboard.loadingSummary') || 'Loading your practice summary...'}</p>
-          </div>
-        ) : loadError ? (
-          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-rose-700 dark:text-rose-300">{loadError}</p>
-          </div>
-        ) : (
-          statCards.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {statCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={() => navigate(card.path)}
-                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm text-start hover:border-red-300 dark:hover:border-red-700 transition-colors"
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${card.color}`}>
-                      <Icon size={20} />
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{card.value}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.label}</p>
-                  </button>
-                );
-              })}
-            </div>
-          )
-        )}
-
-        {/* Module grid (all live modules) */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-              {t('doctorDashboard.practiceModulesTitle') || 'Clinical Practice Modules'}
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {moduleCards.map((card) => {
+      {/* Real summary stats (backend-derived) */}
+      {loading ? (
+        <div className="py-10 flex flex-col items-center justify-center">
+          <Loader2 className="w-7 h-7 animate-spin text-red-600 mb-2" />
+          <p className="text-sm text-gray-500">{t('doctorDashboard.loadingSummary') || 'Loading your practice summary...'}</p>
+        </div>
+      ) : loadError ? (
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-rose-700 dark:text-rose-300">{loadError}</p>
+        </div>
+      ) : (
+        statCards.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((card) => {
               const Icon = card.icon;
               return (
-                <Link
+                <button
                   key={card.id}
-                  to={card.path}
-                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm flex flex-col justify-between transition-colors hover:border-red-300 dark:hover:border-red-700 hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                  type="button"
+                  onClick={() => navigate(card.path)}
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm text-start hover:border-red-300 dark:hover:border-red-700 transition-colors"
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.color}`}>
-                        <Icon size={20} />
-                      </div>
-                      <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                        {t('doctorDashboard.moduleActive') || 'Active'}
-                      </span>
-                    </div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white text-base">{card.title}</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{card.desc}</p>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${card.color}`}>
+                    <Icon size={20} />
                   </div>
-
-                  <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs font-medium text-red-600 dark:text-red-400">
-                    <span>{t('doctorDashboard.openModuleBtn') || 'Open module'}</span>
-                    <ArrowRight size={14} className="rtl:rotate-180" />
-                  </div>
-                </Link>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{card.value}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.label}</p>
+                </button>
               );
             })}
           </div>
+        )
+      )}
+
+      {/* Module grid (all live modules) */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            {t('doctorDashboard.practiceModulesTitle') || 'Clinical Practice Modules'}
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {moduleCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Link
+                key={card.id}
+                to={card.path}
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm flex flex-col justify-between transition-colors hover:border-red-300 dark:hover:border-red-700 hover:bg-gray-50 dark:hover:bg-gray-700/40"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.color}`}>
+                      <Icon size={20} />
+                    </div>
+                    <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                      {t('doctorDashboard.moduleActive') || 'Active'}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-base">{card.title}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{card.desc}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs font-medium text-red-600 dark:text-red-400">
+                  <span>{t('doctorDashboard.openModuleBtn') || 'Open module'}</span>
+                  <ArrowRight size={14} className="rtl:rotate-180" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
+
+const DoctorDashboard = () => (
+  <DashboardLayout requiredRole="DOCTOR">
+    <DoctorDashboardContent />
+  </DashboardLayout>
+);
 
 export default DoctorDashboard;

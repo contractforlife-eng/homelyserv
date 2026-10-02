@@ -726,7 +726,7 @@ export const getAllUsers = async (req, res) => {
       users: users.map(user => {
         const userObj = sanitizeUserResponse(user.toObject());
         userObj.id = userObj._id;
-        userObj.isPremium = ['EMPLOYER', 'WORKER'].includes(userObj.role)
+        userObj.isPremium = ['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(userObj.role)
           && activePremiumIds.has(String(userObj.id));
         delete userObj._id;
         return userObj;
@@ -759,7 +759,7 @@ export const getUserById = async (req, res) => {
     const userData = sanitizeUserResponse(user.toObject());
     userData.id = userData._id;
     const activePremiumIds = await getActivePremiumUserIds([String(userData.id)]);
-    userData.isPremium = ['EMPLOYER', 'WORKER'].includes(userData.role)
+    userData.isPremium = ['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(userData.role)
       && activePremiumIds.has(String(userData.id));
     delete userData._id;
 

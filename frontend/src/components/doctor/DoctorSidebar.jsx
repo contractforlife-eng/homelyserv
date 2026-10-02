@@ -2,6 +2,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
+import { useDashboard } from '../layout/DashboardContext';
+import { isUserPremium } from '../../utils/subscriptionService';
 import { UserDisplayName } from '../users';
 import {
   Home,
@@ -175,7 +177,7 @@ const DoctorSidebar = ({
           id: 'premium',
           label: t('doctorNav.premium') || 'Premium',
           icon: Crown,
-          path: '/doctor-premium'
+          path: '/subscription'
         }
       ]
     }
@@ -192,6 +194,12 @@ const DoctorSidebar = ({
     group.items.some(isItemActive)
     || (group.headerPath && location.pathname === group.headerPath)
   );
+
+  const dashboard = useDashboard();
+  const userId = authUser?.id || authUser?._id;
+  const isPremium = (dashboard.premiumStatus?.known === true && dashboard.premiumStatus?.isPremium === true)
+    || (userId ? isUserPremium(userId) : false)
+    || authUser?.isPremium === true;
 
   return (
     <>
@@ -214,22 +222,46 @@ const DoctorSidebar = ({
         {/* Doctor Identity Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 font-bold overflow-hidden flex-shrink-0">
-              {authUser?.profileImage ? (
-                <img
-                  src={authUser.profileImage}
-                  alt={authUser.fullName || 'Doctor'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                (authUser?.fullName?.[0] || 'D').toUpperCase()
-              )}
-            </div>
+            {isPremium ? (
+              <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-[#F5C542] to-[#D4A820] shadow-[0_0_8px_rgba(245,197,66,0.70),0_0_16px_rgba(245,197,66,0.35)] flex-shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 font-bold">
+                  {authUser?.profileImage ? (
+                    <img
+                      src={authUser.profileImage}
+                      alt={authUser.fullName || 'Doctor'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    (authUser?.fullName?.[0] || 'D').toUpperCase()
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 font-bold overflow-hidden flex-shrink-0">
+                {authUser?.profileImage ? (
+                  <img
+                    src={authUser.profileImage}
+                    alt={authUser.fullName || 'Doctor'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  (authUser?.fullName?.[0] || 'D').toUpperCase()
+                )}
+              </div>
+            )}
             {!sidebarCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  <UserDisplayName user={authUser} />
-                </p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    <UserDisplayName user={authUser} isPremium={isPremium} />
+                  </p>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      {t('doctorNav.premium') || 'Premium'}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-red-600 font-medium truncate">
                   {t('doctorNav.clinicManagementSystem') || 'Clinic Management System'}
                 </p>

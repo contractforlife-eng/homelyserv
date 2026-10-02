@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Printer, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Printer, Loader2, AlertCircle, Crown, ArrowRight } from 'lucide-react';
 import api from '../utils/api';
 
 const PrintablePrescription = ({ role }) => {
@@ -16,11 +16,13 @@ const PrintablePrescription = ({ role }) => {
   const [prescription, setPrescription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isPremiumDenied, setIsPremiumDenied] = useState(false);
 
   const loadPrescription = useCallback(async () => {
     try {
       setLoading(true);
       setErrorMessage('');
+      setIsPremiumDenied(false);
       const url =
         role === 'doctor'
           ? `/api/doctors/patients/${patientId}/consultations/${consultationId}/prescriptions/${prescriptionId}`
@@ -28,7 +30,11 @@ const PrintablePrescription = ({ role }) => {
       const res = await api.get(url);
       setPrescription(res.data?.prescription || null);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || t('doctorPrescriptions.loadError') || 'Failed to load prescription.');
+      if (err.response?.status === 403 && err.response?.data?.code === 'PREMIUM_REQUIRED') {
+        setIsPremiumDenied(true);
+      } else {
+        setErrorMessage(err.response?.data?.message || t('doctorPrescriptions.loadError') || 'Failed to load prescription.');
+      }
     } finally {
       setLoading(false);
     }
@@ -94,7 +100,7 @@ const PrintablePrescription = ({ role }) => {
         </button>
         <button
           onClick={handlePrint}
-          disabled={loading || !prescription}
+          disabled={loading || !prescription || isPremiumDenied}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
         >
           <Printer className="w-4 h-4" />
@@ -109,14 +115,41 @@ const PrintablePrescription = ({ role }) => {
         </div>
       )}
 
-      {!loading && errorMessage && (
+      {!loading && isPremiumDenied && (
+        <div className="no-print max-w-3xl mx-auto mt-8 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200 rounded-2xl p-8 sm:p-12 text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-600 mx-auto flex items-center justify-center">
+            <Crown className="w-8 h-8" />
+          </div>
+          <div className="max-w-md mx-auto space-y-2">
+            <h2 className="text-2xl font-bold text-slate-900">
+              {t('medicalProfile.premiumRequiredTitle') || 'Premium Feature'}
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {t('medicalProfile.premiumRequiredDesc') ||
+                'My Medical Profile is exclusively available to HomelyServ Premium members. Upgrade your account to maintain a secure personal health profile.'}
+            </p>
+          </div>
+          <div>
+            <button
+              onClick={() => navigate('/subscription')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 transition-all cursor-pointer"
+            >
+              <Crown className="w-4 h-4" />
+              <span>{t('medicalProfile.upgradeToPremium') || 'Upgrade to Premium'}</span>
+              <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!loading && !isPremiumDenied && errorMessage && (
         <div className="no-print max-w-3xl mx-auto mt-8 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
           <p className="text-sm text-rose-700">{errorMessage}</p>
         </div>
       )}
 
-      {!loading && !errorMessage && prescription && (
+      {!loading && !isPremiumDenied && !errorMessage && prescription && (
         <div className="max-w-3xl mx-auto px-4 py-6">
           <div className="print-sheet bg-white rounded-2xl border border-slate-200 shadow-sm p-8 sm:p-12 space-y-8">
             {/* Branding Header */}

@@ -207,7 +207,7 @@ export const isStaffRole = (role) => {
  */
 export const isActivePremiumCustomer = (user, explicitPremium = undefined) => {
   const role = (user?.role || '').toUpperCase();
-  if (!['EMPLOYER', 'WORKER'].includes(role)) return false;
+  if (!['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(role)) return false;
 
   const premium = explicitPremium ?? user?.isPremium ?? user?.subscription?.isPremium;
   return premium === true;

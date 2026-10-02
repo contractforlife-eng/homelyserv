@@ -80,8 +80,9 @@ export const PAYMENT_CONFIG = {
     
     // Display-only subscription prices; backend/src/config/subscription.js is authoritative.
     premium: {
-      weekly: { employer: 100, worker: 75 },
-      monthly: { employer: 300, worker: 200 }
+      weekly: { employer: 100, worker: 75, doctor: 75 },
+      monthly: { employer: 300, worker: 200, doctor: 250 },
+      annual: { employer: 2700, worker: 1800, doctor: 1800 }
     },
     
     // Withdrawal fees
@@ -159,13 +160,19 @@ export const SUBSCRIPTION_PLANS = {
     id: 'weekly',
     durationDays: 7,
     currency: 'EGP',
-    prices: { EMPLOYER: 100, WORKER: 75 }
+    prices: { EMPLOYER: 100, WORKER: 75, DOCTOR: 75 }
   },
   monthly: {
     id: 'monthly',
     durationDays: 30,
     currency: 'EGP',
-    prices: { EMPLOYER: 300, WORKER: 200 }
+    prices: { EMPLOYER: 300, WORKER: 200, DOCTOR: 250 }
+  },
+  annual: {
+    id: 'annual',
+    durationDays: 365,
+    currency: 'EGP',
+    prices: { EMPLOYER: 2700, WORKER: 1800, DOCTOR: 1800 }
   }
 };
 

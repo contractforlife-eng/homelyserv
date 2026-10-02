@@ -9,6 +9,7 @@ import DoctorClinic from '../models/DoctorClinic.js';
 import DoctorAppointment from '../models/DoctorAppointment.js';
 import DoctorConsultationRecord from '../models/DoctorConsultationRecord.js';
 import Prescription from '../models/Prescription.js';
+import prisma from '../lib/prisma.js';
 import doctorsRouter from './doctors.js';
 import medicalRouter from './medical.js';
 
@@ -21,6 +22,18 @@ const PATIENT_A_ID = '507f1f77bcf86cd799439072';
 const PATIENT_B_ID = '507f1f77bcf86cd799439073';
 const WORKER_ROLE_ID = '507f1f77bcf86cd799439075';
 const EMPLOYER_ROLE_ID = '507f1f77bcf86cd799439076';
+
+// Mock active subscription for PATIENT_A_ID and PATIENT_B_ID by default
+const premiumPatientIds = new Set([PATIENT_A_ID, PATIENT_B_ID]);
+prisma.subscription = {
+  findMany: async ({ where } = {}) => {
+    const ids = where?.userId?.in || [];
+    return ids.filter((id) => premiumPatientIds.has(String(id))).map((userId) => ({ userId }));
+  }
+};
+prisma.manualPremiumGrant = {
+  findMany: async () => []
+};
 
 const APPT_SIGNED_A_ID = '507f1f77bcf86cd799439080';
 const APPT_DRAFT_A_ID = '507f1f77bcf86cd799439081';
@@ -709,5 +722,29 @@ test('PHASE 9: Doctor Prescriptions & Printing Suite', async (t) => {
     });
     assert.equal(issueRes.status, 400);
     assert.match(issueRes.body.message, /Add at least one medication item/);
+  });
+
+  await t.test('33. Non-premium patient cannot list prescriptions (403 PREMIUM_REQUIRED)', async () => {
+    const res = await req('/api/medical/prescriptions', {
+      headers: authHeader({ userId: WORKER_ROLE_ID, role: 'WORKER' })
+    });
+    assert.equal(res.status, 403);
+    assert.equal(res.body.code, 'PREMIUM_REQUIRED');
+    assert.equal(res.body.message, 'My Prescriptions is a Premium-only feature.');
+  });
+
+  await t.test('34. Non-premium patient cannot view prescription detail (403 PREMIUM_REQUIRED)', async () => {
+    const patientPrescriptions = Object.values(prescriptionsStore).filter(
+      (p) => String(p.patientId) === PATIENT_A_ID && p.status === 'ISSUED'
+    );
+    const target = patientPrescriptions[0];
+    assert.ok(target);
+
+    const res = await req(`/api/medical/prescriptions/${target._id}`, {
+      headers: authHeader({ userId: WORKER_ROLE_ID, role: 'WORKER' })
+    });
+    assert.equal(res.status, 403);
+    assert.equal(res.body.code, 'PREMIUM_REQUIRED');
+    assert.equal(res.body.message, 'My Prescriptions is a Premium-only feature.');
   });
 });

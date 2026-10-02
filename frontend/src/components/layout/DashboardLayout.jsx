@@ -80,7 +80,7 @@ const DashboardLayout = ({
       return;
     }
     const role = (authUser.role || '').toUpperCase();
-    if (role !== 'WORKER' && role !== 'EMPLOYER') {
+    if (!['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(role)) {
       setPremiumStatus(createUnknownPremiumState(authUser.id));
       return;
     }

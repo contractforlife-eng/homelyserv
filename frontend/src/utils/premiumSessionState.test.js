@@ -53,6 +53,14 @@ test('manual and paid canonical sources remain presentation-equivalent', () => {
   assert.equal(new Date(manual.subscription.endDate) > now, true);
 });
 
+test('canonical premium session state hydrates for DOCTOR, TEACHER, and STUDENT', () => {
+  for (const role of ['doctor', 'teacher', 'student']) {
+    const manual = applyCanonicalPremiumState(role, response(true, 'manual'));
+    assert.equal(manual.isPremium, true, `${role} session state must be isPremium: true`);
+    assert.equal(manual.subscription.source, 'manual');
+  }
+});
+
 test('localStorage is not consulted by session state', () => {
   assert.equal(createInitialPremiumState('worker', {}).known, false);
 });

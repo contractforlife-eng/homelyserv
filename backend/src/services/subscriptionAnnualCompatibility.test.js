@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveSubscriptionGrantSnapshot } from './subscriptionGrantService.js';
 import { reconcileSubscriptionRefund } from './subscriptionRefundReconciliationService.js';
-import { isManualPremiumTargetRole, normalizePlanProjection } from './premiumService.js';
+import { isManualPremiumTargetRole, normalizePlanProjection, MANUAL_PREMIUM_TARGET_ROLES } from './premiumService.js';
 import { getSubscriptionPlan } from '../config/subscription.js';
 import { getProviderCapability } from '../config/providerCapabilities.js';
 
@@ -71,12 +71,20 @@ test('annual projection is distinct while manual and legacy plans remain unchang
   assert.equal(normalizePlanProjection('historical_plan'), 'legacy_unknown');
 });
 
-test('manual Premium target roles are limited to Employer and Worker', () => {
-  assert.equal(isManualPremiumTargetRole('EMPLOYER'), true);
+test('manual Premium targets every consumer account type and excludes staff roles', () => {
+  for (const role of ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT']) {
+    assert.equal(isManualPremiumTargetRole(role), true, `${role} must be grantable`);
+  }
+  // Case and surrounding whitespace are tolerated, exactly as before.
   assert.equal(isManualPremiumTargetRole('worker'), true);
+  assert.equal(isManualPremiumTargetRole(' doctor '), true);
+  // Staff/internal accounts are never Premium subscribers.
   assert.equal(isManualPremiumTargetRole('ADMIN'), false);
   assert.equal(isManualPremiumTargetRole('SUPPORT'), false);
+  assert.equal(isManualPremiumTargetRole('SUPPORT_HELPER'), false);
   assert.equal(isManualPremiumTargetRole(''), false);
+  assert.equal(isManualPremiumTargetRole(undefined), false);
+  assert.deepEqual([...MANUAL_PREMIUM_TARGET_ROLES], ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT']);
 });
 
 test('the current automated/manual purchase authority recognizes annual', () => {

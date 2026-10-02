@@ -47,6 +47,7 @@ const MobileDrawerNav = () => {
   const workerItems = [
     { to: '/worker-dashboard', icon: Home, label: t('workerSidebar.dashboard') },
     { to: '/worker-jobs', icon: Search, label: t('workerSidebar.findJobs') },
+    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/worker-applications', icon: FileText, label: t('workerSidebar.myApplications') },
     { to: '/worker-profile', icon: User, label: t('workerSidebar.myProfile') },
     { to: '/worker/offers', icon: Star, label: t('workerSidebar.myOffers') },
@@ -54,7 +55,6 @@ const MobileDrawerNav = () => {
     { to: '/worker-complaints', icon: FileText, label: t('workerSidebar.complaints') },
     { to: '/worker-payment', icon: CreditCard, label: t('workerSidebar.payment') },
     { to: '/subscription', icon: Star, label: t('workerSidebar.premium') },
-    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/worker-settings', icon: Settings, label: t('workerSidebar.settings') },
     { to: '/help', icon: HelpCircle, label: t('workerSidebar.help') },
   ];
@@ -62,6 +62,7 @@ const MobileDrawerNav = () => {
   const employerItems = [
     { to: '/employer-dashboard', icon: Home, label: t('employerSidebar.dashboard') },
     { to: '/employer-post-job', icon: PlusCircle, label: t('employerSidebar.postJob') },
+    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/employer-jobs', icon: Briefcase, label: t('employerSidebar.myJobs') },
     { to: '/employer-profile', icon: User, label: t('employerSidebar.myProfile') },
     { to: '/my-hires', icon: Users, label: t('employerSidebar.myHires') },
@@ -70,7 +71,6 @@ const MobileDrawerNav = () => {
     { to: '/employer-complaints', icon: FileText, label: t('employerSidebar.complaints') },
     { to: '/employer-payments', icon: CreditCard, label: t('employerSidebar.payment') },
     { to: '/subscription', icon: Star, label: t('employerSidebar.premium') },
-    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/employer-settings', icon: Settings, label: t('employerSidebar.settings') },
     { to: '/help', icon: HelpCircle, label: t('employerSidebar.help') },
   ];

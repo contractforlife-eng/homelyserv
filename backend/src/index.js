@@ -45,6 +45,7 @@ import accountLinkRoutes from './routes/accountLink.js';
 import doctorRoutes from './routes/doctors.js';
 import doctorAccountsRoutes from './routes/doctorAccounts.js';
 import medicalRoutes from './routes/medical.js';
+import doctorSearchRoutes from './routes/doctorSearch.js';
 import { requireAdmin } from './middleware/auth.js';
 import { getHomelyMindIntegrationSecret } from './config/homelyMindIntegration.js';
 import { setIo } from './lib/socket.js';
@@ -394,6 +395,7 @@ app.use('/api/account-link', accountLinkRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/doctor-accounts', doctorAccountsRoutes);
 app.use('/api/medical', medicalRoutes);
+app.use('/api/doctor-search', doctorSearchRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers

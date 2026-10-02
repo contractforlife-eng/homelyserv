@@ -70,7 +70,6 @@ import DoctorCmsReports from './pages/DoctorCmsReports';
 import DoctorHomelyServ from './pages/DoctorHomelyServ';
 import DoctorHomelyServRequests from './pages/DoctorHomelyServRequests';
 import DoctorHomelyServProfile from './pages/DoctorHomelyServProfile';
-import DoctorPremium from './pages/DoctorPremium';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -744,15 +743,10 @@ function App() {
         }
       />
 
-      {/* Doctor Premium — dedicated page, reuses the existing subscription
-          architecture and server-authoritative Doctor price book. */}
+      {/* Doctor Premium — redirect legacy /doctor-premium to the single shared /subscription page */}
       <Route
         path="/doctor-premium"
-        element={
-          <ProtectedRoute requiredRole="DOCTOR">
-            <DoctorPremium />
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/subscription" replace />}
       />
 
       {/* ========== WORKER ROUTES ========== */}

@@ -48,7 +48,6 @@ const Subscription = () => {
 
   const { t } = useTranslation();
 
-  const [isEmployer, setIsEmployer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -73,7 +72,18 @@ const Subscription = () => {
   const paypalPollingRef = useRef(null);
   const paypalAttemptKeyRef = useRef(null);
 
-  const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
+  const rawRole = (authUser?.role || 'WORKER').toUpperCase();
+  const isDoctor = rawRole === 'DOCTOR';
+  const isEmployer = rawRole === 'EMPLOYER';
+  const isWorker = !isDoctor && !isEmployer;
+  const userRole = isDoctor ? 'DOCTOR' : isEmployer ? 'EMPLOYER' : 'WORKER';
+
+  const getRolePremiumTitle = () => {
+    if (isDoctor) return t('subscriptionPage.roles.doctorPremium', 'Doctor Premium');
+    if (isEmployer) return t('subscriptionPage.roles.employerPremium', 'Employer Premium');
+    return t('subscriptionPage.roles.workerPremium', 'Worker Premium');
+  };
+
   const selectedPlanQuote = subscriptionQuote?.plans?.[selectedPlan] || null;
   const price = selectedPlanQuote?.amount ?? null;
   const hasActivePremium = subscriptionStatus?.active === true;
@@ -161,10 +171,11 @@ const Subscription = () => {
     : paymentMethods.filter(({ id }) => (
       id !== PAYMENT_METHODS.VODAFONE_CASH && id !== PAYMENT_METHODS.INSTAPAY
     ));
-  const planVisiblePaymentMethods = (selectedPlan === 'annual'
-    ? visiblePaymentMethods.filter(({ id }) => id === PAYMENT_METHODS.PAYPAL || id === PAYMENT_METHODS.BANK_TRANSFER)
-    : visiblePaymentMethods
-  ).filter(({ id }) => id !== 'paymob');
+  // Payment methods depend only on the doctor/user's eligibility, never on the
+  // selected plan: Annual must offer the same methods (PayPal, Vodafone Cash,
+  // InstaPay, Bank Transfer) as Weekly and Monthly. Paymob stays excluded.
+  const planVisiblePaymentMethods = visiblePaymentMethods
+    .filter(({ id }) => id !== 'paymob');
 
   useEffect(() => {
     paypalAttemptKeyRef.current = null;
@@ -178,8 +189,6 @@ const Subscription = () => {
       return;
     }
 
-    const isEmployerRole = authUser.role === 'EMPLOYER';
-    setIsEmployer(isEmployerRole);
 
     const initializationKey = [
       authUser.id || authUser.email,
@@ -217,13 +226,12 @@ const Subscription = () => {
     try {
       if (!selectedPlanQuote) throw new Error('Subscription quote unavailable');
       const userId = authUser.id || authUser.email;
-      const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
-      
+      const defaultName = isDoctor ? 'Doctor' : isEmployer ? 'Employer' : 'Worker';
       const subscription = createSubscription(
         userId,
         authUser.email,
         userRole,
-        authUser.fullName || (isEmployer ? 'Employer' : 'Worker'),
+        authUser.fullName || defaultName,
         selectedPlan
       );
 
@@ -386,7 +394,7 @@ const Subscription = () => {
         city: 'Cairo',
         items: [
           {
-            name: isEmployer ? 'Employer Premium Subscription' : 'Worker Premium Subscription',
+            name: isDoctor ? 'Doctor Premium Subscription' : isEmployer ? 'Employer Premium Subscription' : 'Worker Premium Subscription',
             amount: price,
             quantity: 1
           }
@@ -549,6 +557,10 @@ const Subscription = () => {
   };
 
   const handleGoBack = () => {
+    if (isDoctor) {
+      navigate('/doctor-dashboard');
+      return;
+    }
     navigate(isEmployer ? '/employer-dashboard' : '/worker-dashboard');
   };
 
@@ -620,15 +632,17 @@ const Subscription = () => {
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-gray-800 dark:text-white text-lg">
-                      {isEmployer ? t('subscriptionPage.roles.employerPremium') : t('subscriptionPage.roles.workerPremium')}
+                      {getRolePremiumTitle()}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-300">{t('subscriptionPage.activeSubscription')}</p>
                   </div>
                   <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">{t('subscriptionPage.status.active')}</span>
                 </div>
-                {currentSubscription?.expiresAt && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-3">
-                    {t('subscriptionPage.status.expiresAt', { date: new Date(currentSubscription.expiresAt).toLocaleDateString() })}
+                {(currentSubscription?.expiresAt || currentSubscription?.endDate || subscriptionStatus?.expiresAt) && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                    {t('subscriptionPage.status.expiresAt', {
+                      date: new Date(currentSubscription?.expiresAt || currentSubscription?.endDate || subscriptionStatus?.expiresAt).toLocaleDateString()
+                    })}
                   </p>
                 )}
               </div>
@@ -652,7 +666,7 @@ const Subscription = () => {
                   {t('subscriptionPage.premiumFeatures')}
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
-                  {t('subscriptionPage.unlock')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">{t('subscriptionPage.premium')}</span> {t('subscriptionPage.features')}
+                  {t('subscriptionPage.unlock')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">{getRolePremiumTitle()}</span> {t('subscriptionPage.features')}
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                   {t('subscriptionPage.heroSubtitle')}
@@ -711,7 +725,12 @@ const Subscription = () => {
                     </div>
 
                     <div className="space-y-4">
-                      {(isEmployer ? t('subscriptionPage.pricing.employerFeatures', { returnObjects: true }) : t('subscriptionPage.pricing.workerFeatures', { returnObjects: true })).map((feature, index) => (
+                      {((isDoctor
+                        ? t('subscriptionPage.pricing.doctorFeatures', { returnObjects: true })
+                        : isEmployer
+                          ? t('subscriptionPage.pricing.employerFeatures', { returnObjects: true })
+                          : t('subscriptionPage.pricing.workerFeatures', { returnObjects: true })
+                      ) || []).map((feature, index) => (
                         <div key={index} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                           <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                             <CheckCircle size={14} className="text-white" />
@@ -726,13 +745,17 @@ const Subscription = () => {
                         <div className="flex items-center gap-2 text-green-700">
                           <CheckCircle size={18} />
                           <span className="font-semibold">{t('subscriptionPage.status.active')}</span>
-                          <span className="text-sm text-green-600">
-                            ({t('subscriptionPage.status.daysLeft', { days: subscriptionStatus.daysLeft })})
-                          </span>
+                          {subscriptionStatus.daysLeft != null && (
+                            <span className="text-sm text-green-600">
+                              ({t('subscriptionPage.status.daysLeft', { days: subscriptionStatus.daysLeft })})
+                            </span>
+                          )}
                         </div>
-                        {subscriptionStatus.expiresAt && (
+                        {(subscriptionStatus.expiresAt || currentSubscription?.endDate || currentSubscription?.expiresAt) && (
                           <p className="text-xs text-green-600 mt-1">
-                            {t('subscriptionPage.status.expiresAt', { date: new Date(subscriptionStatus.expiresAt).toLocaleDateString() })}
+                            {t('subscriptionPage.status.expiresAt', {
+                              date: new Date(subscriptionStatus.expiresAt || currentSubscription?.endDate || currentSubscription?.expiresAt).toLocaleDateString()
+                            })}
                           </p>
                         )}
                       </div>
