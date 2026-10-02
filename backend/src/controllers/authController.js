@@ -158,18 +158,17 @@ export const register = async (req, res) => {
 
     // ----------------------------------------------------------
     // PUBLIC SELF-REGISTRATION ROLE ALLOWLIST
-    // WORKER, EMPLOYER and DOCTOR may register themselves. DOCTOR is a
-    // first-class account role: it requires no additional field here, and its
-    // professional details are completed later through the existing Doctor
-    // Profile system (PUT /api/doctors/profile). Every other role — ADMIN,
-    // SUPPORT, SUPPORT_HELPER, TEACHER, STUDENT — stays closed: these are
-    // assigned by an administrator or another controlled flow, never chosen
-    // by the person signing up.
+    // WORKER, EMPLOYER, DOCTOR, TEACHER, and STUDENT may register themselves.
+    // DOCTOR, TEACHER, and STUDENT are first-class account roles: they require no
+    // additional worker fields here. Their professional / academic details are
+    // completed through their dedicated profile systems (PUT /api/doctors/profile,
+    // PUT /api/teachers/profile, PUT /api/students/profile). Administrative roles —
+    // ADMIN, SUPPORT, SUPPORT_HELPER — stay closed and are assigned by an administrator.
     // Canonical validation below applies only to new WORKER registrations.
-    // EMPLOYER and DOCTOR registrations skip those checks entirely.
+    // EMPLOYER, DOCTOR, TEACHER, and STUDENT registrations skip those checks entirely.
     // ----------------------------------------------------------
     const normalizedRole = (role || 'WORKER').toUpperCase();
-    if (!['WORKER', 'EMPLOYER', 'DOCTOR'].includes(normalizedRole)) {
+    if (!['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(normalizedRole)) {
       return res.status(400).json({ success: false, message: 'Please select a valid account role' });
     }
     if (normalizeEmail(email) === ROOT_ADMIN_EMAIL) {

@@ -21,7 +21,8 @@ import {
   Home,
   Sparkles,
   ChevronDown,
-  BookOpen
+  BookOpen,
+  GraduationCap
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
@@ -451,11 +452,11 @@ function Register() {
             {/* Role Selection */}
             <div className="mb-3 sm:mb-4">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('registerAs')}</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center min-h-[105px] ${
                     formData.role === 'WORKER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
@@ -468,7 +469,7 @@ function Register() {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'EMPLOYER' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center min-h-[105px] ${
                     formData.role === 'EMPLOYER'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
@@ -486,7 +487,7 @@ function Register() {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'DOCTOR' }))}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center h-full ${
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center min-h-[105px] ${
                     formData.role === 'DOCTOR'
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
                       : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
@@ -495,6 +496,36 @@ function Register() {
                   <Shield className="w-5 h-5 mb-1 shrink-0" />
                   <span className="text-xs sm:text-sm font-semibold">{t('doctorTitle')}</span>
                   <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('doctorDesc')}</span>
+                </button>
+                {/* Teacher — a first-class account role. Professional details
+                    are completed later through the Teacher Profile system. */}
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'TEACHER' }))}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'TEACHER'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <GraduationCap className="w-5 h-5 mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('teacherTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('teacherDesc')}</span>
+                </button>
+                {/* Student — a first-class account role. Academic details
+                    are completed later through the Student Profile system. */}
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'STUDENT' }))}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition-all duration-200 text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'STUDENT'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <BookOpen className="w-5 h-5 mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('studentTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('studentDesc')}</span>
                 </button>
               </div>
               {errors.role && (
