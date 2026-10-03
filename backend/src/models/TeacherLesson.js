@@ -68,6 +68,16 @@ const homeworkSchema = new mongoose.Schema(
     isCompleted: {
       type: Boolean,
       default: false
+    },
+    studentNote: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 1000
+    },
+    studentCompletedAt: {
+      type: Date,
+      default: null
     }
   },
   { _id: false }
@@ -148,12 +158,23 @@ const teacherLessonSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       index: true
+    },
+    sourceBookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'StudentLessonBooking',
+      default: null
     }
   },
   {
     timestamps: true,
     collection: 'teacher_lessons'
   }
+);
+
+// Unique sparse index for linking source booking (idempotency guard)
+teacherLessonSchema.index(
+  { sourceBookingId: 1 },
+  { sparse: true, unique: true, name: 'teacher_lesson_source_booking' }
 );
 
 // Primary list query index: active lessons for a teacher sorted by date and time

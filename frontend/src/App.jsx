@@ -63,8 +63,11 @@ import StudentProfile from './pages/StudentProfile';
 import StudentMyTeacher from './pages/StudentMyTeacher';
 import StudentFindTeacher from './pages/StudentFindTeacher';
 import StudentLessons from './pages/StudentLessons';
+import StudentMyBookings from './pages/StudentMyBookings';
 import StudentSchedule from './pages/StudentSchedule';
 import StudentProgress from './pages/StudentProgress';
+import StudentMessages from './pages/StudentMessages';
+import StudentHelp from './pages/StudentHelp';
 import DoctorSchedule from './pages/DoctorSchedule';
 import DoctorAppointments from './pages/DoctorAppointments';
 import DoctorPatients from './pages/DoctorPatients';
@@ -95,6 +98,7 @@ import DoctorHomelyServProfile from './pages/DoctorHomelyServProfile';
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
 import EmployerFamily from './pages/EmployerFamily';
+import ParentStudents from './pages/ParentStudents';
 import EmployerSearch from './pages/EmployerSearch';
 import EmployerPending from './pages/EmployerPending';
 import EmployerPast from './pages/EmployerPast';
@@ -176,6 +180,8 @@ const MessagesRedirect = () => {
       navigate('/doctor-dashboard', { replace: true });
     } else if (role === 'TEACHER') {
       navigate('/teacher-messages', { replace: true });
+    } else if (role === 'STUDENT') {
+      navigate('/student-messages', { replace: true });
     } else if (role === 'WORKER') {
       navigate('/worker-messages', { replace: true });
     } else if (role === 'EMPLOYER') {
@@ -273,12 +279,15 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-   const userRole = user.role?.toUpperCase();
+    const userRole = user.role?.toUpperCase();
+    const allowedRoles = Array.isArray(requiredRole)
+      ? requiredRole.map(r => r.toUpperCase())
+      : requiredRole ? [requiredRole.toUpperCase()] : null;
 
-    if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+    if (allowedRoles && !allowedRoles.includes(userRole)) {
       // Allow ADMIN to access SUPPORT and SUPPORT_HELPER routes
       if (
-        (requiredRole.toUpperCase() === 'SUPPORT' || requiredRole.toUpperCase() === 'SUPPORT_HELPER') &&
+        (allowedRoles.includes('SUPPORT') || allowedRoles.includes('SUPPORT_HELPER')) &&
         userRole === 'ADMIN'
       ) {
         return children;
@@ -462,7 +471,7 @@ function App() {
       <Route 
         path="/medical-profile" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'TEACHER', 'STUDENT']}>
             <MedicalProfile />
           </ProtectedRoute>
         } 
@@ -722,6 +731,14 @@ function App() {
         } 
       />
       <Route 
+        path="/student-bookings" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentMyBookings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/student-schedule" 
         element={
           <ProtectedRoute requiredRole="STUDENT">
@@ -742,6 +759,22 @@ function App() {
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentFindTeacher />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-messages" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentMessages />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-help" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentHelp />
           </ProtectedRoute>
         } 
       />
@@ -1003,6 +1036,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerFamily />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/parent-students" 
+        element={
+          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER']}>
+            <ParentStudents />
           </ProtectedRoute>
         } 
       />

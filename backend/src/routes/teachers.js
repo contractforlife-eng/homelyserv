@@ -30,6 +30,12 @@ import {
   deleteTeacherLesson
 } from '../controllers/teacherLessonController.js';
 import {
+  getTeacherBookings,
+  getTeacherBookingById,
+  acceptTeacherBooking,
+  rejectTeacherBooking
+} from '../controllers/teacherBookingController.js';
+import {
   getTeacherIncome,
   createTeacherIncome,
   updateTeacherIncome,
@@ -95,6 +101,12 @@ router.post('/lessons', requireTeacher, createTeacherLesson);
 router.put('/lessons/:id', requireTeacher, updateTeacherLesson);
 router.put('/lessons/:id/attendance', requireTeacher, updateLessonAttendance);
 router.delete('/lessons/:id', requireTeacher, deleteTeacherLesson);
+
+// Teacher lesson booking routes (Phase 6A, all scoped by requireTeacher and req.userId)
+router.get('/bookings', requireTeacher, getTeacherBookings);
+router.get('/bookings/:id', requireTeacher, getTeacherBookingById);
+router.post('/bookings/:id/accept', requireTeacher, acceptTeacherBooking);
+router.post('/bookings/:id/reject', requireTeacher, rejectTeacherBooking);
 
 // ============================================================
 // Teacher Accounts / Bookkeeping routes (Premium-only)

@@ -35,6 +35,7 @@ import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherGroup from '../models/TeacherGroup.js';
 import TeacherGroupEnrollment from '../models/TeacherGroupEnrollment.js';
 import User from '../models/User.js';
+import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -85,7 +86,10 @@ export const toStudentLessonDto = (lessonDoc, myStudentIdSet, teacherUserMap = n
         title: d.homework.title || '',
         description: d.homework.description || '',
         dueDate: d.homework.dueDate ? new Date(d.homework.dueDate).toISOString() : null,
-        isCompleted: Boolean(d.homework.isCompleted)
+        isCompleted: Boolean(d.homework.isCompleted),
+        studentNote: d.homework.studentNote || '',
+        studentCompletedAt: d.homework.studentCompletedAt ? new Date(d.homework.studentCompletedAt).toISOString() : null,
+        isStudentCompleted: Boolean(d.homework.studentCompletedAt)
       }
     : null;
 
@@ -342,8 +346,144 @@ export const getStudentLessonById = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/students/lessons/:id/homework
+ * Allows an authorized student to submit their homework answer/notes and/or
+ * toggle completion timestamp for a ONE_ON_ONE lesson.
+ */
+export const submitStudentHomework = async (req, res) => {
+  try {
+    const studentUserId = req.userId;
+    const { id } = req.params;
+    const { studentNote, isCompleted } = req.body || {};
+
+    if (!isValidObjectId(String(id || ''))) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    const { myStudentIds, myStudentIdSet } = await getStudentAuthorizedScope(studentUserId);
+    if (myStudentIds.length === 0) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    // Tenancy check: Find the lesson
+    const lesson = await TeacherLesson.findOne({
+      _id: id,
+      isActive: true
+    }).populate('groupId', 'name subject color');
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    // If lesson is a GROUP lesson, individual student submissions are forbidden
+    if (lesson.lessonType === 'GROUP') {
+      return res.status(400).json({
+        success: false,
+        message: 'Individual homework submission is not supported for group lessons'
+      });
+    }
+
+    // Must belong to this student
+    const isOwner = myStudentIds.some((sId) => String(sId) === String(lesson.studentId));
+    if (!isOwner) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    // Cannot submit for CANCELLED or NO_SHOW lessons
+    if (['CANCELLED', 'NO_SHOW'].includes(lesson.lessonStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot submit homework for a cancelled or no-show lesson'
+      });
+    }
+
+    // Verify homework exists on lesson
+    const hw = lesson.homework;
+    const hasHomework = hw && ((hw.title && hw.title.trim()) || (hw.description && hw.description.trim()));
+    if (!hasHomework) {
+      return res.status(400).json({
+        success: false,
+        message: 'No homework assigned for this lesson'
+      });
+    }
+
+    // Validate studentNote if provided
+    if (studentNote !== undefined && studentNote !== null) {
+      if (typeof studentNote !== 'string') {
+        return res.status(400).json({ success: false, message: 'Student note must be a string' });
+      }
+      if (studentNote.trim().length > 1000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Student note cannot exceed 1000 characters'
+        });
+      }
+      lesson.homework.studentNote = studentNote.trim();
+    }
+
+    // Validate isCompleted toggle if provided
+    if (isCompleted !== undefined && isCompleted !== null) {
+      if (typeof isCompleted !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: 'isCompleted must be a boolean'
+        });
+      }
+      if (isCompleted) {
+        if (!lesson.homework.studentCompletedAt) {
+          lesson.homework.studentCompletedAt = new Date();
+        }
+      } else {
+        lesson.homework.studentCompletedAt = null;
+      }
+    }
+
+    await lesson.save();
+
+    // Fire non-blocking teacher notification
+    try {
+      const studentUser = await User.findById(studentUserId).select('fullName');
+      const studentName = studentUser?.fullName || 'Student';
+      createNotification(String(lesson.teacherId), {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Homework Submitted',
+        message: `${studentName} updated homework for ${lesson.subject || 'Lesson'}.`,
+        link: '/teacher/lessons'
+      }).catch((notifErr) => {
+        console.warn('Non-blocking notification error on homework submission:', notifErr.message);
+      });
+    } catch (notifErr) {
+      console.warn('Non-blocking notification dispatch failed:', notifErr.message);
+    }
+
+    const teacherUser = await User.findById(lesson.teacherId).select('_id fullName profileImage');
+    const teacherUserMap = new Map();
+    if (teacherUser) teacherUserMap.set(String(teacherUser._id), teacherUser);
+
+    const groupMap = new Map();
+    if (lesson.groupId && typeof lesson.groupId === 'object') {
+      groupMap.set(String(lesson.groupId._id), lesson.groupId);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Homework updated successfully',
+      lesson: toStudentLessonDto(lesson, myStudentIdSet, teacherUserMap, groupMap)
+    });
+  } catch (error) {
+    console.error('Error submitting student homework:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error submitting homework',
+      error: error.message
+    });
+  }
+};
+
 export default {
   getStudentLessons,
   getStudentLessonById,
+  submitStudentHomework,
   toStudentLessonDto
 };

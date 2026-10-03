@@ -285,6 +285,10 @@ export const TEACHER_TRANSLATIONS = {
     teacherLessons: {
       headerTitle: 'Lessons',
       subtitle: 'Schedule and manage your individual and group lessons.',
+      tabs: {
+        allLessons: 'Scheduled Lessons',
+        bookingRequests: 'Booking Requests'
+      },
       createLessonBtn: 'Create Lesson',
       createLessonTitle: 'Schedule New Lesson',
       editLessonTitle: 'Edit Lesson',
@@ -362,6 +366,38 @@ export const TEACHER_TRANSLATIONS = {
         studentRequired: 'Please select a student for one-on-one lesson.',
         groupRequired: 'Please select a group for group lesson.'
       }
+    },
+    teacherBookings: {
+      headerTitle: 'Booking Requests',
+      loading: 'Loading booking requests...',
+      loadError: 'Failed to load booking requests.',
+      emptyTitle: 'No booking requests',
+      emptySubtitle: 'You do not have any pending or past student booking requests matching the filter.',
+      searchPlaceholder: 'Search requests by student or subject...',
+      filterAll: 'All Statuses',
+      statusPending: 'Pending Review',
+      statusConfirmed: 'Confirmed',
+      statusRejected: 'Rejected',
+      statusCancelled: 'Cancelled',
+      studentNote: 'Student Note',
+      yourResponse: 'Your Response',
+      rejectionReason: 'Rejection Reason',
+      acceptBtn: 'Accept',
+      rejectBtn: 'Reject',
+      confirmAcceptTitle: 'Confirm Booking Request',
+      acceptNotice: 'Accepting will confirm this booking slot for the student. Backend schedule conflicts will be rechecked.',
+      optionalNoteLabel: 'Note to Student (Optional)',
+      notePlaceholder: 'e.g. Looking forward to our session! Please prepare Chapter 3.',
+      cancelBtn: 'Cancel',
+      confirmAcceptBtn: 'Confirm Acceptance',
+      rejectModalTitle: 'Decline Booking Request',
+      rejectNotice: 'Please let the student know why you are unable to take this lesson request.',
+      reasonLabel: 'Reason for Rejection (Optional)',
+      reasonPlaceholder: 'e.g. Schedule conflict at that hour, please request another time.',
+      confirmRejectBtn: 'Decline Request',
+      acceptSuccess: 'Booking request confirmed successfully.',
+      rejectSuccess: 'Booking request declined.',
+      lessonScheduledNotice: 'Lesson Scheduled in Lessons'
     },
     teacherSchedule: {
       headerTitle: 'Teacher Schedule',
@@ -994,6 +1030,10 @@ export const TEACHER_TRANSLATIONS = {
     teacherLessons: {
       headerTitle: 'الدروس والحصص',
       subtitle: 'جدولة وإدارة الحصص الفردية والجماعية للطلاب.',
+      tabs: {
+        allLessons: 'الدروس المجدولة',
+        bookingRequests: 'طلبات الحجز'
+      },
       createLessonBtn: 'جدولة درس جديد',
       createLessonTitle: 'جدولة درس / حصة جديدة',
       editLessonTitle: 'تعديل بيانات الدرس',
@@ -1071,6 +1111,38 @@ export const TEACHER_TRANSLATIONS = {
         studentRequired: 'يرجى اختيار طالب للدرس الفردي.',
         groupRequired: 'يرجى اختيار مجموعة للدرس الجماعي.'
       }
+    },
+    teacherBookings: {
+      headerTitle: 'طلبات الحجز',
+      loading: 'جاري تحميل طلبات الحجز...',
+      loadError: 'فشل تحميل طلبات الحجز.',
+      emptyTitle: 'لا توجد طلبات حجز',
+      emptySubtitle: 'ليس لديك أي طلبات حجز معلقة أو سابقة مطابقة للفلتر المحدد.',
+      searchPlaceholder: 'البحث عن الطلبات بالاسم أو المادة الدراسية...',
+      filterAll: 'جميع الحالات',
+      statusPending: 'قيد المراجعة',
+      statusConfirmed: 'مؤكد',
+      statusRejected: 'مرفوض',
+      statusCancelled: 'ملغي',
+      studentNote: 'ملاحظة الطالب',
+      yourResponse: 'ردك',
+      rejectionReason: 'سبب الرفض',
+      acceptBtn: 'قبول',
+      rejectBtn: 'رفض',
+      confirmAcceptTitle: 'تأكيد طلب الحجز',
+      acceptNotice: 'القبول سيؤكد هذا الموعد للطالب. سيتم إعادة التحقق من تعارضات المواعيد في الخادم.',
+      optionalNoteLabel: 'ملاحظة للطالب (اختياري)',
+      notePlaceholder: 'مثال: مرحباً بك! يرجى تحضير الفصل الثالث للحصة.',
+      cancelBtn: 'إلغاء',
+      confirmAcceptBtn: 'تأكيد القبول',
+      rejectModalTitle: 'رفض طلب الحجز',
+      rejectNotice: 'يرجى توضيح سبب تعذر قبول هذا الطلب للطالب.',
+      reasonLabel: 'سبب الرفض (اختياري)',
+      reasonPlaceholder: 'مثال: وجود تعارض في هذا الوقت، يرجى طلب موعد آخر.',
+      confirmRejectBtn: 'رفض الطلب',
+      acceptSuccess: 'تم تأكيد طلب الحجز بنجاح.',
+      rejectSuccess: 'تم رفض طلب الحجز.',
+      lessonScheduledNotice: 'الحصة مجدولة في الدروس'
     },
     teacherSchedule: {
       headerTitle: 'جدول مواعيد المعلم',
@@ -1703,6 +1775,10 @@ export const TEACHER_TRANSLATIONS = {
     teacherLessons: {
       headerTitle: 'Cours et leçons',
       subtitle: 'Planifiez et gérez vos cours individuels et collectifs.',
+      tabs: {
+        allLessons: 'Cours planifiés',
+        bookingRequests: 'Demandes de réservation'
+      },
       createLessonBtn: 'Planifier un cours',
       createLessonTitle: 'Planifier un nouveau cours',
       editLessonTitle: 'Modifier le cours',
@@ -1780,6 +1856,38 @@ export const TEACHER_TRANSLATIONS = {
         studentRequired: 'Veuillez sélectionner un élève pour le cours individuel.',
         groupRequired: 'Veuillez sélectionner un groupe pour le cours collectif.'
       }
+    },
+    teacherBookings: {
+      headerTitle: 'Demandes de réservation',
+      loading: 'Chargement des demandes de réservation...',
+      loadError: 'Échec du chargement des demandes de réservation.',
+      emptyTitle: 'Aucune demande de réservation',
+      emptySubtitle: 'Vous n’avez aucune demande en attente ou passée correspondant au filtre.',
+      searchPlaceholder: 'Rechercher par élève ou matière...',
+      filterAll: 'Tous les statuts',
+      statusPending: 'En attente',
+      statusConfirmed: 'Confirmé',
+      statusRejected: 'Refusé',
+      statusCancelled: 'Annulé',
+      studentNote: 'Note de l’élève',
+      yourResponse: 'Votre réponse',
+      rejectionReason: 'Motif du refus',
+      acceptBtn: 'Accepter',
+      rejectBtn: 'Refuser',
+      confirmAcceptTitle: 'Confirmer la réservation',
+      acceptNotice: 'L’acceptation confirmera ce créneau pour l’élève. Les conflits d’horaires seront revérifiés côté serveur.',
+      optionalNoteLabel: 'Note pour l’élève (facultatif)',
+      notePlaceholder: 'ex. Hâte de commencer notre session ! Veuillez préparer le chapitre 3.',
+      cancelBtn: 'Annuler',
+      confirmAcceptBtn: 'Confirmer l’acceptation',
+      rejectModalTitle: 'Refuser la demande',
+      rejectNotice: 'Veuillez indiquer à l’élève pourquoi vous ne pouvez pas accepter ce cours.',
+      reasonLabel: 'Motif du refus (facultatif)',
+      reasonPlaceholder: 'ex. Conflit d’emploi du temps, merci de proposer un autre horaire.',
+      confirmRejectBtn: 'Refuser la demande',
+      acceptSuccess: 'Demande de réservation confirmée avec succès.',
+      rejectSuccess: 'Demande de réservation refusée.',
+      lessonScheduledNotice: 'Cours planifié dans la liste des cours'
     },
     teacherSchedule: {
       headerTitle: 'Emploi du temps enseignant',
@@ -2412,6 +2520,10 @@ export const TEACHER_TRANSLATIONS = {
     teacherLessons: {
       headerTitle: 'Уроки и занятия',
       subtitle: 'Планируйте и проводите индивидуальные и групповые уроки.',
+      tabs: {
+        allLessons: 'Запланированные уроки',
+        bookingRequests: 'Заявки на бронирование'
+      },
       createLessonBtn: 'Запланировать урок',
       createLessonTitle: 'Запланировать новый урок',
       editLessonTitle: 'Редактировать урок',
@@ -2489,6 +2601,38 @@ export const TEACHER_TRANSLATIONS = {
         studentRequired: 'Пожалуйста, выберите ученика для индивидуального занятия.',
         groupRequired: 'Пожалуйста, выберите группу для группового занятия.'
       }
+    },
+    teacherBookings: {
+      headerTitle: 'Заявки на бронирование',
+      loading: 'Загрузка заявок на уроки...',
+      loadError: 'Не удалось загрузить заявки на бронирование.',
+      emptyTitle: 'Заявок на бронирование нет',
+      emptySubtitle: 'У вас нет ожидающих или прошедших заявок на уроки, соответствующих фильтру.',
+      searchPlaceholder: 'Поиск по имени ученика или предмету...',
+      filterAll: 'Все статусы',
+      statusPending: 'На рассмотрении',
+      statusConfirmed: 'Подтверждено',
+      statusRejected: 'Отклонено',
+      statusCancelled: 'Отменено',
+      studentNote: 'Примечание ученика',
+      yourResponse: 'Ваш ответ',
+      rejectionReason: 'Причина отклонения',
+      acceptBtn: 'Принять',
+      rejectBtn: 'Отклонить',
+      confirmAcceptTitle: 'Подтвердить заявку на урок',
+      acceptNotice: 'Подтверждение закрепит это время за учеником. Расписание и возможные конфликты будут перепроверены на сервере.',
+      optionalNoteLabel: 'Сообщение для ученика (необязательно)',
+      notePlaceholder: 'например: Буду рад занятию! Пожалуйста, повторите главу 3.',
+      cancelBtn: 'Отмена',
+      confirmAcceptBtn: 'Подтвердить согласие',
+      rejectModalTitle: 'Отклонить заявку на урок',
+      rejectNotice: 'Пожалуйста, укажите ученику причину, по которой вы не можете провести урок.',
+      reasonLabel: 'Причина отклонения (необязательно)',
+      reasonPlaceholder: 'например: Не совпадает с моим расписанием, выберите другое время.',
+      confirmRejectBtn: 'Отклонить заявку',
+      acceptSuccess: 'Заявка на урок успешно подтверждена.',
+      rejectSuccess: 'Заявка на урок отклонена.',
+      lessonScheduledNotice: 'Урок запланирован в списке уроков'
     },
     teacherSchedule: {
       headerTitle: 'Расписание преподавателя',
@@ -3121,6 +3265,10 @@ export const TEACHER_TRANSLATIONS = {
     teacherLessons: {
       headerTitle: 'Dersler',
       subtitle: 'Birebir ve grup derslerinizi planlayın ve yönetin.',
+      tabs: {
+        allLessons: 'Planlanan Dersler',
+        bookingRequests: 'Ders Talepleri'
+      },
       createLessonBtn: 'Ders Planla',
       createLessonTitle: 'Yeni Ders Planla',
       editLessonTitle: 'Dersi Düzenle',
@@ -3198,6 +3346,38 @@ export const TEACHER_TRANSLATIONS = {
         studentRequired: 'Birebir ders için lütfen bir öğrenci seçin.',
         groupRequired: 'Grup dersi için lütfen bir grup seçin.'
       }
+    },
+    teacherBookings: {
+      headerTitle: 'Ders Talepleri',
+      loading: 'Ders talepleri yükleniyor...',
+      loadError: 'Ders talepleri yüklenemedi.',
+      emptyTitle: 'Ders talebi yok',
+      emptySubtitle: 'Filtreye uyan bekleyen veya geçmiş bir ders talebiniz bulunmuyor.',
+      searchPlaceholder: 'Öğrenci veya derse göre ara...',
+      filterAll: 'Tüm Durumlar',
+      statusPending: 'İnceleme Bekliyor',
+      statusConfirmed: 'Onaylandı',
+      statusRejected: 'Reddedildi',
+      statusCancelled: 'İptal Edildi',
+      studentNote: 'Öğrenci Notu',
+      yourResponse: 'Yanıtınız',
+      rejectionReason: 'Reddedilme Nedeni',
+      acceptBtn: 'Onayla',
+      rejectBtn: 'Reddet',
+      confirmAcceptTitle: 'Ders Talebini Onayla',
+      acceptNotice: 'Onaylamak bu ders saatini öğrenci için rezerve eder. Çakışmalar sunucuda yeniden kontrol edilir.',
+      optionalNoteLabel: 'Öğrenciye Not (İsteğe bağlı)',
+      notePlaceholder: 'örn. Dersimizi sabırsızlıkla bekliyorum! Lütfen 3. bölüme hazırlanın.',
+      cancelBtn: 'İptal',
+      confirmAcceptBtn: 'Onayı Kesinleştir',
+      rejectModalTitle: 'Ders Talebini Reddet',
+      rejectNotice: 'Lütfen öğrenciye bu dersi neden kabul edemediğinizi belirtin.',
+      reasonLabel: 'Reddedilme Nedeni (İsteğe bağlı)',
+      reasonPlaceholder: 'örn. Belirtilen saatte başka bir programım var, lütfen başka bir saat seçin.',
+      confirmRejectBtn: 'Talebi Reddet',
+      acceptSuccess: 'Ders talebi başarıyla onaylandı.',
+      rejectSuccess: 'Ders talebi reddedildi.',
+      lessonScheduledNotice: 'Ders planlandı ve dersler listesine eklendi'
     },
     teacherSchedule: {
       headerTitle: 'Öğretmen Ders Programı',
@@ -3830,6 +4010,10 @@ export const TEACHER_TRANSLATIONS = {
     teacherLessons: {
       headerTitle: 'Unterrichtsstunden',
       subtitle: 'Planen und verwalten Sie Ihre Einzel- und Gruppenunterrichte.',
+      tabs: {
+        allLessons: 'Geplante Stunden',
+        bookingRequests: 'Buchungsanfragen'
+      },
       createLessonBtn: 'Stunde planen',
       createLessonTitle: 'Neue Stunde planen',
       editLessonTitle: 'Stunde bearbeiten',
@@ -3907,6 +4091,38 @@ export const TEACHER_TRANSLATIONS = {
         studentRequired: 'Bitte wählen Sie einen Schüler für den Einzelunterricht aus.',
         groupRequired: 'Bitte wählen Sie eine Gruppe für den Gruppenunterricht aus.'
       }
+    },
+    teacherBookings: {
+      headerTitle: 'Buchungsanfragen',
+      loading: 'Buchungsanfragen werden geladen...',
+      loadError: 'Buchungsanfragen konnten nicht geladen werden.',
+      emptyTitle: 'Keine Buchungsanfragen',
+      emptySubtitle: 'Sie haben keine ausstehenden oder vergangenen Buchungsanfragen, die dem Filter entsprechen.',
+      searchPlaceholder: 'Nach Schüler oder Fach suchen...',
+      filterAll: 'Alle Status',
+      statusPending: 'Wartet auf Prüfung',
+      statusConfirmed: 'Bestätigt',
+      statusRejected: 'Abgelehnt',
+      statusCancelled: 'Storniert',
+      studentNote: 'Notiz des Schülers',
+      yourResponse: 'Ihre Antwort',
+      rejectionReason: 'Ablehnungsgrund',
+      acceptBtn: 'Annehmen',
+      rejectBtn: 'Ablehnen',
+      confirmAcceptTitle: 'Buchungsanfrage bestätigen',
+      acceptNotice: 'Durch die Annahme wird dieses Zeitfenster für den Schüler reserviert. Terminkonflikte werden serverseitig erneut überprüft.',
+      optionalNoteLabel: 'Notiz an den Schüler (Optional)',
+      notePlaceholder: 'z.B. Ich freue mich auf unsere Stunde! Bitte bereiten Sie Kapitel 3 vor.',
+      cancelBtn: 'Abbrechen',
+      confirmAcceptBtn: 'Annahme bestätigen',
+      rejectModalTitle: 'Buchungsanfrage ablehnen',
+      rejectNotice: 'Bitte teilen Sie dem Schüler mit, warum Sie diese Stunde nicht übernehmen können.',
+      reasonLabel: 'Ablehnungsgrund (Optional)',
+      reasonPlaceholder: 'z.B. Terminkonflikt zu dieser Zeit, bitte wählen Sie einen anderen Termin.',
+      confirmRejectBtn: 'Anfrage ablehnen',
+      acceptSuccess: 'Buchungsanfrage erfolgreich bestätigt.',
+      rejectSuccess: 'Buchungsanfrage abgelehnt.',
+      lessonScheduledNotice: 'Stunde geplant und in Unterrichtsstunden eingetragen'
     },
     teacherSchedule: {
       headerTitle: 'Lehrer-Stundenplan',

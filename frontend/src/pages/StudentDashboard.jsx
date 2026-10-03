@@ -25,7 +25,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Search
+  Search,
+  Clock,
+  Clock3,
+  CalendarCheck,
+  FileCheck,
+  Award,
+  Users
 } from 'lucide-react';
 
 const StudentDashboardContent = () => {
@@ -35,27 +41,56 @@ const StudentDashboardContent = () => {
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [summary, setSummary] = useState(null);
 
-  const loadProfile = useCallback(async () => {
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/students/profile');
-      if (res.data?.success && res.data?.profile) {
-        setProfile(res.data.profile);
+      const [profileRes, summaryRes] = await Promise.all([
+        api.get('/api/students/profile').catch((err) => {
+          console.error('Failed to load student profile for dashboard:', err);
+          return { data: { success: false } };
+        }),
+        api.get('/api/students/dashboard/summary').catch((err) => {
+          console.error('Failed to load student dashboard summary:', err);
+          return { data: { success: false } };
+        })
+      ]);
+
+      if (profileRes.data?.success && profileRes.data?.profile) {
+        setProfile(profileRes.data.profile);
+      }
+      if (summaryRes.data?.success && summaryRes.data?.data) {
+        setSummary(summaryRes.data.data);
       }
     } catch (err) {
-      console.error('Failed to load student profile for dashboard:', err);
+      console.error('Failed to load student dashboard data:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const displayName = authUser?.fullName || authUser?.email?.split('@')[0] || 'Student';
   const isProfileComplete = profile?.isProfileComplete ?? false;
+
+  // Format dates
+  const formatLessonDate = (isoString) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return isoString;
+    }
+  };
 
   // Module items
   const modules = [
@@ -96,6 +131,15 @@ const StudentDashboardContent = () => {
       badge: t('studentDashboard.moduleActive') || 'Active'
     },
     {
+      id: 'bookings',
+      title: t('studentNav.bookings') || 'My Bookings',
+      description: t('studentDashboard.moduleBookingsDesc') || 'Track your lesson booking requests with connected teachers.',
+      icon: Calendar,
+      path: '/student-bookings',
+      active: true,
+      badge: t('studentDashboard.moduleActive') || 'Active'
+    },
+    {
       id: 'schedule',
       title: t('studentNav.schedule') || 'Schedule',
       description: t('studentDashboard.moduleScheduleDesc') || 'Keep track of your timetable, weekly lesson hours, and upcoming classes.',
@@ -128,15 +172,15 @@ const StudentDashboardContent = () => {
       description: t('studentDashboard.moduleMedicalDesc') || 'Manage your personal medical information and consultation records.',
       icon: HeartPulse,
       path: '/medical-profile',
-      active: false,
-      badge: t('studentDashboard.comingSoonBadge') || 'Coming Soon'
+      active: true,
+      badge: t('studentDashboard.moduleActive') || 'Active'
     },
     {
       id: 'help',
       title: t('studentNav.help') || 'Help',
       description: t('studentDashboard.moduleHelpDesc') || 'Platform guides, FAQs, and support resources.',
       icon: HelpCircle,
-      path: '/help',
+      path: '/student-help',
       active: true,
       badge: t('studentDashboard.moduleActive') || 'Active'
     },
@@ -188,6 +232,215 @@ const StudentDashboardContent = () => {
           </div>
         </div>
       </div>
+
+      {/* Pending Bookings Alert Banner */}
+      {!loading && summary?.pendingBookingsCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 transition shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0">
+              <Clock3 size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-950 dark:text-amber-200">
+                {t('studentDashboard.pendingBookingsBanner', {
+                  count: summary.pendingBookingsCount,
+                  defaultValue: `You have ${summary.pendingBookingsCount} pending booking request awaiting teacher response.`
+                })}
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                {t('studentDashboard.moduleBookingsDesc') || 'Track your lesson booking requests with connected teachers.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/student-bookings"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs sm:text-sm shrink-0 transition-colors shadow-sm"
+          >
+            <span>{t('studentDashboard.viewBookingsBtn') || 'Review Requests'}</span>
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      )}
+
+      {/* Operational 2-Column Section: Next Lesson & Academic Snapshot */}
+      {!loading && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Next Upcoming Lesson Card (Spans 2 cols on lg) */}
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Calendar size={18} className="text-red-600" />
+                  <span>{t('studentDashboard.nextLessonTitle') || 'Next Upcoming Lesson'}</span>
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/student-schedule"
+                    className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>{t('studentDashboard.viewScheduleBtn') || 'View Schedule'}</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
+
+              {summary?.nextLesson ? (
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base font-bold text-gray-900 dark:text-white">
+                        {summary.nextLesson.subject}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
+                        {summary.nextLesson.lessonType === 'GROUP'
+                          ? (t('studentLessons.group') || 'Group')
+                          : (t('studentLessons.oneOnOne') || '1-on-1')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300 flex-wrap">
+                      <span className="flex items-center gap-1 font-medium text-gray-900 dark:text-gray-200">
+                        <Clock size={14} className="text-red-600" />
+                        {summary.nextLesson.startTime} - {summary.nextLesson.endTime}
+                      </span>
+                      <span>•</span>
+                      <span>{formatLessonDate(summary.nextLesson.date)}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <User size={13} className="text-gray-400" />
+                        {summary.nextLesson.teacher?.name}
+                      </span>
+                    </div>
+
+                    {summary.nextLesson.homework && (
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium pt-1">
+                        📝 {summary.nextLesson.homework.title}
+                      </p>
+                    )}
+                  </div>
+
+                  <Link
+                    to="/student-lessons"
+                    className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shrink-0 transition-colors shadow-sm"
+                  >
+                    {t('studentLessons.viewDetails') || 'View Details'}
+                  </Link>
+                </div>
+              ) : (
+                <div className="py-8 text-center bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                  <Calendar size={28} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {t('studentDashboard.noUpcomingLesson') || 'No upcoming lessons scheduled'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-sm mx-auto">
+                    {t('studentDashboard.noUpcomingLessonHint') || 'Request a lesson booking or view your connected teachers.'}
+                  </p>
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <Link
+                      to="/student-find-teacher"
+                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition"
+                    >
+                      {t('studentNav.findTeacher') || 'Find a Teacher'}
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Connected Teachers strip */}
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs text-gray-500">
+              <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                <GraduationCap size={15} className="text-gray-400" />
+                {t('studentDashboard.activeTeachersTitle') || 'My Connected Teachers'}:{' '}
+                <span className="font-bold text-gray-900 dark:text-white">
+                  {summary?.activeTeachersCount || 0}
+                </span>
+              </span>
+              <Link
+                to="/student-teacher"
+                className="font-semibold text-red-600 dark:text-red-400 hover:underline"
+              >
+                {t('studentDashboard.openBtn') || 'View Teachers'} →
+              </Link>
+            </div>
+          </div>
+
+          {/* Academic Snapshot Card (1 col on lg) */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <TrendingUp size={18} className="text-teal-600" />
+                  <span>{t('studentDashboard.academicSnapshotTitle') || 'Academic Snapshot'}</span>
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                {/* Attendance Rate */}
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
+                      <CalendarCheck size={16} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      {t('studentDashboard.attendanceRateLabel') || 'Attendance Rate'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {summary?.stats?.attendancePercentage !== null && summary?.stats?.attendancePercentage !== undefined
+                      ? `${summary.stats.attendancePercentage}%`
+                      : '—'}
+                  </span>
+                </div>
+
+                {/* Homework Completion */}
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                      <FileCheck size={16} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      {t('studentDashboard.homeworkRateLabel') || 'Homework Completion'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {summary?.stats?.homeworkPercentage !== null && summary?.stats?.homeworkPercentage !== undefined
+                      ? `${summary.stats.homeworkPercentage}%`
+                      : '—'}
+                  </span>
+                </div>
+
+                {/* Average Grade */}
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
+                      <Award size={16} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      {t('studentDashboard.averageScoreLabel') || 'Average Score'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {summary?.stats?.averagePercentage !== null && summary?.stats?.averagePercentage !== undefined
+                      ? `${summary.stats.averagePercentage}%`
+                      : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-3 border-t border-gray-100 dark:border-gray-700/60">
+              <Link
+                to="/student-progress"
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-semibold transition"
+              >
+                <span>{t('studentDashboard.checkProgressBtn') || 'View Full Progress'}</span>
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Academic Overview Statistics Cards */}
       <div className="space-y-3">

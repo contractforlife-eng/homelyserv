@@ -777,6 +777,23 @@ const StudentProgress = () => {
                             {t('studentProgress.homeworkDueDate', 'Due Date')}: {formatDate(item.homework.dueDate)}
                           </p>
                         )}
+
+                        {/* Student Submission Feedback */}
+                        {item.homework.studentNote && (
+                          <div className="mt-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs">
+                            <span className="font-semibold text-slate-600 dark:text-slate-300 block text-[11px] mb-0.5">
+                              {t('studentLessons.studentNoteLabel', 'My Submission')}:
+                            </span>
+                            <p className="text-slate-700 dark:text-slate-300 italic whitespace-pre-wrap">
+                              "{item.homework.studentNote}"
+                            </p>
+                            {item.homework.studentCompletedAt && (
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
+                                {t('studentLessons.studentSubmittedAt', 'Submitted')}: {formatDate(item.homework.studentCompletedAt)}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                 </div>

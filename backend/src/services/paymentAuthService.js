@@ -2,6 +2,8 @@ import prisma from '../lib/prisma.js';
 import { isUserPremium } from './premiumService.js';
 import { hasValidDoctorPatientRelationship } from './doctorPatientAccessService.js';
 
+import { hasAcceptedStudentFriendship } from './studentClassmateService.js';
+
 const CUSTOMER_ROLES = new Set(['EMPLOYER', 'WORKER']);
 const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
 
@@ -13,10 +15,10 @@ const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
 const DOCTOR_STAFF_ROLES = new Set(['ADMIN', 'SUPPORT', 'SUPPORT_HELPER']);
 
 // Platform professionals a Doctor may contact for platform/support matters.
-// TEACHER and STUDENT receive EXACTLY the same semantics as DOCTOR below; this
+// TEACHER receives EXACTLY the same semantics as DOCTOR below; this
 // set only widens which professional roles take that branch. It is not a
 // customer, staff, or payment role.
-const PROFESSIONAL_USER_ROLES = new Set(['DOCTOR', 'TEACHER', 'STUDENT']);
+const PROFESSIONAL_USER_ROLES = new Set(['DOCTOR', 'TEACHER']);
 
 const normalizeRole = (role) => String(role || '').trim().toUpperCase();
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
@@ -155,6 +157,25 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
     }
     const hasRelationship = await hasValidDoctorPatientRelationship(senderId, patientParty.userId);
     return { required: false, allowed: hasRelationship };
+  }
+
+  if (role === 'STUDENT') {
+    const peerParty = await resolveUserParty(recipientId, db);
+    if (!peerParty) return { required: true, allowed: false };
+
+    // Student -> Staff (ADMIN, SUPPORT, SUPPORT_HELPER) is always allowed
+    if (DOCTOR_STAFF_ROLES.has(peerParty.role)) {
+      return { required: false, allowed: true };
+    }
+
+    // Student -> Student requires ACCEPTED StudentFriendship
+    if (peerParty.role === 'STUDENT') {
+      const allowed = await hasAcceptedStudentFriendship(senderId, peerParty.userId);
+      return { required: true, allowed };
+    }
+
+    // Student -> Worker, Employer, Doctor, etc. is denied
+    return { required: true, allowed: false };
   }
 
   if (STAFF_ROLES.has(role) || !CUSTOMER_ROLES.has(role)) {

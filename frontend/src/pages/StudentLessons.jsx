@@ -6,6 +6,7 @@
 // ============================================================
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
@@ -26,7 +27,10 @@ import {
   Filter,
   Eye,
   CheckSquare,
-  Sparkles
+  Sparkles,
+  Send,
+  Check,
+  Edit3
 } from 'lucide-react';
 
 const StudentLessons = () => {
@@ -42,8 +46,59 @@ const StudentLessons = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [teacherFilter, setTeacherFilter] = useState('ALL');
 
-  // Selected lesson for read-only modal
+  // Selected lesson for details modal
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [hwStudentNote, setHwStudentNote] = useState('');
+  const [hwIsCompleted, setHwIsCompleted] = useState(false);
+  const [hwSubmitting, setHwSubmitting] = useState(false);
+  const [hwError, setHwError] = useState('');
+  const [hwSuccess, setHwSuccess] = useState('');
+
+  // Sync modal state when selectedLesson changes
+  useEffect(() => {
+    if (selectedLesson?.homework) {
+      setHwStudentNote(selectedLesson.homework.studentNote || '');
+      setHwIsCompleted(Boolean(selectedLesson.homework.studentCompletedAt || selectedLesson.homework.isStudentCompleted));
+      setHwError('');
+      setHwSuccess('');
+    } else {
+      setHwStudentNote('');
+      setHwIsCompleted(false);
+      setHwError('');
+      setHwSuccess('');
+    }
+  }, [selectedLesson]);
+
+  const handleHomeworkSubmit = async (e) => {
+    e?.preventDefault();
+    if (!selectedLesson) return;
+    setHwSubmitting(true);
+    setHwError('');
+    setHwSuccess('');
+
+    try {
+      const res = await api.put(`/api/students/lessons/${selectedLesson.id}/homework`, {
+        studentNote: hwStudentNote,
+        isCompleted: hwIsCompleted
+      });
+
+      if (res.data?.success && res.data.lesson) {
+        setHwSuccess(t('studentLessons.homeworkSubmittedSuccess') || 'Homework submitted successfully!');
+        setSelectedLesson(res.data.lesson);
+        // Also update list in place
+        setLessons((prev) =>
+          prev.map((l) => (l.id === res.data.lesson.id ? res.data.lesson : l))
+        );
+      } else {
+        setHwError(res.data?.message || 'Failed to submit homework');
+      }
+    } catch (err) {
+      console.error('Failed to submit student homework:', err);
+      setHwError(err.response?.data?.message || 'Server error submitting homework');
+    } finally {
+      setHwSubmitting(false);
+    }
+  };
 
   const fetchLessons = useCallback(async () => {
     setLoading(true);
@@ -189,14 +244,26 @@ const StudentLessons = () => {
           </div>
         )}
 
-        {/* Page Title & Subtitle */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t('studentLessons.headerTitle') || 'Lessons'}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {t('studentLessons.subTitle') || 'Your scheduled, completed, and upcoming lessons with your teachers.'}
-          </p>
+        {/* Page Title & Subtitle + Bookings Link */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('studentLessons.headerTitle') || 'Lessons'}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {t('studentLessons.subTitle') || 'Your scheduled, completed, and upcoming lessons with your teachers.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/student-bookings"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium text-xs shadow-sm transition-colors"
+            >
+              <Calendar size={14} className="text-red-500" />
+              <span>{t('studentNav.bookings') || 'My Bookings'}</span>
+            </Link>
+          </div>
         </div>
 
         {/* Metric Summary Cards */}
@@ -600,11 +667,25 @@ const StudentLessons = () => {
                 </div>
 
                 {/* Homework Section */}
-                <div className="space-y-2 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700/60">
-                  <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <FileText size={14} className="text-red-500" />
-                    <span>{t('studentLessons.homeworkTitle') || 'Homework / Assignment'}</span>
-                  </h4>
+                <div className="space-y-3 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700/60">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <FileText size={14} className="text-red-500" />
+                      <span>{t('studentLessons.homeworkTitle') || 'Homework / Assignment'}</span>
+                    </h4>
+                    {selectedLesson.homework && (
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                        selectedLesson.homework.isCompleted
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                      }`}>
+                        {selectedLesson.homework.isCompleted
+                          ? t('studentLessons.teacherApproved') || 'Reviewed by Teacher'
+                          : t('studentLessons.teacherPendingReview') || 'Pending Teacher Review'}
+                      </span>
+                    )}
+                  </div>
+
                   {selectedLesson.homework?.title || selectedLesson.homework?.description ? (
                     <div className="space-y-2 pt-1">
                       {selectedLesson.homework.title && (
@@ -617,18 +698,87 @@ const StudentLessons = () => {
                           {selectedLesson.homework.description}
                         </p>
                       )}
-                      <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700 text-[11px]">
-                        {selectedLesson.homework.dueDate && (
-                          <span className="text-gray-500 dark:text-gray-400">
-                            {t('studentLessons.homeworkDueDate') || 'Due Date'}: {selectedLesson.homework.dueDate.split('T')[0]}
-                          </span>
-                        )}
-                        <span className={`font-semibold ${selectedLesson.homework.isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                          {selectedLesson.homework.isCompleted
-                            ? t('studentLessons.homeworkCompleted') || 'Completed'
-                            : t('studentLessons.homeworkPending') || 'Pending'}
-                        </span>
-                      </div>
+                      {selectedLesson.homework.dueDate && (
+                        <div className="pt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                          {t('studentLessons.homeworkDueDate') || 'Due Date'}: {selectedLesson.homework.dueDate.split('T')[0]}
+                        </div>
+                      )}
+
+                      {/* Group Lesson notice vs One-on-One Submission Form */}
+                      {selectedLesson.lessonType === 'GROUP' ? (
+                        <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50 text-[11px] text-purple-700 dark:text-purple-300 mt-2">
+                          {t('studentLessons.groupHomeworkStudentNotice') || 'Note: Group homework is shared with all classmates. Individual submissions are not supported.'}
+                        </div>
+                      ) : (
+                        <form onSubmit={handleHomeworkSubmit} className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
+                              <Edit3 size={12} className="text-red-500" />
+                              {t('studentLessons.studentHomeworkSection') || 'My Homework Submission'}
+                            </span>
+                            {selectedLesson.homework.studentCompletedAt && (
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                {t('studentLessons.studentSubmittedAt') || 'Submitted'}: {selectedLesson.homework.studentCompletedAt.split('T')[0]}
+                              </span>
+                            )}
+                          </div>
+
+                          {hwError && (
+                            <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-[11px] border border-red-200 dark:border-red-800">
+                              {hwError}
+                            </div>
+                          )}
+                          {hwSuccess && (
+                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] border border-emerald-200 dark:border-emerald-800">
+                              {hwSuccess}
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              {t('studentLessons.studentNoteLabel') || 'My Notes / Answer / Submission Link'}
+                            </label>
+                            <textarea
+                              rows={3}
+                              maxLength={1000}
+                              value={hwStudentNote}
+                              onChange={(e) => setHwStudentNote(e.target.value)}
+                              placeholder={t('studentLessons.studentNotePlaceholder') || 'Write your notes, questions, or answer here (max 1000 characters)...'}
+                              className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 resize-none"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1">
+                            <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                              <input
+                                type="checkbox"
+                                checked={hwIsCompleted}
+                                onChange={(e) => setHwIsCompleted(e.target.checked)}
+                                className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-gray-300 dark:border-gray-600"
+                              />
+                              <span>{t('studentLessons.markAsCompleted') || 'Mark as completed'}</span>
+                            </label>
+
+                            <button
+                              type="submit"
+                              disabled={hwSubmitting}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold text-xs shadow-sm transition-colors"
+                            >
+                              {hwSubmitting ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" />
+                                  <span>{t('studentLessons.submittingHomework') || 'Submitting...'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Send size={12} />
+                                  <span>{t('studentLessons.submitHomeworkBtn') || 'Submit Homework'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </form>
+                      )}
                     </div>
                   ) : (
                     <p className="text-gray-400 dark:text-gray-500 italic">

@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   CreditCard,
   ClipboardList,
-  Heart
+  Heart,
+  GraduationCap
 } from 'lucide-react';
 
 const WorkerSidebar = ({ 
@@ -51,6 +52,7 @@ const WorkerSidebar = ({
 
   const menuItems = [
     { id: 'dashboard', label: t('workerSidebar.dashboard'), icon: Home, path: '/worker-dashboard' },
+    { id: 'myChildren', label: t('workerSidebar.myChildren') || 'My Children', icon: GraduationCap, path: '/parent-students' },
     { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs' },
     { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
     { id: 'myApplications', label: t('workerSidebar.myApplications'), icon: ClipboardList, path: '/worker-applications' },

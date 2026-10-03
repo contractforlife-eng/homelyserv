@@ -12,6 +12,9 @@ import {
   updateStudentProfile
 } from '../controllers/studentProfileController.js';
 import {
+  getStudentDashboardSummary
+} from '../controllers/studentDashboardController.js';
+import {
   getStudentTeachers,
   getStudentTeacherById,
   acceptStudentTeacher,
@@ -19,7 +22,8 @@ import {
 } from '../controllers/studentTeacherController.js';
 import {
   getStudentLessons,
-  getStudentLessonById
+  getStudentLessonById,
+  submitStudentHomework
 } from '../controllers/studentLessonController.js';
 import {
   getStudentProgressOverview,
@@ -32,12 +36,26 @@ import {
   requestTeacherConnection,
   cancelTeacherRequest
 } from '../controllers/studentTeacherDiscoveryController.js';
+import {
+  createStudentBooking,
+  getStudentBookings,
+  getStudentBookingById,
+  cancelStudentBooking
+} from '../controllers/studentBookingController.js';
+import {
+  searchClassmates,
+  sendFriendRequest,
+  getStudentFriends,
+  acceptFriendRequest,
+  rejectFriendRequest
+} from '../controllers/studentFriendshipController.js';
 
 const router = express.Router();
 
-// Student Profile endpoints
+// Student Profile & Dashboard endpoints
 router.get('/profile', requireStudent, getStudentProfile);
 router.put('/profile', requireStudent, updateStudentProfile);
+router.get('/dashboard/summary', requireStudent, getStudentDashboardSummary);
 
 // Student Teacher Discovery & Requests
 router.get('/teachers/discover', requireStudent, discoverTeachers);
@@ -50,13 +68,27 @@ router.get('/teachers/:id', requireStudent, getStudentTeacherById);
 router.post('/teachers/:id/accept', requireStudent, acceptStudentTeacher);
 router.post('/teachers/:id/end', requireStudent, endStudentTeacher);
 
-// Student Lessons / Schedule endpoints (READ-ONLY)
+// Student Lesson Bookings endpoints (Phase 6A)
+router.post('/bookings', requireStudent, createStudentBooking);
+router.get('/bookings', requireStudent, getStudentBookings);
+router.get('/bookings/:id', requireStudent, getStudentBookingById);
+router.post('/bookings/:id/cancel', requireStudent, cancelStudentBooking);
+
+// Student Lessons / Schedule endpoints
 router.get('/lessons', requireStudent, getStudentLessons);
 router.get('/lessons/:id', requireStudent, getStudentLessonById);
+router.put('/lessons/:id/homework', requireStudent, submitStudentHomework);
 
 // Student Progress endpoints (READ-ONLY)
 router.get('/progress/overview', requireStudent, getStudentProgressOverview);
 router.get('/progress/assessments', requireStudent, getStudentAssessments);
 router.get('/progress/assessments/:id', requireStudent, getStudentAssessmentById);
+
+// Student Classmates & Friendship endpoints (Phase 9A)
+router.get('/classmates', requireStudent, searchClassmates);
+router.post('/friends/request', requireStudent, sendFriendRequest);
+router.get('/friends', requireStudent, getStudentFriends);
+router.post('/friends/:id/accept', requireStudent, acceptFriendRequest);
+router.post('/friends/:id/reject', requireStudent, rejectFriendRequest);
 
 export default router;

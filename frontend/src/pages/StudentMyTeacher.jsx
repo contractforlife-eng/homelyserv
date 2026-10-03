@@ -30,6 +30,7 @@ import {
   Tag,
   DollarSign
 } from 'lucide-react';
+import BookLessonModal from '../components/student/BookLessonModal';
 
 const StudentMyTeacher = () => {
   const { t } = useTranslation();
@@ -42,6 +43,9 @@ const StudentMyTeacher = () => {
   // Selected teacher for details modal
   const [selectedRelationship, setSelectedRelationship] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Booking modal state
+  const [bookingTeacher, setBookingTeacher] = useState(null);
 
   // Discovery notice state
   const [showDiscoveryNotice, setShowDiscoveryNotice] = useState(false);
@@ -367,6 +371,20 @@ const StudentMyTeacher = () => {
                     </button>
 
                     <div className="flex items-center gap-2">
+                      {item.relationshipStatus === 'ACTIVE' && (
+                        <button
+                          type="button"
+                          onClick={() => setBookingTeacher({
+                            ...item.teacher,
+                            id: item.teacherId || item.teacher?.id,
+                            relationshipId: item.id
+                          })}
+                          className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors shadow-sm inline-flex items-center gap-1"
+                        >
+                          <Calendar size={12} />
+                          <span>{t('studentBookings.bookLessonBtn') || 'Book Lesson'}</span>
+                        </button>
+                      )}
                       {item.relationshipStatus === 'PENDING' && (
                         <button
                           type="button"
@@ -522,6 +540,24 @@ const StudentMyTeacher = () => {
                 >
                   {t('studentTeachers.closeBtn') || 'Close'}
                 </button>
+                {selectedRelationship.relationshipStatus === 'ACTIVE' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tData = {
+                        ...selectedRelationship.teacher,
+                        id: selectedRelationship.teacherId || selectedRelationship.teacher?.id,
+                        relationshipId: selectedRelationship.id
+                      };
+                      setSelectedRelationship(null);
+                      setBookingTeacher(tData);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors shadow-sm inline-flex items-center gap-1.5"
+                  >
+                    <Calendar size={14} />
+                    <span>{t('studentBookings.bookLessonBtn') || 'Book Lesson'}</span>
+                  </button>
+                )}
                 {selectedRelationship.relationshipStatus === 'PENDING' && (
                   <button
                     type="button"
@@ -545,6 +581,19 @@ const StudentMyTeacher = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Modal: Book Lesson */}
+        {bookingTeacher && (
+          <BookLessonModal
+            isOpen={Boolean(bookingTeacher)}
+            onClose={() => setBookingTeacher(null)}
+            teacher={bookingTeacher}
+            onSuccess={() => {
+              setSuccessMessage(t('studentBookings.requestSuccessNotice') || 'Booking request sent successfully!');
+              setTimeout(() => setSuccessMessage(''), 5000);
+            }}
+          />
         )}
       </div>
     </DashboardLayout>

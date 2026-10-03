@@ -66,6 +66,8 @@ import {
   Filter
 } from 'lucide-react';
 
+import TeacherBookingRequestsTab from '../components/teacher/TeacherBookingRequestsTab';
+
 const INPUT_CLS =
   'w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all';
 
@@ -87,6 +89,10 @@ const initialLessonForm = {
 
 const TeacherLessons = () => {
   const { t } = useTranslation();
+
+  // Active top-level tab: 'lessons' | 'bookings'
+  const [activeTab, setActiveTab] = useState('lessons');
+  const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
 
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -492,6 +498,44 @@ const TeacherLessons = () => {
           </div>
         )}
 
+        {/* Tabs: Lessons vs Booking Requests */}
+        <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab('lessons')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+              activeTab === 'lessons'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            <BookOpen size={16} />
+            <span>{t('teacherLessons.tabs.allLessons') || 'Scheduled Lessons'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('bookings')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+              activeTab === 'bookings'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            <Calendar size={16} />
+            <span>{t('teacherLessons.tabs.bookingRequests') || 'Booking Requests'}</span>
+            {pendingBookingsCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-950">
+                {pendingBookingsCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {activeTab === 'bookings' ? (
+          <TeacherBookingRequestsTab onUpdateCount={setPendingBookingsCount} />
+        ) : (
+          <>
         {/* Stat Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center gap-4">
@@ -1290,6 +1334,8 @@ const TeacherLessons = () => {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </DashboardLayout>

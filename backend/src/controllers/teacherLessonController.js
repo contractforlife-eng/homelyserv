@@ -115,7 +115,9 @@ export const toTeacherLessonDto = (doc, groupStudentCount = 0) => {
           title: d.homework.title || '',
           description: d.homework.description || '',
           dueDate: d.homework.dueDate ? new Date(d.homework.dueDate).toISOString().split('T')[0] : null,
-          isCompleted: Boolean(d.homework.isCompleted)
+          isCompleted: Boolean(d.homework.isCompleted),
+          studentNote: d.homework.studentNote || '',
+          studentCompletedAt: d.homework.studentCompletedAt ? new Date(d.homework.studentCompletedAt).toISOString() : null
         }
       : null,
     createdAt: d.createdAt || null,

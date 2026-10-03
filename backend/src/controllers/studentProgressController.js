@@ -123,22 +123,36 @@ export const getStudentProgressOverview = async (req, res) => {
       await getStudentAuthorizedScope(studentUserId);
 
     if (myStudentIds.length === 0) {
+      const emptySummary = {
+        totalAssessments: 0,
+        averagePercentage: null,
+        highestPercentage: null,
+        lowestPercentage: null,
+        attendancePercentage: null,
+        attendanceStats: { present: 0, absent: 0, excused: 0, notRecorded: 0 },
+        homeworkPercentage: null,
+        homeworkStats: {
+          assigned: 0,
+          completed: 0,
+          groupAssigned: 0,
+          groupCompleted: 0
+        }
+      };
       return res.json({
         success: true,
-        summary: {
-          totalAssessments: 0,
-          averagePercentage: null,
-          highestPercentage: null,
-          lowestPercentage: null,
-          attendancePercentage: null,
-          attendanceStats: { present: 0, absent: 0, excused: 0, notRecorded: 0 },
-          homeworkPercentage: null,
-          homeworkStats: {
-            assigned: 0,
-            completed: 0,
-            groupAssigned: 0,
-            groupCompleted: 0
-          }
+        summary: emptySummary,
+        data: {
+          stats: {
+            totalAssessments: 0,
+            averageGradePercentage: null,
+            attendanceRate: null,
+            homeworkCompletionRate: null
+          },
+          attendanceBreakdown: { present: 0, absent: 0, excused: 0, notRecorded: 0 },
+          homeworkBreakdown: { totalAssigned: 0, completed: 0, pending: 0 },
+          performanceTrend: [],
+          recentAssessments: [],
+          recentLessons: []
         },
         trend: [],
         recentAssessments: [],
@@ -167,23 +181,15 @@ export const getStudentProgressOverview = async (req, res) => {
       lowestPercentage = Math.min(...pcts);
     }
 
-    // Build Chronological Performance Trend (group by YYYY-MM-DD)
-    const trendMap = new Map();
-    assessments.forEach((a) => {
-      const dateKey = a.date ? new Date(a.date).toISOString().split('T')[0] : 'Unknown';
-      const existing = trendMap.get(dateKey) || [];
-      existing.push(Number(a.percentage) || 0);
-      trendMap.set(dateKey, existing);
-    });
-
-    const trend = Array.from(trendMap.entries()).map(([date, values]) => {
-      const avg = values.reduce((s, v) => s + v, 0) / values.length;
-      return {
-        date,
-        percentage: Math.round(avg * 10) / 10,
-        count: values.length
-      };
-    });
+    // Build Chronological Performance Trend (group by YYYY-MM-DD or per-assessment)
+    const trend = assessments.map((a) => ({
+      date: a.date ? new Date(a.date).toISOString().split('T')[0] : 'Unknown',
+      percentage: Number(a.percentage) || 0,
+      title: a.title || 'Assessment',
+      subject: a.subject || '',
+      score: Number(a.score) || 0,
+      maxScore: Number(a.maxScore) || 100
+    }));
 
     // 2. Fetch Lessons for Attendance & Homework
     const orConditions = [
@@ -310,39 +316,70 @@ export const getStudentProgressOverview = async (req, res) => {
           avatar: teacherUser?.profileImage || null
         },
         attendance: studentAttendance,
+        attendanceStatus: studentAttendance?.status || 'NOT_RECORDED',
         homework: l.homework
           ? {
               title: l.homework.title || '',
               description: l.homework.description || '',
               dueDate: l.homework.dueDate ? new Date(l.homework.dueDate).toISOString() : null,
-              isCompleted: Boolean(l.homework.isCompleted)
+              isCompleted: Boolean(l.homework.isCompleted),
+              studentNote: l.homework.studentNote || '',
+              studentCompletedAt: l.homework.studentCompletedAt ? new Date(l.homework.studentCompletedAt).toISOString() : null,
+              isStudentCompleted: Boolean(l.homework.studentCompletedAt),
+              hasHomework: Boolean((l.homework.title || '').trim() || (l.homework.description || '').trim())
             }
-          : null
+          : { hasHomework: false }
       };
     });
 
+    const summary = {
+      totalAssessments,
+      averagePercentage,
+      highestPercentage,
+      lowestPercentage,
+      attendancePercentage,
+      attendanceStats: {
+        present: presentCount,
+        absent: absentCount,
+        excused: excusedCount,
+        notRecorded: notRecordedCount
+      },
+      homeworkPercentage,
+      homeworkStats: {
+        assigned: oneOnOneAssigned,
+        completed: oneOnOneCompleted,
+        groupAssigned,
+        groupCompleted
+      }
+    };
+
+    const data = {
+      stats: {
+        totalAssessments,
+        averageGradePercentage: averagePercentage,
+        attendanceRate: attendancePercentage,
+        homeworkCompletionRate: homeworkPercentage
+      },
+      attendanceBreakdown: {
+        present: presentCount,
+        absent: absentCount,
+        excused: excusedCount,
+        notRecorded: notRecordedCount
+      },
+      homeworkBreakdown: {
+        totalAssigned: totalHwAssigned,
+        completed: totalHwCompleted,
+        pending: Math.max(0, totalHwAssigned - totalHwCompleted)
+      },
+      performanceTrend: trend,
+      recentAssessments,
+      recentLessons
+    };
+
     return res.json({
       success: true,
-      summary: {
-        totalAssessments,
-        averagePercentage,
-        highestPercentage,
-        lowestPercentage,
-        attendancePercentage,
-        attendanceStats: {
-          present: presentCount,
-          absent: absentCount,
-          excused: excusedCount,
-          notRecorded: notRecordedCount
-        },
-        homeworkPercentage,
-        homeworkStats: {
-          assigned: oneOnOneAssigned,
-          completed: oneOnOneCompleted,
-          groupAssigned,
-          groupCompleted
-        }
-      },
+      summary,
+      data,
       trend,
       recentAssessments,
       recentLessons
@@ -426,7 +463,11 @@ export const getStudentAssessments = async (req, res) => {
       return res.json({
         success: true,
         count: 0,
-        assessments: []
+        assessments: [],
+        data: {
+          count: 0,
+          assessments: []
+        }
       });
     }
 
@@ -442,7 +483,11 @@ export const getStudentAssessments = async (req, res) => {
     return res.json({
       success: true,
       count: dtoList.length,
-      assessments: dtoList
+      assessments: dtoList,
+      data: {
+        count: dtoList.length,
+        assessments: dtoList
+      }
     });
   } catch (error) {
     console.error('Error fetching student assessments:', error);

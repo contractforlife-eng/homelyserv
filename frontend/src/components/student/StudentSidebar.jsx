@@ -53,6 +53,18 @@ const StudentSidebar = ({
   const dashboard = useDashboard();
 
   // Canonical Student navigation items
+  // 1. Dashboard (/student-dashboard)
+  // 2. My Profile (/student-profile)
+  // 3. My Teacher (/student-teacher)
+  // 4. Lessons (/student-lessons)
+  // 5. Messages (/student-messages)
+  // 6. Find a Teacher (/student-find-teacher)
+  // 7. My Bookings (/student-bookings)
+  // 8. Schedule (/student-schedule)
+  // 9. Progress (/student-progress)
+  // 10. My Medical Profile (/medical-profile)
+  // 11. Help (/student-help)
+  // 12. Settings (/settings)
   const menuItems = [
     {
       id: 'dashboard',
@@ -69,18 +81,25 @@ const StudentSidebar = ({
       active: location.pathname === '/student-profile'
     },
     {
-      id: 'medicalProfile',
-      label: t('studentNav.medicalProfile') || 'My Medical Profile',
-      icon: HeartPulse,
-      path: '/medical-profile',
-      comingSoon: true
-    },
-    {
       id: 'myTeacher',
       label: t('studentNav.myTeacher') || 'My Teacher',
       icon: GraduationCap,
       path: '/student-teacher',
       active: location.pathname === '/student-teacher'
+    },
+    {
+      id: 'lessons',
+      label: t('studentNav.lessons') || 'Lessons',
+      icon: BookOpen,
+      path: '/student-lessons',
+      active: location.pathname === '/student-lessons'
+    },
+    {
+      id: 'messages',
+      label: t('studentNav.messages') || 'Messages',
+      icon: MessageCircle,
+      path: '/student-messages',
+      active: location.pathname === '/student-messages'
     },
     {
       id: 'findTeacher',
@@ -90,11 +109,11 @@ const StudentSidebar = ({
       active: location.pathname === '/student-find-teacher'
     },
     {
-      id: 'lessons',
-      label: t('studentNav.lessons') || 'Lessons',
-      icon: BookOpen,
-      path: '/student-lessons',
-      active: location.pathname === '/student-lessons'
+      id: 'bookings',
+      label: t('studentNav.bookings') || 'My Bookings',
+      icon: Calendar,
+      path: '/student-bookings',
+      active: location.pathname === '/student-bookings'
     },
     {
       id: 'schedule',
@@ -111,18 +130,18 @@ const StudentSidebar = ({
       active: location.pathname === '/student-progress'
     },
     {
-      id: 'messages',
-      label: t('studentNav.messages') || 'Messages',
-      icon: MessageCircle,
-      path: '/student-messages',
-      comingSoon: true
+      id: 'medicalProfile',
+      label: t('studentNav.medicalProfile') || 'My Medical Profile',
+      icon: HeartPulse,
+      path: '/medical-profile',
+      active: location.pathname === '/medical-profile'
     },
     {
       id: 'help',
       label: t('studentNav.help') || 'Help',
       icon: HelpCircle,
-      path: '/help',
-      active: location.pathname === '/help'
+      path: '/student-help',
+      active: location.pathname === '/student-help'
     },
     {
       id: 'settings',

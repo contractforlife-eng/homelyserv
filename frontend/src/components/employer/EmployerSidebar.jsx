@@ -25,7 +25,8 @@ import {
   PlusCircle,
   ClipboardList,
   Users,
-  Heart
+  Heart,
+  GraduationCap
 } from 'lucide-react';
 const EmployerSidebar = ({
   language,
@@ -52,6 +53,7 @@ const EmployerSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t('employerSidebar.dashboard'), icon: Home, path: '/employer-dashboard' },
     { id: 'myFamily', label: t('employerSidebar.myFamily'), icon: Users, path: '/employer-family' },
+    { id: 'myChildren', label: t('employerSidebar.myChildren') || 'My Children', icon: GraduationCap, path: '/parent-students' },
     { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
     { id: 'postJob', label: t('employerSidebar.postJob'), icon: PlusCircle, path: '/employer-post-job' },
     { id: 'myJobs', label: t('employerSidebar.myJobs'), icon: ClipboardList, path: '/employer-jobs' },
