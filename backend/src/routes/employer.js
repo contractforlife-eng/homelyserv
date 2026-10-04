@@ -3,7 +3,7 @@ import express from 'express';
 import User from '../models/User.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import prisma from '../lib/prisma.js';
-import { authenticate, requireEmployer } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
 import {
   authorizeEmployerProfileView,
@@ -48,10 +48,10 @@ const router = express.Router();
 // Search Workers
 // ============================================================
 /**
- * Search Workers — EMPLOYER ONLY
+ * Search Workers — EMPLOYER, TEACHER, DOCTOR
  *
- * SECURITY: restricted to authenticated EMPLOYER accounts (WORKER / SUPPORT /
- * ADMIN cannot consume the Employer search quota or read worker results here).
+ * SECURITY: restricted to authenticated EMPLOYER, TEACHER, and DOCTOR accounts.
+ * EMPLOYER consumes the Employer search quota; TEACHER and DOCTOR have no quota.
  *
  * PRIVACY: worker email/phone are ONLY returned to an Employer who is
  * authorized to contact that specific worker (i.e. a completed paid hire /
@@ -59,7 +59,14 @@ const router = express.Router();
  * three DB queries (workers, worker profiles, completed payments) regardless
  * of result size — so no N+1 query pattern is introduced.
  */
-router.get('/search', requireEmployer, async (req, res) => {
+router.get('/search', authenticate, async (req, res) => {
+  const userRole = req.userRole;
+  if (userRole !== 'EMPLOYER' && userRole !== 'TEACHER' && userRole !== 'DOCTOR') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Employer, Teacher, or Doctor role required.'
+    });
+  }
   try {
     const employerId = req.userId;
     const { query, category, location, minRating, minExperience, availability, maxHourlyRateActive, language } = req.query;
@@ -74,7 +81,7 @@ router.get('/search', requireEmployer, async (req, res) => {
       language,
     });
 
-    if (intentionalSearch) {
+    if (intentionalSearch && userRole === 'EMPLOYER') {
       const searchResult = await recordSearch(employerId);
       if (!searchResult.allowed) {
         return res.status(403).json({
@@ -90,7 +97,7 @@ router.get('/search', requireEmployer, async (req, res) => {
     
     let filter = {
       role: {
-        $in: ['WORKER', 'DOCTOR', 'TEACHER']
+        $in: userRole === 'EMPLOYER' ? ['WORKER', 'DOCTOR', 'TEACHER'] : ['WORKER']
       }
     };
     

@@ -19,10 +19,11 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import useSidebarCountersStore from '../store/sidebarCountersStore';
+import { SIDEBAR_COUNTERS_REFRESH_EVENT } from '../services/sidebarService';
 import { onSocketEvent } from '../utils/socket';
 
 const POLL_INTERVAL_MS = 30000;
-export const SIDEBAR_COUNTERS_REFRESH_EVENT = 'sidebar-counters:refresh';
+export { SIDEBAR_COUNTERS_REFRESH_EVENT };
 
 const useSidebarCounters = () => {
   const user = useAuthStore((state) => state.user);

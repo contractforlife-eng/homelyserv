@@ -33,6 +33,7 @@
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import Conversation from '../models/Conversation.js';
 import { getUnreadCount } from './notificationService.js';
 
 export const SIDEBAR_COUNTER_KEYS = [
@@ -114,6 +115,86 @@ export const buildEmployerHiresCounterWhere = (userId) => ({
   ],
 });
 
+// ============================================================
+// SUP-ADMIN MESSAGES COUNTER (conversation ownership aware)
+// ============================================================
+// The Sup-Admin Messages page only surfaces conversations that are still
+// owned/actionable by the Sup-Admin: SUPPORT conversations assigned to them
+// (Conversation.supportAgentId === userId) plus INTERNAL staff threads.
+//
+// When the assigned agent escalates a conversation to Co-Admin
+// (POST /api/support/conversations/:id/escalate), the SAME ownership rule
+// (supportAgentId === supportId) is used to authorize the hand-off and the
+// conversation is marked escalated via type='ESCALATED' + escalatedAt
+// (the exact state the Co-Admin lists query with
+// { type: 'ESCALATED', escalatedAt: { $ne: null } }).
+//
+// From that point on the conversation is owned by Co-Admin and is no longer
+// listed for the Sup-Admin, so any unread message inside it must NOT keep
+// producing a Sup-Admin Messages badge.
+//
+// This uses the existing ownership + escalation-state fields (not a blind
+// type check) so it stays correct for any Sup-Admin and any escalated thread.
+
+/**
+ * Conversations this Sup-Admin owns (is the assigned agent of) but that have
+ * since been handed off to Co-Admin via escalation.
+ * @param {string} supportId
+ */
+export const buildEscalatedHandoffConversationWhere = (supportId) => ({
+  supportAgentId: String(supportId),
+  type: 'ESCALATED',
+  escalatedAt: { $ne: null },
+});
+
+/**
+ * Where-clause for the `messages` counter, excluding conversations the user
+ * can no longer act on.
+ * @param {string} userId
+ * @param {string[]} excludedConversationIds
+ */
+export const buildMessagesCounterWhere = (userId, excludedConversationIds = []) => {
+  const where = { recipientId: String(userId), read: false };
+  if (excludedConversationIds.length > 0) {
+    where.conversationId = { $nin: excludedConversationIds.map(String) };
+  }
+  return where;
+};
+
+/**
+ * Count unread messages that are actionable for the user.
+ * For a Sup-Admin (SUPPORT) this ignores unread messages that live in a
+ * conversation which has been escalated away to Co-Admin. Every other role
+ * keeps the original unread rule.
+ *
+ * Dependencies are injectable so the rule can be unit-tested without a DB.
+ */
+export const countUnreadMessages = async (
+  userId,
+  role,
+  { messageModel = Message, conversationModel = Conversation } = {},
+) => {
+  const uid = String(userId);
+  const userRole = String(role || '').toUpperCase();
+
+  let excludedConversationIds = [];
+  if (userRole === 'SUPPORT') {
+    try {
+      excludedConversationIds = await conversationModel.distinct(
+        'conversationId',
+        buildEscalatedHandoffConversationWhere(uid),
+      );
+    } catch (error) {
+      // Never hide unread messages because of a lookup failure: fall back to
+      // the unfiltered count.
+      console.error('❌ SidebarCounters: escalated conversation lookup failed:', error.message);
+      excludedConversationIds = [];
+    }
+  }
+
+  return messageModel.countDocuments(buildMessagesCounterWhere(uid, excludedConversationIds));
+};
+
 // Never let a single counter failure break the whole response.
 const safeCount = async (label, promise) => {
   try {
@@ -138,7 +219,7 @@ export const getSidebarCounters = async (userId, role) => {
 
   // Shared counters - identical for every role.
   const [messages, notifications] = await Promise.all([
-    safeCount('messages', Message.countDocuments({ recipientId: uid, read: false })),
+    safeCount('messages', countUnreadMessages(uid, userRole)),
     validId ? safeCount('notifications', getUnreadCount(uid)) : 0,
   ]);
 
@@ -291,6 +372,16 @@ export const getSidebarCounters = async (userId, role) => {
     return counters;
   }
 
+  // ============================================================
+  // DOCTOR, TEACHER, STUDENT
+  // ============================================================
+  if (['DOCTOR', 'TEACHER', 'STUDENT'].includes(userRole)) {
+    counters.complaints = await safeCount('complaints', prisma.complaint.count({
+      where: { userId: uid, status: 'WAITING_FOR_USER' },
+    }));
+    return counters;
+  }
+
   // Unknown role: shared counters only.
   return counters;
 };
@@ -304,4 +395,7 @@ export default {
   buildWorkerActionableEarningsWhere,
   buildSupportComplaintsCounterWhere,
   ADMIN_PAYMENT_REVIEW_COUNTER_WHERE,
+  buildEscalatedHandoffConversationWhere,
+  buildMessagesCounterWhere,
+  countUnreadMessages,
 };

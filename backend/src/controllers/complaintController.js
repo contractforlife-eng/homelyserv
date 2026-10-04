@@ -288,10 +288,10 @@ export const createComplaint = async (req, res) => {
     const userId = String(req.userId);
     const userRole = req.userRole;
 
-    if (userRole !== 'WORKER' && userRole !== 'EMPLOYER') {
+    if (userRole !== 'WORKER' && userRole !== 'EMPLOYER' && userRole !== 'DOCTOR' && userRole !== 'TEACHER' && userRole !== 'STUDENT') {
       return res.status(403).json({
         success: false,
-        message: 'Only workers and employers can create complaints',
+        message: 'Only workers, employers, doctors, teachers, and students can create complaints',
       });
     }
 
@@ -363,6 +363,13 @@ export const createComplaint = async (req, res) => {
     }
 
     // Notify the user
+    const roleLinkMap = {
+      WORKER: '/worker-complaints',
+      EMPLOYER: '/employer-complaints',
+      DOCTOR: '/doctor-complaints',
+      TEACHER: '/teacher-complaints',
+      STUDENT: '/student-complaints',
+    };
     await createUserNotification(userId, {
       type: NOTIFICATION_TYPES.NEW_COMPLAINT,
       title: 'Complaint Submitted',
@@ -370,7 +377,7 @@ export const createComplaint = async (req, res) => {
       entityType: 'COMPLAINT',
       entityId: complaint.id,
       priority: PRIORITIES.NORMAL,
-      link: userRole === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
+      link: roleLinkMap[userRole] || '/complaints',
     });
 
     return res.status(201).json({

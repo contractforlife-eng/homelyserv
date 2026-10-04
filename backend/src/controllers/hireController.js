@@ -1,11 +1,17 @@
 import prisma from '../lib/prisma.js';
 import {
+  canSendHireOffer,
+  isProviderHirerRole,
+  resolveAllowedOfferTargetRoles,
+} from '../services/hireAuthorization.js';
+import {
   createNotification as notificationServiceCreate,
   NOTIFICATION_TYPES,
 } from '../services/notificationService.js';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { createOffer } from '../services/offerService.js';
+import { ensureEmployeeForHire } from '../services/employeeService.js';
 import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { sendPushToUser } from '../services/fcmService.js';
@@ -99,9 +105,22 @@ export const sendOffer = async (req, res) => {
     if (!workerUser) {
       return res.status(404).json({ message: 'Worker not found' });
     }
-    const EMPLOYABLE_PROVIDER_ROLES = ['WORKER', 'DOCTOR', 'TEACHER'];
-    if (!EMPLOYABLE_PROVIDER_ROLES.includes(workerUser.role)) {
-      return res.status(400).json({ message: 'Offer target must be an employable service provider' });
+    // Caller authorization is enforced here as well as on the route so this
+    // controller stays safe wherever it is wired (defence in depth).
+    if (!canSendHireOffer(req.userRole)) {
+      return res.status(403).json({
+        message: 'Access denied. Only an employer, teacher or doctor can send an offer.',
+      });
+    }
+
+    // EMPLOYER targets are unchanged; TEACHER/DOCTOR may only hire a WORKER.
+    const allowedTargetRoles = resolveAllowedOfferTargetRoles(req.userRole);
+    if (!allowedTargetRoles.includes(workerUser.role)) {
+      return res.status(400).json({
+        message: isProviderHirerRole(req.userRole)
+          ? 'Offer target must be a Worker account'
+          : 'Offer target must be an employable service provider',
+      });
     }
 
     let workerProfile = await prisma.workerProfile.findUnique({
@@ -293,6 +312,25 @@ export const respondToOffer = async (req, res) => {
 
       console.log(`✅ Hire created: ${acceptance.hire.id} for Offer: ${offer.id}`);
 
+      // HIRE -> EMPLOYEE (canonical accepted-state point).
+      // The Worker just accepted, so the hire now exists. A TEACHER or DOCTOR
+      // who owns this hire gets the Worker as an Employee in their EXISTING
+      // Employees system, with the agreed Worker salary (never the HomelyServ
+      // commission). Idempotent, and Employer behavior is untouched.
+      try {
+        const employeeResult = await ensureEmployeeForHire({
+          hire: { ...acceptance.hire, jobTitle: offer.jobTitle },
+        });
+        if (employeeResult.created) {
+          console.log(`✅ Employee ensured for hire ${acceptance.hire.id}`);
+        } else if (employeeResult.reason !== 'role_not_supported') {
+          console.log(`ℹ️ No employee for hire ${acceptance.hire.id}: ${employeeResult.reason}`);
+        }
+      } catch (employeeError) {
+        // Employment bookkeeping must never break the hire lifecycle.
+        console.error(`⚠️ Could not ensure employee for hire ${acceptance.hire.id}:`, employeeError.message);
+      }
+
       await createNotification(
         workerProfile.userId,
         'offer',
@@ -367,7 +405,9 @@ export const getMyHires = async (req, res) => {
   try {
     let hires;
 
-    if (req.userRole === 'EMPLOYER') {
+    // Hirer roles (EMPLOYER + TEACHER + DOCTOR) list ONLY their own records:
+    // the employerId: req.userId filter below is the ownership boundary.
+    if (canSendHireOffer(req.userRole)) {
       hires = await prisma.hire.findMany({
         where: {
           employerId: req.userId,
@@ -489,7 +529,9 @@ export const getMyOffers = async (req, res) => {
   try {
     let offers;
 
-    if (req.userRole === 'EMPLOYER') {
+    // Hirer roles (EMPLOYER + TEACHER + DOCTOR) list ONLY their own records:
+    // the employerId: req.userId filter below is the ownership boundary.
+    if (canSendHireOffer(req.userRole)) {
       offers = await prisma.offer.findMany({
         where: { employerId: req.userId },
         include: { Worker: true },

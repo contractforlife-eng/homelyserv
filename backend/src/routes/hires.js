@@ -30,7 +30,11 @@ const router = express.Router();
 // ============================================================
 // Create a Hire / Send Offer
 // ============================================================
-router.post('/', requireEmployer, sendOffer);
+// Hiring callers: EMPLOYER (unchanged) + TEACHER + DOCTOR.
+// `authorize` only inspects req.userRole, so `authenticate` is chained
+// first. Every existing controller guard still applies (target role,
+// availability, offer validation and the duplicate/acceptance rules).
+router.post('/', authenticate, authorize(['EMPLOYER', 'TEACHER', 'DOCTOR']), sendOffer);
 
 // ============================================================
 // RATING — secure two-way Employer↔Worker ratings (Phase 1).

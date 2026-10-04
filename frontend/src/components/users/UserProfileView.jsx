@@ -43,7 +43,9 @@ import {
   Copy,
   Eye,
   EyeOff,
-  ChevronDown
+  ChevronDown,
+  GraduationCap,
+  Users
 } from 'lucide-react';
 import api from '../../utils/api';
 import { formatExperienceDisplay } from '../../utils/experienceDisplay';
@@ -934,6 +936,48 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             />
           )}
 
+          {/* TEACHER PROFILE — a Teacher is never shown as a Worker/Employer */}
+          {profileUser.role === 'TEACHER' && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <GraduationCap size={18} className="text-green-600" />
+                  {t.teacherProfile}
+                </h3>
+              </div>
+              <div className="p-6">
+                {!profileUser.TeacherProfile ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t.teacherProfileNotCreated}
+                  </p>
+                ) : (
+                  <TeacherProfileFields profile={profileUser.TeacherProfile} t={t} formatDate={formatDate} />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STUDENT PROFILE — a Student is never shown as a Worker/Employer */}
+          {profileUser.role === 'STUDENT' && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <GraduationCap size={18} className="text-purple-600" />
+                  {t.studentProfile}
+                </h3>
+              </div>
+              <div className="p-6">
+                {!profileUser.StudentProfile ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t.studentProfileNotCreated}
+                  </p>
+                ) : (
+                  <StudentProfileFields profile={profileUser.StudentProfile} t={t} formatDate={formatDate} />
+                )}
+              </div>
+            </div>
+          )}
+
           {/* WORKER PROFILE — strictly Worker-only, never used as a Doctor fallback */}
           {profileUser.role === 'WORKER' && profileUser.WorkerProfile && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -1010,6 +1054,29 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 <UserStatsCard label={t.inProgress || 'In Progress'} value={stats?.inProgressCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
                 <UserStatsCard label={t.resolved || 'Resolved'} value={stats?.resolvedCount || 0} icon={Briefcase} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
                 <UserStatsCard label={t.escalated || 'Escalated'} value={stats?.escalatedCount || 0} icon={FileText} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
+              </div>
+            ) : profileUser?.role === 'STUDENT' ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <UserStatsCard label={t.complaints} value={stats?.complaintsCount || 0} icon={AlertTriangle} color="text-red-600" bg="bg-red-50 dark:bg-red-900/30" />
+                <UserStatsCard label={t.messages} value={stats?.messagesCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
+                <UserStatsCard label={t.teachers || 'Teachers'} value={stats?.teachersCount || 0} icon={GraduationCap} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
+                <UserStatsCard label={t.payments} value={stats?.paymentsCount || 0} icon={CreditCard} color="text-teal-600" bg="bg-teal-50 dark:bg-teal-900/30" />
+              </div>
+            ) : profileUser?.role === 'TEACHER' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <UserStatsCard label={t.complaints} value={stats?.complaintsCount || 0} icon={AlertTriangle} color="text-red-600" bg="bg-red-50 dark:bg-red-900/30" />
+                <UserStatsCard label={t.messages} value={stats?.messagesCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
+                <UserStatsCard label={t.homelyServStudents || 'HomelyServ Students'} value={stats?.homelyServStudentsCount || 0} icon={GraduationCap} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
+                <UserStatsCard label={t.regularStudents || 'Regular Students'} value={stats?.regularStudentsCount || 0} icon={Users} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
+                <UserStatsCard label={t.payments} value={stats?.paymentsCount || 0} icon={CreditCard} color="text-teal-600" bg="bg-teal-50 dark:bg-teal-900/30" />
+              </div>
+            ) : profileUser?.role === 'DOCTOR' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <UserStatsCard label={t.complaints} value={stats?.complaintsCount || 0} icon={AlertTriangle} color="text-red-600" bg="bg-red-50 dark:bg-red-900/30" />
+                <UserStatsCard label={t.messages} value={stats?.messagesCount || 0} icon={MessageCircle} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/30" />
+                <UserStatsCard label={t.homelyServPatients || 'HomelyServ Patients'} value={stats?.homelyServPatientsCount || 0} icon={Users} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/30" />
+                <UserStatsCard label={t.regularPatients || 'Regular Patients'} value={stats?.regularPatientsCount || 0} icon={Briefcase} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/30" />
+                <UserStatsCard label={t.payments} value={stats?.paymentsCount || 0} icon={CreditCard} color="text-teal-600" bg="bg-teal-50 dark:bg-teal-900/30" />
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -1383,5 +1450,135 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     </div>
   );
 };
+
+/**
+ * One labelled value box. Same markup the existing Worker/Employer profile
+ * blocks use, so the new sections stay visually identical to the page.
+ */
+const ProfileField = ({ label, value }) => (
+  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+    <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+    <p className="text-sm font-medium text-gray-900 dark:text-white mt-1 break-words">
+      {value || '—'}
+    </p>
+  </div>
+);
+
+/**
+ * Canonical TeacherProfile fields only — every key below exists on the
+ * TeacherProfile model / staff-view serializer. Nothing is invented.
+ */
+const TeacherProfileFields = ({ profile, t, formatDate }) => (
+  <>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <ProfileField label={t.professionalTitle} value={profile.title} />
+      <ProfileField label={t.mainSubject} value={profile.mainSubject} />
+      <ProfileField label={t.specialization} value={profile.specialization} />
+      <ProfileField
+        label={t.yearsOfExperience}
+        value={profile.yearsOfExperience ? `${profile.yearsOfExperience} ${t.years}` : ''}
+      />
+      <ProfileField label={t.teachingMethod} value={profile.teachingMethod} />
+      <ProfileField
+        label={t.availableForNewStudents}
+        value={profile.availableForNewStudents ? t.yes : t.no}
+      />
+    </div>
+
+    {(profile.additionalSubjects?.length > 0 ||
+      profile.teachingLevels?.length > 0 ||
+      profile.languages?.length > 0) && (
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ProfileField
+          label={t.additionalSubjects}
+          value={(profile.additionalSubjects || []).join(', ')}
+        />
+        <ProfileField
+          label={t.teachingLevels}
+          value={(profile.teachingLevels || []).join(', ')}
+        />
+        <ProfileField
+          label={t.languages}
+          value={(profile.languages || []).join(', ')}
+        />
+      </div>
+    )}
+
+    {(profile.hourlyRate > 0 || profile.lessonRate > 0) && (
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {profile.hourlyRate > 0 ? (
+          <ProfileField
+            label={t.hourlyRate}
+            value={`${profile.hourlyRate} ${profile.pricingCurrency || ''}`.trim()}
+          />
+        ) : null}
+        {profile.lessonRate > 0 ? (
+          <ProfileField
+            label={t.lessonRate}
+            value={`${profile.lessonRate} ${profile.pricingCurrency || ''}`.trim()}
+          />
+        ) : null}
+      </div>
+    )}
+
+    <div className="mt-4 space-y-3">
+      {profile.experienceSummary ? (
+        <ProfileField label={t.experienceSummary} value={profile.experienceSummary} />
+      ) : null}
+      {profile.bio ? <ProfileField label={t.bio} value={profile.bio} /> : null}
+      {profile.qualifications?.length > 0 ? (
+        <ProfileField label={t.qualifications} value={profile.qualifications.join(', ')} />
+      ) : null}
+      {profile.education?.length > 0 ? (
+        <ProfileField label={t.education} value={profile.education.join(', ')} />
+      ) : null}
+      {profile.certifications?.length > 0 ? (
+        <ProfileField label={t.certifications} value={profile.certifications.join(', ')} />
+      ) : null}
+    </div>
+  </>
+);
+
+/**
+ * Canonical StudentProfile fields only — every key below exists on the
+ * StudentProfile model / staff-view serializer.
+ */
+const StudentProfileFields = ({ profile, t, formatDate }) => (
+  <>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <ProfileField label={t.firstName} value={profile.firstName} />
+      <ProfileField label={t.lastName} value={profile.lastName} />
+      <ProfileField
+        label={t.gender}
+        value={
+          profile.gender
+            ? t(`genderValues.${String(profile.gender).toLowerCase()}`, profile.gender)
+            : ''
+        }
+      />
+      <ProfileField label={t.dateOfBirth} value={formatDate(profile.dateOfBirth)} />
+      <ProfileField label={t.school} value={profile.school} />
+      <ProfileField label={t.gradeLevel} value={profile.gradeLevel} />
+      <ProfileField label={t.educationLevel} value={profile.educationLevel} />
+      <ProfileField label={t.country} value={profile.country} />
+      <ProfileField label={t.city} value={profile.city} />
+    </div>
+    {profile.address ? (
+      <div className="mt-4 grid grid-cols-1 gap-4">
+        <ProfileField label={t.address} value={profile.address} />
+      </div>
+    ) : null}
+    {profile.subjects?.length > 0 ? (
+      <div className="mt-4 grid grid-cols-1 gap-4">
+        <ProfileField label={t.subjects} value={profile.subjects.join(', ')} />
+      </div>
+    ) : null}
+    {profile.notes ? (
+      <div className="mt-4 grid grid-cols-1 gap-4">
+        <ProfileField label={t.notes} value={profile.notes} />
+      </div>
+    ) : null}
+  </>
+);
 
 export default UserProfileView;

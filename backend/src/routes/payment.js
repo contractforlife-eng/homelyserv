@@ -7,6 +7,7 @@ import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
+import { recordHireCommissionExpense } from '../services/hireCommissionExpenseService.js';
 import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService.js';
 import { sendPushToUser } from '../services/fcmService.js';
 import { notifyAdminsForPaymentReview } from '../services/paymentReviewAlertService.js';
@@ -84,6 +85,7 @@ import {
   isUniqueConstraintError,
   normalizeBankTransferAttemptKey,
 } from '../services/bankTransferIdempotency.js';
+import { canSendHireOffer } from '../services/hireAuthorization.js';
 
 const router = express.Router();
 
@@ -100,7 +102,7 @@ const authenticatedUserOwnsPayment = async (req, payment) => {
   // Commission authority follows the Hire rather than client-supplied
   // Payment identity fields. Legacy commission Payments without a Hire fall
   // back only to their server-recorded userId.
-  if (String(req.userRole || '').toUpperCase() !== 'EMPLOYER') return false;
+  if (!canSendHireOffer(req.userRole)) return false;
   if (payment.hireId) {
     const hire = await prisma.hire.findUnique({
       where: { id: String(payment.hireId) },
@@ -505,6 +507,30 @@ const updateHireAfterPayment = async (hireId, captureId, payment) => {
     } catch (earningError) {
       // Ledger failures must never break the payment/hire completion flow.
       console.error(`⚠️ Could not ensure worker earning for hire ${hire.id}:`, earningError.message);
+    }
+
+    // Teacher / Doctor Accounts -> Expense (canonical completion point).
+    // The HomelyServ recruitment commission ACTUALLY PAID for this hire is
+    // recorded once in the payer's EXISTING Accounts Expense ledger.
+    // Employer accounting is intentionally unchanged.
+    try {
+      const commissionExpense = await recordHireCommissionExpense({
+        hire: {
+          ...hire,
+          // Authoritative post-completion state written just above.
+          paymentStatus: updatedHire.paymentStatus,
+          paymentReference: updatedHire.paymentReference,
+        },
+        payment,
+      });
+      if (commissionExpense.created) {
+        console.log(`✅ HomelyServ commission expense recorded for hire ${hire.id}`);
+      } else if (commissionExpense.reason !== 'role_not_supported') {
+        console.log(`ℹ️ No commission expense for hire ${hire.id}: ${commissionExpense.reason}`);
+      }
+    } catch (commissionExpenseError) {
+      // Bookkeeping failures must never break the payment completion flow.
+      console.error(`⚠️ Could not record commission expense for hire ${hire.id}:`, commissionExpenseError.message);
     }
 
     // Update the Offer to mark payment as confirmed and verified
@@ -2104,7 +2130,7 @@ router.get('/user/:userId', authenticate, async (req, res) => {
     const userId = authenticatedUserId;
     console.log(`📂 Getting payments for user: ${userId}`);
 
-    const ownedHireIds = isObjectId(userId) && String(req.userRole || '').toUpperCase() === 'EMPLOYER'
+    const ownedHireIds = isObjectId(userId) && canSendHireOffer(req.userRole)
       ? (await prisma.hire.findMany({
           where: { employerId: userId },
           select: { id: true },

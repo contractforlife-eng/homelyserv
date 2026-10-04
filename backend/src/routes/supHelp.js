@@ -7,6 +7,9 @@ import Conversation from '../models/Conversation.js';
 import MongooseUser from '../models/User.js';
 import { getVerificationDetails } from '../services/profileVerificationService.js';
 import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
+// Teacher / Student professional profiles for the staff view. Strictly
+// role-gated by attachTeacherStudentView() - never attached to another role.
+import { attachTeacherStudentView } from '../services/teacherStudentProfileStaffView.js';
 import { ensureConversationMetadata, canAccessConversation, touchConversation, getConversationId } from '../routes/chat.js';
 import { getUserIdentity, getUserIdentities, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { emitToUser } from '../lib/socket.js';
@@ -177,10 +180,8 @@ router.get('/users/:id', async (req, res) => {
       });
     }
 
-    // DOCTOR is a first-class role and is readable by Sup-Help. Teacher and
-    // Student profiles remain out of the Sup-Help directory by design, and a
-    // Doctor is NEVER rendered through a WorkerProfile substitute.
-    if (!['WORKER', 'EMPLOYER', 'DOCTOR'].includes(user.role)) {
+    // DOCTOR, TEACHER, and STUDENT profiles are readable by Sup-Help (read-only).
+    if (!['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Profile access is limited to platform users',
@@ -211,14 +212,18 @@ router.get('/users/:id', async (req, res) => {
     // same shape Admin and Sup-Admin receive).
     const { DoctorProfile, doctorClinics } = await getDoctorStaffView(user.id);
 
+    const baseUser = {
+      ...user,
+      ...(mongooseUserObj || {}),
+      ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
+      verification
+    };
+    // Teacher / Student professional profile (read-only for Sup-Help).
+    const enrichedUser = await attachTeacherStudentView(baseUser);
+
     return res.json({
       success: true,
-      user: {
-        ...user,
-        ...(mongooseUserObj || {}),
-        ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
-        verification
-      }
+      user: enrichedUser
     });
   } catch (error) {
     console.error('Error fetching user profile for Sup-Help:', error);

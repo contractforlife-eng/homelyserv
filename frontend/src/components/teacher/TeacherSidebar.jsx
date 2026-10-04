@@ -13,6 +13,7 @@ import {
   Users,
   Layers,
   BookOpen,
+  Briefcase,
   Calendar,
   TrendingUp,
   History,
@@ -24,7 +25,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  GraduationCap
+  GraduationCap,
+  AlertTriangle,
+  Search as SearchIcon
 } from 'lucide-react';
 
 const TeacherSidebar = ({
@@ -89,6 +92,36 @@ const TeacherSidebar = ({
       active: location.pathname === '/teacher-messages'
     },
     {
+      id: 'complaints',
+      label: t('teacherNav.complaints') || 'Complaints',
+      icon: AlertTriangle,
+      path: '/teacher-complaints',
+      active: location.pathname === '/teacher-complaints'
+    },
+    {
+      id: 'searchWorkers',
+      label: t('teacherNav.searchWorkers') || 'Search Workers',
+      icon: SearchIcon,
+      path: '/search-workers',
+      active: location.pathname === '/search-workers'
+    },
+    {
+      id: 'hires',
+      label: t('employerSidebar.myHires') || 'My Hires',
+      icon: Briefcase,
+      path: '/teacher-hires',
+      active: location.pathname === '/teacher-hires'
+    },
+    {
+      id: 'employees',
+      // `doctorCms` is the namespace DOCTOR_ACCOUNTS_TRANSLATIONS is merged into
+      // (i18n/index.js), so `doctorAccounts.*` would render the raw key.
+      label: t('doctorCms.employeesTitle') || 'Employees',
+      icon: Users,
+      path: '/teacher-employees',
+      active: location.pathname === '/teacher-employees'
+    },
+    {
       id: 'students',
       label: t('teacherNav.students') || 'Students',
       icon: Users,
@@ -149,8 +182,8 @@ const TeacherSidebar = ({
       id: 'help',
       label: t('teacherNav.help') || 'Help',
       icon: HelpCircle,
-      path: '/help',
-      active: location.pathname === '/help'
+      path: '/teacher-help',
+      active: location.pathname === '/teacher-help'
     },
     {
       id: 'settings',

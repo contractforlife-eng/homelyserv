@@ -20,10 +20,13 @@ import {
   Tag,
   BarChart3,
   Wallet,
+  Briefcase,
   Crown,
   Stethoscope,
   User,
-  MessageCircle
+  MessageCircle,
+  AlertTriangle,
+  Search as SearchIcon
 } from 'lucide-react';
 
 const DoctorSidebar = ({
@@ -84,6 +87,32 @@ const DoctorSidebar = ({
           label: t('doctorNav.messages') || 'Messages',
           icon: MessageCircle,
           path: '/doctor-messages'
+        },
+        {
+          id: 'complaints',
+          label: t('doctorNav.complaints') || 'Complaints',
+          icon: AlertTriangle,
+          path: '/doctor-complaints'
+        },
+        {
+          id: 'searchWorkers',
+          label: t('doctorNav.searchWorkers') || 'Search Workers',
+          icon: SearchIcon,
+          path: '/search-workers'
+        },
+        {
+          id: 'hires',
+          label: t('employerSidebar.myHires') || 'My Hires',
+          icon: Briefcase,
+          path: '/doctor-hires'
+        },
+        {
+          id: 'employees',
+          // `doctorCms` is the namespace DOCTOR_ACCOUNTS_TRANSLATIONS is merged into
+          // (i18n/index.js), so `doctorAccounts.*` would render the raw key.
+          label: t('doctorCms.employeesTitle') || 'Employees',
+          icon: Users,
+          path: '/doctor-employees'
         }
       ]
     },

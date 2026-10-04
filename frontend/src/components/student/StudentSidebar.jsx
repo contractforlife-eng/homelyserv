@@ -37,7 +37,8 @@ import {
   ChevronRight,
   X,
   Sparkles,
-  Search
+  Search,
+  AlertTriangle
 } from 'lucide-react';
 
 const StudentSidebar = ({
@@ -100,6 +101,13 @@ const StudentSidebar = ({
       icon: MessageCircle,
       path: '/student-messages',
       active: location.pathname === '/student-messages'
+    },
+    {
+      id: 'complaints',
+      label: t('studentNav.complaints') || 'Complaints',
+      icon: AlertTriangle,
+      path: '/student-complaints',
+      active: location.pathname === '/student-complaints'
     },
     {
       id: 'findTeacher',

@@ -44,6 +44,7 @@ import WorkerApplications from './pages/WorkerApplications';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorProfile from './pages/DoctorProfile';
 import DoctorClinics from './pages/DoctorClinics';
+import DoctorComplaints from './pages/DoctorComplaints';
 
 // Teacher Pages
 import TeacherDashboard from './pages/TeacherDashboard';
@@ -56,6 +57,11 @@ import TeacherMessages from './pages/TeacherMessages';
 import TeacherAccounts from './pages/TeacherAccounts';
 import TeacherProgress from './pages/TeacherProgress';
 import TeacherPromotionHistory from './pages/TeacherPromotionHistory';
+import TeacherComplaints from './pages/TeacherComplaints';
+import TeacherHelp from './pages/TeacherHelp';
+import PortalHires from './pages/PortalHires';
+import Employees from './pages/Employees';
+import SearchWorkers from './pages/SearchWorkers';
 
 // Student Pages
 import StudentDashboard from './pages/StudentDashboard';
@@ -67,6 +73,7 @@ import StudentMyBookings from './pages/StudentMyBookings';
 import StudentSchedule from './pages/StudentSchedule';
 import StudentProgress from './pages/StudentProgress';
 import StudentMessages from './pages/StudentMessages';
+import StudentComplaints from './pages/StudentComplaints';
 import StudentHelp from './pages/StudentHelp';
 import DoctorSchedule from './pages/DoctorSchedule';
 import DoctorAppointments from './pages/DoctorAppointments';
@@ -614,7 +621,52 @@ function App() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/doctor-complaints" 
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <DoctorComplaints />
+          </ProtectedRoute>
+        } 
+      />
 
+      {/* Doctor Employees: own employees + salary editing */}
+      <Route
+        path="/doctor-employees"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <Employees />
+          </ProtectedRoute>
+        }
+      />
+      {/* Teacher Hires: pending offers, accepted hires and declined offers */}
+      <Route
+        path="/teacher-hires"
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <PortalHires />
+          </ProtectedRoute>
+        }
+      />
+      {/* Doctor Hires: pending offers, accepted hires and declined offers */}
+      <Route
+        path="/doctor-hires"
+        element={
+          <ProtectedRoute requiredRole="DOCTOR">
+            <PortalHires />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Teacher Employees: own employees + salary editing */}
+      <Route
+        path="/teacher-employees"
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <Employees />
+          </ProtectedRoute>
+        }
+      />
       {/* ========== TEACHER ROUTES ========== */}
       <Route 
         path="/teacher-dashboard" 
@@ -696,6 +748,38 @@ function App() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/teacher-complaints" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherComplaints />
+          </ProtectedRoute>
+        } 
+      />
+      {/* Teacher Help: dedicated Teacher page. The Worker Help page at /help
+          is untouched, mirroring the existing /doctor-help and /student-help
+          role-specific routes. */}
+      <Route 
+        path="/teacher-help" 
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherHelp />
+          </ProtectedRoute>
+        } 
+      />
+      {/* ========== SEARCH WORKERS (TEACHER + DOCTOR) ========== */}
+      {/* One shared, read-only worker directory. The backend worker-search
+          endpoint already restricts non-EMPLOYER callers to WORKER
+          accounts, so Employers, Teachers, Doctors, Students and staff can
+          never appear in these results. */}
+      <Route
+        path="/search-workers"
+        element={
+          <ProtectedRoute requiredRole={['TEACHER', 'DOCTOR']}>
+            <SearchWorkers />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ========== STUDENT ROUTES ========== */}
       <Route 
@@ -775,6 +859,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentHelp />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student-complaints" 
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentComplaints />
           </ProtectedRoute>
         } 
       />
@@ -1114,7 +1206,7 @@ function App() {
       <Route 
         path="/payment-options" 
         element={
-          <ProtectedRoute requiredRole="EMPLOYER">
+          <ProtectedRoute requiredRole={['EMPLOYER', 'TEACHER', 'DOCTOR']}>
             <PaymentOptions />
           </ProtectedRoute>
         }  

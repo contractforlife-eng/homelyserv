@@ -31,6 +31,9 @@ import { completePaymentTransaction } from '../routes/payment.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
 import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryRequest, isRootRecoveryTarget } from '../security/rootAdmin.js';
 import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
+// Teacher / Student professional profiles for the staff view. Strictly
+// role-gated by attachTeacherStudentView() - never attached to another role.
+import { attachTeacherStudentView } from '../services/teacherStudentProfileStaffView.js';
 import {
   adminUpdateVerification,
   getPendingVerifications,
@@ -189,14 +192,18 @@ router.get('/users/:id', async (req, res) => {
     // substitute. Admin and Sup-Admin receive the identical Doctor read model.
     const { DoctorProfile, doctorClinics } = await getDoctorStaffView(user._id);
 
+    // Teacher / Student professional profile, attached ONLY for those roles.
+    const baseUser = {
+      ...user.toObject(),
+      ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
+      subscription,
+      verification
+    };
+    const enrichedUser = await attachTeacherStudentView(baseUser);
+
     res.json({
       success: true,
-      user: {
-        ...user.toObject(),
-        ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
-        subscription,
-        verification
-      }
+      user: enrichedUser
     });
   } catch (error) {
     console.error('Get user error:', error);

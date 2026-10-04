@@ -927,7 +927,9 @@ export const DOCTOR_CMS_NAV_TRANSLATIONS = {
     sectionPremium: 'مميز',
     homelyservMessages: 'الرسائل',
     homelyservRequests: 'طلبات المواعيد',
-    homelyservProfile: 'ملفي في HomelyServ'
+    homelyservProfile: 'ملفي في HomelyServ',
+    complaints: 'الشكاوى',
+    searchWorkers: 'البحث عن العمال'
   },
   fr: {
     clinicManagement: 'Gestion de clinique',
@@ -944,7 +946,9 @@ export const DOCTOR_CMS_NAV_TRANSLATIONS = {
     sectionPremium: 'Premium',
     homelyservMessages: 'Messages',
     homelyservRequests: 'Demandes de rendez-vous',
-    homelyservProfile: 'Mon profil HomelyServ'
+    homelyservProfile: 'Mon profil HomelyServ',
+    complaints: 'Réclamations',
+    searchWorkers: 'Rechercher des travailleurs'
   },
   ru: {
     clinicManagement: 'Управление клиникой',
@@ -961,7 +965,9 @@ export const DOCTOR_CMS_NAV_TRANSLATIONS = {
     sectionPremium: 'Premium',
     homelyservMessages: 'Сообщения',
     homelyservRequests: 'Запросы на приём',
-    homelyservProfile: 'Мой профиль HomelyServ'
+    homelyservProfile: 'Мой профиль HomelyServ',
+    complaints: 'Жалобы',
+    searchWorkers: 'Поиск работников'
   },
   tr: {
     clinicManagement: 'Klinik Yönetimi',
@@ -978,7 +984,9 @@ export const DOCTOR_CMS_NAV_TRANSLATIONS = {
     sectionPremium: 'Premium',
     homelyservMessages: 'Mesajlar',
     homelyservRequests: 'Randevu İstekleri',
-    homelyservProfile: 'HomelyServ Profilim'
+    homelyservProfile: 'HomelyServ Profilim',
+    complaints: 'Şikâyetler',
+    searchWorkers: 'İşçi Ara'
   },
   de: {
     clinicManagement: 'Klinikverwaltung',
@@ -995,7 +1003,9 @@ export const DOCTOR_CMS_NAV_TRANSLATIONS = {
     sectionPremium: 'Premium',
     homelyservMessages: 'Nachrichten',
     homelyservRequests: 'Terminanfragen',
-    homelyservProfile: 'Mein HomelyServ-Profil'
+    homelyservProfile: 'Mein HomelyServ-Profil',
+    complaints: 'Beschwerden',
+    searchWorkers: 'Arbeitskräfte suchen'
   }
 };
 

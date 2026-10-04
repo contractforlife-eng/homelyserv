@@ -33,11 +33,37 @@ import mongoose from 'mongoose';
 
 const doctorEmployeeSchema = new mongoose.Schema(
   {
-    // Tenant key. Always the authenticated doctor (req.userId).
+    // Canonical tenant key (TEACHER / DOCTOR owner user id).
+    ownerUserId: {
+      type: String,
+      default: null,
+      index: true
+    },
+    // Which portal owns the record (TEACHER / DOCTOR). Display only.
+    ownerRole: {
+      type: String,
+      default: 'DOCTOR',
+      trim: true,
+      uppercase: true
+    },
+    // LEGACY tenant key: preserved so the existing doctor_employees
+    // records keep working untouched; written for doctor-owned employees.
     doctorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      default: null,
+      index: true
+    },
+    // Stable reference to the Hire this employee came from (idempotency).
+    hireId: {
+      type: String,
+      default: null,
+      index: true
+    },
+    // Canonical Worker account id (WorkerProfile.userId) behind the Hire.
+    workerUserId: {
+      type: String,
+      default: null,
       index: true
     },
     fullName: {
@@ -80,6 +106,22 @@ const doctorEmployeeSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       index: true
+    },
+    // Employment end marker for the activate/deactivate/terminate lifecycle.
+    // `isActive` alone cannot distinguish a temporary pause from a permanent
+    // end of employment, so a single optional timestamp is stored alongside it
+    // rather than introducing a second status enum. Absence of the field on
+    // legacy records behaves exactly like `null` (still employable).
+    //
+    //   ACTIVE     -> isActive: true,  terminatedAt: null
+    //   INACTIVE   -> isActive: false, terminatedAt: null
+    //   TERMINATED -> isActive: false, terminatedAt: <timestamp>
+    //
+    // History is never deleted: this only stops future salary periods from
+    // accruing, since doctorAccountsController reads `isActive: true`.
+    terminatedAt: {
+      type: Date,
+      default: null
     },
     notes: {
       type: String,

@@ -328,7 +328,7 @@ const TeacherDashboardContent = () => {
       color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20',
       title: t('teacherNav.help') || 'Help & Support',
       desc: t('teacherDashboard.helpDesc') || 'Guidelines, user manual, and platform support resources.',
-      path: '/help'
+      path: '/teacher-help'
     }
   ];
 

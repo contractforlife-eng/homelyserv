@@ -11,7 +11,14 @@ import { createAndSendPasswordReset } from '../services/passwordResetTokenServic
 import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { isRootAdmin, isRootRecoveryTarget } from '../security/rootAdmin.js';
+// Canonical Doctor -> Patient relationship statuses. Reused here so the Admin
+// View Profile doctor statistics can never drift from the Doctor dashboard /
+// doctorPatientAccessService definition. Semantics are unchanged.
+import { VALID_PATIENT_RELATIONSHIP_STATUSES } from '../services/doctorPatientAccessService.js';
 import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
+// Teacher / Student professional profiles for the staff view. Strictly
+// role-gated by attachTeacherStudentView() - never attached to another role.
+import { attachTeacherStudentView } from '../services/teacherStudentProfileStaffView.js';
 import {
   adminUpdateVerification,
   getPendingVerifications,
@@ -190,9 +197,14 @@ router.get('/users', async (req, res) => {
 
     const where = {};
 
+    const allowedSupportRoles = ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'];
     if (isSupport) {
-      where.role = { in: ['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'] };
-    } else if (role && (!isSupport || ['WORKER', 'EMPLOYER', 'SUPPORT', 'ADMIN'].includes(role))) {
+      if (role && allowedSupportRoles.includes(role.toUpperCase())) {
+        where.role = role.toUpperCase();
+      } else {
+        where.role = { in: allowedSupportRoles };
+      }
+    } else if (role) {
       where.role = role;
     }
 
@@ -362,7 +374,7 @@ router.get('/users/:id', async (req, res) => {
     // DOCTOR is a first-class role. Sup-Admin must be able to open a real
     // Doctor profile with the SAME visibility (and verification authority) as
     // Admin, so a Doctor can never be hidden behind a WorkerProfile fallback.
-    if (isSupport && !['WORKER', 'EMPLOYER', 'DOCTOR'].includes(user.role)) {
+    if (isSupport && !['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(user.role)) {
       return res.status(403).json({ success: false, message: 'Profile access is limited to platform users' });
     }
 
@@ -393,29 +405,29 @@ router.get('/users/:id', async (req, res) => {
       // Admin and Sup-Help so a Doctor always renders as a Doctor).
       const { DoctorProfile, doctorClinics } = await getDoctorStaffView(user.id);
 
-      return res.json({
-        success: true,
-        user: {
-          ...user,
-          lastLogin,
-          ...(mongooseUserObj || {}),
-          ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
-          verification
-        }
-      });
-    }
-
-    const subscription = await getSubscriptionStaffDetail(id);
-    return res.json({
-      success: true,
-      user: {
+      const supportBase = {
         ...user,
         lastLogin,
         ...(mongooseUserObj || {}),
-        verification,
-        subscription,
-      },
-    });
+        ...(user.role === 'DOCTOR' ? { DoctorProfile, doctorClinics } : {}),
+        verification
+      };
+      // Teacher / Student professional profile, attached ONLY for those roles.
+      const supportUser = await attachTeacherStudentView(supportBase);
+
+      return res.json({ success: true, user: supportUser });
+    }
+
+    const subscription = await getSubscriptionStaffDetail(id);
+    const adminBase = {
+      ...user,
+      lastLogin,
+      ...(mongooseUserObj || {}),
+      verification,
+      subscription,
+    };
+    const adminUser = await attachTeacherStudentView(adminBase);
+    return res.json({ success: true, user: adminUser });
   } catch (error) {
     console.error('❌ Error fetching user for support:', error);
     return res.status(500).json({ error: 'Failed to fetch user' });
@@ -490,6 +502,89 @@ router.get('/users/:id/stats', requireAdminForSensitiveSupport, async (req, res)
       offersCount,
       paymentsCount,
     };
+
+    // Role-specific statistics
+    if (user.role === 'STUDENT') {
+      try {
+        const TeacherStudent = (await import('../models/TeacherStudent.js')).default;
+        const studentUserId = id;
+        // Canonical Student semantics - identical to the Student dashboard's
+        // getStudentAuthorizedScope(): ONLY ACTIVE relationships, and UNIQUE
+        // teacherId. The previous `{ $ne: 'REJECTED' }` also counted PENDING and
+        // ENDED relationships and counted duplicate rows for the same teacher.
+        const activeRelationships = await TeacherStudent.find({
+          $or: [{ linkedUserId: studentUserId }, { studentUserId: studentUserId }],
+          isActive: true,
+          relationshipStatus: 'ACTIVE'
+        })
+          .select('_id teacherId')
+          .lean();
+
+        stats.teachersCount = new Set(
+          activeRelationships.map((row) => String(row.teacherId)).filter(Boolean)
+        ).size;
+      } catch (e) {
+        console.error('❌ Error counting student teachers:', e.message);
+        stats.teachersCount = 0;
+      }
+    } else if (user.role === 'TEACHER') {
+      try {
+        const TeacherStudent = (await import('../models/TeacherStudent.js')).default;
+        const [homelyServStudentsCount, regularStudentsCount] = await Promise.all([
+          TeacherStudent.countDocuments({
+            teacherId: id,
+            isActive: true,
+            $or: [{ linkedUserId: { $ne: null } }, { studentUserId: { $ne: null } }],
+          }),
+          TeacherStudent.countDocuments({
+            teacherId: id,
+            isActive: true,
+            linkedUserId: null,
+            studentUserId: null,
+          }),
+        ]);
+        stats.homelyServStudentsCount = homelyServStudentsCount;
+        stats.regularStudentsCount = regularStudentsCount;
+      } catch (e) {
+        console.error('❌ Error counting teacher students:', e.message);
+        stats.homelyServStudentsCount = 0;
+        stats.regularStudentsCount = 0;
+      }
+    } else if (user.role === 'DOCTOR') {
+      try {
+        const DoctorAppointment = (await import('../models/DoctorAppointment.js')).default;
+        const ClinicPatient = (await import('../models/ClinicPatient.js')).default;
+        // Canonical statuses - NOT a duplicated hardcoded list.
+        const VALID_STATUSES = VALID_PATIENT_RELATIONSHIP_STATUSES;
+
+        const [homelyServPatientIds, clinicPatientsCount, clinicLinkedIds] = await Promise.all([
+          DoctorAppointment.distinct('patientId', {
+            doctorId: id,
+            status: { $in: VALID_STATUSES },
+          }),
+          ClinicPatient.countDocuments({ doctorId: id }),
+          ClinicPatient.distinct('linkedUserId', { doctorId: id, linkedUserId: { $ne: null } }),
+        ]);
+
+        const homelyServPatientSet = new Set(
+          homelyServPatientIds.filter(Boolean).map(String)
+        );
+        const homelyServPatientsCount = homelyServPatientSet.size;
+
+        const overlapCount = clinicLinkedIds
+          .filter(Boolean)
+          .filter((linkedId) => homelyServPatientSet.has(String(linkedId)))
+          .length;
+        const regularPatientsCount = Math.max(0, clinicPatientsCount - overlapCount);
+
+        stats.homelyServPatientsCount = homelyServPatientsCount;
+        stats.regularPatientsCount = regularPatientsCount;
+      } catch (e) {
+        console.error('❌ Error counting doctor patients:', e.message);
+        stats.homelyServPatientsCount = 0;
+        stats.regularPatientsCount = 0;
+      }
+    }
 
     // Additive support-workload counters for staff targets only.
     // Proven OR pattern (assignedSupport + legacy assignedTo), same active

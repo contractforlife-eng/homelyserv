@@ -22,6 +22,25 @@ const toCount = (value) => {
 };
 
 /**
+ * Window event name used to ask every mounted sidebar to refetch the
+ * counters immediately. Declared here (next to the counters themselves)
+ * so non-React callers such as chatService can trigger a refresh without
+ * importing a hook.
+ */
+export const SIDEBAR_COUNTERS_REFRESH_EVENT = 'sidebar-counters:refresh';
+
+/**
+ * Ask the mounted sidebars to refresh the unread/counter badges right
+ * away. Used after a state-changing action that the backend counter can
+ * already resolve (e.g. marking a conversation as read), so the badge
+ * drops to zero without waiting for the polling interval.
+ */
+export function requestSidebarCountersRefresh() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(SIDEBAR_COUNTERS_REFRESH_EVENT));
+}
+
+/**
  * Fetch all sidebar counters for the authenticated user.
  * Never throws - returns zeroed counters on failure so the
  * sidebar simply hides its badges.
@@ -45,4 +64,9 @@ export async function getSidebarCounters() {
   }
 }
 
-export default { getSidebarCounters, EMPTY_SIDEBAR_COUNTERS };
+export default {
+  getSidebarCounters,
+  EMPTY_SIDEBAR_COUNTERS,
+  SIDEBAR_COUNTERS_REFRESH_EVENT,
+  requestSidebarCountersRefresh,
+};

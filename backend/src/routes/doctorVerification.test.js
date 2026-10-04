@@ -813,13 +813,28 @@ test('29. SUP-HELP opening a Doctor is allowed and read-only', async () => {
   });
 });
 
-test('30. Sup-Help still cannot open staff, Teacher or Student profiles', async () => {
+test('30. Sup-Help still cannot open staff profiles, and may read Teacher/Student read-only', async () => {
   await withDoctorVerificationServer({}, async (base) => {
-    for (const id of [ADMIN_ID, TEACHER_ID, STUDENT_ID]) {
+    // Staff accounts (ADMIN / SUPPORT / SUP_ADMIN / SUPPORT_HELPER) remain
+    // OUTSIDE the Sup-Help directory: staff identities are never browsable
+    // through the platform-user profile endpoint.
+    for (const id of [ADMIN_ID, SUP_ADMIN_ID, SUP_HELP_ID]) {
       const res = await fetch(`${base}/api/sup-help/users/${id}`, {
         headers: authHeader(SUP_HELP_ID, 'SUPPORT_HELPER')
       });
-      assert.equal(res.status, 403, `Sup-Help must not open profile ${id}`);
+      assert.equal(res.status, 403, `Sup-Help must not open staff profile ${id}`);
+    }
+
+    // Teacher and Student are first-class platform roles and ARE readable by
+    // Sup-Help (read-only), the same visibility Sup-Admin already has.
+    for (const [id, role] of [[TEACHER_ID, 'TEACHER'], [STUDENT_ID, 'STUDENT']]) {
+      const res = await fetch(`${base}/api/sup-help/users/${id}`, {
+        headers: authHeader(SUP_HELP_ID, 'SUPPORT_HELPER')
+      });
+      assert.equal(res.status, 200, `Sup-Help must be able to open a ${role} profile`);
+      const body = await res.json();
+      assert.equal(body.user.role, role);
+      assert.ok(!body.user.WorkerProfile, `a ${role} must never be rendered through a WorkerProfile`);
     }
   });
 });

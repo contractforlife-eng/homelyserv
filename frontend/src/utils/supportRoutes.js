@@ -33,3 +33,12 @@ export const getComplaintsRoute = (role) => {
       return '/contact';
   }
 };
+
+// Roles that may hire WORKER accounts and pay the HomelyServ commission for
+// their OWN hires. Mirrors backend/src/services/hireAuthorization.js
+// (HIRING_CALLER_ROLES) so the frontend and backend share one role list.
+// EMPLOYER behaviour is unchanged.
+export const HIRING_ROLES = ['EMPLOYER', 'TEACHER', 'DOCTOR'];
+
+export const isHiringRole = (role) =>
+  HIRING_ROLES.includes(String(role || '').toUpperCase());

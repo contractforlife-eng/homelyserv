@@ -15,6 +15,9 @@ import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
 import { getVisiblePaymentMethods } from '../utils/paymentMethodVisibility';
+import { isHiringRole } from '../utils/supportRoutes';
+import TeacherSidebar from '../components/teacher/TeacherSidebar';
+import DoctorSidebar from '../components/doctor/DoctorSidebar';
 import { canShowEgyptianManualPaymentMethods } from '../utils/egyptianPaymentVisibility';
 import {
   ArrowLeft,
@@ -47,6 +50,58 @@ import {
   Smartphone,
   Building2
 } from 'lucide-react';
+
+// ============================================================
+// ROLE-AWARE ACCENT COLORS
+// ============================================================
+// The Employer/Worker appearance is preserved EXACTLY: the EMPLOYER map is an
+// identity map, so every class string it returns is byte-identical to what this
+// page has always rendered.
+// Teacher and Doctor get their own portal red instead of the Employer teal.
+// Only presentation changes - providers, amounts, the 15% commission and every
+// payment API call are untouched.
+//
+// Every value is a literal Tailwind class so the JIT scanner can see both the
+// teal and the red variants in the source.
+const ACCENT_TOKENS = {
+  'border-teal-600': 'border-teal-600',
+  'bg-teal-600': 'bg-teal-600',
+  'hover:bg-teal-700': 'hover:bg-teal-700',
+  'from-teal-600': 'from-teal-600',
+  'from-teal-500': 'from-teal-500',
+  'to-teal-700': 'to-teal-700',
+  'to-teal-600': 'to-teal-600',
+  'text-teal-100': 'text-teal-100',
+  'text-teal-600': 'text-teal-600',
+  'bg-teal-100': 'bg-teal-100',
+  'bg-teal-50': 'bg-teal-50',
+  'hover:bg-teal-50': 'hover:bg-teal-50',
+  'border-teal-500': 'border-teal-500',
+  'hover:border-teal-300': 'hover:border-teal-300',
+  'ring-teal-500': 'ring-teal-500',
+  'dark:bg-teal-900/30': 'dark:bg-teal-900/30',
+  'hover:text-teal-700': 'hover:text-teal-700',
+};
+
+const PORTAL_RED_ACCENT_TOKENS = {
+  'border-teal-600': 'border-red-600',
+  'bg-teal-600': 'bg-red-600',
+  'hover:bg-teal-700': 'hover:bg-red-700',
+  'from-teal-600': 'from-red-600',
+  'from-teal-500': 'from-red-500',
+  'to-teal-700': 'to-red-700',
+  'to-teal-600': 'to-red-600',
+  'text-teal-100': 'text-red-100',
+  'text-teal-600': 'text-red-600',
+  'bg-teal-100': 'bg-red-100',
+  'bg-teal-50': 'bg-red-50',
+  'hover:bg-teal-50': 'hover:bg-red-50',
+  'border-teal-500': 'border-red-500',
+  'hover:border-teal-300': 'hover:border-red-300',
+  'ring-teal-500': 'ring-red-500',
+  'dark:bg-teal-900/30': 'dark:bg-red-900/30',
+  'hover:text-teal-700': 'hover:text-red-700',
+};
 
 // ============================================================
 // MAIN PAYMENT OPTIONS COMPONENT
@@ -92,6 +147,13 @@ const PaymentOptions = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  const portalRole = String(authUser?.role || '').toUpperCase();
+  // TEACHER / DOCTOR render their own portal red; EMPLOYER and WORKER keep the
+  // existing Employer teal appearance byte-for-byte.
+  const accent = portalRole === 'TEACHER' || portalRole === 'DOCTOR'
+    ? PORTAL_RED_ACCENT_TOKENS
+    : ACCENT_TOKENS;
 
   // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const allPaymentMethods = [
@@ -684,8 +746,10 @@ const PaymentOptions = () => {
       return;
     }
 
-    // Check if user is employer
-    if (authUser.role !== 'EMPLOYER') {
+    // Only roles that may hire a WORKER and pay the HomelyServ commission can
+    // reach checkout (EMPLOYER / TEACHER / DOCTOR). Ownership of the Hire is
+    // enforced server-side on every payment endpoint.
+    if (!isHiringRole(authUser.role)) {
       navigate('/login');
       return;
     }
@@ -772,13 +836,32 @@ const PaymentOptions = () => {
   const total = calculateTotal();
 
   // ============================================================
+  // ROLE-AWARE PORTAL SIDEBAR
+  // EMPLOYER keeps the existing EmployerSidebar exactly as before.
+  // TEACHER / DOCTOR render their own portal identity.
+  // ============================================================
+  const renderPortalSidebar = () => {
+    const sharedProps = {
+      sidebarCollapsed,
+      toggleSidebar,
+      mobileMenuOpen,
+      toggleMobileMenu,
+      authUser,
+      handleLogout,
+    };
+    if (portalRole === 'TEACHER') return <TeacherSidebar {...sharedProps} />;
+    if (portalRole === 'DOCTOR') return <DoctorSidebar {...sharedProps} />;
+    return <EmployerSidebar language={language} {...sharedProps} />;
+  };
+
+  // ============================================================
   // RENDER
   // ============================================================
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${accent['border-teal-600']} mx-auto`}></div>
           <p className="mt-4 text-gray-600 dark:text-gray-300">{t('paymentOptionsPage.loading')}</p>
         </div>
       </div>
@@ -794,7 +877,7 @@ const PaymentOptions = () => {
           <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.loginDescription')}</p>
           <button
             onClick={() => navigate('/login')}
-            className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+            className={`mt-4 px-6 py-2 ${accent['bg-teal-600']} text-white rounded-lg ${accent['hover:bg-teal-700']} transition`}
           >
             {t('paymentOptionsPage.login')}
           </button>
@@ -806,15 +889,7 @@ const PaymentOptions = () => {
   if (!workerData) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-        <EmployerSidebar
-          language={language}
-          sidebarCollapsed={sidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-          mobileMenuOpen={mobileMenuOpen}
-          toggleMobileMenu={toggleMobileMenu}
-          authUser={authUser}
-          handleLogout={handleLogout}
-        />
+        {renderPortalSidebar()}
         <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'} ml-0 rtl:mr-0 lg:rtl:ml-0`}>
           <div className="p-4 md:p-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
@@ -823,7 +898,7 @@ const PaymentOptions = () => {
               <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.goBack')}</p>
               <button
                 onClick={() => navigate('/employer-search')}
-                className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+                className={`mt-4 px-6 py-2 ${accent['bg-teal-600']} text-white rounded-lg ${accent['hover:bg-teal-700']} transition`}
               >
                 {t('paymentOptionsPage.goBack')}
               </button>
@@ -836,15 +911,7 @@ const PaymentOptions = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <EmployerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
-      />
+      {renderPortalSidebar()}
 
       <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'} ml-0 rtl:mr-0 lg:rtl:ml-0`}>
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
@@ -871,10 +938,10 @@ const PaymentOptions = () => {
 
         <div className="p-4 md:p-6">
           {/* Page Header */}
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
+          <div className={`bg-gradient-to-r ${accent['from-teal-600']} ${accent['to-teal-700']} rounded-2xl p-6 mb-6 text-white`}>
             <div>
               <h1 className="text-2xl font-bold">{t('paymentOptionsPage.title')}</h1>
-              <p className="text-teal-100 mt-1">{t('paymentOptionsPage.subtitle')}</p>
+              <p className={`${accent['text-teal-100']} mt-1`}>{t('paymentOptionsPage.subtitle')}</p>
             </div>
           </div>
 
@@ -906,7 +973,7 @@ const PaymentOptions = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
+                <div className={`w-14 h-14 rounded-full ${accent['bg-teal-100']} flex items-center justify-center overflow-hidden`}>
                   {workerData?.profileImage ? (
                     <img 
                       src={workerData.profileImage} 
@@ -914,7 +981,7 @@ const PaymentOptions = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User size={28} className="text-teal-600" />
+                    <User size={28} className={accent['text-teal-600']} />
                   )}
                 </div>
                 <div>
@@ -941,7 +1008,7 @@ const PaymentOptions = () => {
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.totalAmount')}</p>
-                <p className="text-2xl font-bold text-teal-600">{total.toFixed(2)} {paymentCurrency}</p>
+                <p className={`text-2xl font-bold ${accent['text-teal-600']}`}>{total.toFixed(2)} {paymentCurrency}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {pendingPayment?.paymentType === 'quick_hire_premium'
                     ? t('paymentOptionsPage.quickHireFee')
@@ -978,14 +1045,14 @@ const PaymentOptions = () => {
                       setPaymentMessage('');
                     }}
                     className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
-                      isSelected 
-                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 ring-2 ring-teal-500 ring-opacity-30'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 hover:bg-teal-50 dark:bg-teal-900/30'
+                      isSelected
+                        ? `${accent['border-teal-500']} ${accent['bg-teal-50']} ${accent['dark:bg-teal-900/30']} ring-2 ${accent['ring-teal-500']} ring-opacity-30`
+                        : `border-gray-200 dark:border-gray-700 ${accent['hover:border-teal-300']} ${accent['hover:bg-teal-50']} ${accent['dark:bg-teal-900/30']}`
                     } ${isProcessing || manualPaymentSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={isProcessing || manualPaymentSubmitted}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0`}>
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${accent['from-teal-500']} ${accent['to-teal-600']} flex items-center justify-center flex-shrink-0`}>
                         <Icon size={24} className="text-white" />
                       </div>
                       <div className="flex-1">
@@ -1000,7 +1067,7 @@ const PaymentOptions = () => {
                         <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{method.description}</p>
                       </div>
                       {isSelected && (
-                        <CheckCircle size={18} className="text-teal-600 flex-shrink-0" />
+                        <CheckCircle size={18} className={`${accent['text-teal-600']} flex-shrink-0`} />
                       )}
                     </div>
                   </button>
@@ -1036,7 +1103,7 @@ const PaymentOptions = () => {
               <button
                 onClick={handlePayment}
                 disabled={isProcessing || !selectedMethod || paymentSuccess}
-                className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                className={`flex-1 py-3 bg-gradient-to-r ${accent['from-teal-500']} ${accent['to-teal-600']} text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2`}
               >
                 {isProcessing ? (
                   <>
@@ -1086,7 +1153,7 @@ const PaymentOptions = () => {
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentOptionsPage.paypalTitle')}</h3>
                 <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <Loader2 size={20} className="animate-spin text-teal-600" />
+                    <Loader2 size={20} className={`animate-spin ${accent['text-teal-600']}`} />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{paymentMessage || t('paymentOptionsPage.paymentVerifying')}</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
@@ -1137,7 +1204,7 @@ const PaymentOptions = () => {
                     href={paypalApprovalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 text-sm text-teal-600 hover:text-teal-700 underline block"
+                    className={`mt-2 text-sm ${accent['text-teal-600']} ${accent['hover:text-teal-700']} underline block`}
                   >
                     {t('paymentOptionsPage.paypalManualLink')}
                   </a>

@@ -16,6 +16,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { isUserPremium } from '../utils/subscriptionService';
+import EmployeeSalaryList from '../components/accounts/EmployeeSalaryList';
 import api from '../utils/api';
 import {
   formatCurrencyAmount,
@@ -508,6 +509,17 @@ const TeacherAccounts = () => {
                 >
                   {t('teacherAccounts.tabs.expenses') || 'Expenses'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('employeeSalaries')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activeTab === 'employeeSalaries'
+                      ? 'bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  {t('teacherAccounts.tabs.employeeSalaries') || 'Employee Salaries'}
+                </button>
               </div>
 
               {/* Date range controls */}
@@ -830,6 +842,40 @@ const TeacherAccounts = () => {
                         </table>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* ============================================================ */}
+                {/* TAB 4: EMPLOYEE SALARIES (payroll)                            */}
+                {/* ============================================================ */}
+                {/* Dedicated payroll view for the salary paid to hired Workers.
+                    The salary shown is ALWAYS Employee.salary - never the 15%
+                    HomelyServ recruitment commission, which stays recorded as an
+                    Expense in the Expenses tab above. Ownership is enforced
+                    server-side by the existing GET /api/employees scope. */}
+                {activeTab === 'employeeSalaries' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                      <EmployeeSalaryList
+                        copy={{
+                          title: t('teacherAccounts.employeeSalaries.title'),
+                          subtitle: t('teacherAccounts.employeeSalaries.subtitle'),
+                          worker: t('teacherAccounts.employeeSalaries.worker'),
+                          status: t('teacherAccounts.employeeSalaries.status'),
+                          salary: t('teacherAccounts.employeeSalaries.salary'),
+                          startDate: t('teacherAccounts.employeeSalaries.startDate'),
+                          empty: t('teacherAccounts.employeeSalaries.empty'),
+                          loading: t('teacherAccounts.employeeSalaries.loading'),
+                          loadError: t('teacherAccounts.employeeSalaries.loadError'),
+                          emptyDesc: t('teacherAccounts.employeeSalaries.emptyDesc'),
+                          note: t('teacherAccounts.employeeSalaries.note'),
+                          statusActive: t('teacherAccounts.employeeSalaries.statusActive'),
+                          statusInactive: t('teacherAccounts.employeeSalaries.statusInactive'),
+                          statusTerminated:
+                            t('teacherAccounts.employeeSalaries.statusTerminated'),
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
               </>

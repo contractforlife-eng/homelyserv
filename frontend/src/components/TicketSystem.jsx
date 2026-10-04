@@ -1,8 +1,11 @@
 // frontend/src/components/TicketSystem.jsx
 // ============================================================
 // SHARED SUPPORT TICKET SYSTEM
-// Used by WorkerComplaints (red theme) and EmployerComplaints (teal theme).
-// Reuses the existing complaint API. No backend changes.
+// Used by WorkerComplaints (red theme) and EmployerComplaints (teal theme),
+// plus the Teacher / Doctor / Student portal complaints pages, which pass
+// their own role theme (teacher / doctor / student) so each portal keeps its
+// existing identity colour. Reuses the existing complaint API.
+// No backend changes.
 // ============================================================
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -38,33 +41,52 @@ import { UserDisplayName } from './users';
 // ============================================================
 // THEME CONFIG
 // ============================================================
+// Each portal role reuses the identity colour that is ALREADY applied
+// across its own pages and sidebar, so no new palette is introduced:
+//   worker   -> RED   (WorkerDashboard / WorkerSidebar)
+//   employer -> TEAL  (EmployerDashboard / EmployerSidebar)
+//   teacher  -> RED   (TeacherDashboard banner + TeacherSidebar)
+//   doctor   -> RED   (DoctorDashboard banner + DoctorSidebar)
+//   student  -> RED   (StudentDashboard banner + StudentSidebar)
+// The red/teal token blocks stay byte-identical so Worker and Employer
+// rendering is completely unchanged; the portal roles are aliases of the
+// very same token objects.
+const RED_IDENTITY = {
+  gradient: 'from-red-600 via-red-700 to-red-800',
+  text: 'text-red-600',
+  textDark: 'text-red-600 dark:text-red-400',
+  bg: 'bg-red-50 dark:bg-red-900/30',
+  ring: 'focus:ring-red-500',
+  button: 'bg-gradient-to-r from-red-600 to-red-700',
+  buttonHover: 'hover:shadow-lg',
+  dot: 'bg-red-500',
+  bubble: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800',
+  icon: 'text-red-600',
+  headerBtn: 'bg-white text-red-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30'
+};
+
+const TEAL_IDENTITY = {
+  gradient: 'from-teal-600 to-teal-700',
+  text: 'text-teal-600',
+  textDark: 'text-teal-600 dark:text-teal-400',
+  bg: 'bg-teal-50 dark:bg-teal-900/30',
+  ring: 'focus:ring-teal-500',
+  button: 'bg-teal-600',
+  buttonHover: 'hover:bg-teal-700',
+  dot: 'bg-teal-500',
+  bubble: 'bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800',
+  icon: 'text-teal-600',
+  headerBtn: 'bg-white text-teal-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30'
+};
+
 const THEMES = {
-  red: {
-    gradient: 'from-red-600 via-red-700 to-red-800',
-    text: 'text-red-600',
-    textDark: 'text-red-600 dark:text-red-400',
-    bg: 'bg-red-50 dark:bg-red-900/30',
-    ring: 'focus:ring-red-500',
-    button: 'bg-gradient-to-r from-red-600 to-red-700',
-    buttonHover: 'hover:shadow-lg',
-    dot: 'bg-red-500',
-    bubble: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800',
-    icon: 'text-red-600',
-    headerBtn: 'bg-white text-red-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30'
-  },
-  teal: {
-    gradient: 'from-teal-600 to-teal-700',
-    text: 'text-teal-600',
-    textDark: 'text-teal-600 dark:text-teal-400',
-    bg: 'bg-teal-50 dark:bg-teal-900/30',
-    ring: 'focus:ring-teal-500',
-    button: 'bg-teal-600',
-    buttonHover: 'hover:bg-teal-700',
-    dot: 'bg-teal-500',
-    bubble: 'bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800',
-    icon: 'text-teal-600',
-    headerBtn: 'bg-white text-teal-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30'
-  }
+  // Original keys (unchanged behaviour for the existing pages).
+  red: RED_IDENTITY,
+  teal: TEAL_IDENTITY,
+  // Role-aware aliases for the Teacher / Doctor / Student portals.
+  teacher: RED_IDENTITY,
+  doctor: RED_IDENTITY,
+  student: RED_IDENTITY
 };
 
 const DATE_LOCALES = {
@@ -396,7 +418,12 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
     return (
       <div className="space-y-3">
         {messages.map((msg, index) => {
-          const isMine = msg.isOriginal || ['WORKER', 'EMPLOYER'].includes(msg.authorRole);
+          // Replies written by the ticket owner are stored with the caller's
+          // own role, which is not limited to WORKER/EMPLOYER (DOCTOR,
+          // TEACHER and STUDENT also own tickets). Compare against the
+          // current userRole so every owner reply stays right-aligned.
+          const isMine = msg.isOriginal
+            || (msg.authorRole != null && String(msg.authorRole).toUpperCase() === String(userRole).toUpperCase());
           const authorLabel = msg.authorName || (isMine ? t('ticketSystem.you') : t('ticketSystem.support'));
           const bubbleClass = isMine
             ? `ml-auto ${th.bubble} border`

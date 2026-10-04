@@ -1,5 +1,6 @@
 import api from '../utils/api';
 import { getDisplayName } from './userDisplay';
+import { requestSidebarCountersRefresh } from '../services/sidebarService';
 
 export const getConversationId = (user1Id, user2Id) => {
   const ids = [String(user1Id), String(user2Id)].sort();
@@ -101,7 +102,17 @@ export const markMessagesAsRead = async (conversationId, userId) => {
     userId
   });
 
-  return !!result.data?.success;
+  const marked = !!result.data?.success;
+  // The unread badge is driven by the backend `messages` counter, which is
+  // derived from unread Message rows. Once they are flagged read the counter
+  // is already lower, so ask the sidebars to refetch instead of waiting for
+  // the next poll. This is what makes the badge disappear immediately after
+  // reading and reappear on the next incoming message.
+  if (marked) {
+    requestSidebarCountersRefresh();
+  }
+
+  return marked;
 };
 
 export const getUnreadCount = async (conversationId, userId) => {

@@ -29,6 +29,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
+// Shared employment-lifecycle state helper (ACTIVE/INACTIVE/TERMINATED) - the
+// same one the Teacher Employee Salaries view uses, so both portals agree.
+import { employeeLifecycleState } from '../components/accounts/EmployeeSalaryList';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
 import {
@@ -1213,18 +1216,28 @@ const DoctorAccounts = () => {
                     <Wallet size={12} />
                     {t('doctorCms.employeeFinanceOpen')}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleEmployeeActive(record)}
-                    className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                      record.isActive
-                        ? 'border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
-                        : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    }`}
-                    title={record.isActive ? t('doctorCms.employeeDeactivate') : t('doctorCms.employeeActivate')}
-                  >
-                    {record.isActive ? t('doctorCms.employeeActive') : t('doctorCms.employeeInactive')}
-                  </button>
+                  {/* Employment lifecycle status: a terminated employee is NOT merely inactive.
+                      Reactivation is not supported by the lifecycle rules, so no
+                      Activate/Deactivate toggle is offered for TERMINATED rows -
+                      the historical record and its salary are preserved. */}
+                  {employeeLifecycleState(record) === 'TERMINATED' ? (
+                    <span className="shrink-0 inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      {t('doctorCms.lifecycle.terminated')}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => toggleEmployeeActive(record)}
+                      className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                        record.isActive
+                          ? 'border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
+                      title={record.isActive ? t('doctorCms.employeeDeactivate') : t('doctorCms.employeeActivate')}
+                    >
+                      {record.isActive ? t('doctorCms.employeeActive') : t('doctorCms.employeeInactive')}
+                    </button>
+                  )}
                   <RowActions
                     type="employees"
                     record={record}

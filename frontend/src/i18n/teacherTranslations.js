@@ -6,11 +6,21 @@
 
 export const TEACHER_TRANSLATIONS = {
   en: {
+    // Teacher Employees page (the shared /teacher-employees route). Kept
+    // separate from `doctorCms` so the Teacher never shows clinic wording.
+    teacherEmployees: {
+      title: 'Employees',
+      subtitle:
+        'Manage the employees you hired and their salaries. Salaries here are used for your salary expense in Accounts.',
+      empty: 'No employees added yet.',
+    },
     teacherNav: {
       dashboard: 'Dashboard',
       myProfile: 'My Profile',
       medicalProfile: 'My Medical Profile',
       messages: 'Messages',
+      complaints: 'Complaints',
+      searchWorkers: 'Search Workers',
       students: 'Students',
       groups: 'Groups / Classes',
       lessons: 'Lessons',
@@ -486,7 +496,27 @@ export const TEACHER_TRANSLATIONS = {
       tabs: {
         summary: 'Financial Summary',
         income: 'Income & Fees',
-        expenses: 'Expenses'
+        expenses: 'Expenses',
+        employeeSalaries: 'Employee Salaries'
+      },
+      employeeSalaries: {
+        title: 'Employee Salaries',
+        subtitle:
+          'The salaries you pay your hired workers. This is separate from the HomelyServ recruitment commission, which stays recorded under Expenses.',
+        worker: 'Worker',
+        status: 'Employment Status',
+        salary: 'Monthly Salary',
+        startDate: 'Start Date',
+        empty: 'No employee records found.',
+        loading: 'Loading employee salaries...',
+        emptyDesc:
+          'Employees appear here automatically when a worker accepts one of your offers.',
+        loadError: 'Failed to load employee salaries.',
+        note:
+          'Employee salaries are the agreed employment salary and are separate from the HomelyServ recruitment commission, which stays recorded under Expenses.',
+        statusActive: 'Active',
+        statusInactive: 'Inactive',
+        statusTerminated: 'Terminated'
       },
       summary: {
         title: 'Accounting Overview',
@@ -748,14 +778,59 @@ export const TEACHER_TRANSLATIONS = {
         loadError: 'Failed to load promotion history records.',
         retry: 'Retry'
       }
+    },
+    teacherHelp: {
+      title: 'Teacher Help & Support',
+      subtitle: 'Guidance for your teacher profile, students, groups, lessons, schedule, student progress and accounts.',
+      searchPlaceholder: 'Search teacher help guides, topics, and FAQs...',
+      teacherTools: 'Teacher Tools',
+      articleWord: 'articles',
+      email: 'Email Support',
+      phone: 'Phone Support',
+      chat: 'Messages / Support',
+      chatDesc: 'Contact the HomelyServ team directly',
+      supportHours: 'Support Hours',
+      supportHoursDesc: 'Sun - Thu: 9:00 AM - 9:00 PM',
+      allCategories: 'All Topics',
+      catProfile: 'Profile & Verification',
+      catStudents: 'Students & Progress',
+      catTeaching: 'Groups, Lessons & Schedule',
+      catAccounts: 'Accounts & Income',
+      catSupport: 'Messages & Complaints',
+      faqTitle: 'Frequently Asked Questions',
+      noResults: 'No help articles found',
+      tryDifferent: 'Try searching with different keywords like students, lessons, schedule, or accounts.',
+      contactSupportCardTitle: 'Need Direct Assistance?',
+      contactSupportCardDesc: 'If you have a question or an issue with your teacher account, contact HomelyServ Support directly through messages or email.',
+      contactSupportBtn: 'Message Support',
+      faq1Question: 'How do I complete and verify my Teacher profile?',
+      faq1Answer: 'Open "My Profile" from the Teacher sidebar to add your subjects, qualifications and availability, and use "My Medical Profile" for your health records. A complete profile helps students and HomelyServ verify you.',
+      faq2Question: 'How do I manage my students and follow their progress?',
+      faq2Answer: '"Students" lists the learners linked to you, "Student Progress" tracks their attendance and performance, and "Promotion History" records level changes and subscriptions.',
+      faq3Question: 'How do I create groups, lessons and a teaching schedule?',
+      faq3Answer: 'Use "Groups / Classes" to organise your learners, "Lessons" to create and run your lessons, and "Schedule" to publish the weekly timetable that students can book.',
+      faq4Question: 'Where can I review my income and expenses?',
+      faq4Answer: '"Accounts" shows your HomelyServ earnings, your expenses and your payouts in one place, together with your payment history.',
+      faq5Question: 'How do I reach HomelyServ support or raise a complaint?',
+      faq5Answer: 'Send a message from "Messages / Support" to contact the team, or open "Complaints" to create a ticket and follow its status and replies.',
+      faq6Question: 'What does Teacher Premium add to my account?',
+      faq6Answer: '"Premium Subscription" unlocks additional Teacher features and visibility. Open it from the Teacher sidebar to review the current plan and its benefits.'
     }
   },
   ar: {
+    teacherEmployees: {
+      title: 'الموظفون',
+      subtitle:
+        'إدارة الموظفين الذين وظفتهم ورواتبهم. تُستخدم الرواتب هنا في مصروف الرواتب ضمن الحسابات.',
+      empty: 'لا يوجد موظفون بعد.',
+    },
     teacherNav: {
       dashboard: 'لوحة التحكم',
       myProfile: 'ملفي التعليمي',
       medicalProfile: 'ملفي الطبي',
       messages: 'الرسائل',
+      complaints: 'الشكاوى',
+      searchWorkers: 'البحث عن العمال',
       students: 'الطلاب',
       groups: 'المجموعات / الفصول',
       lessons: 'الدروس',
@@ -1231,7 +1306,27 @@ export const TEACHER_TRANSLATIONS = {
       tabs: {
         summary: 'الملخص المالي',
         income: 'الدخل والمستحقات',
-        expenses: 'المصروفات'
+        expenses: 'المصروفات',
+        employeeSalaries: 'رواتب الموظفين'
+      },
+      employeeSalaries: {
+        title: 'رواتب الموظفين',
+        subtitle:
+          'الرواتب التي تدفعها للعمال الذين وظفتهم. هذا منفصل عن عمولة التوظيف من HomelyServ، التي تبقى مسجلة ضمن المصروفات.',
+        worker: 'العامل',
+        status: 'حالة التوظيف',
+        salary: 'الراتب الشهري',
+        startDate: 'تاريخ البدء',
+        empty: 'لا توجد سجلات موظفين.',
+        loading: 'جارٍ تحميل رواتب الموظفين...',
+        emptyDesc:
+          'يظهر الموظفون هنا تلقائيًا عندما يقبل عامل أحد عروضك.',
+        loadError: 'تعذر تحميل رواتب الموظفين.',
+        note:
+          'رواتب الموظفين هي راتب التوظيف المتفق عليه وهي منفصلة عن عمولة التوظيف من HomelyServ، التي تبقى مسجلة ضمن المصروفات.',
+        statusActive: 'نشط',
+        statusInactive: 'غير نشط',
+        statusTerminated: 'منتهي الخدمة'
       },
       summary: {
         title: 'نظرة عامة على الحسابات',
@@ -1493,14 +1588,59 @@ export const TEACHER_TRANSLATIONS = {
         loadError: 'فشل تحميل سجل الترقية والاشتراكات.',
         retry: 'إعادة المحاولة'
       }
+    },
+    teacherHelp: {
+      title: 'مساعدة المدرسين والدعم',
+      subtitle: 'إرشادات حول ملفك كدرس، وطلابك، ومجموعاتك، ودروسك، وجدولك، وتقدّم طلابك وحساباتك.',
+      searchPlaceholder: 'ابحث في أدلة وميثاقيات مساعدة المدرسين...',
+      teacherTools: 'أدوات المدرس',
+      articleWord: 'مقالات',
+      email: 'الدعم عبر البريد',
+      phone: 'الدعم الهاتفي',
+      chat: 'الرسائل / الدعم',
+      chatDesc: 'تواصل مباشرة مع فريق HomelyServ',
+      supportHours: 'ساعات الدعم',
+      supportHoursDesc: 'الأحد - الخميس: 9:00 ص - 9:00 م',
+      allCategories: 'جميع المواضيع',
+      catProfile: 'الملف والتحقق',
+      catStudents: 'الطلاب والتقدّم',
+      catTeaching: 'المجموعات والدروس والجدول',
+      catAccounts: 'الحسابات والدخل',
+      catSupport: 'الرسائل والشكاوى',
+      faqTitle: 'الأسئلة الشائعة',
+      noResults: 'لم يتم العثور على مقالات مساعدة',
+      tryDifferent: 'جرّب البحث بكلمات مختلفة مثل الطلاب أو الدروس أو الجدول أو الحسابات.',
+      contactSupportCardTitle: 'هل تحتاج مساعدة مباشرة؟',
+      contactSupportCardDesc: 'إذا كان لديك سؤال أو مشكلة في حسابك كدرس، تواصل مباشرة مع دعم HomelyServ عبر الرسائل أو البريد الإلكتروني.',
+      contactSupportBtn: 'راسل الدعم',
+      faq1Question: 'كيف أُكمل ملف المدرس وأتحقق منه؟',
+      faq1Answer: 'افتح "ملفي الشخصي" من شريط المدرس لإضافة موادك ومؤهلاتك وأوقات تواجدك، واستخدم "ملفي الطبي" للسجلات الصحية. الملف المكتمل يساعد الطلاب وHomelyServ على التحقق منك.',
+      faq2Question: 'كيف أُدير طلابي وأتابع تقدّمهم؟',
+      faq2Answer: '"الطلاب" يعرض المتعلمين المرتبطين بك، و"تقدّم الطلاب" يتابع الحضور والأداء، و"سجل الترقية" يسجّل تغييرات المستوى والاشتراكات.',
+      faq3Question: 'كيف أُنشئ المجموعات والدروس وجدول التدريس؟',
+      faq3Answer: 'استخدم "المجموعات / الصفوف" لتنظيم المتعلمين، و"الدروس" لإنشاء وتقديم دروسك، و"الجدول" لنشر الجدول الأسبوعي الذي يمكن للطلاب حجزه.',
+      faq4Question: 'أين أتمكن من مراجعة دخلي ومصارفي؟',
+      faq4Answer: '"الحسابات" يعرض أرباحك من HomelyServ ومصاريفك ومدفوعاتك في مكان واحد، مع سجل الدفعات.',
+      faq5Question: 'كيف أصل إلى دعم HomelyServ أو أرفع شكوى؟',
+      faq5Answer: 'أرسل رسالة من "الرسائل / الدعم" للتواصل مع الفريق، أو افتح "الشكاوى" لإنشاء تذكرة ومتابعة حالتها والردود.',
+      faq6Question: 'ماذا يضيف اشتراك المدرس المميز إلى حسابي؟',
+      faq6Answer: 'يفتح "الاشتراك المميز" ميزات إضافية وظهوراً أكبر للمدرسين. افتحه من شريط المدرس لمراجعة الباقة الحالية ومزاياها.'
     }
   },
   fr: {
+    teacherEmployees: {
+      title: 'Employés',
+      subtitle:
+        'Gérez les employés que vous avez recrutés et leurs salaires. Ces salaires servent de dépense de salaires dans vos comptes.',
+      empty: 'Aucun employé pour le moment.',
+    },
     teacherNav: {
       dashboard: 'Tableau de bord',
       myProfile: 'Mon profil',
       medicalProfile: 'Mon profil médical',
       messages: 'Messages',
+      complaints: 'Réclamations',
+      searchWorkers: 'Rechercher des travailleurs',
       students: 'Élèves',
       groups: 'Groupes / Classes',
       lessons: 'Cours',
@@ -1976,7 +2116,27 @@ export const TEACHER_TRANSLATIONS = {
       tabs: {
         summary: 'Résumé financier',
         income: 'Revenus & Honoraires',
-        expenses: 'Dépenses'
+        expenses: 'Dépenses',
+        employeeSalaries: 'Salaires des employés'
+      },
+      employeeSalaries: {
+        title: 'Salaires des employés',
+        subtitle:
+          'Les salaires que vous versez à vos travailleurs recrutés. Ceci est distinct de la commission de recrutement HomelyServ, qui reste enregistrée sous Dépenses.',
+        worker: 'Travailleur',
+        status: "Statut d'emploi",
+        salary: 'Salaire mensuel',
+        startDate: 'Date de début',
+        empty: 'Aucun dossier d’employé trouvé.',
+        loading: 'Chargement des salaires des employés...',
+        emptyDesc:
+          'Les employés apparaissent ici automatiquement lorsqu’un travailleur accepte l’une de vos offres.',
+        loadError: 'Impossible de charger les salaires des employés.',
+        note:
+          'Les salaires des employés sont le salaire d’emploi convenu, distinct de la commission de recrutement HomelyServ, qui reste enregistrée sous Dépenses.',
+        statusActive: 'Actif',
+        statusInactive: 'Inactif',
+        statusTerminated: 'Licencié'
       },
       summary: {
         title: 'Aperçu financier',
@@ -2238,14 +2398,59 @@ export const TEACHER_TRANSLATIONS = {
         loadError: 'Échec du chargement de l\'historique des promotions.',
         retry: 'Réessayer'
       }
+    },
+    teacherHelp: {
+      title: 'Aide et support enseignants',
+      subtitle: 'Des repères pour votre profil enseignant, vos élèves, vos groupes, vos cours, votre planning, la progression et vos comptes.',
+      searchPlaceholder: 'Rechercher dans les guides et questions fréquentes pour enseignants...',
+      teacherTools: 'Outils enseignant',
+      articleWord: 'articles',
+      email: 'Support par e-mail',
+      phone: 'Support téléphonique',
+      chat: 'Messages / Support',
+      chatDesc: 'Contactez directement l\'équipe HomelyServ',
+      supportHours: 'Horaires du support',
+      supportHoursDesc: 'Dim - Jeu : 9h00 - 21h00',
+      allCategories: 'Tous les sujets',
+      catProfile: 'Profil et vérification',
+      catStudents: 'Élèves et progression',
+      catTeaching: 'Groupes, cours et planning',
+      catAccounts: 'Comptes et revenus',
+      catSupport: 'Messages et réclamations',
+      faqTitle: 'Questions fréquentes',
+      noResults: 'Aucun article d\'aide trouvé',
+      tryDifferent: 'Essayez d\'autres mots-clés comme élèves, cours, planning ou comptes.',
+      contactSupportCardTitle: 'Besoin d\'une aide directe ?',
+      contactSupportCardDesc: 'Pour toute question ou problème lié à votre compte enseignant, contactez directement le support HomelyServ par message ou e-mail.',
+      contactSupportBtn: 'Contacter le support',
+      faq1Question: 'Comment compléter et vérifier mon profil enseignant ?',
+      faq1Answer: 'Ouvrez « Mon profil » dans la barre latérale pour ajouter vos matières, qualifications et disponibilités, et « Mon profil médical » pour vos dossiers de santé. Un profil complet aide les élèves et HomelyServ à vous vérifier.',
+      faq2Question: 'Comment gérer mes élèves et suivre leur progression ?',
+      faq2Answer: '« Élèves » liste les apprenants qui vous sont liés, « Progression des élèves » suit la présence et les résultats, et « Historique des promotions » enregistre les changements de niveau et les abonnements.',
+      faq3Question: 'Comment créer des groupes, des cours et un emploi du temps ?',
+      faq3Answer: 'Utilisez « Groupes / Classes » pour organiser vos apprenants, « Cours » pour créer et animer vos cours, et « Planning » pour publier l\'emploi du temps hebdomadaire que les élèves peuvent réserver.',
+      faq4Question: 'Où consulter mes revenus et mes dépenses ?',
+      faq4Answer: '« Comptes » regroupe vos gains HomelyServ, vos dépenses et vos versements, ainsi que l\'historique de vos paiements.',
+      faq5Question: 'Comment contacter le support HomelyServ ou déposer une réclamation ?',
+      faq5Answer: 'Envoyez un message depuis « Messages / Support » pour contacter l\'équipe, ou ouvrez « Réclamations » pour créer un ticket et suivre son statut et les réponses.',
+      faq6Question: 'Qu\'apporte l\'abonnement Premium Enseignant ?',
+      faq6Answer: '« Abonnement Premium » débloque des fonctionnalités supplémentaires et une meilleure visibilité. Ouvrez-la depuis la barre latérale pour découvrir le forfait en cours et ses avantages.'
     }
   },
   ru: {
+    teacherEmployees: {
+      title: 'Сотрудники',
+      subtitle:
+        'Управляйте нанятыми сотрудниками и их зарплатами. Эти зарплаты учитываются как расходы на зарплату в разделе «Финансы».',
+      empty: 'Сотрудников пока нет.',
+    },
     teacherNav: {
       dashboard: 'Панель управления',
       myProfile: 'Мой профиль',
       medicalProfile: 'Мой медицинский профиль',
       messages: 'Сообщения',
+      complaints: 'Жалобы',
+      searchWorkers: 'Поиск работников',
       students: 'Ученики',
       groups: 'Группы / Классы',
       lessons: 'Уроки',
@@ -2721,7 +2926,27 @@ export const TEACHER_TRANSLATIONS = {
       tabs: {
         summary: 'Финансовый обзор',
         income: 'Доходы и оплата',
-        expenses: 'Расходы'
+        expenses: 'Расходы',
+        employeeSalaries: 'Зарплаты сотрудников'
+      },
+      employeeSalaries: {
+        title: 'Зарплаты сотрудников',
+        subtitle:
+          'Зарплаты, которые вы платите принятым работникам. Это отдельно от комиссии HomelyServ за подбор, которая учитывается в разделе Расходы.',
+        worker: 'Работник',
+        status: 'Статус занятости',
+        salary: 'Месячная зарплата',
+        startDate: 'Дата начала',
+        empty: 'Записи о сотрудниках не найдены.',
+        loading: 'Загрузка зарплат сотрудников...',
+        emptyDesc:
+          'Сотрудники появляются здесь автоматически, когда работник принимает одно из ваших предложений.',
+        loadError: 'Не удалось загрузить зарплаты сотрудников.',
+        note:
+          'Зарплата сотрудника — это согласованная зарплата за работу, отдельная от комиссии HomelyServ за подбор, которая остаётся записанной в разделе Расходы.',
+        statusActive: 'Активен',
+        statusInactive: 'Неактивен',
+        statusTerminated: 'Уволен'
       },
       summary: {
         title: 'Финансовый отчет',
@@ -2983,14 +3208,59 @@ export const TEACHER_TRANSLATIONS = {
         loadError: 'Не удалось загрузить историю продвижения.',
         retry: 'Повторить'
       }
+    },
+    teacherHelp: {
+      title: 'Помощь и поддержка преподавателю',
+      subtitle: 'Руководство по профилю преподавателя, ученикам, группам, урокам, расписанию, прогрессу учеников и счетам.',
+      searchPlaceholder: 'Поиск по руководствам и вопросам для преподавателей...',
+      teacherTools: 'Инструменты преподавателя',
+      articleWord: 'статей',
+      email: 'Поддержка по почте',
+      phone: 'Телефонная поддержка',
+      chat: 'Сообщения / Поддержка',
+      chatDesc: 'Свяжитесь с командой HomelyServ напрямую',
+      supportHours: 'Часы поддержки',
+      supportHoursDesc: 'Вс - Чт: 9:00 - 21:00',
+      allCategories: 'Все темы',
+      catProfile: 'Профиль и проверка',
+      catStudents: 'Ученики и прогресс',
+      catTeaching: 'Группы, уроки и расписание',
+      catAccounts: 'Счета и доходы',
+      catSupport: 'Сообщения и жалобы',
+      faqTitle: 'Часто задаваемые вопросы',
+      noResults: 'Статьи не найдены',
+      tryDifferent: 'Попробуйте другие слова: ученики, уроки, расписание или счета.',
+      contactSupportCardTitle: 'Нужна прямая помощь?',
+      contactSupportCardDesc: 'Если у вас есть вопрос или проблема с аккаунтом преподавателя, свяжитесь с поддержкой HomelyServ через сообщения или по почте.',
+      contactSupportBtn: 'Написать в поддержку',
+      faq1Question: 'Как заполнить и подтвердить профиль преподавателя?',
+      faq1Answer: 'Откройте «Мой профиль» в боковом меню, чтобы добавить предметы, квалификацию и доступность, и «Медицинский профиль» для медицинских данных. Заполненный профиль помогает ученикам и HomelyServ проверить вас.',
+      faq2Question: 'Как управлять учениками и отслеживать их прогресс?',
+      faq2Answer: '«Ученики» показывает связанных с вами учащихся, «Прогресс учеников» — посещаемость и результаты, а «История повышений» фиксирует смену уровней и подписки.',
+      faq3Question: 'Как создавать группы, уроки и расписание?',
+      faq3Answer: 'Используйте «Группы / Классы» для организации учащихся, «Уроки» для создания и проведения занятий, а «Расписание» — для публикации недельного расписания, которое ученики могут забронировать.',
+      faq4Question: 'Где посмотреть доходы и расходы?',
+      faq4Answer: 'Раздел «Счета» показывает ваши доходы HomelyServ, расходы и выплаты, а также историю платежей.',
+      faq5Question: 'Как связаться с поддержкой HomelyServ или подать жалобу?',
+      faq5Answer: 'Отправьте сообщение в разделе «Сообщения / Поддержка», чтобы связаться с командой, или откройте «Жалобы», чтобы создать обращение и следить за его статусом и ответами.',
+      faq6Question: 'Что даёт подписка Premium преподавателю?',
+      faq6Answer: '«Подписка Premium» открывает дополнительные возможности и повышает видимость. Откройте её в боковом меню, чтобы увидеть текущий план и его преимущества.'
     }
   },
   tr: {
+    teacherEmployees: {
+      title: 'Çalışanlar',
+      subtitle:
+        'İşe aldığınız çalışanları ve maaşlarını yönetin. Buradaki maaşlar, Hesaplar bölümündeki maaş giderinizde kullanılır.',
+      empty: 'Henüz çalışan yok.',
+    },
     teacherNav: {
       dashboard: 'Kontrol Paneli',
       myProfile: 'Profilim',
       medicalProfile: 'Tıbbi Profilim',
       messages: 'Mesajlar',
+      complaints: 'Şikâyetler',
+      searchWorkers: 'İşçi Ara',
       students: 'Öğrenciler',
       groups: 'Gruplar / Sınıflar',
       lessons: 'Dersler',
@@ -3466,7 +3736,27 @@ export const TEACHER_TRANSLATIONS = {
       tabs: {
         summary: 'Finansal Özet',
         income: 'Gelirler & Ücretler',
-        expenses: 'Giderler'
+        expenses: 'Giderler',
+        employeeSalaries: 'Çalışan Maaşları'
+      },
+      employeeSalaries: {
+        title: 'Çalışan Maaşları',
+        subtitle:
+          'İşe aldığınız işçilere ödediğiniz maaşlar. Bu, Giderler bölümünde kaydedilen HomelyServ işe alma komisyonundan ayrıdır.',
+        worker: 'İşçi',
+        status: 'Çalışma Durumu',
+        salary: 'Aylık Maaş',
+        startDate: 'Başlangıç Tarihi',
+        empty: 'Çalışan kaydı bulunamadı.',
+        loading: 'Çalışan maaşları yükleniyor...',
+        emptyDesc:
+          'Bir işçi tekliflerinizden birini kabul ettiğinde çalışanlar burada otomatik olarak görünür.',
+        loadError: 'Çalışan maaşları yüklenemedi.',
+        note:
+          'Çalışan maaşları, Giderler altında kayıtlı kalan HomelyServ işe alma komisyonundan ayrı olarak üzerinde anlaşılan çalışma maaşıdır.',
+        statusActive: 'Aktif',
+        statusInactive: 'Pasif',
+        statusTerminated: 'İşten çıkarıldı'
       },
       summary: {
         title: 'Muhasebe Özeti',
@@ -3728,14 +4018,59 @@ export const TEACHER_TRANSLATIONS = {
         loadError: 'Terfi geçmişi kayıtları yüklenemedi.',
         retry: 'Tekrar Dene'
       }
+    },
+    teacherHelp: {
+      title: 'Öğretmen Yardımı ve Destek',
+      subtitle: 'Öğretmen profiliniz, öğrencileriniz, gruplarınız, dersleriniz, programınız, öğrenci ilerlemesi ve hesaplarınız için rehberlik.',
+      searchPlaceholder: 'Öğretmen yardım rehberlerinde, konularda ve SSS\'de arayın...',
+      teacherTools: 'Öğretmen Araçları',
+      articleWord: 'makale',
+      email: 'E-posta Desteği',
+      phone: 'Telefon Desteği',
+      chat: 'Mesajlar / Destek',
+      chatDesc: 'HomelyServ ekibiyle doğrudan iletişim kurun',
+      supportHours: 'Destek Saatleri',
+      supportHoursDesc: 'Paz - Per: 09:00 - 21:00',
+      allCategories: 'Tüm Konular',
+      catProfile: 'Profil ve Doğrulama',
+      catStudents: 'Öğrenciler ve İlerleme',
+      catTeaching: 'Gruplar, Dersler ve Program',
+      catAccounts: 'Hesaplar ve Gelir',
+      catSupport: 'Mesajlar ve Şikâyetler',
+      faqTitle: 'Sıkça Sorulan Sorular',
+      noResults: 'Yardım makalesi bulunamadı',
+      tryDifferent: 'Öğrenciler, dersler, program veya hesaplar gibi farklı anahtar kelimelerle deneyin.',
+      contactSupportCardTitle: 'Doğrudan Yardım mı Gerekli?',
+      contactSupportCardDesc: 'Öğretmen hesabınızla ilgili bir sorunuz veya sorununuz varsa, mesaj veya e-posta ile HomelyServ Destek\'e doğrudan ulaşın.',
+      contactSupportBtn: 'Destek\'e Mesaj Gönder',
+      faq1Question: 'Öğretmen profilimi nasıl tamamlar ve doğrularım?',
+      faq1Answer: 'Branşlarınızı, niteliklerinizi ve müsaitlik durumunuzu eklemek için kenar çubuğundaki "Profilim" bölümünü, sağlık kayıtlarınız için "Tıbbi Profilim" bölümünü kullanın. Eksiksiz bir profil, öğrencilerin ve HomelyServ\'in sizi doğrulamasına yardımcı olur.',
+      faq2Question: 'Öğrencilerimi nasıl yönetir ve ilerlemelerini nasıl izlerim?',
+      faq2Answer: '"Öğrenciler" size bağlı öğrencileri listeler, "Öğrenci İlerlemesi" devam ve başarıyı izler, "Terfi Geçmişi" ise seviye değişikliklerini ve abonelikleri kaydeder.',
+      faq3Question: 'Grupları, dersleri ve öğretim programını nasıl oluştururum?',
+      faq3Answer: 'Öğrencilerinizi düzenlemek için "Gruplar / Sınıflar", derslerinizi oluşturmak ve yürütmek için "Dersler", öğrencilerin rezerve edebildiği haftalık programı yayımlamak için "Program" bölümlerini kullanın.',
+      faq4Question: 'Gelir ve giderlerimi nerede görebilirim?',
+      faq4Answer: '"Hesaplar" bölümü HomelyServ kazançlarınızı, giderlerinizi ve ödemelerinizi tek yerde, ödeme geçmişinizle birlikte gösterir.',
+      faq5Question: 'HomelyServ desteğine nasıl ulaşır veya şikâyet nasıl oluştururum?',
+      faq5Answer: 'Ekiple iletişim kurmak için "Mesajlar / Destek" bölümünden mesaj gönderin veya bir talep oluşturup durumunu ve yanıtlarını izlemek için "Şikâyetler" bölümünü açın.',
+      faq6Question: 'Öğretmen Premium aboneliği hesabıma ne katar?',
+      faq6Answer: '"Premium Abonelik" ek öğretmen özelliklerini ve daha fazla görünürlüğü açar. Mevcut planı ve avantajlarını incelemek için kenar çubuğundan bu bölümü açın.'
     }
   },
   de: {
+    teacherEmployees: {
+      title: 'Mitarbeiter',
+      subtitle:
+        'Verwalten Sie Ihre eingestellten Mitarbeiter und deren Gehälter. Diese Gehälter werden als Gehaltsaufwand in Ihren Finanzen berücksichtigt.',
+      empty: 'Noch keine Mitarbeiter.',
+    },
     teacherNav: {
       dashboard: 'Dashboard',
       myProfile: 'Mein Profil',
       medicalProfile: 'Mein medizinisches Profil',
       messages: 'Nachrichten',
+      complaints: 'Beschwerden',
+      searchWorkers: 'Arbeitskräfte suchen',
       students: 'Schüler',
       groups: 'Gruppen / Klassen',
       lessons: 'Unterrichtsstunden',
@@ -4211,7 +4546,27 @@ export const TEACHER_TRANSLATIONS = {
       tabs: {
         summary: 'Finanzübersicht',
         income: 'Einnahmen & Honorare',
-        expenses: 'Ausgaben'
+        expenses: 'Ausgaben',
+        employeeSalaries: 'Mitarbeitergehälter'
+      },
+      employeeSalaries: {
+        title: 'Mitarbeitergehälter',
+        subtitle:
+          'Die Gehälter, die Sie Ihren eingestellten Arbeitern zahlen. Dies ist getrennt von der HomelyServ-Einstellungsprovision, die unter Ausgaben verbucht wird.',
+        worker: 'Arbeiter',
+        status: 'Beschäftigungsstatus',
+        salary: 'Monatsgehalt',
+        startDate: 'Startdatum',
+        empty: 'Keine Mitarbeiterdatensätze gefunden.',
+        loading: 'Mitarbeitergehälter werden geladen...',
+        emptyDesc:
+          'Mitarbeiter erscheinen hier automatisch, sobald ein Arbeiter eines Ihrer Angebote annimmt.',
+        loadError: 'Mitarbeitergehälter konnten nicht geladen werden.',
+        note:
+          'Mitarbeitergehälter sind das vereinbarte Beschäftigungsgehalt und getrennt von der HomelyServ-Einstellungsprovision, die unter Ausgaben verbucht bleibt.',
+        statusActive: 'Aktiv',
+        statusInactive: 'Inaktiv',
+        statusTerminated: 'Gekündigt'
       },
       summary: {
         title: 'Buchhaltungsübersicht',
@@ -4473,6 +4828,43 @@ export const TEACHER_TRANSLATIONS = {
         loadError: 'Beförderungsverlauf konnte nicht geladen werden.',
         retry: 'Erneut versuchen'
       }
+    },
+    teacherHelp: {
+      title: 'Hilfe und Support für Lehrkräfte',
+      subtitle: 'Anleitungen zu Ihrem Lehrprofil, Ihren Schülern, Gruppen, Unterricht, Stundenplan, Schülerfortschritt und Konten.',
+      searchPlaceholder: 'Hilfeartikel und FAQs für Lehrkräfte durchsuchen...',
+      teacherTools: 'Werkzeuge für Lehrkräfte',
+      articleWord: 'Artikel',
+      email: 'E-Mail-Support',
+      phone: 'Telefonischer Support',
+      chat: 'Nachrichten / Support',
+      chatDesc: 'Kontaktieren Sie das HomelyServ-Team direkt',
+      supportHours: 'Supportzeiten',
+      supportHoursDesc: 'So - Do: 9:00 - 21:00',
+      allCategories: 'Alle Themen',
+      catProfile: 'Profil und Verifizierung',
+      catStudents: 'Schüler und Fortschritt',
+      catTeaching: 'Gruppen, Unterricht und Stundenplan',
+      catAccounts: 'Konten und Einnahmen',
+      catSupport: 'Nachrichten und Beschwerden',
+      faqTitle: 'Häufig gestellte Fragen',
+      noResults: 'Keine Hilfeartikel gefunden',
+      tryDifferent: 'Versuchen Sie andere Begriffe wie Schüler, Unterricht, Stundenplan oder Konten.',
+      contactSupportCardTitle: 'Direkte Hilfe benötigt?',
+      contactSupportCardDesc: 'Bei Fragen oder Problemen mit Ihrem Lehrkonto wenden Sie sich direkt über Nachrichten oder E-Mail an den HomelyServ-Support.',
+      contactSupportBtn: 'Support kontaktieren',
+      faq1Question: 'Wie vervollständige und verifiziere ich mein Lehrprofil?',
+      faq1Answer: 'Öffnen Sie in der Seitenleiste "Mein Profil", um Fächer, Qualifikationen und Verfügbarkeit hinzuzufügen, und "Mein medizinisches Profil" für Ihre Gesundheitsdaten. Ein vollständiges Profil hilft Schülern und HomelyServ, Sie zu verifizieren.',
+      faq2Question: 'Wie verwalte ich meine Schüler und verfolge ihren Fortschritt?',
+      faq2Answer: '"Schüler" listet die Ihnen zugeordneten Lernenden, "Schülerfortschritt" verfolgt Anwesenheit und Leistung, und "Beförderungsverlauf" dokumentiert Stufenwechsel und Abonnements.',
+      faq3Question: 'Wie erstelle ich Gruppen, Unterricht und einen Stundenplan?',
+      faq3Answer: 'Nutzen Sie "Gruppen / Klassen", um Ihre Lernenden zu organisieren, "Unterricht", um Ihre Stunden zu erstellen und durchzuführen, und "Stundenplan", um den Wochenplan zu veröffentlichen, den Schüler buchen können.',
+      faq4Question: 'Wo kann ich meine Einnahmen und Ausgaben einsehen?',
+      faq4Answer: '"Konten" zeigt Ihre HomelyServ-Einnahmen, Ausgaben und Auszahlungen an einem Ort sowie Ihre Zahlungshistorie.',
+      faq5Question: 'Wie erreiche ich den HomelyServ-Support oder reiche eine Beschwerde ein?',
+      faq5Answer: 'Senden Sie eine Nachricht über "Nachrichten / Support", um das Team zu erreichen, oder öffnen Sie "Beschwerden", um ein Ticket zu erstellen und dessen Status und Antworten zu verfolgen.',
+      faq6Question: 'Was bietet das Premium-Abo für Lehrkräfte?',
+      faq6Answer: '"Premium-Abonnement" schaltet zusätzliche Funktionen und mehr Sichtbarkeit für Lehrkräfte frei. Öffnen Sie es in der Seitenleiste, um den aktuellen Tarif und seine Vorteile zu sehen.'
     }
   }
 };
