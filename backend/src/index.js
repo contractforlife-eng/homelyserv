@@ -37,6 +37,7 @@ import sidebarRoutes from './routes/sidebar.js';
 import publicSupportRoutes from './routes/publicSupport.js';
 import externalJobRoutes from './routes/externalJobs.js';
 import registrationGeographyRoutes from './routes/registrationGeography.js';
+import languageDetectRouter from './routes/languageDetect.js';
 import analyticsRoutes from './routes/analytics.js';
 import employerFamilyRoutes from './routes/employerFamily.js';
 import employerFamilyTreeRoutes from './routes/employerFamilyTree.js';
@@ -273,6 +274,11 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
 });
+
+// Public country → language detection for the website i18n bootstrap.
+// Privacy: returns only { success, country, language } — the caller's IP
+// is never stored or echoed back, and no external service is contacted.
+app.use('/api', languageDetectRouter);
 
 // ============================================================
 // DEBUG: SHOW ALL USERS

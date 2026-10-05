@@ -6,6 +6,10 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { HOME_TRANSLATIONS } from './homepageTranslations.js';
+// New automatic country-detection pipeline. It only exports constants and
+// functions (no side effects at import) and never imports this module back,
+// so this import is cycle-free. It owns LANGUAGE_SOURCE_KEY.
+import { LANGUAGE_SOURCE_KEY } from './countryLanguage.js';
 import DOCTOR_CMS_TRANSLATIONS, { DOCTOR_CMS_NAV_TRANSLATIONS, CLINIC_PATIENT_TRANSLATIONS } from './doctorCms.js';
 import DOCTOR_ACCOUNTS_TRANSLATIONS, { DOCTOR_ACCOUNTS_NAV_TRANSLATIONS } from './doctorAccounts.js';
 import TEACHER_TRANSLATIONS from './teacherTranslations.js';
@@ -51,6 +55,10 @@ export function changeLanguageGlobal(langCode) {
   }
   i18n.changeLanguage(langCode);
   localStorage.setItem(LANGUAGE_STORAGE_KEY, langCode);
+  // Every existing caller of this helper is a user-facing selector, so an
+  // explicit change is always MANUAL — this permanently shields the choice
+  // from automatic country-based re-detection.
+  localStorage.setItem(LANGUAGE_SOURCE_KEY, 'manual');
   applyDocumentDirection(langCode);
 }
 

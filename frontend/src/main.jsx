@@ -11,6 +11,9 @@ import { AuthProvider } from './context/AuthContext';
 import useThemeStore from './store/themeStore';
 // Initialize i18n (single source of truth for all languages + RTL)
 import './i18n';
+// Country-based language selection (async, non-blocking, started below
+// after the synchronous i18n init above has completed).
+import { startCountryLanguageDetection } from './i18n/countryLanguage.js';
 import './index.css';
 import { registerPwaServiceWorker } from './pwa/registerServiceWorker';
 import { initializeTikTokPixel } from './utils/tiktokPixel';
@@ -22,6 +25,10 @@ useThemeStore.getState().initializeTheme();
 
 registerPwaServiceWorker();
 initializeTikTokPixel();
+// Country → language detection: fire-and-forget. Priority stays
+// manual > country > browser > en, and any failure silently keeps the
+// existing browser-language result. Never blocks rendering.
+startCountryLanguageDetection();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
