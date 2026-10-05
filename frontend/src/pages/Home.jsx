@@ -25,25 +25,33 @@ import {
   MessageSquare,
   Lock,
   Menu,
-  X
+  X,
+  Stethoscope,
+  BookOpen,
+  Calendar,
+  Layers,
+  MapPin,
+  Clock,
+  Shield,
+  Award
 } from 'lucide-react';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { createQrMatrix } from '../utils/qrCode';
 import markDark from '../assets/branding/homelyserv-mark-dark.png';
+import appIcon from '../assets/branding/homelyserv-app-icon.png';
 
 const DOWNLOAD_URL = 'https://www.homelyserv.com/download';
 
 export default function Home() {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('employer'); // 'employer' | 'worker'
 
   // Generate QR Code matrix once
   const qrMatrix = useMemo(() => {
     try {
       return createQrMatrix(DOWNLOAD_URL);
+      /* eslint-disable-next-line no-unused-vars */
     } catch (e) {
-      console.error('Failed to generate QR matrix', e);
       return [];
     }
   }, []);
@@ -58,271 +66,261 @@ export default function Home() {
     }
   };
 
-  // Service item configuration mapping keys to icons, photos, and category params
-  const serviceCategories = [
+  const currentYear = new Date().getFullYear();
+
+  // Home services list (8 items with dedicated local images)
+  const homeServicesList = [
     {
       id: 'nurse',
       icon: HeartPulse,
       image: '/images/services/nurse.jpg',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      iconBg: 'bg-emerald-500 text-white',
-      title: t('home.services.nurse.title'),
-      desc: t('home.services.nurse.description')
+      badgeColor: 'bg-teal-50 text-teal-800 border-teal-200',
+      iconBg: 'bg-teal-600 text-white',
+      title: t('home.homeServices.nurse.title'),
+      desc: t('home.homeServices.nurse.desc')
     },
     {
       id: 'elderly_caregiver',
       icon: HeartHandshake,
       image: '/images/services/elderly-care.jpg',
-      badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
-      iconBg: 'bg-rose-500 text-white',
-      title: t('home.services.elderlyCaregiver.title'),
-      desc: t('home.services.elderlyCaregiver.description')
+      badgeColor: 'bg-rose-50 text-rose-800 border-rose-200',
+      iconBg: 'bg-rose-600 text-white',
+      title: t('home.homeServices.caregiver.title'),
+      desc: t('home.homeServices.caregiver.desc')
     },
     {
       id: 'driver',
       icon: Car,
       image: '/images/services/driver.jpg',
-      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+      badgeColor: 'bg-blue-50 text-blue-800 border-blue-200',
       iconBg: 'bg-blue-600 text-white',
-      title: t('home.services.driver.title'),
-      desc: t('home.services.driver.description')
+      title: t('home.homeServices.driver.title'),
+      desc: t('home.homeServices.driver.desc')
     },
     {
       id: 'cook',
       icon: ChefHat,
       image: '/images/services/cook.jpg',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      iconBg: 'bg-amber-500 text-white',
-      title: t('home.services.cook.title'),
-      desc: t('home.services.cook.description')
+      badgeColor: 'bg-amber-50 text-amber-800 border-amber-200',
+      iconBg: 'bg-amber-600 text-white',
+      title: t('home.homeServices.cook.title'),
+      desc: t('home.homeServices.cook.desc')
     },
     {
       id: 'house_manager',
       icon: HomeIcon,
       image: '/images/services/house-manager.jpg',
-      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      badgeColor: 'bg-indigo-50 text-indigo-800 border-indigo-200',
       iconBg: 'bg-indigo-600 text-white',
-      title: t('home.services.houseManager.title'),
-      desc: t('home.services.houseManager.description')
-    },
-    {
-      id: 'gardener',
-      icon: TreePine,
-      image: '/images/services/gardener.jpg',
-      badgeColor: 'bg-green-50 text-green-700 border-green-200',
-      iconBg: 'bg-green-600 text-white',
-      title: t('home.services.gardener.title'),
-      desc: t('home.services.gardener.description')
-    },
-    {
-      id: 'security_guard',
-      icon: ShieldCheck,
-      image: '/images/services/security-guard.jpg',
-      badgeColor: 'bg-slate-50 text-slate-700 border-slate-200',
-      iconBg: 'bg-slate-700 text-white',
-      title: t('home.services.securityGuard.title'),
-      desc: t('home.services.securityGuard.description')
-    },
-    {
-      id: 'bodyguard',
-      icon: UserCheck,
-      image: '/images/services/bodyguard.jpg',
-      badgeColor: 'bg-red-50 text-red-700 border-red-200',
-      iconBg: 'bg-red-600 text-white',
-      title: t('home.services.bodyguard.title'),
-      desc: t('home.services.bodyguard.description')
+      title: t('home.homeServices.houseManager.title'),
+      desc: t('home.homeServices.houseManager.desc')
     },
     {
       id: 'private_tutor',
       icon: GraduationCap,
       image: '/images/services/private-tutor.jpg',
-      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+      badgeColor: 'bg-purple-50 text-purple-800 border-purple-200',
       iconBg: 'bg-purple-600 text-white',
-      title: t('home.services.privateTutor.title'),
-      desc: t('home.services.privateTutor.description')
-    }
-  ];
-
-  const whyUsPillars = [
+      title: t('home.homeServices.tutor.title'),
+      desc: t('home.homeServices.tutor.desc')
+    },
     {
+      id: 'security_guard',
       icon: ShieldCheck,
-      title: t('home.whyUs.feature1Title'),
-      desc: t('home.whyUs.feature1Desc'),
-      color: 'text-emerald-600 bg-emerald-50'
+      image: '/images/services/security-guard.jpg',
+      badgeColor: 'bg-slate-100 text-slate-800 border-slate-300',
+      iconBg: 'bg-slate-700 text-white',
+      title: t('home.homeServices.security.title'),
+      desc: t('home.homeServices.security.desc')
     },
     {
-      icon: Lock,
-      title: t('home.whyUs.feature2Title'),
-      desc: t('home.whyUs.feature2Desc'),
-      color: 'text-blue-600 bg-blue-50'
-    },
-    {
-      icon: MessageSquare,
-      title: t('home.whyUs.feature3Title'),
-      desc: t('home.whyUs.feature3Desc'),
-      color: 'text-indigo-600 bg-indigo-50'
-    },
-    {
-      icon: Star,
-      title: t('home.whyUs.feature4Title'),
-      desc: t('home.whyUs.feature4Desc'),
-      color: 'text-amber-600 bg-amber-50'
-    },
-    {
-      icon: Globe2,
-      title: t('home.whyUs.feature5Title'),
-      desc: t('home.whyUs.feature5Desc'),
-      color: 'text-teal-600 bg-teal-50'
-    },
-    {
-      icon: Compass,
-      title: t('home.whyUs.feature6Title'),
-      desc: t('home.whyUs.feature6Desc'),
-      color: 'text-rose-600 bg-rose-50'
+      id: 'gardener',
+      icon: TreePine,
+      image: '/images/services/gardener.jpg',
+      badgeColor: 'bg-teal-50 text-teal-800 border-teal-200',
+      iconBg: 'bg-teal-700 text-white',
+      title: t('home.homeServices.gardener.title'),
+      desc: t('home.homeServices.gardener.desc')
     }
   ];
-
-  const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-red-500 selection:text-white">
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-red-600 selection:text-white">
       {/* ========================================================= */}
-      {/* 1. HEADER / NAVIGATION */}
+      {/* 1. STICKY TOP NAVIGATION BAR */}
       {/* ========================================================= */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group focus:outline-none">
-              <img
-                src={markDark}
-                alt="HomelyServ"
-                className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105"
-              />
-              <span className="font-extrabold text-2xl tracking-tight text-slate-900">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          {/* Logo Brand Link */}
+          <Link to="/" className="flex items-center gap-3 shrink-0 group">
+            <img
+              src={markDark}
+              alt="HomelyServ Logo"
+              className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-xl tracking-tight text-slate-900 leading-tight">
                 Homely<span className="text-red-600">Serv</span>
               </span>
-            </Link>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-              <a
-                href="#services"
-                onClick={(e) => scrollToSection(e, 'services')}
-                className="hover:text-red-600 transition-colors py-1"
-              >
-                {t('home.nav.services')}
-              </a>
-              <a
-                href="#how-it-works"
-                onClick={(e) => scrollToSection(e, 'how-it-works')}
-                className="hover:text-red-600 transition-colors py-1"
-              >
-                {t('home.nav.howItWorks')}
-              </a>
-              <a
-                href="#why-homelyserv"
-                onClick={(e) => scrollToSection(e, 'why-homelyserv')}
-                className="hover:text-red-600 transition-colors py-1"
-              >
-                {t('home.nav.whyUs')}
-              </a>
-              <a
-                href="#global-reach"
-                onClick={(e) => scrollToSection(e, 'global-reach')}
-                className="hover:text-red-600 transition-colors py-1"
-              >
-                {t('home.nav.global')}
-              </a>
-              <a
-                href="#mobile-app"
-                onClick={(e) => scrollToSection(e, 'mobile-app')}
-                className="hover:text-red-600 transition-colors py-1"
-              >
-                {t('home.nav.app')}
-              </a>
-            </nav>
-
-            {/* Actions & Language Switcher */}
-            <div className="hidden lg:flex items-center gap-4">
-              <LanguageSwitcher />
-              <Link
-                to="/login"
-                className="text-sm font-semibold text-slate-700 hover:text-red-600 px-3 py-2 transition"
-              >
-                {t('home.nav.signIn')}
-              </Link>
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 active:scale-95 transition shadow-sm hover:shadow"
-              >
-                {t('home.nav.register')}
-              </Link>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-700">
+                Home • Health • Education
+              </span>
             </div>
+          </Link>
 
-            {/* Mobile Menu Button */}
-            <div className="flex items-center gap-2 md:hidden">
-              <LanguageSwitcher />
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Drawer */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-6 space-y-3 shadow-xl">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-700">
             <a
-              href="#services"
-              onClick={(e) => scrollToSection(e, 'services')}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600"
+              href="#ecosystem"
+              onClick={(e) => scrollToSection(e, 'ecosystem')}
+              className="hover:text-red-600 transition-colors"
             >
               {t('home.nav.services')}
             </a>
             <a
+              href="#healthcare"
+              onClick={(e) => scrollToSection(e, 'healthcare')}
+              className="hover:text-red-600 transition-colors"
+            >
+              {t('home.nav.healthcare')}
+            </a>
+            <a
+              href="#education"
+              onClick={(e) => scrollToSection(e, 'education')}
+              className="hover:text-red-600 transition-colors"
+            >
+              {t('home.nav.education')}
+            </a>
+            <a
+              href="#home-services"
+              onClick={(e) => scrollToSection(e, 'home-services')}
+              className="hover:text-red-600 transition-colors"
+            >
+              {t('home.nav.homeServices')}
+            </a>
+            <a
               href="#how-it-works"
               onClick={(e) => scrollToSection(e, 'how-it-works')}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600"
+              className="hover:text-red-600 transition-colors"
             >
               {t('home.nav.howItWorks')}
             </a>
             <a
-              href="#why-homelyserv"
-              onClick={(e) => scrollToSection(e, 'why-homelyserv')}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600"
-            >
-              {t('home.nav.whyUs')}
-            </a>
-            <a
-              href="#global-reach"
-              onClick={(e) => scrollToSection(e, 'global-reach')}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600"
+              href="#global"
+              onClick={(e) => scrollToSection(e, 'global')}
+              className="hover:text-red-600 transition-colors"
             >
               {t('home.nav.global')}
             </a>
             <a
               href="#mobile-app"
               onClick={(e) => scrollToSection(e, 'mobile-app')}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600"
+              className="hover:text-red-600 transition-colors"
             >
               {t('home.nav.app')}
             </a>
-            <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
+          </nav>
+
+          {/* Actions & Language Switcher */}
+          <div className="hidden lg:flex items-center gap-3">
+            <LanguageSwitcher />
+
+            <Link
+              to="/login"
+              className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition"
+            >
+              {t('home.nav.signIn')}
+            </Link>
+
+            <Link
+              to="/register"
+              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-sm hover:shadow transition transform active:scale-95"
+            >
+              {t('home.nav.register')}
+            </Link>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <LanguageSwitcher />
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg text-slate-700 hover:bg-slate-100 focus:outline-hidden focus:ring-2 focus:ring-red-500"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-b border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top duration-200">
+            <div className="flex flex-col space-y-2">
+              <a
+                href="#ecosystem"
+                onClick={(e) => scrollToSection(e, 'ecosystem')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.services')}
+              </a>
+              <a
+                href="#healthcare"
+                onClick={(e) => scrollToSection(e, 'healthcare')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.healthcare')}
+              </a>
+              <a
+                href="#education"
+                onClick={(e) => scrollToSection(e, 'education')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.education')}
+              </a>
+              <a
+                href="#home-services"
+                onClick={(e) => scrollToSection(e, 'home-services')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.homeServices')}
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={(e) => scrollToSection(e, 'how-it-works')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.howItWorks')}
+              </a>
+              <a
+                href="#global"
+                onClick={(e) => scrollToSection(e, 'global')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.global')}
+              </a>
+              <a
+                href="#mobile-app"
+                onClick={(e) => scrollToSection(e, 'mobile-app')}
+                className="py-2 px-3 text-base font-semibold text-slate-700 rounded-md hover:bg-slate-50"
+              >
+                {t('home.nav.app')}
+              </a>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 flex flex-col gap-2">
               <Link
                 to="/login"
-                className="w-full text-center py-2.5 text-base font-semibold text-slate-700 hover:bg-slate-50 rounded-lg"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 font-bold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50"
               >
                 {t('home.nav.signIn')}
               </Link>
               <Link
                 to="/register"
-                className="w-full text-center py-2.5 text-base font-semibold bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-sm"
               >
                 {t('home.nav.register')}
               </Link>
@@ -332,145 +330,142 @@ export default function Home() {
       </header>
 
       {/* ========================================================= */}
-      {/* 2. HERO SECTION (HIGH-IMPACT VISUAL MARKETPLACE) */}
+      {/* 2. GLOBAL HERO SECTION (PHOTOGRAPHY-DRIVEN) */}
       {/* ========================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-slate-100/70 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-200/60">
-        {/* Subtle Ambient Background Accents */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-red-100/40 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-60 -left-40 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50 border-b border-slate-200/80 py-16 lg:py-24">
+        {/* Background decorative grid and subtle ambient lights */}
+        <div className="absolute inset-0 bg-[radial-gradient(#dc2626_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-red-100/50 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 -right-20 w-80 h-80 bg-teal-100/50 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
-            {/* Left Hero Content */}
-            <div className="lg:col-span-7 space-y-7 text-center lg:text-left">
-              {/* Eyebrow Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-xs sm:text-sm font-semibold tracking-wide shadow-xs mx-auto lg:mx-0">
-                <Sparkles size={16} className="text-red-600 shrink-0" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            {/* Hero Copy (6 cols on lg) */}
+            <div className="lg:col-span-6 space-y-6 text-center lg:text-start">
+              {/* Global Ecosystem Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-xs sm:text-sm font-bold tracking-wide shadow-2xs">
+                <Globe2 size={16} className="text-red-600 shrink-0" />
                 <span>{t('home.hero.badge')}</span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-3.5xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
                 {t('home.hero.headlineStart')}{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-rose-600 to-red-700">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-red-600 to-teal-700">
                   {t('home.hero.headlineHighlight')}
                 </span>
               </h1>
 
               {/* Subtitle */}
-              <p className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+              <p className="text-lg sm:text-xl text-slate-600 max-w-2xl font-normal leading-relaxed">
                 {t('home.hero.subtitle')}
               </p>
 
-              {/* Dual Role CTAs */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-1">
-                <Link
-                  to="/register?role=employer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-base shadow-lg shadow-red-600/25 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 active:scale-[0.98] transition-all group"
+              {/* Primary Call to Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <a
+                  href="#ecosystem"
+                  onClick={(e) => scrollToSection(e, 'ecosystem')}
+                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-base shadow-lg shadow-red-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center flex items-center justify-center gap-2"
                 >
                   <span>{t('home.hero.ctaPrimary')}</span>
-                  <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                </Link>
+                  <ArrowRight size={18} />
+                </a>
+
                 <Link
-                  to="/register?role=worker"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-white text-slate-800 border-2 border-slate-200 font-bold text-base hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all"
+                  to="/register"
+                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-base border-2 border-slate-200 shadow-sm transition text-center"
                 >
-                  <span>{t('home.hero.ctaSecondary')}</span>
+                  {t('home.hero.ctaSecondary')}
                 </Link>
               </div>
 
-              {/* Hero Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200/80">
-                <div className="text-left">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t('home.hero.stat1Number')}</div>
-                  <div className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{t('home.hero.stat1Label')}</div>
+              {/* Verified Trust Stats Ribbon */}
+              <div className="pt-6 border-t border-slate-200/90 grid grid-cols-3 gap-4 max-w-xl">
+                <div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-slate-900">
+                    {t('home.hero.stat1Number')}
+                  </div>
+                  <div className="text-xs font-medium text-slate-500 mt-0.5">
+                    {t('home.hero.stat1Label')}
+                  </div>
                 </div>
-                <div className="text-left border-x border-slate-200 px-3 sm:px-4">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t('home.hero.stat2Number')}</div>
-                  <div className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{t('home.hero.stat2Label')}</div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-teal-700">
+                    {t('home.hero.stat2Number')}
+                  </div>
+                  <div className="text-xs font-medium text-slate-500 mt-0.5">
+                    {t('home.hero.stat2Label')}
+                  </div>
                 </div>
-                <div className="text-left">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{t('home.hero.stat3Number')}</div>
-                  <div className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{t('home.hero.stat3Label')}</div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-red-600">
+                    {t('home.hero.stat3Number')}
+                  </div>
+                  <div className="text-xs font-medium text-slate-500 mt-0.5">
+                    {t('home.hero.stat3Label')}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Hero Photographic Feature Card */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md lg:max-w-none">
-                {/* Decorative Blur Shadow */}
-                <div className="absolute -inset-2 bg-gradient-to-tr from-red-600/20 via-rose-500/10 to-teal-500/20 rounded-3xl blur-xl opacity-75" />
+            {/* Hero Visual Photography Composition (6 cols on lg) */}
+            <div className="lg:col-span-6 flex justify-center">
+              <div className="relative w-full max-w-lg">
+                {/* Decorative border highlight */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-red-500/20 via-teal-500/20 to-slate-200/50 rounded-3xl blur-xl" />
 
-                {/* Main Card Container */}
-                <div className="relative rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-                  {/* Real Photographic Hero Image */}
-                  <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100">
-                    <img
-                      src="/images/hero/hero-family-care.jpg"
-                      alt={t('home.hero.badge')}
-                      className="w-full h-full object-cover object-center"
-                      loading="eager"
-                      fetchpriority="high"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-
-                    {/* Floating Status Badge */}
-                    <div className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-slate-900 text-xs font-bold shadow-md border border-white/50">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{t('home.hero.badgeLive')}</span>
-                    </div>
-
-                    <div className="absolute bottom-4 left-4 right-4 text-white">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-rose-300">
-                        {t('home.whyUs.feature1Title')}
+                {/* Primary Hero Photograph Panel */}
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-900 group">
+                  <img
+                    src="/images/hero/hero-family-care.jpg"
+                    alt="HomelyServ Global Platform Ecosystem"
+                    className="w-full h-80 sm:h-96 lg:h-[430px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  {/* Subtle dark gradient overlay at bottom for readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex flex-col justify-end p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2.5 py-1 rounded-full bg-red-600 text-white text-xs font-bold uppercase tracking-wider shadow-sm">
+                        {t('home.hero.badgeLive')}
                       </span>
-                      <p className="text-sm font-bold text-white/95 truncate">
-                        {t('home.hero.previewGlobalReachSub')}
-                      </p>
+                      <span className="text-xs font-medium text-slate-200">
+                        {t('home.hero.previewSub')}
+                      </span>
+                    </div>
+                    <p className="text-white font-bold text-lg leading-tight">
+                      {t('home.hero.previewTitle')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Floating Glass Pill: Verified Doctor & Health */}
+                <div className="absolute -top-4 -left-4 sm:-left-6 bg-white/95 backdrop-blur-md p-3 sm:p-3.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 animate-in fade-in duration-500">
+                  <div className="h-10 w-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold shrink-0">
+                    <Stethoscope size={20} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      {t('home.ecosystem.healthCardTitle')}
+                    </div>
+                    <div className="text-[11px] font-medium text-teal-700 flex items-center gap-1">
+                      <CheckCircle2 size={12} className="text-teal-600" />
+                      <span>{t('home.whyUs.pillar1Title')}</span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Micro Candidate Highlights */}
-                  <div className="p-5 sm:p-6 space-y-3 bg-white">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
-                          <Users size={16} />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900 text-xs sm:text-sm">{t('home.hero.previewProfileTitle')}</h3>
-                          <p className="text-[11px] text-slate-500">{t('home.hero.previewProfileSub')}</p>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        {t('home.hero.previewActiveStatus')}
-                      </span>
+                {/* Floating Glass Pill: Certified Education & Tutors */}
+                <div className="absolute -bottom-4 -right-4 sm:-right-6 bg-white/95 backdrop-blur-md p-3 sm:p-3.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 animate-in fade-in duration-500">
+                  <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0">
+                    <BookOpen size={20} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      {t('home.ecosystem.eduCardTitle')}
                     </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <HeartPulse size={16} className="text-emerald-600 mx-auto mb-1" />
-                        <span className="font-semibold text-slate-800 text-[11px] block truncate">{t('home.services.nurse.title')}</span>
-                      </div>
-                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <Car size={16} className="text-blue-600 mx-auto mb-1" />
-                        <span className="font-semibold text-slate-800 text-[11px] block truncate">{t('home.services.driver.title')}</span>
-                      </div>
-                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <GraduationCap size={16} className="text-purple-600 mx-auto mb-1" />
-                        <span className="font-semibold text-slate-800 text-[11px] block truncate">{t('home.services.privateTutor.title')}</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <Link
-                        to="/register?role=employer"
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-xs sm:text-sm hover:bg-slate-800 transition"
-                      >
-                        <span>{t('home.services.exploreAction')}</span>
-                        <ChevronRight size={16} />
-                      </Link>
+                    <div className="text-[11px] font-medium text-indigo-600 flex items-center gap-1">
+                      <CheckCircle2 size={12} className="text-indigo-600" />
+                      <span>{t('home.education.studentTitle')}</span>
                     </div>
                   </div>
                 </div>
@@ -481,76 +476,437 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 3. POPULAR SERVICES GRID (PHOTO-CARD GALLERY) */}
+      {/* 3. THE 3-PILLAR ECOSYSTEM SECTION (LARGE PROMINENT PHOTOS) */}
       {/* ========================================================= */}
-      <section id="services" className="py-20 lg:py-28 bg-white border-b border-slate-200/70">
+      <section id="ecosystem" className="py-20 lg:py-28 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3 py-1 rounded-full border border-red-100">
-              {t('home.services.tag')}
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+              {t('home.ecosystem.tag')}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              {t('home.services.title')}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              {t('home.ecosystem.title')}
             </h2>
             <p className="text-base sm:text-lg text-slate-600">
-              {t('home.services.subtitle')}
+              {t('home.ecosystem.subtitle')}
             </p>
           </div>
 
-          {/* 9 Photographic Service Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {serviceCategories.map((service) => {
-              const IconComponent = service.icon;
+          {/* 3 Major Pillar Cards with prominent photography */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Pillar 1: Home Services */}
+            <div className="rounded-3xl border-2 border-slate-200/90 bg-white hover:border-red-500 transition-all duration-300 shadow-sm hover:shadow-xl overflow-hidden flex flex-col group">
+              <div className="relative h-56 sm:h-64 overflow-hidden bg-slate-100">
+                <img
+                  src="/images/services/house-manager.jpg"
+                  alt={t('home.ecosystem.homeCardTitle')}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="px-3 py-1.5 rounded-full text-xs font-extrabold bg-white/95 text-red-700 shadow-md border border-red-100 flex items-center gap-1.5">
+                    <HomeIcon size={14} className="text-red-600" />
+                    <span>Home</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-8 flex-1 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-bold text-slate-900 group-hover:text-red-600 transition-colors">
+                    {t('home.ecosystem.homeCardTitle')}
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    {t('home.ecosystem.homeCardDesc')}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <a
+                    href="#home-services"
+                    onClick={(e) => scrollToSection(e, 'home-services')}
+                    className="inline-flex items-center gap-2 font-bold text-sm text-red-600 group-hover:text-red-700"
+                  >
+                    <span>{t('home.ecosystem.homeCardCta')}</span>
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 2: Healthcare & Doctors */}
+            <div className="rounded-3xl border-2 border-teal-200/90 bg-teal-50/20 hover:border-teal-600 transition-all duration-300 shadow-sm hover:shadow-xl overflow-hidden flex flex-col group">
+              <div className="relative h-56 sm:h-64 overflow-hidden bg-teal-100">
+                <img
+                  src="/images/services/nurse.jpg"
+                  alt={t('home.ecosystem.healthCardTitle')}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="px-3 py-1.5 rounded-full text-xs font-extrabold bg-white/95 text-teal-800 shadow-md border border-teal-200 flex items-center gap-1.5">
+                    <Stethoscope size={14} className="text-teal-700" />
+                    <span>Health</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-8 flex-1 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-bold text-slate-900 group-hover:text-teal-800 transition-colors">
+                    {t('home.ecosystem.healthCardTitle')}
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    {t('home.ecosystem.healthCardDesc')}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <a
+                    href="#healthcare"
+                    onClick={(e) => scrollToSection(e, 'healthcare')}
+                    className="inline-flex items-center gap-2 font-bold text-sm text-teal-800 group-hover:text-teal-900"
+                  >
+                    <span>{t('home.ecosystem.healthCardCta')}</span>
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 3: Education & Tutoring */}
+            <div className="rounded-3xl border-2 border-slate-200/90 bg-white hover:border-indigo-600 transition-all duration-300 shadow-sm hover:shadow-xl overflow-hidden flex flex-col group">
+              <div className="relative h-56 sm:h-64 overflow-hidden bg-slate-100">
+                <img
+                  src="/images/services/private-tutor.jpg"
+                  alt={t('home.ecosystem.eduCardTitle')}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="px-3 py-1.5 rounded-full text-xs font-extrabold bg-white/95 text-indigo-700 shadow-md border border-indigo-200 flex items-center gap-1.5">
+                    <BookOpen size={14} className="text-indigo-600" />
+                    <span>Education</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-8 flex-1 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">
+                    {t('home.ecosystem.eduCardTitle')}
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    {t('home.ecosystem.eduCardDesc')}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <a
+                    href="#education"
+                    onClick={(e) => scrollToSection(e, 'education')}
+                    className="inline-flex items-center gap-2 font-bold text-sm text-indigo-700 group-hover:text-indigo-800"
+                  >
+                    <span>{t('home.ecosystem.eduCardCta')}</span>
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 4. HEALTHCARE SECTION (SPLIT WITH PROMINENT PHOTOGRAPHY) */}
+      {/* ========================================================= */}
+      <section id="healthcare" className="py-20 lg:py-28 bg-slate-50 border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-6 space-y-6">
+              <span className="text-xs sm:text-sm font-bold tracking-wider text-teal-800 uppercase bg-teal-50 px-3.5 py-1 rounded-full border border-teal-200">
+                {t('home.healthcare.tag')}
+              </span>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                {t('home.healthcare.title')}
+              </h2>
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+                {t('home.healthcare.subtitle')}
+              </p>
+
+              {/* 4 Key Features */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base mb-1.5">
+                    <ShieldCheck size={18} className="shrink-0" />
+                    <h4>{t('home.healthcare.feature1Title')}</h4>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-normal">
+                    {t('home.healthcare.feature1Desc')}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base mb-1.5">
+                    <MapPin size={18} className="shrink-0" />
+                    <h4>{t('home.healthcare.feature2Title')}</h4>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-normal">
+                    {t('home.healthcare.feature2Desc')}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base mb-1.5">
+                    <HeartPulse size={18} className="shrink-0" />
+                    <h4>{t('home.healthcare.feature3Title')}</h4>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-normal">
+                    {t('home.healthcare.feature3Desc')}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base mb-1.5">
+                    <Calendar size={18} className="shrink-0" />
+                    <h4>{t('home.healthcare.feature4Title')}</h4>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-normal">
+                    {t('home.healthcare.feature4Desc')}
+                  </p>
+                </div>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap items-center gap-4 pt-4">
+                <Link
+                  to="/register?role=employer"
+                  className="px-6 py-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-md transition"
+                >
+                  {t('home.healthcare.doctorCta')}
+                </Link>
+                <Link
+                  to="/register?role=doctor"
+                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300 shadow-2xs transition"
+                >
+                  {t('home.healthcare.doctorRoleCta')}
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Visual Image Column */}
+            <div className="lg:col-span-6 flex justify-center">
+              <div className="relative w-full max-w-lg">
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-900 aspect-4/3 relative group">
+                  <img
+                    src="/images/services/nurse.jpg"
+                    alt="Healthcare and Medical Consultations on HomelyServ"
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent flex items-end p-6">
+                    <div className="text-white space-y-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-600 text-white text-xs font-bold shadow-md">
+                        <Stethoscope size={14} />
+                        <span>{t('home.healthcare.feature1Title')}</span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-200">
+                        {t('home.healthcare.feature2Desc')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 5. EDUCATION SECTION (BALANCED SPLIT WITH PROMINENT PHOTO) */}
+      {/* ========================================================= */}
+      <section id="education" className="py-20 lg:py-28 bg-white border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-indigo-700 uppercase bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100">
+              {t('home.education.tag')}
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              {t('home.education.title')}
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600">
+              {t('home.education.subtitle')}
+            </p>
+          </div>
+
+          {/* Upper Featured Photography Banner */}
+          <div className="mb-12 rounded-3xl overflow-hidden shadow-xl border-4 border-white bg-slate-900 relative group h-72 sm:h-96">
+            <img
+              src="/images/services/private-tutor.jpg"
+              alt="Education and Tutoring on HomelyServ"
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent flex items-end p-8">
+              <div className="text-white max-w-2xl space-y-2">
+                <span className="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider">
+                  {t('home.education.tag')}
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+                  {t('home.education.title')}
+                </h3>
+                <p className="text-sm sm:text-base text-slate-200">
+                  {t('home.education.subtitle')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Two Balanced Columns: For Students vs For Teachers */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Column 1: For Students & Families */}
+            <div className="rounded-2xl border-2 border-slate-200/90 bg-slate-50/50 p-8 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <GraduationCap size={24} />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  {t('home.education.studentTitle')}
+                </h3>
+                <ul className="space-y-3 pt-2">
+                  <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+                    <span>{t('home.education.studentPillar1')}</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+                    <span>{t('home.education.studentPillar2')}</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+                    <span>{t('home.education.studentPillar3')}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <Link
+                  to="/register?role=student"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition"
+                >
+                  <span>{t('home.education.studentCta')}</span>
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Column 2: For Educators & Tutors */}
+            <div className="rounded-2xl border-2 border-slate-200/90 bg-slate-50/50 p-8 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+                  <BookOpen size={24} />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  {t('home.education.teacherTitle')}
+                </h3>
+                <ul className="space-y-3 pt-2">
+                  <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={18} className="text-teal-700 shrink-0 mt-0.5" />
+                    <span>{t('home.education.teacherPillar1')}</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={18} className="text-teal-700 shrink-0 mt-0.5" />
+                    <span>{t('home.education.teacherPillar2')}</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={18} className="text-teal-700 shrink-0 mt-0.5" />
+                    <span>{t('home.education.teacherPillar3')}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <Link
+                  to="/register?role=teacher"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-sm transition"
+                >
+                  <span>{t('home.education.teacherCta')}</span>
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 6. HOME SERVICES SECTION (8 SPECIALTIES WITH LOCAL PHOTOS) */}
+      {/* ========================================================= */}
+      <section id="home-services" className="py-20 lg:py-28 bg-slate-50 border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+              {t('home.homeServices.tag')}
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              {t('home.homeServices.title')}
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600">
+              {t('home.homeServices.subtitle')}
+            </p>
+          </div>
+
+          {/* 8 Photo Service Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {homeServicesList.map((service) => {
+              const Icon = service.icon;
               return (
                 <div
                   key={service.id}
-                  className="group relative h-80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-slate-900 flex flex-col justify-end"
+                  className="group bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col"
                 >
-                  {/* Background Service Photo */}
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                    loading="lazy"
-                  />
-
-                  {/* Dark Gradient Overlay for Readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-black/20 group-hover:via-slate-950/60 transition-colors" />
-
-                  {/* Category Badge & Icon on Top Right */}
-                  <div className="absolute top-4 right-4 z-10">
-                    <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-white flex items-center justify-center group-hover:bg-red-600 group-hover:border-red-600 transition-colors shadow-sm">
-                      <IconComponent size={20} />
+                  {/* Photo container */}
+                  <div className="relative h-44 overflow-hidden bg-slate-100">
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 right-3">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border backdrop-blur-xs shadow-2xs ${service.badgeColor}`}>
+                        {service.title}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Card Bottom Content */}
-                  <div className="relative z-10 p-6 text-left">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded-md border border-red-800/60 inline-block mb-2">
-                      {service.title}
-                    </span>
-                    <h3 className="text-xl font-bold text-white tracking-tight group-hover:text-red-300 transition-colors">
-                      {service.title}
-                    </h3>
-                    <p className="mt-1.5 text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
-                      {service.desc}
-                    </p>
+                  {/* Body Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${service.iconBg}`}>
+                          <Icon size={16} />
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-base">
+                          {service.title}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                        {service.desc}
+                      </p>
+                    </div>
 
-                    {/* Dual Action Links */}
-                    <div className="pt-4 mt-3 border-t border-white/15 flex items-center justify-between">
+                    <div className="pt-2 border-t border-slate-100">
                       <Link
                         to={`/register?role=employer&category=${service.id}`}
-                        className="text-xs sm:text-sm font-bold text-white group-hover:text-red-300 flex items-center gap-1.5 transition-colors"
+                        className="text-xs font-bold text-red-600 group-hover:text-red-700 inline-flex items-center gap-1"
                       >
-                        <span>{t('home.services.exploreAction')}</span>
-                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                      </Link>
-                      <Link
-                        to={`/register?role=worker&category=${service.id}`}
-                        className="text-xs font-medium text-slate-300 hover:text-white transition-colors"
-                      >
-                        {t('home.nav.findJobs')}
+                        <span>{t('home.homeServices.ctaExplore')}</span>
+                        <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                       </Link>
                     </div>
                   </div>
@@ -562,177 +918,159 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 4. HOW IT WORKS (TABBED WORKFLOW FOR BOTH SIDES) */}
+      {/* 7. ONE GLOBAL PLATFORM SECTION (5 PARTICIPANT ROLES) */}
       {/* ========================================================= */}
-      <section id="how-it-works" className="py-20 lg:py-28 bg-slate-50 border-b border-slate-200/70">
+      <section className="py-20 lg:py-28 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3 py-1 rounded-full border border-red-100">
-              {t('home.howItWorks.tag')}
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-teal-800 uppercase bg-teal-50 px-3.5 py-1 rounded-full border border-teal-200">
+              {t('home.onePlatform.tag')}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              {t('home.howItWorks.title')}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              {t('home.onePlatform.title')}
             </h2>
             <p className="text-base sm:text-lg text-slate-600">
-              {t('home.howItWorks.subtitle')}
+              {t('home.onePlatform.subtitle')}
             </p>
-
-            {/* Persona Switcher Tabs */}
-            <div className="inline-flex p-1.5 rounded-xl bg-white border border-slate-200 shadow-sm mt-6">
-              <button
-                type="button"
-                onClick={() => setActiveTab('employer')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  activeTab === 'employer'
-                    ? 'bg-red-600 text-white shadow'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t('home.howItWorks.forEmployers')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('worker')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  activeTab === 'worker'
-                    ? 'bg-red-600 text-white shadow'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t('home.howItWorks.forWorkers')}
-              </button>
-            </div>
           </div>
 
-          {/* Workflow Steps Content */}
-          {activeTab === 'employer' ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Step 1 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
-                    1
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
-                    <Compass size={20} />
-                  </div>
+          {/* 5 Distinct Roles Subtle Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {/* 1: Workers */}
+            <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50/50 hover:bg-white hover:border-red-400 hover:shadow-lg transition-all flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="h-12 w-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
+                  <HomeIcon size={22} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {t('home.howItWorks.employerStep1Title')}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t('home.howItWorks.employerStep1Desc')}
+                <h4 className="font-bold text-slate-900 text-lg">
+                  {t('home.onePlatform.roleWorker')}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.onePlatform.roleWorkerDesc')}
                 </p>
               </div>
-
-              {/* Step 2 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
-                    2
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
-                    <MessageSquare size={20} />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {t('home.howItWorks.employerStep2Title')}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t('home.howItWorks.employerStep2Desc')}
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-extrabold text-lg">
-                    3
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
-                    <ShieldCheck size={20} />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {t('home.howItWorks.employerStep3Title')}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t('home.howItWorks.employerStep3Desc')}
-                </p>
+              <div className="pt-6">
+                <Link
+                  to="/register?role=worker"
+                  className="text-xs font-bold text-red-600 group-hover:text-red-700 inline-flex items-center gap-1"
+                >
+                  <span>{t('home.nav.register')}</span>
+                  <ArrowRight size={14} />
+                </Link>
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Step 1 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
-                    1
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
-                    <Users size={20} />
-                  </div>
+
+            {/* 2: Employers */}
+            <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50/50 hover:bg-white hover:border-slate-800 hover:shadow-lg transition-all flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="h-12 w-12 rounded-xl bg-slate-200 text-slate-800 flex items-center justify-center font-bold">
+                  <Users size={22} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {t('home.howItWorks.workerStep1Title')}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t('home.howItWorks.workerStep1Desc')}
+                <h4 className="font-bold text-slate-900 text-lg">
+                  {t('home.onePlatform.roleEmployer')}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.onePlatform.roleEmployerDesc')}
                 </p>
               </div>
-
-              {/* Step 2 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
-                    2
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
-                    <Sparkles size={20} />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {t('home.howItWorks.workerStep2Title')}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t('home.howItWorks.workerStep2Desc')}
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-lg">
-                    3
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
-                    <Star size={20} />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {t('home.howItWorks.workerStep3Title')}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t('home.howItWorks.workerStep3Desc')}
-                </p>
+              <div className="pt-6">
+                <Link
+                  to="/register?role=employer"
+                  className="text-xs font-bold text-slate-800 group-hover:text-slate-900 inline-flex items-center gap-1"
+                >
+                  <span>{t('home.nav.register')}</span>
+                  <ArrowRight size={14} />
+                </Link>
               </div>
             </div>
-          )}
+
+            {/* 3: Doctors */}
+            <div className="rounded-2xl border border-teal-200 p-6 bg-teal-50/30 hover:bg-white hover:border-teal-600 hover:shadow-lg transition-all flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="h-12 w-12 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+                  <Stethoscope size={22} />
+                </div>
+                <h4 className="font-bold text-slate-900 text-lg">
+                  {t('home.onePlatform.roleDoctor')}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.onePlatform.roleDoctorDesc')}
+                </p>
+              </div>
+              <div className="pt-6">
+                <Link
+                  to="/register?role=doctor"
+                  className="text-xs font-bold text-teal-800 group-hover:text-teal-900 inline-flex items-center gap-1"
+                >
+                  <span>{t('home.nav.register')}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+
+            {/* 4: Teachers */}
+            <div className="rounded-2xl border border-indigo-200 p-6 bg-indigo-50/30 hover:bg-white hover:border-indigo-600 hover:shadow-lg transition-all flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="h-12 w-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <BookOpen size={22} />
+                </div>
+                <h4 className="font-bold text-slate-900 text-lg">
+                  {t('home.onePlatform.roleTeacher')}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.onePlatform.roleTeacherDesc')}
+                </p>
+              </div>
+              <div className="pt-6">
+                <Link
+                  to="/register?role=teacher"
+                  className="text-xs font-bold text-indigo-700 group-hover:text-indigo-800 inline-flex items-center gap-1"
+                >
+                  <span>{t('home.nav.register')}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+
+            {/* 5: Students */}
+            <div className="rounded-2xl border border-purple-200 p-6 bg-purple-50/30 hover:bg-white hover:border-purple-600 hover:shadow-lg transition-all flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="h-12 w-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                  <GraduationCap size={22} />
+                </div>
+                <h4 className="font-bold text-slate-900 text-lg">
+                  {t('home.onePlatform.roleStudent')}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.onePlatform.roleStudentDesc')}
+                </p>
+              </div>
+              <div className="pt-6">
+                <Link
+                  to="/register?role=student"
+                  className="text-xs font-bold text-purple-700 group-hover:text-purple-800 inline-flex items-center gap-1"
+                >
+                  <span>{t('home.nav.register')}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ========================================================= */}
-      {/* 5. WHY HOMELYSERV (PLATFORM CAPABILITIES & TRUST) */}
+      {/* 8. WHY HOMELYSERV (6 TRUST PILLARS) */}
       {/* ========================================================= */}
-      <section id="why-homelyserv" className="py-20 lg:py-28 bg-white border-b border-slate-200/70">
+      <section id="why-us" className="py-20 lg:py-28 bg-slate-50 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3 py-1 rounded-full border border-red-100">
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
               {t('home.whyUs.tag')}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
               {t('home.whyUs.title')}
             </h2>
             <p className="text-base sm:text-lg text-slate-600">
@@ -740,96 +1078,248 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 6 Core Pillars Grid */}
+          {/* 6 Trust & Architecture Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {whyUsPillars.map((pillar, idx) => {
-              const Icon = pillar.icon;
-              return (
-                <div
-                  key={idx}
-                  className="p-8 rounded-2xl bg-slate-50/70 border border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-lg transition duration-200 space-y-4"
-                >
-                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${pillar.color}`}>
-                    <Icon size={24} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900">{pillar.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{pillar.desc}</p>
-                </div>
-              );
-            })}
+            {/* 1: Verified Credentials */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-3">
+              <div className="h-10 w-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold">
+                <ShieldCheck size={20} />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg">
+                {t('home.whyUs.pillar1Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.whyUs.pillar1Desc')}
+              </p>
+            </div>
+
+            {/* 2: Direct Connection */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-3">
+              <div className="h-10 w-10 rounded-lg bg-teal-50 text-teal-800 flex items-center justify-center font-bold">
+                <MessageSquare size={20} />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg">
+                {t('home.whyUs.pillar2Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.whyUs.pillar2Desc')}
+              </p>
+            </div>
+
+            {/* 3: Multilingual Interface */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                <Globe2 size={20} />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg">
+                {t('home.whyUs.pillar3Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.whyUs.pillar3Desc')}
+              </p>
+            </div>
+
+            {/* 4: Smart Scheduling */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-3">
+              <div className="h-10 w-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <Calendar size={20} />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg">
+                {t('home.whyUs.pillar4Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.whyUs.pillar4Desc')}
+              </p>
+            </div>
+
+            {/* 5: Data Security */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-3">
+              <div className="h-10 w-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                <Lock size={20} />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg">
+                {t('home.whyUs.pillar5Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.whyUs.pillar5Desc')}
+              </p>
+            </div>
+
+            {/* 6: Global & Mobile Freedom */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-3">
+              <div className="h-10 w-10 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center font-bold">
+                <Smartphone size={20} />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg">
+                {t('home.whyUs.pillar6Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.whyUs.pillar6Desc')}
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ========================================================= */}
-      {/* 6. GLOBAL REACH & CROSS-BORDER OPPORTUNITIES */}
+      {/* 9. UNIVERSAL HOW IT WORKS SECTION (3 STEPS) */}
       {/* ========================================================= */}
-      <section id="global-reach" className="py-20 lg:py-28 bg-slate-900 text-white relative overflow-hidden">
-        {/* Background accent */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <section id="how-it-works" className="py-20 lg:py-28 bg-white border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+              {t('home.howItWorks.tag')}
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              {t('home.howItWorks.title')}
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600">
+              {t('home.howItWorks.subtitle')}
+            </p>
+          </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* 3 Step Process Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Step 1: Discover */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200 relative space-y-4">
+              <div className="h-12 w-12 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
+                1
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">
+                {t('home.howItWorks.step1Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.howItWorks.step1Desc')}
+              </p>
+            </div>
+
+            {/* Step 2: Connect */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200 relative space-y-4">
+              <div className="h-12 w-12 rounded-xl bg-teal-700 text-white flex items-center justify-center font-black text-lg shadow-sm">
+                2
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">
+                {t('home.howItWorks.step2Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.howItWorks.step2Desc')}
+              </p>
+            </div>
+
+            {/* Step 3: Manage */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200 relative space-y-4">
+              <div className="h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg shadow-sm">
+                3
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">
+                {t('home.howItWorks.step3Title')}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {t('home.howItWorks.step3Desc')}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 10. GLOBAL REACH SECTION (LARGE COMMUNITY IMAGE) */}
+      {/* ========================================================= */}
+      <section id="global" className="py-20 lg:py-28 bg-slate-900 text-white border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Global Story */}
-            <div className="lg:col-span-7 space-y-6">
-              <span className="text-xs sm:text-sm font-bold tracking-wider text-red-400 uppercase bg-red-950/80 px-3 py-1 rounded-full border border-red-800">
-                {t('home.globalSection.tag')}
+            {/* Left Narrative */}
+            <div className="lg:col-span-6 space-y-6">
+              <span className="text-xs sm:text-sm font-bold tracking-wider text-teal-400 uppercase bg-teal-950/80 px-3.5 py-1 rounded-full border border-teal-800">
+                {t('home.globalReach.tag')}
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-                {t('home.globalSection.title')}
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                {t('home.globalReach.title')}
               </h2>
               <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-                {t('home.globalSection.subtitle')}
+                {t('home.globalReach.subtitle')}
               </p>
 
-              {/* Key Global Features */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
-                  <h4 className="font-bold text-white text-base">{t('home.globalSection.card1Title')}</h4>
-                  <p className="text-xs sm:text-sm text-slate-300 mt-1">{t('home.globalSection.card1Desc')}</p>
+              {/* Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="p-5 rounded-xl bg-slate-800/80 border border-slate-700">
+                  <h4 className="font-bold text-white text-base mb-1">
+                    {t('home.globalReach.card1Title')}
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    {t('home.globalReach.card1Desc')}
+                  </p>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
-                  <h4 className="font-bold text-white text-base">{t('home.globalSection.card2Title')}</h4>
-                  <p className="text-xs sm:text-sm text-slate-300 mt-1">{t('home.globalSection.card2Desc')}</p>
+                <div className="p-5 rounded-xl bg-slate-800/80 border border-slate-700">
+                  <h4 className="font-bold text-white text-base mb-1">
+                    {t('home.globalReach.card2Title')}
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    {t('home.globalReach.card2Desc')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Badges for the 6 official languages */}
+              <div className="pt-2">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  {t('home.globalReach.languagesTitle')}
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  <span className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-slate-100 border border-slate-700">
+                    English (EN)
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-slate-100 border border-slate-700">
+                    العربية (AR)
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-slate-100 border border-slate-700">
+                    Français (FR)
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-slate-100 border border-slate-700">
+                    Русский (RU)
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-slate-100 border border-slate-700">
+                    Türkçe (TR)
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-slate-100 border border-slate-700">
+                    Deutsch (DE)
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Right Global Visual Representation */}
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl bg-slate-800/90 border border-slate-700 p-8 space-y-6">
-                <div className="flex items-center gap-4 border-b border-slate-700 pb-4">
-                  <div className="h-12 w-12 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold">
-                    <Globe2 size={26} />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-base">{t('home.globalSection.card3Title')}</h4>
-                    <p className="text-xs sm:text-sm text-slate-300">{t('home.globalSection.card3Desc')}</p>
-                  </div>
-                </div>
-
-                {/* Multilingual Support Badges */}
-                <div className="space-y-3">
-                  <div className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                    {t('home.whyUs.feature3Title')}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-medium text-slate-100">🇬🇧 English</span>
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-medium text-slate-100">🇪🇬 العربية</span>
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-medium text-slate-100">🇫🇷 Français</span>
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-medium text-slate-100">🇷🇺 Русский</span>
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-medium text-slate-100">🇹🇷 Türkçe</span>
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-medium text-slate-100">🇩🇪 Deutsch</span>
+            {/* Right Global Visual Feature (Large local photo card) */}
+            <div className="lg:col-span-6 flex justify-center">
+              <div className="relative w-full max-w-lg">
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800 bg-slate-950 aspect-16/10 relative group">
+                  <img
+                    src="/social/homelyserv-share.jpg"
+                    alt="HomelyServ Global Reach"
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold">
+                        <Globe2 size={18} />
+                      </div>
+                      <span className="text-sm font-bold text-white">
+                        {t('home.globalReach.card1Title')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      {t('home.globalReach.subtitle')}
+                    </p>
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="mt-4 text-center">
                   <Link
                     to="/register"
-                    className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-500 transition shadow-md"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-500 transition shadow-md"
                   >
-                    <span>{t('home.hero.previewGlobalReachSub')}</span>
+                    <span>{t('home.globalReach.cta')}</span>
                     <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -840,16 +1330,24 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 7. MOBILE APP SECTION & SCANNABLE QR CODE */}
+      {/* 11. MOBILE APP SECTION & VERIFIED QR CODE (WITH LOCAL ASSETS) */}
       {/* ========================================================= */}
-      <section id="mobile-app" className="py-20 lg:py-28 bg-gradient-to-b from-slate-50 to-white border-b border-slate-200/70">
+      <section id="mobile-app" className="py-20 lg:py-28 bg-gradient-to-b from-slate-50 to-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6">
-              <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                {t('home.appSection.tag')}
-              </span>
+              <div className="flex items-center gap-3">
+                <img
+                  src={appIcon}
+                  alt="HomelyServ Android App Icon"
+                  className="h-12 w-12 rounded-2xl shadow-md border border-slate-200"
+                />
+                <span className="text-xs sm:text-sm font-bold tracking-wider text-red-600 uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+                  {t('home.appSection.tag')}
+                </span>
+              </div>
+
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
                 {t('home.appSection.title')}
               </h2>
@@ -860,15 +1358,15 @@ export default function Home() {
               {/* App Features List */}
               <ul className="space-y-3 pt-2">
                 <li className="flex items-center gap-3 text-slate-700 text-sm font-medium">
-                  <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                  <CheckCircle2 size={18} className="text-teal-700 shrink-0" />
                   <span>{t('home.appSection.bullet1')}</span>
                 </li>
                 <li className="flex items-center gap-3 text-slate-700 text-sm font-medium">
-                  <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                  <CheckCircle2 size={18} className="text-teal-700 shrink-0" />
                   <span>{t('home.appSection.bullet2')}</span>
                 </li>
                 <li className="flex items-center gap-3 text-slate-700 text-sm font-medium">
-                  <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                  <CheckCircle2 size={18} className="text-teal-700 shrink-0" />
                   <span>{t('home.appSection.bullet3')}</span>
                 </li>
               </ul>
@@ -880,23 +1378,27 @@ export default function Home() {
                   className="inline-flex items-center gap-3 px-6 py-3.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition shadow-sm"
                 >
                   <Download size={18} />
-                  <span>{t('home.appSection.downloadButton')}</span>
+                  <span>{t('home.appSection.downloadBtn')}</span>
                 </Link>
                 <Link
                   to="/download"
                   className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
                 >
-                  <span>{t('home.appSection.viewDownloadPage')}</span>
+                  <span>{t('home.appSection.viewPageBtn')}</span>
                 </Link>
               </div>
             </div>
 
-            {/* Right: Real Scannable SVG QR Code Card */}
+            {/* Right: Real Scannable SVG QR Code Card + Local App Preview */}
             <div className="lg:col-span-5 flex justify-center">
               <div className="bg-white rounded-3xl p-8 border-2 border-slate-200/90 shadow-2xl max-w-sm w-full text-center space-y-6">
                 <div className="space-y-1">
-                  <h3 className="font-extrabold text-lg text-slate-900">{t('home.appSection.tag')}</h3>
-                  <p className="text-xs text-slate-500">{t('home.appSection.scanPrompt')}</p>
+                  <h3 className="font-extrabold text-lg text-slate-900">
+                    {t('home.appSection.tag')}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {t('home.appSection.scanPrompt')}
+                  </p>
                 </div>
 
                 {/* QR Code Container */}
@@ -924,16 +1426,15 @@ export default function Home() {
                       )}
                     </svg>
                   ) : (
-                    <div className="w-56 h-56 flex items-center justify-center text-slate-400 text-xs">
-                      <QrCode size={64} />
+                    <div className="w-56 h-56 flex flex-col items-center justify-center text-slate-400">
+                      <QrCode size={48} className="mb-2 text-slate-300" />
+                      <span className="text-xs font-semibold">QR Code</span>
                     </div>
                   )}
                 </div>
 
-                {/* Scan Info */}
-                <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-600 bg-slate-100 py-2 rounded-lg">
-                  <Smartphone size={16} className="text-slate-500" />
-                  <span>https://www.homelyserv.com/download</span>
+                <div className="text-[11px] text-slate-400 font-medium break-all">
+                  {DOWNLOAD_URL}
                 </div>
               </div>
             </div>
@@ -942,123 +1443,141 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 8. FINAL HIGH-IMPACT CALL TO ACTION */}
+      {/* 12. FINAL CALL TO ACTION (RED GRADIENT BANNER) */}
       {/* ========================================================= */}
-      <section className="py-20 lg:py-24 bg-gradient-to-r from-red-600 to-rose-700 text-white relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 relative">
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+      <section className="py-20 lg:py-24 bg-gradient-to-r from-red-600 via-red-600 to-red-700 text-white text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
             {t('home.finalCta.headline')}
           </h2>
-          <p className="text-lg sm:text-xl text-red-100 max-w-2xl mx-auto font-normal">
+          <p className="text-base sm:text-lg text-red-100 max-w-2xl mx-auto font-normal">
             {t('home.finalCta.subheadline')}
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              to="/register?role=employer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-red-600 font-extrabold text-base hover:bg-red-50 shadow-xl transition active:scale-[0.98]"
+              to="/register"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-red-600 font-extrabold text-base shadow-xl hover:bg-slate-50 transition transform hover:-translate-y-0.5 active:translate-y-0 text-center"
             >
-              <span>{t('home.finalCta.findHelpBtn')}</span>
-              <ArrowRight size={18} />
+              {t('home.finalCta.primaryBtn')}
             </Link>
             <Link
-              to="/register?role=worker"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-red-900/60 border border-red-300/40 text-white font-bold text-base hover:bg-red-900/90 transition shadow-sm"
+              to="/login"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-red-800/80 hover:bg-red-800 text-white font-bold text-base border border-red-500 shadow-sm transition text-center"
             >
-              <span>{t('home.finalCta.findJobBtn')}</span>
+              {t('home.finalCta.secondaryBtn')}
             </Link>
           </div>
         </div>
       </section>
 
       {/* ========================================================= */}
-      {/* 9. GLOBAL FOOTER WITH ALL LEGAL & SYSTEM LINKS */}
+      {/* 13. OFFICIAL BRAND FOOTER */}
       {/* ========================================================= */}
-      <footer className="bg-slate-950 text-slate-300 pt-16 pb-12 border-t border-slate-800">
+      <footer className="bg-slate-950 text-slate-300 py-16 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 pb-12 border-b border-slate-800">
-            {/* Column 1: Brand & Bio */}
-            <div className="col-span-2 space-y-4">
-              <Link to="/" className="flex items-center gap-2 focus:outline-none">
-                <span className="font-extrabold text-2xl tracking-tight text-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-800">
+            {/* Column 1: Brand Info (2 cols) */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={markDark}
+                  alt="HomelyServ Logo"
+                  className="h-10 w-auto object-contain brightness-0 invert"
+                />
+                <span className="font-extrabold text-xl text-white tracking-tight">
                   Homely<span className="text-red-500">Serv</span>
                 </span>
-              </Link>
-              <p className="text-sm text-slate-300 max-w-sm leading-relaxed">
+              </div>
+              <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
                 {t('home.footer.tagline')}
               </p>
             </div>
 
-            {/* Column 2: Platform Links */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold text-white tracking-wider uppercase">
-                {t('home.footer.quickLinks')}
-              </h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link to="/register?role=employer" className="text-slate-300 hover:text-white transition">
-                    {t('home.nav.findProfessionals')}
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/register?role=worker" className="text-slate-300 hover:text-white transition">
-                    {t('home.nav.findJobs')}
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/download" className="text-slate-300 hover:text-white transition">
-                    {t('home.footer.download')}
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="text-slate-300 hover:text-white transition">
-                    {t('home.footer.about')}
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 3: Support Links */}
+            {/* Column 2: Ecosystem Pillars */}
             <div className="space-y-3">
               <h4 className="text-sm font-bold text-white tracking-wider uppercase">
                 {t('home.footer.categories')}
               </h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/help" className="text-slate-300 hover:text-white transition">
-                    {t('home.footer.help')}
+                  <a
+                    href="#home-services"
+                    onClick={(e) => scrollToSection(e, 'home-services')}
+                    className="text-slate-400 hover:text-white transition"
+                  >
+                    {t('home.footer.homeServices')}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#healthcare"
+                    onClick={(e) => scrollToSection(e, 'healthcare')}
+                    className="text-slate-400 hover:text-white transition"
+                  >
+                    {t('home.footer.healthcare')}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#education"
+                    onClick={(e) => scrollToSection(e, 'education')}
+                    className="text-slate-400 hover:text-white transition"
+                  >
+                    {t('home.footer.education')}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Platform Links */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-white tracking-wider uppercase">
+                {t('home.footer.quickLinks')}
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/about" className="text-slate-400 hover:text-white transition">
+                    {t('home.footer.about')}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/contact" className="text-slate-300 hover:text-white transition">
+                  <Link to="/contact" className="text-slate-400 hover:text-white transition">
                     {t('home.footer.contact')}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/delete-account" className="text-slate-300 hover:text-white transition">
-                    {t('home.footer.deleteAccount')}
+                  <Link to="/help" className="text-slate-400 hover:text-white transition">
+                    {t('home.footer.help')}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/download" className="text-slate-400 hover:text-white transition">
+                    {t('home.nav.app')}
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Column 4: Legal & Policies */}
+            {/* Column 4: Legal & Trust */}
             <div className="space-y-3">
               <h4 className="text-sm font-bold text-white tracking-wider uppercase">
                 {t('home.footer.legal')}
               </h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/terms" className="text-slate-300 hover:text-white transition">
-                    {t('home.footer.terms')}
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/privacy" className="text-slate-300 hover:text-white transition">
+                  <Link to="/privacy" className="text-slate-400 hover:text-white transition">
                     {t('home.footer.privacy')}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/refund-policy" className="text-slate-300 hover:text-white transition">
+                  <Link to="/terms" className="text-slate-400 hover:text-white transition">
+                    {t('home.footer.terms')}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/refund-policy" className="text-slate-400 hover:text-white transition">
                     {t('home.footer.refund')}
                   </Link>
                 </li>
@@ -1066,13 +1585,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Bottom Copyright and Language info */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          {/* Bottom Copyright */}
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div>
               {t('home.footer.copyright', { year: currentYear })}
             </div>
             <div className="flex items-center gap-6">
-              <span>{t('home.footer.tagline')}</span>
+              <span>Home • Health • Education</span>
             </div>
           </div>
         </div>
@@ -1080,4 +1599,3 @@ export default function Home() {
     </div>
   );
 }
-
