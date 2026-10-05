@@ -145,17 +145,30 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
   // This must run BEFORE the customer-roles gate because DOCTOR is neither a
   // customer nor staff role and would otherwise be blanket-allowed.
   if (PROFESSIONAL_USER_ROLES.has(role)) {
-    const patientParty = await resolveUserParty(recipientId, db);
-    if (!patientParty) return { required: false, allowed: false };
-    // Doctor -> HomelyServ staff (Co-Admin / Sup-Admin / Sup-Help) is a
-    // platform-support channel, not a clinical relationship. The recipient
+    const recipientParty = await resolveUserParty(recipientId, db);
+    if (!recipientParty) return { required: false, allowed: false };
+    // Doctor / Teacher -> HomelyServ staff (Co-Admin / Sup-Admin / Sup-Help) is a
+    // platform-support channel, not a clinical relationship or worker hire. The recipient
     // role above comes from the database, so a crafted request cannot
-    // present a WORKER/EMPLOYER as staff. Every other recipient keeps the
-    // unchanged CONFIRMED/COMPLETED clinical-relationship rule.
-    if (DOCTOR_STAFF_ROLES.has(patientParty.role)) {
+    // present a WORKER/EMPLOYER as staff.
+    if (DOCTOR_STAFF_ROLES.has(recipientParty.role)) {
       return { required: false, allowed: true };
     }
-    const hasRelationship = await hasValidDoctorPatientRelationship(senderId, patientParty.userId);
+    // Doctor / Teacher -> Worker: requires paid recruitment commission on an active Hire
+    // owned by this Doctor/Teacher for this Worker. Reuses the canonical canContactWorker().
+    if (recipientParty.role === 'WORKER') {
+      const workerProfile = recipientParty.profileId
+        ? { id: recipientParty.profileId }
+        : await db.workerProfile.findUnique({
+            where: { userId: recipientParty.userId },
+            select: { id: true }
+          });
+      const allowed = workerProfile
+        ? await canContactWorker(senderId, workerProfile.id, db)
+        : false;
+      return { required: true, allowed };
+    }
+    const hasRelationship = await hasValidDoctorPatientRelationship(senderId, recipientParty.userId);
     return { required: false, allowed: hasRelationship };
   }
 

@@ -303,3 +303,131 @@ test('updating to doctor with "other" specialty requires non-empty doctorSpecial
   }
 });
 
+test('GET /profile/:userId contact unlocking for TEACHER, DOCTOR, EMPLOYER, and ADMIN', async () => {
+  const targetWorkerId = '507f1f77bcf86cd799439011';
+  const workerProfileId = '507f1f77bcf86cd799439022';
+  const originalUserFindById = User.findById;
+  const originalWorkerProfileFindUnique = prisma.workerProfile.findUnique;
+  const originalPaymentFindMany = prisma.payment.findMany;
+  const originalHireFindFirst = prisma.hire.findFirst;
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/workers', workersRouter);
+  const server = app.listen(0);
+  const listening = new Promise((resolve) => server.once('listening', resolve));
+  await listening;
+
+  const mockWorkerUser = {
+    _id: targetWorkerId,
+    id: targetWorkerId,
+    fullName: 'Test Worker',
+    email: 'worker@homelyserv.test',
+    phone: '+20123456789',
+    role: 'WORKER',
+    toObject: () => ({
+      _id: targetWorkerId,
+      id: targetWorkerId,
+      fullName: 'Test Worker',
+      email: 'worker@homelyserv.test',
+      phone: '+20123456789',
+      role: 'WORKER'
+    })
+  };
+
+  User.findById = (id) => ({
+    select: async () => (String(id) === targetWorkerId ? mockWorkerUser : null)
+  });
+
+  let paymentsList = [];
+  let matchingHireExists = false;
+
+  prisma.workerProfile.findUnique = async ({ where }) => {
+    if (where.userId === targetWorkerId || where.id === workerProfileId) {
+      return { id: workerProfileId, userId: targetWorkerId, availability: 'available', activelyLooking: false };
+    }
+    return null;
+  };
+  prisma.payment.findMany = async () => paymentsList;
+  prisma.hire.findFirst = async () => (matchingHireExists ? { id: 'hire-123' } : null);
+
+  const fetchProfile = async (requesterId, requesterRole) => {
+    const token = jwt.sign({ userId: requesterId, role: requesterRole, tokenVersion: 0 }, secret);
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/api/workers/profile/${targetWorkerId}`, {
+      headers: { authorization: `Bearer ${token}` }
+    });
+    return { status: res.status, body: await res.json() };
+  };
+
+  try {
+    // 1. TEACHER viewing worker WITHOUT paid commission -> email: null, phone: null, contactUnlocked: false
+    const teacherUnpaid = await fetchProfile('teacher-id-1', 'TEACHER');
+    assert.equal(teacherUnpaid.status, 200);
+    assert.equal(teacherUnpaid.body.contactUnlocked, false);
+    assert.equal(teacherUnpaid.body.user.email, null);
+    assert.equal(teacherUnpaid.body.user.phone, null);
+
+    // 2. DOCTOR viewing worker WITHOUT paid commission -> email: null, phone: null, contactUnlocked: false
+    const doctorUnpaid = await fetchProfile('doctor-id-1', 'DOCTOR');
+    assert.equal(doctorUnpaid.status, 200);
+    assert.equal(doctorUnpaid.body.contactUnlocked, false);
+    assert.equal(doctorUnpaid.body.user.email, null);
+    assert.equal(doctorUnpaid.body.user.phone, null);
+
+    // 3. EMPLOYER viewing worker WITHOUT paid commission -> email: null, phone: null, contactUnlocked: false
+    const employerUnpaid = await fetchProfile('employer-id-1', 'EMPLOYER');
+    assert.equal(employerUnpaid.status, 200);
+    assert.equal(employerUnpaid.body.contactUnlocked, false);
+    assert.equal(employerUnpaid.body.user.email, null);
+    assert.equal(employerUnpaid.body.user.phone, null);
+
+    // Now configure paid commission for TEACHER
+    paymentsList = [{
+      status: 'completed',
+      purpose: 'COMMISSION',
+      hireId: 'hire-123',
+      userId: 'teacher-id-1',
+      fulfillmentStatus: 'fulfilled'
+    }];
+    matchingHireExists = true;
+
+    // 4. TEACHER with valid paid commission -> email and phone unlocked, contactUnlocked: true
+    const teacherPaid = await fetchProfile('teacher-id-1', 'TEACHER');
+    assert.equal(teacherPaid.status, 200);
+    assert.equal(teacherPaid.body.contactUnlocked, true);
+    assert.equal(teacherPaid.body.user.email, 'worker@homelyserv.test');
+    assert.equal(teacherPaid.body.user.phone, '+20123456789');
+
+    // 5. DOCTOR with valid paid commission -> email and phone unlocked, contactUnlocked: true
+    paymentsList[0].userId = 'doctor-id-1';
+    const doctorPaid = await fetchProfile('doctor-id-1', 'DOCTOR');
+    assert.equal(doctorPaid.status, 200);
+    assert.equal(doctorPaid.body.contactUnlocked, true);
+    assert.equal(doctorPaid.body.user.email, 'worker@homelyserv.test');
+    assert.equal(doctorPaid.body.user.phone, '+20123456789');
+
+    // 6. ADMIN is always unlocked
+    paymentsList = [];
+    matchingHireExists = false;
+    const adminView = await fetchProfile('admin-id-1', 'ADMIN');
+    assert.equal(adminView.status, 200);
+    assert.equal(adminView.body.contactUnlocked, true);
+    assert.equal(adminView.body.user.email, 'worker@homelyserv.test');
+    assert.equal(adminView.body.user.phone, '+20123456789');
+
+    // 7. Worker viewing themselves is always unlocked
+    const selfView = await fetchProfile(targetWorkerId, 'WORKER');
+    assert.equal(selfView.status, 200);
+    assert.equal(selfView.body.contactUnlocked, true);
+    assert.equal(selfView.body.user.email, 'worker@homelyserv.test');
+    assert.equal(selfView.body.user.phone, '+20123456789');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    User.findById = originalUserFindById;
+    prisma.workerProfile.findUnique = originalWorkerProfileFindUnique;
+    prisma.payment.findMany = originalPaymentFindMany;
+    prisma.hire.findFirst = originalHireFindFirst;
+  }
+});
+
+

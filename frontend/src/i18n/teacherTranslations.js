@@ -214,6 +214,21 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Failed to remove student.',
         nameRequired: 'Full name or first/last name is required.',
         invalidEmail: 'Please enter a valid email address.'
+      },
+      groupAssignment: {
+        assignToGroup: 'Assign to Group',
+        title: 'Assign Student to Group',
+        subtitle: 'Select one of your active groups to enroll {{name}}.',
+        selectGroup: 'Select Group',
+        selectGroupPlaceholder: '-- Select an active group --',
+        noGroups: 'No active groups available',
+        noGroupsDesc: 'You do not have any active groups yet. Please create a group first in Groups & Classes.',
+        assign: 'Assign to Group',
+        assigning: 'Assigning...',
+        cancel: 'Cancel',
+        success: 'Student assigned to group successfully.',
+        alreadyAssigned: 'Student is already enrolled in this group.',
+        loadError: 'Failed to load your groups.'
       }
     },
     teacherGroups: {
@@ -1024,6 +1039,21 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'فشل حذف الطالب.',
         nameRequired: 'الاسم الكامل أو الأول والأخير مطلوب.',
         invalidEmail: 'يرجى إدخال عنوان بريد إلكتروني صالح.'
+      },
+      groupAssignment: {
+        assignToGroup: 'إضافة إلى مجموعة',
+        title: 'تعيين الطالب لمجموعة',
+        subtitle: 'اختر إحدى مجموعاتك النشطة لضم الطالب {{name}} إليها.',
+        selectGroup: 'اختر المجموعة',
+        selectGroupPlaceholder: '-- اختر مجموعة نشطة --',
+        noGroups: 'لا توجد مجموعات نشطة متاحة',
+        noGroupsDesc: 'ليس لديك أي مجموعات نشطة حالياً. يرجى إنشاء مجموعة أولاً من صفحة المجموعات والفصول.',
+        assign: 'إضافة إلى المجموعة',
+        assigning: 'جارٍ الإضافة...',
+        cancel: 'إلغاء',
+        success: 'تم ضم الطالب إلى المجموعة بنجاح.',
+        alreadyAssigned: 'الطالب مسجل بالفعل في هذه المجموعة.',
+        loadError: 'فشل تحميل المجموعات الخاصة بك.'
       }
     },
     teacherGroups: {
@@ -1834,6 +1864,21 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Échec de la suppression de l’élève.',
         nameRequired: 'Le nom complet ou prénom/nom est requis.',
         invalidEmail: 'Veuillez saisir une adresse email valide.'
+      },
+      groupAssignment: {
+        assignToGroup: 'Assigner à un groupe',
+        title: 'Assigner l’élève à un groupe',
+        subtitle: 'Sélectionnez l’un de vos groupes actifs pour y inscrire {{name}}.',
+        selectGroup: 'Sélectionner le groupe',
+        selectGroupPlaceholder: '-- Sélectionnez un groupe actif --',
+        noGroups: 'Aucun groupe actif disponible',
+        noGroupsDesc: 'Vous n’avez pas encore de groupes actifs. Veuillez d’abord créer un groupe dans Groupes & Classes.',
+        assign: 'Assigner au groupe',
+        assigning: 'Assignation...',
+        cancel: 'Annuler',
+        success: 'Élève assigné au groupe avec succès.',
+        alreadyAssigned: 'Cet élève est déjà inscrit dans ce groupe.',
+        loadError: 'Échec du chargement de vos groupes.'
       }
     },
     teacherGroups: {
@@ -2644,6 +2689,21 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Не удалось удалить ученика.',
         nameRequired: 'Необходимо указать полное имя или имя и фамилию.',
         invalidEmail: 'Пожалуйста, введите корректный адрес электронной почты.'
+      },
+      groupAssignment: {
+        assignToGroup: 'Зачислить в группу',
+        title: 'Зачисление ученика в группу',
+        subtitle: 'Выберите одну из ваших активных групп для зачисления {{name}}.',
+        selectGroup: 'Выберите группу',
+        selectGroupPlaceholder: '-- Выберите активную группу --',
+        noGroups: 'Нет доступных активных групп',
+        noGroupsDesc: 'У вас пока нет активных групп. Пожалуйста, сначала создайте группу в разделе «Группы и классы».',
+        assign: 'Зачислить в группу',
+        assigning: 'Зачисление...',
+        cancel: 'Отмена',
+        success: 'Ученик успешно зачислен в группу.',
+        alreadyAssigned: 'Ученик уже зачислен в эту группу.',
+        loadError: 'Не удалось загрузить ваши группы.'
       }
     },
     teacherGroups: {
@@ -3454,6 +3514,21 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Öğrenci silinemedi.',
         nameRequired: 'Tam ad veya ad ve soyad gereklidir.',
         invalidEmail: 'Lütfen geçerli bir e-posta adresi girin.'
+      },
+      groupAssignment: {
+        assignToGroup: 'Gruba Ata',
+        title: 'Öğrenciyi Gruba Ata',
+        subtitle: '{{name}} isimli öğrenciyi kaydetmek için aktif gruplarınızdan birini seçin.',
+        selectGroup: 'Grup Seçin',
+        selectGroupPlaceholder: '-- Aktif bir grup seçin --',
+        noGroups: 'Mevcut aktif grup yok',
+        noGroupsDesc: 'Henüz aktif bir grubunuz bulunmuyor. Lütfen önce Gruplar ve Sınıflar bölümünden bir grup oluşturun.',
+        assign: 'Gruba Ata',
+        assigning: 'Atanıyor...',
+        cancel: 'İptal',
+        success: 'Öğrenci gruba başarıyla atandı.',
+        alreadyAssigned: 'Öğrenci zaten bu gruba kayıtlı.',
+        loadError: 'Gruplarınız yüklenemedi.'
       }
     },
     teacherGroups: {
@@ -4264,6 +4339,21 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Schüler konnte nicht entfernt werden.',
         nameRequired: 'Vollständiger Name oder Vor- und Nachname ist erforderlich.',
         invalidEmail: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.'
+      },
+      groupAssignment: {
+        assignToGroup: 'Gruppe zuweisen',
+        title: 'Schüler einer Gruppe zuweisen',
+        subtitle: 'Wählen Sie eine Ihrer aktiven Gruppen aus, um {{name}} einzuschreiben.',
+        selectGroup: 'Gruppe auswählen',
+        selectGroupPlaceholder: '-- Aktive Gruppe auswählen --',
+        noGroups: 'Keine aktiven Gruppen verfügbar',
+        noGroupsDesc: 'Sie haben noch keine aktiven Gruppen. Bitte erstellen Sie zuerst eine Gruppe unter „Gruppen & Klassen“.',
+        assign: 'Gruppe zuweisen',
+        assigning: 'Wird zugewiesen...',
+        cancel: 'Abbrechen',
+        success: 'Schüler erfolgreich der Gruppe zugewiesen.',
+        alreadyAssigned: 'Schüler ist dieser Gruppe bereits zugewiesen.',
+        loadError: 'Ihre Gruppen konnten nicht geladen werden.'
       }
     },
     teacherGroups: {

@@ -31,6 +31,7 @@ import { JOB_OPTIONS } from '../constants/jobOptions';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
 import employerService from '../services/employerService';
 import hireService from '../services/hireService';
+import { PremiumBadge } from '../components/PremiumBadge';
 import { SUPPORTED_CURRENCIES, getAccountCurrency } from '../utils/currencyPresentation';
 import {
   Search as SearchIcon,
@@ -484,7 +485,11 @@ const SearchWorkers = () => {
               return (
                 <article
                   key={worker.id}
-                  className="bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3"
+                  className={`rounded-xl p-4 space-y-3 border transition ${
+                    worker.isPremium
+                      ? 'border-purple-400 dark:border-purple-500 bg-purple-100/80 dark:bg-purple-900/30 shadow-[0_0_16px_rgba(168,85,247,0.40)] hover:shadow-[0_0_22px_rgba(168,85,247,0.50)]'
+                      : 'bg-white dark:bg-[#1a1a2e] border-gray-200 dark:border-gray-700'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
@@ -498,10 +503,13 @@ const SearchWorkers = () => {
                         <Users size={20} className="text-gray-400" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="font-semibold text-gray-900 dark:text-white truncate">
-                        {worker.fullName || t('searchWorkersPage.worker')}
-                      </h2>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <h2 className="font-semibold text-gray-900 dark:text-white truncate">
+                          {worker.fullName || t('searchWorkersPage.worker')}
+                        </h2>
+                        {worker.isPremium && <PremiumBadge label={t('employerSearch.premium', { defaultValue: 'Premium' })} size="sm" />}
+                      </div>
                       <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                         <Briefcase size={14} />
                         <span className="truncate">{getServiceLabel(worker.desiredJob)}</span>

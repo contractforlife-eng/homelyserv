@@ -37,7 +37,8 @@ import {
   MapPin,
   School,
   FileText,
-  Filter
+  Filter,
+  Layers
 } from 'lucide-react';
 
 const INPUT_CLS =
@@ -84,6 +85,14 @@ const TeacherStudents = () => {
   // Delete confirmation modal
   const [deletingStudent, setDeletingStudent] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Group assignment modal
+  const [assigningStudent, setAssigningStudent] = useState(null);
+  const [teacherGroups, setTeacherGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [assignError, setAssignError] = useState('');
 
   // Fetch students
   const fetchStudents = useCallback(async () => {
@@ -273,6 +282,62 @@ const TeacherStudents = () => {
       );
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Open Assign to Group modal
+  const handleOpenAssignGroup = async (student) => {
+    setAssigningStudent(student);
+    setSelectedGroupId('');
+    setAssignError('');
+    try {
+      setLoadingGroups(true);
+      const res = await api.get('/api/teachers/groups');
+      if (res.data?.success && Array.isArray(res.data.groups)) {
+        const activeGroups = res.data.groups.filter((g) => g.status === 'ACTIVE');
+        setTeacherGroups(activeGroups);
+      } else {
+        setTeacherGroups([]);
+      }
+    } catch (err) {
+      console.error('Failed to load teacher groups:', err);
+      setAssignError(
+        err.response?.data?.message ||
+          t('teacherStudents.groupAssignment.loadError') ||
+          'Failed to load groups.'
+      );
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  // Confirm Assign to Group
+  const handleConfirmAssignGroup = async (e) => {
+    if (e) e.preventDefault();
+    if (!assigningStudent || !selectedGroupId) return;
+
+    try {
+      setAssignSubmitting(true);
+      setAssignError('');
+      await api.post(`/api/teachers/groups/${selectedGroupId}/students`, {
+        studentId: assigningStudent.id
+      });
+      setSuccessMessage(
+        t('teacherStudents.groupAssignment.success') ||
+          'Student assigned to group successfully.'
+      );
+      setAssigningStudent(null);
+      setSelectedGroupId('');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('Failed to assign student to group:', err);
+      setAssignError(
+        err.response?.data?.message ||
+          t('teacherStudents.groupAssignment.alreadyAssigned') ||
+          'Failed to assign student to group.'
+      );
+    } finally {
+      setAssignSubmitting(false);
     }
   };
 
@@ -618,6 +683,17 @@ const TeacherStudents = () => {
                             className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                           >
                             <Eye size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAssignGroup(student)}
+                            title={
+                              t('teacherStudents.groupAssignment.assignToGroup') ||
+                              'Assign to Group'
+                            }
+                            className="p-1.5 rounded-lg text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
+                          >
+                            <Layers size={16} />
                           </button>
                           <button
                             type="button"
@@ -1108,18 +1184,35 @@ const TeacherStudents = () => {
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={() => {
-                  const s = selectedStudent;
-                  setSelectedStudent(null);
-                  handleOpenEdit(s);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 text-sm font-medium transition-colors"
-              >
-                <Edit size={15} />
-                <span>{t('teacherStudents.actions.edit') || 'Edit'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const s = selectedStudent;
+                    setSelectedStudent(null);
+                    handleOpenAssignGroup(s);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 text-sm font-medium transition-colors"
+                >
+                  <Layers size={15} />
+                  <span>
+                    {t('teacherStudents.groupAssignment.assignToGroup') ||
+                      'Assign to Group'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const s = selectedStudent;
+                    setSelectedStudent(null);
+                    handleOpenEdit(s);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 text-sm font-medium transition-colors"
+                >
+                  <Edit size={15} />
+                  <span>{t('teacherStudents.actions.edit') || 'Edit'}</span>
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -1186,6 +1279,145 @@ const TeacherStudents = () => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* ASSIGN TO GROUP MODAL                                    */}
+      {/* ======================================================== */}
+      {assigningStudent && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                  <Layers size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {t('teacherStudents.groupAssignment.title') ||
+                      'Assign Student to Group'}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {(
+                      t('teacherStudents.groupAssignment.subtitle') ||
+                      'Select one of your active groups to enroll {{name}}.'
+                    ).replace('{{name}}', assigningStudent.fullName)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssigningStudent(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Error banner */}
+            {assignError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle size={15} className="shrink-0" />
+                <span>{assignError}</span>
+              </div>
+            )}
+
+            {/* Loading state for groups */}
+            {loadingGroups ? (
+              <div className="py-8 flex flex-col items-center justify-center text-gray-500 text-xs space-y-2">
+                <Loader2 size={24} className="animate-spin text-purple-600" />
+                <span>Loading your groups...</span>
+              </div>
+            ) : teacherGroups.length === 0 ? (
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-center space-y-1">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  {t('teacherStudents.groupAssignment.noGroups') ||
+                    'No active groups available'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('teacherStudents.groupAssignment.noGroupsDesc') ||
+                    'You do not have any active groups yet. Please create a group first in Groups & Classes.'}
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleConfirmAssignGroup} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    {t('teacherStudents.groupAssignment.selectGroup') ||
+                      'Select Group'}{' '}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedGroupId}
+                    onChange={(e) => {
+                      setSelectedGroupId(e.target.value);
+                      setAssignError('');
+                    }}
+                    className={INPUT_CLS}
+                    required
+                  >
+                    <option value="">
+                      {t('teacherStudents.groupAssignment.selectGroupPlaceholder') ||
+                        '-- Select an active group --'}
+                    </option>
+                    {teacherGroups.map((grp) => (
+                      <option key={grp.id} value={grp.id}>
+                        {grp.name} {grp.subject ? `(${grp.subject})` : ''}{' '}
+                        {grp.gradeLevel ? `[${grp.gradeLevel}]` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => setAssigningStudent(null)}
+                    disabled={assignSubmitting}
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {t('teacherStudents.groupAssignment.cancel') || 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={assignSubmitting || !selectedGroupId}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {assignSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>
+                          {t('teacherStudents.groupAssignment.assigning') ||
+                            'Assigning...'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Layers size={16} />
+                        <span>
+                          {t('teacherStudents.groupAssignment.assign') ||
+                            'Assign to Group'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {teacherGroups.length === 0 && !loadingGroups && (
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAssigningStudent(null)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {t('teacherStudents.groupAssignment.cancel') || 'Cancel'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

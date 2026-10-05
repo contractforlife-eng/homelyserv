@@ -8,7 +8,10 @@ const ids = {
   workerProfile: '333333333333333333333333',
   admin: '444444444444444444444444',
   support: '555555555555555555555555',
-  hire: '666666666666666666666666'
+  hire: '666666666666666666666666',
+  teacher: '777777777777777777777777',
+  doctor: '888888888888888888888888',
+  patient: '999999999999999999999999'
 };
 
 const makeDb = ({ payments = [], matchingHire = true, hire = {} } = {}) => ({
@@ -41,7 +44,10 @@ const makeDb = ({ payments = [], matchingHire = true, hire = {} } = {}) => ({
       [ids.employer]: { id: ids.employer, role: 'EMPLOYER' },
       [ids.worker]: { id: ids.worker, role: 'WORKER' },
       [ids.admin]: { id: ids.admin, role: 'ADMIN' },
-      [ids.support]: { id: ids.support, role: 'SUPPORT' }
+      [ids.support]: { id: ids.support, role: 'SUPPORT' },
+      [ids.teacher]: { id: ids.teacher, role: 'TEACHER' },
+      [ids.doctor]: { id: ids.doctor, role: 'DOCTOR' },
+      [ids.patient]: { id: ids.patient, role: 'PATIENT' }
     }[where.id] || null)
   },
   workerProfile: {
@@ -221,3 +227,104 @@ test('Admin and Support sends remain exempt', async () => {
     recipientId: ids.support
   }, db), { required: false, allowed: true });
 });
+
+test('TEACHER and DOCTOR to WORKER requires paid commission and is denied without it', async () => {
+  const db = makeDb(); // No payments
+  const teacherSend = await authorizePaidChatRelationship({
+    senderId: ids.teacher,
+    senderRole: 'TEACHER',
+    recipientId: ids.worker
+  }, db);
+  const doctorSend = await authorizePaidChatRelationship({
+    senderId: ids.doctor,
+    senderRole: 'DOCTOR',
+    recipientId: ids.worker
+  }, db);
+
+  assert.deepEqual(teacherSend, { required: true, allowed: false });
+  assert.deepEqual(doctorSend, { required: true, allowed: false });
+});
+
+test('TEACHER and DOCTOR to WORKER is allowed after valid paid commission', async () => {
+  const teacherPayment = { ...modernPayment, userId: ids.teacher };
+  const teacherDb = makeDb({
+    payments: [teacherPayment],
+    hire: { employerId: ids.teacher, workerId: ids.workerProfile }
+  });
+  // Custom hire findFirst matching teacher
+  teacherDb.hire.findFirst = async ({ where }) => {
+    if (where.employerId === ids.teacher && where.workerId === ids.workerProfile && where.status === 'active' && where.paymentStatus === 'completed') {
+      return { id: ids.hire };
+    }
+    return null;
+  };
+  teacherDb.payment.findMany = async () => [teacherPayment];
+
+  const teacherSend = await authorizePaidChatRelationship({
+    senderId: ids.teacher,
+    senderRole: 'TEACHER',
+    recipientId: ids.worker
+  }, teacherDb);
+  assert.deepEqual(teacherSend, { required: true, allowed: true });
+
+  const doctorPayment = { ...modernPayment, userId: ids.doctor };
+  const doctorDb = makeDb({
+    payments: [doctorPayment],
+    hire: { employerId: ids.doctor, workerId: ids.workerProfile }
+  });
+  doctorDb.hire.findFirst = async ({ where }) => {
+    if (where.employerId === ids.doctor && where.workerId === ids.workerProfile && where.status === 'active' && where.paymentStatus === 'completed') {
+      return { id: ids.hire };
+    }
+    return null;
+  };
+  doctorDb.payment.findMany = async () => [doctorPayment];
+
+  const doctorSend = await authorizePaidChatRelationship({
+    senderId: ids.doctor,
+    senderRole: 'DOCTOR',
+    recipientId: ids.worker
+  }, doctorDb);
+  assert.deepEqual(doctorSend, { required: true, allowed: true });
+});
+
+test('TEACHER to WORKER remains locked when commission belongs to another professional or worker', async () => {
+  // Payment belongs to employer, not teacher
+  const foreignDb = makeDb({ payments: [modernPayment] });
+  const teacherSendWrongOwner = await authorizePaidChatRelationship({
+    senderId: ids.teacher,
+    senderRole: 'TEACHER',
+    recipientId: ids.worker
+  }, foreignDb);
+  assert.deepEqual(teacherSendWrongOwner, { required: true, allowed: false });
+
+  // Payment belongs to teacher, but Hire is inactive
+  const inactiveDb = makeDb({
+    payments: [{ ...modernPayment, userId: ids.teacher }],
+    matchingHire: false
+  });
+  const teacherSendInactiveHire = await authorizePaidChatRelationship({
+    senderId: ids.teacher,
+    senderRole: 'TEACHER',
+    recipientId: ids.worker
+  }, inactiveDb);
+  assert.deepEqual(teacherSendInactiveHire, { required: true, allowed: false });
+});
+
+test('TEACHER and DOCTOR to staff remains exempt and allowed', async () => {
+  const db = makeDb();
+  const teacherToAdmin = await authorizePaidChatRelationship({
+    senderId: ids.teacher,
+    senderRole: 'TEACHER',
+    recipientId: ids.admin
+  }, db);
+  const doctorToSupport = await authorizePaidChatRelationship({
+    senderId: ids.doctor,
+    senderRole: 'DOCTOR',
+    recipientId: ids.support
+  }, db);
+
+  assert.deepEqual(teacherToAdmin, { required: false, allowed: true });
+  assert.deepEqual(doctorToSupport, { required: false, allowed: true });
+});
+

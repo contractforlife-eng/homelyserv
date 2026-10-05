@@ -189,13 +189,12 @@ teacherStudentSchema.index(
 );
 
 // Pre-save hook: keep linkedUserId and studentUserId synchronized
-teacherStudentSchema.pre('save', function (next) {
+teacherStudentSchema.pre('save', function () {
   if (this.linkedUserId && !this.studentUserId) {
     this.studentUserId = this.linkedUserId;
   } else if (this.studentUserId && !this.linkedUserId) {
     this.linkedUserId = this.studentUserId;
   }
-  next();
 });
 
 // Text/filter search index on name and school

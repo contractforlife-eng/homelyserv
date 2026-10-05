@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherGroup from '../models/TeacherGroup.js';
@@ -238,7 +239,10 @@ const withTeacherGroupsServer = async (
     const created = list.map((item, idx) => {
       const doc = {
         ...item,
-        _id: item._id || `507f1f77bcf86cd79943920${enrollStore.length + idx}`,
+        _id: item._id || new mongoose.Types.ObjectId(`507f1f77bcf86cd79943920${enrollStore.length + idx}`),
+        teacherId: item.teacherId ? new mongoose.Types.ObjectId(String(item.teacherId)) : item.teacherId,
+        groupId: item.groupId ? new mongoose.Types.ObjectId(String(item.groupId)) : item.groupId,
+        studentId: item.studentId ? new mongoose.Types.ObjectId(String(item.studentId)) : item.studentId,
         createdAt: new Date(),
         updatedAt: new Date(),
         toObject: function () { return { ...this }; },
@@ -258,10 +262,24 @@ const withTeacherGroupsServer = async (
     const match = pipeline.find((p) => p.$match)?.$match || {};
     const filtered = enrollStore.filter((e) => {
       if (match.groupId?.$in) {
-        const strIds = match.groupId.$in.map(String);
-        if (!strIds.includes(String(e.groupId))) return false;
+        const hasMatch = match.groupId.$in.some((g) => {
+          // In real MongoDB aggregation, BSON ObjectIds match ObjectIds.
+          if (g instanceof mongoose.Types.ObjectId && e.groupId instanceof mongoose.Types.ObjectId) {
+            return g.equals(e.groupId);
+          }
+          return g === e.groupId;
+        });
+        if (!hasMatch) return false;
       }
-      if (match.teacherId && String(e.teacherId) !== String(match.teacherId)) return false;
+      if (match.teacherId !== undefined) {
+        // Enforce strict BSON type matching (catching uncast String vs ObjectId bugs)
+        if (match.teacherId instanceof mongoose.Types.ObjectId && e.teacherId instanceof mongoose.Types.ObjectId) {
+          if (!match.teacherId.equals(e.teacherId)) return false;
+        } else if (match.teacherId !== e.teacherId) {
+          // Type mismatch (e.g. string vs ObjectId) or different values: no match in Mongo aggregate
+          return false;
+        }
+      }
       if (match.isActive !== undefined && e.isActive !== match.isActive) return false;
       if (match.status && e.status !== match.status) return false;
       return true;
@@ -513,7 +531,7 @@ test('Teacher Groups & Enrollment Suite', async (t) => {
         });
         assert.equal(dupRes.status, 400);
 
-        // 4. List students in group
+        // 4. List students in group details
         const listStudentsRes = await fetch(
           `${baseUrl}/api/teachers/groups/${groupA._id}/students`,
           { headers: headersA }
@@ -521,6 +539,15 @@ test('Teacher Groups & Enrollment Suite', async (t) => {
         assert.equal(listStudentsRes.status, 200);
         const listStudentsJson = await listStudentsRes.json();
         assert.equal(listStudentsJson.count, 2);
+
+        // 4b. Verify GET /api/teachers/groups list returns exact active studentCount = 2
+        const listGroupsRes = await fetch(`${baseUrl}/api/teachers/groups`, {
+          headers: headersA
+        });
+        assert.equal(listGroupsRes.status, 200);
+        const listGroupsJson = await listGroupsRes.json();
+        assert.equal(listGroupsJson.groups.length, 1);
+        assert.equal(listGroupsJson.groups[0].studentCount, 2);
 
         // 5. Remove student from group
         const removeRes = await fetch(
@@ -532,7 +559,7 @@ test('Teacher Groups & Enrollment Suite', async (t) => {
         );
         assert.equal(removeRes.status, 200);
 
-        // Group now has 1 enrolled student
+        // Group now has 1 enrolled student in details
         const afterRemoveRes = await fetch(
           `${baseUrl}/api/teachers/groups/${groupA._id}/students`,
           { headers: headersA }
@@ -540,6 +567,16 @@ test('Teacher Groups & Enrollment Suite', async (t) => {
         const afterRemoveJson = await afterRemoveRes.json();
         assert.equal(afterRemoveJson.count, 1);
         assert.equal(afterRemoveJson.students[0].fullName, 'Omar Hassan');
+
+        // 5b. Verify GET /api/teachers/groups list returns exact updated studentCount = 1
+        const listGroupsAfterRemoveRes = await fetch(
+          `${baseUrl}/api/teachers/groups`,
+          { headers: headersA }
+        );
+        assert.equal(listGroupsAfterRemoveRes.status, 200);
+        const listGroupsAfterRemoveJson = await listGroupsAfterRemoveRes.json();
+        assert.equal(listGroupsAfterRemoveJson.groups.length, 1);
+        assert.equal(listGroupsAfterRemoveJson.groups[0].studentCount, 1);
 
         // Verify underlying student record was NOT deleted
         assert.equal(student1.isActive, true);

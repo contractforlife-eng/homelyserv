@@ -315,4 +315,51 @@ test('Teacher Students Suite', async (t) => {
       assert.equal(getRes.status, 404);
     });
   });
+
+  await t.test('6. Real TeacherStudent model pre-save hook executes synchronously and synchronizes IDs', async () => {
+    const mongoose = (await import('mongoose')).default;
+    const teacherId = new mongoose.Types.ObjectId();
+    const user1 = new mongoose.Types.ObjectId();
+    const user2 = new mongoose.Types.ObjectId();
+
+    // 1. Manual student without linkedUserId passes without next is not a function error
+    const manualDoc = new TeacherStudent({
+      teacherId,
+      fullName: 'Manual Student',
+      status: 'ACTIVE'
+    });
+    await manualDoc._execDocumentPreHooks('save');
+    assert.equal(manualDoc.studentUserId, null);
+    assert.equal(manualDoc.linkedUserId, null);
+
+    // 2. linkedUserId populates studentUserId
+    const linkedDoc = new TeacherStudent({
+      teacherId,
+      fullName: 'Linked Student 1',
+      linkedUserId: user1
+    });
+    await linkedDoc._execDocumentPreHooks('save');
+    assert.equal(String(linkedDoc.studentUserId), String(user1));
+
+    // 3. studentUserId populates linkedUserId
+    const reverseLinkedDoc = new TeacherStudent({
+      teacherId,
+      fullName: 'Linked Student 2',
+      studentUserId: user2
+    });
+    await reverseLinkedDoc._execDocumentPreHooks('save');
+    assert.equal(String(reverseLinkedDoc.linkedUserId), String(user2));
+
+    // 4. When both are present, neither is altered
+    const bothDoc = new TeacherStudent({
+      teacherId,
+      fullName: 'Both Present',
+      linkedUserId: user1,
+      studentUserId: user2
+    });
+    await bothDoc._execDocumentPreHooks('save');
+    assert.equal(String(bothDoc.linkedUserId), String(user1));
+    assert.equal(String(bothDoc.studentUserId), String(user2));
+  });
 });
+

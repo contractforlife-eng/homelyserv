@@ -13,6 +13,7 @@
 //    it NEVER deletes the underlying TeacherStudent or User account.
 // 5. Homely Student status is strictly derived from `Boolean(student.linkedUserId)`.
 // ============================================================
+import mongoose from 'mongoose';
 import TeacherGroup from '../models/TeacherGroup.js';
 import TeacherGroupEnrollment from '../models/TeacherGroupEnrollment.js';
 import TeacherStudent from '../models/TeacherStudent.js';
@@ -115,11 +116,19 @@ export const getTeacherGroups = async (req, res) => {
     let countsMap = {};
 
     if (groupIds.length > 0) {
+      const teacherObjectId = isValidObjectId(String(teacherId))
+        ? new mongoose.Types.ObjectId(String(teacherId))
+        : teacherId;
+
+      const groupObjectIds = groupIds.map((id) =>
+        isValidObjectId(String(id)) ? new mongoose.Types.ObjectId(String(id)) : id
+      );
+
       const counts = await TeacherGroupEnrollment.aggregate([
         {
           $match: {
-            groupId: { $in: groupIds },
-            teacherId,
+            groupId: { $in: groupObjectIds },
+            teacherId: teacherObjectId,
             isActive: true,
             status: 'ACTIVE'
           }

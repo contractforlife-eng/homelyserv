@@ -159,7 +159,7 @@ router.get('/profile/:userId', authenticate, async (req, res) => {
     const requesterId = req.userId;
     const requesterRole = req.userRole;
     
-    if (requesterRole === 'EMPLOYER') {
+    if (requesterRole === 'EMPLOYER' || requesterRole === 'TEACHER' || requesterRole === 'DOCTOR') {
       // Convert User._id to WorkerProfile._id for payment check
       const workerProfile = await prisma.workerProfile.findUnique({
         where: { userId: String(userObj.id) }
