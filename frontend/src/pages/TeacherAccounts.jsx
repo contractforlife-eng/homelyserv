@@ -418,7 +418,8 @@ const TeacherAccounts = () => {
     const keys = new Set([
       ...Object.keys(summary.receivedIncome || {}),
       ...Object.keys(summary.pendingIncome || {}),
-      ...Object.keys(summary.totalExpenses || {})
+      ...Object.keys(summary.totalExpenses || {}),
+      ...Object.keys(summary.salaryExpense || {})
     ]);
     return [...keys].sort();
   }, [summary]);

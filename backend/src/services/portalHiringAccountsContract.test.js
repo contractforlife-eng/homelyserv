@@ -24,8 +24,10 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import TeacherExpense from '../models/TeacherExpense.js';
+import TeacherIncome from '../models/TeacherIncome.js';
 import DoctorExpense from '../models/DoctorExpense.js';
-import { getTeacherExpenses } from '../controllers/teacherAccountsController.js';
+import DoctorEmployee from '../models/DoctorEmployee.js';
+import { getTeacherExpenses, getTeacherAccountsSummary } from '../controllers/teacherAccountsController.js';
 import { getDoctorExpenses } from '../controllers/doctorAccountsController.js';
 import { buildCommissionExpenseReference } from './hireCommissionExpenseService.js';
 import { resolveEmployeeLifecycleState } from './employeeService.js';
@@ -536,6 +538,121 @@ test('Issue 4A: expenses stay scoped to their own owner', async () => {
     assert.deepEqual(res.body.expenses, [], 'another teacher sees nothing');
   } finally {
     restore();
+  }
+});
+
+test('Teacher Accounts summary includes employee salaries in salaryExpense, totalExpenses, and netProfit', async () => {
+  const savedExpenseAgg = TeacherExpense.aggregate;
+  const savedIncomeAgg = TeacherIncome.aggregate;
+  const savedEmpFind = DoctorEmployee.find;
+
+  const TEACHER_ID = 'teacher-101';
+  const OTHER_TEACHER_ID = 'teacher-999';
+
+  const mockExpenses = [
+    { _id: 'EGP', total: 750, count: 1 }
+  ];
+  const mockReceivedIncome = [
+    { _id: 'EGP', total: 5000, count: 2 }
+  ];
+  const mockPendingIncome = [
+    { _id: 'EGP', total: 1000, count: 1 }
+  ];
+
+  const mockEmployees = [
+    {
+      _id: 'emp-1',
+      ownerUserId: TEACHER_ID,
+      fullName: 'Teacher Assistant',
+      salary: 3000,
+      currency: 'EGP',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      isActive: true
+    },
+    {
+      _id: 'emp-inactive',
+      ownerUserId: TEACHER_ID,
+      fullName: 'Inactive Assistant',
+      salary: 2000,
+      currency: 'EGP',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      isActive: false
+    },
+    {
+      _id: 'emp-other',
+      ownerUserId: OTHER_TEACHER_ID,
+      fullName: 'Other Assistant',
+      salary: 4000,
+      currency: 'EGP',
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      isActive: true
+    }
+  ];
+
+  TeacherExpense.aggregate = async (pipeline = []) => {
+    const isCount = pipeline.some((p) => p.$group && p.$group.count);
+    return isCount ? [{ _id: 'EGP', count: 1 }] : mockExpenses;
+  };
+  TeacherIncome.aggregate = async (pipeline = []) => {
+    const match = pipeline.find((p) => p.$match)?.$match || {};
+    const isCount = pipeline.some((p) => p.$group && p.$group.count);
+    if (match.status === 'RECEIVED') {
+      return isCount ? [{ _id: 'EGP', count: 2 }] : mockReceivedIncome;
+    }
+    if (match.status === 'PENDING') {
+      return isCount ? [{ _id: 'EGP', count: 1 }] : mockPendingIncome;
+    }
+    return [];
+  };
+  DoctorEmployee.find = (filter = {}) => {
+    const list = mockEmployees.filter((e) => {
+      if (filter.isActive !== undefined && e.isActive !== filter.isActive) return false;
+      if (filter.$or) {
+        const matchesOwner = filter.$or.some((clause) => {
+          if (clause.ownerUserId && String(clause.ownerUserId) === String(e.ownerUserId)) return true;
+          if (clause.doctorId && String(clause.doctorId) === String(e.doctorId)) return true;
+          return false;
+        });
+        if (!matchesOwner) return false;
+      }
+      if (filter.startDate && filter.startDate.$lte) {
+        if (new Date(e.startDate).getTime() > new Date(filter.startDate.$lte).getTime()) return false;
+      }
+      return true;
+    });
+    return {
+      select: () => list,
+      then: (resolve, reject) => Promise.resolve(list).then(resolve, reject)
+    };
+  };
+
+  try {
+    const res = makeRes();
+    await getTeacherAccountsSummary(
+      {
+        userId: TEACHER_ID,
+        query: { from: '2026-09-01', to: '2026-09-30' }
+      },
+      res
+    );
+
+    assert.equal(res.statusCode, 200);
+    const summary = res.body.summary;
+    assert.ok(summary, 'summary object must be returned');
+
+    // Salary: 1 month of 3000 EGP for active employee emp-1
+    assert.equal(summary.salaryExpense.EGP, 3000, 'salaryExpense must be 3000 EGP');
+    assert.equal(summary.expenses.EGP, 750, 'other expenses must be 750 EGP');
+    // Total expenses: 750 (other) + 3000 (salary) = 3750
+    assert.equal(summary.totalExpenses.EGP, 3750, 'totalExpenses must include both other expenses and salary');
+    // Net profit: 5000 (received) - 3750 (totalExpenses) = 1250
+    assert.equal(summary.netProfit.EGP, 1250, 'netProfit must be receivedIncome minus totalExpenses');
+    assert.equal(summary.receivedIncome.EGP, 5000);
+    assert.equal(summary.pendingIncome.EGP, 1000);
+  } finally {
+    TeacherExpense.aggregate = savedExpenseAgg;
+    TeacherIncome.aggregate = savedIncomeAgg;
+    DoctorEmployee.find = savedEmpFind;
   }
 });
   // payment service call must still be present.

@@ -12,6 +12,9 @@ import TeacherExpense, { TEACHER_EXPENSE_CATEGORIES } from '../models/TeacherExp
 import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherGroup from '../models/TeacherGroup.js';
 import TeacherLesson from '../models/TeacherLesson.js';
+import DoctorEmployee from '../models/DoctorEmployee.js';
+import { buildOwnerScope } from '../services/employeeService.js';
+import { fixedMonthlySalary } from './doctorAccountsController.js';
 
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -558,6 +561,7 @@ export const getTeacherAccountsSummary = async (req, res) => {
 
     const fromDate = rangeFilter.incomeDate?.$gte || null;
     const toDate = rangeFilter.incomeDate?.$lte || null;
+    const reportEnd = toDate || new Date();
 
     const dateBound = (field) => (
       fromDate || toDate
@@ -574,7 +578,8 @@ export const getTeacherAccountsSummary = async (req, res) => {
       expenseRows,
       receivedCountRows,
       pendingCountRows,
-      expenseCountRows
+      expenseCountRows,
+      activeEmployees
     ] = await Promise.all([
       // Received income
       TeacherIncome.aggregate([
@@ -586,7 +591,7 @@ export const getTeacherAccountsSummary = async (req, res) => {
         { $match: { teacherId, status: 'PENDING', ...incomeRange } },
         { $group: { _id: '$currency', total: { $sum: '$amount' } } }
       ]),
-      // Expenses
+      // Other Expenses (direct TeacherExpense records)
       TeacherExpense.aggregate([
         { $match: { teacherId, ...expenseRange } },
         { $group: { _id: '$currency', total: { $sum: '$amount' } } }
@@ -602,7 +607,13 @@ export const getTeacherAccountsSummary = async (req, res) => {
       TeacherExpense.aggregate([
         { $match: { teacherId, ...expenseRange } },
         { $group: { _id: '$currency', count: { $sum: 1 } } }
-      ])
+      ]),
+      // Active employees who had already started by the report end
+      DoctorEmployee.find({
+        ...buildOwnerScope(req.userId),
+        isActive: true,
+        startDate: { $lte: reportEnd }
+      }).select('salary currency startDate')
     ]);
 
     const toMap = (rows) => {
@@ -623,9 +634,36 @@ export const getTeacherAccountsSummary = async (req, res) => {
       return map;
     };
 
+    // Calculate dynamic salary obligations (never persisted as TeacherExpense records)
+    const salaryTotals = {};
+    for (const employee of activeEmployees || []) {
+      const employeeStart = new Date(
+        Date.UTC(
+          employee.startDate.getUTCFullYear(),
+          employee.startDate.getUTCMonth(),
+          employee.startDate.getUTCDate()
+        )
+      );
+      const salaryPeriodStart = fromDate && fromDate.getTime() > employeeStart.getTime()
+        ? fromDate
+        : employeeStart;
+
+      const contribution = fixedMonthlySalary(
+        Number(employee.salary || 0),
+        employee.startDate,
+        salaryPeriodStart,
+        reportEnd
+      );
+      const cur = String(employee.currency || 'EGP').toUpperCase();
+      salaryTotals[cur] = (salaryTotals[cur] || 0) + contribution;
+    }
+    for (const key of Object.keys(salaryTotals)) {
+      if (!salaryTotals[key]) delete salaryTotals[key];
+    }
+
     const receivedIncome = toMap(receivedRows);
     const pendingIncome = toMap(pendingRows);
-    const totalExpenses = toMap(expenseRows);
+    const otherExpenses = toMap(expenseRows);
 
     const receivedCounts = toCountMap(receivedCountRows);
     const pendingCounts = toCountMap(pendingCountRows);
@@ -634,14 +672,22 @@ export const getTeacherAccountsSummary = async (req, res) => {
     const currencies = new Set([
       ...Object.keys(receivedIncome),
       ...Object.keys(pendingIncome),
-      ...Object.keys(totalExpenses)
+      ...Object.keys(otherExpenses),
+      ...Object.keys(salaryTotals)
     ]);
 
+    const salaryExpense = {};
+    const totalExpenses = {};
     const netProfit = {};
     for (const cur of [...currencies].sort()) {
+      const other = Number(otherExpenses[cur] || 0);
+      const salary = Number(salaryTotals[cur] || 0);
+      const total = other + salary;
       const rec = Number(receivedIncome[cur] || 0);
-      const exp = Number(totalExpenses[cur] || 0);
-      netProfit[cur] = rec - exp;
+
+      salaryExpense[cur] = salary;
+      totalExpenses[cur] = total;
+      netProfit[cur] = rec - total;
     }
 
     return res.json({
@@ -654,6 +700,8 @@ export const getTeacherAccountsSummary = async (req, res) => {
         currencyNote: 'All amounts are grouped strictly by currency and are never summed across currencies.',
         receivedIncome,
         pendingIncome,
+        expenses: otherExpenses,
+        salaryExpense,
         totalExpenses,
         netProfit,
         counts: {

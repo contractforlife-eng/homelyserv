@@ -2052,10 +2052,10 @@ const utcMonthNumber = (date) =>
 // the calendar month the CALLER intended, whether the caller sent a bare
 // 'YYYY-MM-DD' (parsed as UTC midnight) or a browser-local day boundary
 // (which in a timezone ahead of UTC falls on the previous UTC day).
-const MONTH_SKEW_MS = 12 * 60 * 60 * 1000;
+export const MONTH_SKEW_MS = 12 * 60 * 60 * 1000;
 
 /** UTC month number of `date` after applying a signed day-level skew. */
-const calendarMonthNumber = (date, skewMs = 0) => {
+export const calendarMonthNumber = (date, skewMs = 0) => {
   const shifted = new Date(date.getTime() + skewMs);
   return (shifted.getUTCFullYear() * 12) + shifted.getUTCMonth();
 };
@@ -2086,7 +2086,7 @@ const calendarMonthNumber = (date, skewMs = 0) => {
  * two-partial-month window). Advances and penalties are applied afterwards and
  * never alter the gross returned here.
  */
-const fixedMonthlySalary = (monthlySalary, startDate, periodStart, periodEnd) => {
+export const fixedMonthlySalary = (monthlySalary, startDate, periodStart, periodEnd) => {
   const salary = Number(monthlySalary || 0);
   if (!Number.isFinite(salary) || salary <= 0) return 0;
 
