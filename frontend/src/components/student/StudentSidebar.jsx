@@ -285,7 +285,7 @@ const StudentSidebar = ({
               <button
                 onClick={handleLogout}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                title={t('common.logout') || 'Log Out'}
+                title={t('logout') || 'Log Out'}
               >
                 <LogOut size={16} />
               </button>
@@ -295,7 +295,7 @@ const StudentSidebar = ({
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                title={t('common.logout') || 'Log Out'}
+                title={t('logout') || 'Log Out'}
               >
                 <LogOut size={18} />
               </button>
@@ -344,7 +344,7 @@ const StudentSidebar = ({
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-red-50 hover:text-red-600 text-gray-700 dark:text-gray-300 text-sm font-semibold transition-colors"
               >
                 <LogOut size={16} />
-                <span>{t('common.logout') || 'Log Out'}</span>
+                <span>{t('logout') || 'Log Out'}</span>
               </button>
             </div>
           </div>
