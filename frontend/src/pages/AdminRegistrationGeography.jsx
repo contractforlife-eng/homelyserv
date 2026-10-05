@@ -73,7 +73,7 @@ export const RegistrationGeographyContent = () => {
     try { await loadUsers(page); } catch (requestError) { setError(requestError.response?.data?.message || g('loadFailed')); } finally { setLoading(false); }
   };
 
-  const availableRoles = ['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT', 'SUPPORT_HELPER'];
+  const availableRoles = ['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT', 'SUPPORT_HELPER', 'DOCTOR', 'TEACHER', 'STUDENT'];
   const distributionBarColor = isSupport ? 'bg-green-500' : 'bg-yellow-500';
 
   return (

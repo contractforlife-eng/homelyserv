@@ -100,4 +100,8 @@ test('geography query validation bounds pagination and validates filters', () =>
   assert.throws(() => parseGeographyUserQuery({ limit: '101' }), TypeError);
   assert.throws(() => parseGeographyUserQuery({ country: 'Egypt' }), TypeError);
   assert.throws(() => parseGeographyUserQuery({ role: 'GUEST' }), TypeError);
+  // DOCTOR, TEACHER, STUDENT are accepted
+  assert.equal(parseGeographyUserQuery({ role: 'doctor' }).role, 'DOCTOR');
+  assert.equal(parseGeographyUserQuery({ role: 'teacher' }).role, 'TEACHER');
+  assert.equal(parseGeographyUserQuery({ role: 'student' }).role, 'STUDENT');
 });

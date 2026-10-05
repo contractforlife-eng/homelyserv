@@ -123,3 +123,37 @@ test('Registration geography response contains approved analytics fields and doe
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('role filter accepts DOCTOR, TEACHER, and STUDENT and restricts results', async () => {
+  const usersList = [
+    { _id: 'u-doc', fullName: 'Dr Smith', email: 'dr@example.com', role: 'DOCTOR', registrationCountryCode: 'EG', registrationCountryName: 'Egypt', registrationIp: '1.1.1.1', createdAt: new Date() },
+    { _id: 'u-tch', fullName: 'Prof Jones', email: 'prof@example.com', role: 'TEACHER', registrationCountryCode: 'DE', registrationCountryName: 'Germany', registrationIp: '2.2.2.2', createdAt: new Date() },
+    { _id: 'u-stu', fullName: 'Student Ali', email: 'stu@example.com', role: 'STUDENT', registrationCountryCode: 'FR', registrationCountryName: 'France', registrationIp: '3.3.3.3', createdAt: new Date() },
+  ];
+  const app = express();
+  app.use('/api/admin/registration-geography', createRegistrationGeographyRouter({
+    getUsers: async (query) => {
+      const { role } = query || {};
+      const filtered = role ? usersList.filter(u => u.role === role) : usersList;
+      return {
+        users: filtered.map(u => ({ id: u._id, name: u.fullName, email: u.email, role: u.role, registrationCountryCode: u.registrationCountryCode, registrationCountryName: u.registrationCountryName, registrationIp: u.registrationIp, createdAt: u.createdAt })),
+        pagination: { page: 1, limit: 20, total: filtered.length, totalPages: 1 },
+      };
+    },
+  }));
+  const server = app.listen(0);
+  await new Promise((resolve) => server.once('listening', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    for (const role of ['DOCTOR', 'TEACHER', 'STUDENT']) {
+      const res = await get(base, `/api/admin/registration-geography/users?role=${role}`, 'ADMIN');
+      assert.equal(res.status, 200);
+      const body = await res.json();
+      assert.equal(body.success, true);
+      assert.equal(body.users.length, 1);
+      assert.equal(body.users[0].role, role);
+    }
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

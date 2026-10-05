@@ -1,6 +1,6 @@
 import User from '../models/User.js';
 
-const ROLES = new Set(['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT', 'SUPPORT_HELPER']);
+const ROLES = new Set(['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT', 'SUPPORT_HELPER', 'DOCTOR', 'TEACHER', 'STUDENT']);
 const MAX_LIMIT = 100;
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
