@@ -235,14 +235,14 @@ const DoctorSidebar = ({
       {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={toggleMobileMenu}
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 z-40 bg-white dark:bg-[#1f2937] border-r border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col ${
+        className={`fixed top-0 bottom-0 z-50 lg:z-40 bg-white dark:bg-[#1f2937] border-r border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
