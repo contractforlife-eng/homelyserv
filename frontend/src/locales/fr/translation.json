@@ -35,5 +35,12 @@
   "active_hires": "Embauches actives",
   "revenue": "Revenus",
   "confirm": "Confirmer",
-  "reject": "Rejeter"
+  "reject": "Rejeter",
+  "my_children": "Mes enfants",
+  "request_teacher": "Demander un enseignant",
+  "request_teacher_title": "Demander un enseignant",
+  "student_requests": "Demandes des parents/tuteurs",
+  "accept": "Accepter",
+  "teacher_request_success": "Demande d'enseignant envoyée et en attente de l'approbation de l'enseignant !",
+  "teacher_request_error": "Échec de l'envoi de la demande d'enseignant."
 }

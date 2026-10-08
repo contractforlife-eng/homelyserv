@@ -35,5 +35,12 @@
   "active_hires": "Активные наймы",
   "revenue": "Доход",
   "confirm": "Подтвердить",
-  "reject": "Отклонить"
+  "reject": "Отклонить",
+  "my_children": "Мои дети",
+  "request_teacher": "Запросить учителя",
+  "request_teacher_title": "Запросить учителя",
+  "student_requests": "Запросы родителей/опекунов",
+  "accept": "Принять",
+  "teacher_request_success": "Запрос учителя отправлен и ожидает подтверждения учителя!",
+  "teacher_request_error": "Не удалось отправить запрос учителя."
 }

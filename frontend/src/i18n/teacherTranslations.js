@@ -148,6 +148,10 @@ export const TEACHER_TRANSLATIONS = {
       }
     },
     teacherStudents: {
+      statusPending: 'Pending',
+      acceptBtn: 'Accept',
+      acceptSuccess: 'Student request accepted.',
+      acceptError: 'Failed to accept student request.',
       headerTitle: 'Students',
       subtitle: 'Manage all your students in one unified place.',
       addStudentBtn: 'Add Student',
@@ -973,6 +977,10 @@ export const TEACHER_TRANSLATIONS = {
       }
     },
     teacherStudents: {
+      statusPending: 'قيد الانتظار',
+      acceptBtn: 'قبول',
+      acceptSuccess: 'تم قبول طلب الطالب.',
+      acceptError: 'فشل قبول طلب الطالب.',
       headerTitle: 'الطلاب',
       subtitle: 'إدارة جميع طلابك في مكان واحد موحد.',
       addStudentBtn: 'إضافة طالب',
@@ -1798,6 +1806,10 @@ export const TEACHER_TRANSLATIONS = {
       }
     },
     teacherStudents: {
+      statusPending: 'En attente',
+      acceptBtn: 'Accepter',
+      acceptSuccess: 'Demande étudiant acceptée.',
+      acceptError: "Échec de l'acceptation de la demande étudiant.",
       headerTitle: 'Élèves',
       subtitle: 'Gérez tous vos élèves en un seul endroit unifié.',
       addStudentBtn: 'Ajouter un élève',
@@ -2623,6 +2635,10 @@ export const TEACHER_TRANSLATIONS = {
       }
     },
     teacherStudents: {
+      statusPending: 'Ожидание',
+      acceptBtn: 'Принять',
+      acceptSuccess: 'Запрос студента принят.',
+      acceptError: 'Не удалось принять запрос студента.',
       headerTitle: 'Ученики',
       subtitle: 'Управляйте всеми вашими учениками в одном едином списке.',
       addStudentBtn: 'Добавить ученика',
@@ -3448,6 +3464,10 @@ export const TEACHER_TRANSLATIONS = {
       }
     },
     teacherStudents: {
+      statusPending: 'Bekliyor',
+      acceptBtn: 'Kabul Et',
+      acceptSuccess: 'Öğrenci talebi kabul edildi.',
+      acceptError: 'Öğrenci talebi kabul edilemedi.',
       headerTitle: 'Öğrenciler',
       subtitle: 'Tüm öğrencilerinizi tek bir yerde bir arada yönetin.',
       addStudentBtn: 'Öğrenci Ekle',
@@ -4273,6 +4293,10 @@ export const TEACHER_TRANSLATIONS = {
       }
     },
     teacherStudents: {
+      statusPending: 'Ausstehend',
+      acceptBtn: 'Akzeptieren',
+      acceptSuccess: 'Schüleranfrage akzeptiert.',
+      acceptError: 'Schüleranfrage konnte nicht akzeptiert werden.',
       headerTitle: 'Schüler',
       subtitle: 'Verwalten Sie alle Ihre Schüler an einem zentralen Ort.',
       addStudentBtn: 'Schüler hinzufügen',

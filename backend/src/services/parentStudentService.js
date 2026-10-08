@@ -6,7 +6,7 @@
 // learning management.
 //
 // INTEGRITY & SECURITY RULES:
-// 1. Parent accounts must have role WORKER or EMPLOYER.
+// 1. Parent accounts must have role WORKER, EMPLOYER or DOCTOR.
 // 2. Child accounts must have role STUDENT.
 // 3. Educational access is permitted IF AND ONLY IF an ACTIVE
 //    ParentStudent relationship exists between parentUserId and studentUserId.
@@ -27,7 +27,7 @@ import StudentLessonBooking from '../models/StudentLessonBooking.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import { checkTeacherScheduleConflict, validateTimeRange } from './lessonBookingConflictService.js';
 
-export const ALLOWED_PARENT_ROLES = new Set(['WORKER', 'EMPLOYER']);
+export const ALLOWED_PARENT_ROLES = new Set(['WORKER', 'EMPLOYER', 'DOCTOR']);
 
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);

@@ -23,6 +23,11 @@ import {
   getChildBookings,
   createChildBooking
 } from '../controllers/parentStudentController.js';
+// Teacher discovery & request for a linked child (parent-side)
+import {
+  discoverParentsTeachers,
+  requestParentTeacher
+} from '../controllers/parentTeacherDiscoveryController.js';
 
 const router = express.Router();
 
@@ -50,5 +55,9 @@ router.get('/:studentId/progress', getChildProgress);
 router.get('/:studentId/homework', getChildHomework);
 router.get('/:studentId/bookings', getChildBookings);
 router.post('/:studentId/bookings', createChildBooking);
+
+// Teacher discovery & request for a linked child (parent)
+router.get('/:studentId/teachers/discover', discoverParentsTeachers);
+router.post('/:studentId/teachers/:teacherId/request', requestParentTeacher);
 
 export default router;

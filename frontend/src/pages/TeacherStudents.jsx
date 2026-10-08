@@ -94,6 +94,10 @@ const TeacherStudents = () => {
   const [assignSubmitting, setAssignSubmitting] = useState(false);
   const [assignError, setAssignError] = useState('');
 
+  // Accept pending relationship request
+  const [acceptingId, setAcceptingId] = useState(null);
+  const [acceptError, setAcceptError] = useState('');
+
   // Fetch students
   const fetchStudents = useCallback(async () => {
     try {
@@ -338,6 +342,24 @@ const TeacherStudents = () => {
       );
     } finally {
       setAssignSubmitting(false);
+    }
+  };
+
+  // Accept a pending teacher-student relationship request (PENDING -> ACTIVE)
+  const handleAcceptStudent = async (student) => {
+    try {
+      setAcceptingId(student.id);
+      setAcceptError('');
+      setSuccessMessage('');
+      const res = await api.post(`/api/teachers/students/${student.id}/accept`);
+      if (res.data?.success) {
+        setSuccessMessage(t('teacherStudents.acceptSuccess') || 'Student request accepted.');
+        await fetchStudents();
+      }
+    } catch (err) {
+      setAcceptError(err.response?.data?.message || t('teacherStudents.acceptError') || 'Failed to accept student request.');
+    } finally {
+      setAcceptingId(null);
     }
   };
 
@@ -651,6 +673,11 @@ const TeacherStudents = () => {
 
                       {/* Status */}
                       <td className="py-3.5 px-4">
+                        {student.relationshipStatus === 'PENDING' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 mb-1">
+                            {t('teacherStudents.statusPending') || 'Pending'}
+                          </span>
+                        )}
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             student.status === 'ACTIVE'
@@ -673,6 +700,17 @@ const TeacherStudents = () => {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-end">
                         <div className="inline-flex items-center gap-1">
+                          {student.relationshipStatus === 'PENDING' && (
+                            <button
+                              type="button"
+                              onClick={() => handleAcceptStudent(student)}
+                              disabled={acceptingId === student.id}
+                              title={t('teacherStudents.acceptBtn') || 'Accept'}
+                              className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors disabled:opacity-50"
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setSelectedStudent(student)}

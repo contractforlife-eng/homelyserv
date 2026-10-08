@@ -35,5 +35,12 @@
   "active_hires": "Active Hires",
   "revenue": "Revenue",
   "confirm": "Confirm",
-  "reject": "Reject"
+  "reject": "Reject",
+  "my_children": "My Children",
+  "request_teacher": "Request Teacher",
+  "request_teacher_title": "Request a Teacher",
+  "student_requests": "Parent/Guardian Requests",
+  "accept": "Accept",
+  "teacher_request_success": "Teacher request sent successfully and is pending teacher approval!",
+  "teacher_request_error": "Failed to send teacher request."
 }

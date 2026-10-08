@@ -35,5 +35,12 @@
   "active_hires": "طلبات نشطة",
   "revenue": "الإيرادات",
   "confirm": "تأكيد",
-  "reject": "رفض"
+  "reject": "رفض",
+  "my_children": "أطفالي",
+  "request_teacher": "طلب معلم",
+  "request_teacher_title": "طلب معلم",
+  "student_requests": "طلبات والدي/ولي الأمر",
+  "accept": "قبول",
+  "teacher_request_success": "تم إرسال طلب المعلم بنجاح وبانتظار موافقة المعلم!",
+  "teacher_request_error": "فشل إرسال طلب المعلم."
 }

@@ -64,6 +64,31 @@ export const createChildBooking = async (studentId, bookingData) => {
   return response.data;
 };
 
+export const getStudentParentRequests = async () => {
+  const response = await api.get('/api/parent-students/requests');
+  return response.data;
+};
+
+export const acceptParentRequest = async (relationshipId) => {
+  const response = await api.post(`/api/parent-students/${relationshipId}/accept`);
+  return response.data;
+};
+
+export const rejectParentRequest = async (relationshipId) => {
+  const response = await api.post(`/api/parent-students/${relationshipId}/reject`);
+  return response.data;
+};
+
+export const discoverChildTeachers = async (studentId, params = {}) => {
+  const response = await api.get(`/api/parent-students/${studentId}/teachers/discover`, { params });
+  return response.data;
+};
+
+export const requestChildTeacher = async (studentId, teacherId, message) => {
+  const response = await api.post(`/api/parent-students/${studentId}/teachers/${teacherId}/request`, { message });
+  return response.data;
+};
+
 export default {
   getParentChildren,
   requestChildLink,
@@ -75,5 +100,10 @@ export default {
   getChildProgress,
   getChildHomework,
   getChildBookings,
-  createChildBooking
+  createChildBooking,
+  getStudentParentRequests,
+  acceptParentRequest,
+  rejectParentRequest,
+  discoverChildTeachers,
+  requestChildTeacher
 };

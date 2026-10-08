@@ -21,7 +21,8 @@ import {
   Users,
   Headphones,
   Globe,
-  Heart
+  Heart,
+  GraduationCap
 } from 'lucide-react';
 
 const MobileDrawerNav = () => {
@@ -49,6 +50,7 @@ const MobileDrawerNav = () => {
     { to: '/worker-jobs', icon: Search, label: t('workerSidebar.findJobs') },
     { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
     { to: '/worker-applications', icon: FileText, label: t('workerSidebar.myApplications') },
+    { to: '/parent-students', icon: GraduationCap, label: t('parentStudents.pageTitle') || 'My Children' },
     { to: '/worker-profile', icon: User, label: t('workerSidebar.myProfile') },
     { to: '/worker/offers', icon: Star, label: t('workerSidebar.myOffers') },
     { to: '/worker-messages', icon: MessageCircle, label: t('workerSidebar.messages') },
@@ -66,6 +68,7 @@ const MobileDrawerNav = () => {
     { to: '/employer-jobs', icon: Briefcase, label: t('employerSidebar.myJobs') },
     { to: '/employer-profile', icon: User, label: t('employerSidebar.myProfile') },
     { to: '/my-hires', icon: Users, label: t('employerSidebar.myHires') },
+    { to: '/parent-students', icon: GraduationCap, label: t('parentStudents.pageTitle') || 'My Children' },
     { to: '/employer-search', icon: Search, label: t('employerSidebar.searchWorkers') },
     { to: '/employer-messages', icon: MessageCircle, label: t('employerSidebar.messages') },
     { to: '/employer-complaints', icon: FileText, label: t('employerSidebar.complaints') },

@@ -2,7 +2,7 @@
 // ============================================================
 // PARENT / CHILD LEARNING MANAGEMENT (PHASE 10)
 //
-// Accessible to WORKER and EMPLOYER accounts acting as parents/guardians.
+// Accessible to WORKER, EMPLOYER and DOCTOR accounts acting as parents/guardians.
 // Allows monitoring linked children, academic overviews, connected teachers,
 // lessons, progress, homework, and booking lessons on behalf of children.
 // ============================================================
@@ -23,7 +23,9 @@ import {
   getChildProgress,
   getChildHomework,
   getChildBookings,
-  createChildBooking
+  createChildBooking,
+  discoverChildTeachers,
+  requestChildTeacher
 } from '../services/parentStudentService';
 import {
   GraduationCap,
@@ -41,7 +43,8 @@ import {
   TrendingUp,
   Award,
   ChevronRight,
-  Plus
+  Plus,
+  Search
 } from 'lucide-react';
 
 const ParentStudents = () => {
@@ -90,6 +93,18 @@ const ParentStudents = () => {
   });
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState(null);
+
+  // Request Teacher Modal State
+  const [isRequestTeacherModalOpen, setIsRequestTeacherModalOpen] = useState(false);
+  const [requestTeacherTargetChild, setRequestTeacherTargetChild] = useState(null);
+  const [discoveredTeachers, setDiscoveredTeachers] = useState([]);
+  const [teacherSearchLoading, setTeacherSearchLoading] = useState(false);
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
+  const [requestingTeacherId, setRequestingTeacherId] = useState(null);
+  const [requestTeacherError, setRequestTeacherError] = useState(null);
+  const [requestTeacherSuccess, setRequestTeacherSuccess] = useState(null);
+  const [teacherPagination, setTeacherPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 0 });
+  const [teacherCurrentPage, setTeacherCurrentPage] = useState(1);
 
   // Fetch linked children
   const fetchChildren = useCallback(async () => {
@@ -157,13 +172,13 @@ const ParentStudents = () => {
   const handleSelectChild = (child) => {
     setSelectedChild(child);
     setChildTab('overview');
-    loadChildTabData(child.studentUserId, 'overview');
+    loadChildTabData(child.studentId, 'overview');
   };
 
   const handleTabChange = (tab) => {
     setChildTab(tab);
     if (selectedChild) {
-      loadChildTabData(selectedChild.studentUserId, tab);
+      loadChildTabData(selectedChild.studentId, tab);
     }
   };
 
@@ -249,7 +264,7 @@ const ParentStudents = () => {
     });
     // Ensure teachers are loaded for teacher dropdown
     try {
-      const res = await getChildTeachers(child.studentUserId);
+      const res = await getChildTeachers(child.studentId);
       if (res?.success) {
         setChildData(prev => ({ ...prev, teachers: res.teachers || [] }));
       }
@@ -257,6 +272,84 @@ const ParentStudents = () => {
       console.error('Failed to load child teachers:', err);
     }
     setIsBookingModalOpen(true);
+  };
+
+  // Request Teacher: discover teachers for a linked child (parent discovery)
+  const fetchTeachersForChild = useCallback(async (studentId, page = 1, search = '') => {
+    try {
+      setTeacherSearchLoading(true);
+      setRequestTeacherError(null);
+      const params = { page, limit: 12 };
+      if (search && search.trim()) params.search = search.trim();
+      const res = await discoverChildTeachers(studentId, params);
+      if (res?.success) {
+        setDiscoveredTeachers(res.teachers || []);
+        setTeacherPagination(res.pagination || { page: 1, limit: 12, total: 0, totalPages: 0 });
+      } else {
+        setDiscoveredTeachers([]);
+      }
+    } catch (err) {
+      console.error('Error discovering teachers for child:', err);
+      setRequestTeacherError(err?.response?.data?.message || t('parentStudents.requestTeacherLoadError'));
+      setDiscoveredTeachers([]);
+    } finally {
+      setTeacherSearchLoading(false);
+    }
+  }, [t]);
+
+  const openRequestTeacherModal = (child) => {
+    setRequestTeacherTargetChild(child);
+    setTeacherSearchQuery('');
+    setTeacherCurrentPage(1);
+    setRequestTeacherError(null);
+    setRequestTeacherSuccess(null);
+    setIsRequestTeacherModalOpen(true);
+    fetchTeachersForChild(child.studentId, 1, '');
+  };
+
+  const handleRequestTeacherSearch = (e) => {
+    e.preventDefault();
+    setTeacherCurrentPage(1);
+    if (requestTeacherTargetChild) {
+      fetchTeachersForChild(requestTeacherTargetChild.studentId, 1, teacherSearchQuery);
+    }
+  };
+
+  const handleTeacherPageChange = (page) => {
+    setTeacherCurrentPage(page);
+    if (requestTeacherTargetChild) {
+      fetchTeachersForChild(requestTeacherTargetChild.studentId, page, teacherSearchQuery);
+    }
+  };
+
+  const handleRequestTeacher = async (teacherId) => {
+    if (!requestTeacherTargetChild) return;
+    try {
+      setRequestingTeacherId(teacherId);
+      setRequestTeacherError(null);
+      setRequestTeacherSuccess(null);
+      const res = await requestChildTeacher(requestTeacherTargetChild.studentId, teacherId);
+      if (res?.success) {
+        setRequestTeacherSuccess(t('parentStudents.requestTeacherSuccess'));
+        fetchTeachersForChild(requestTeacherTargetChild.studentId, teacherCurrentPage, teacherSearchQuery);
+        if (selectedChild?.studentId === requestTeacherTargetChild.studentId) {
+          loadChildTabData(requestTeacherTargetChild.studentId, 'teachers');
+        }
+        setTimeout(() => setRequestTeacherSuccess(null), 5000);
+      }
+    } catch (err) {
+      setRequestTeacherError(err?.response?.data?.message || t('parentStudents.requestTeacherError'));
+    } finally {
+      setRequestingTeacherId(null);
+    }
+  };
+
+  const closeRequestTeacherModal = () => {
+    setIsRequestTeacherModalOpen(false);
+    setRequestTeacherTargetChild(null);
+    setDiscoveredTeachers([]);
+    setRequestTeacherError(null);
+    setRequestTeacherSuccess(null);
   };
 
   // Submit Booking on behalf of child
@@ -275,7 +368,7 @@ const ParentStudents = () => {
 
     try {
       setBookingSubmitting(true);
-      const res = await createChildBooking(selectedChild.studentUserId, {
+      const res = await createChildBooking(selectedChild.studentId, {
         teacherStudentId: bookingForm.teacherStudentId,
         subject: bookingForm.subject.trim() || undefined,
         lessonDate: bookingForm.lessonDate,
@@ -288,7 +381,7 @@ const ParentStudents = () => {
         setSuccessMessage(t('parentStudents.bookingSuccess'));
         setIsBookingModalOpen(false);
         if (childTab === 'bookings') {
-          loadChildTabData(selectedChild.studentUserId, 'bookings');
+          loadChildTabData(selectedChild.studentId, 'bookings');
         }
         setTimeout(() => setSuccessMessage(null), 5000);
       }
@@ -484,6 +577,13 @@ const ParentStudents = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openRequestTeacherModal(selectedChild)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition"
+                >
+                  <UserPlus size={15} />
+                  {t('parentStudents.requestTeacherBtn')}
+                </button>
                 <button
                   onClick={() => handleOpenBookingModal(selectedChild)}
                   className="inline-flex items-center gap-2 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-sm transition"
@@ -1010,6 +1110,137 @@ const ParentStudents = () => {
             </div>
           </div>
         )}
+        {/* Modal: Request Teacher for Child */}
+        {isRequestTeacherModalOpen && requestTeacherTargetChild && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-gray-100 dark:border-gray-700 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {t('parentStudents.requestTeacherTitle')}
+                </h3>
+                <button
+                  onClick={closeRequestTeacherModal}
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                {t('parentStudents.requestTeacherFor', {
+                  name: `${requestTeacherTargetChild.firstName} ${requestTeacherTargetChild.lastName}`
+                })}
+              </p>
+
+              {requestTeacherSuccess && (
+                <div className="mb-4 p-3 text-xs bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200">
+                  {requestTeacherSuccess}
+                </div>
+              )}
+              {requestTeacherError && (
+                <div className="mb-4 p-3 text-xs bg-red-50 text-red-700 rounded-lg border border-red-200">
+                  {requestTeacherError}
+                </div>
+              )}
+
+              <form onSubmit={handleRequestTeacherSearch} className="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  value={teacherSearchQuery}
+                  onChange={(e) => setTeacherSearchQuery(e.target.value)}
+                  placeholder={t('parentStudents.requestTeacherSearchPlaceholder')}
+                  className="flex-1 px-3 py-2 text-sm border rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition inline-flex items-center gap-1"
+                >
+                  <Search size={14} />
+                </button>
+              </form>
+
+              {teacherSearchLoading ? (
+                <div className="flex items-center justify-center py-10 text-gray-400">
+                  <Loader2 size={24} className="animate-spin" />
+                </div>
+              ) : discoveredTeachers.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-6">
+                  {t('parentStudents.requestTeacherEmpty')}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {discoveredTeachers.map((teacher) => (
+                    <div
+                      key={teacher.id}
+                      className="p-3 border rounded-xl border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                          {teacher.fullName}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {teacher.mainSubject || 'General'} · {teacher.yearsOfExperience} {t('parentStudents.yearsSuffix')}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {teacher.lessonRate > 0 ? `${teacher.lessonRate} ${teacher.pricingCurrency}` : '—'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {teacher.relationshipStatus && teacher.relationshipStatus !== 'NONE' ? (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                            teacher.relationshipStatus === 'PENDING'
+                              ? 'bg-amber-100 text-amber-800'
+                              : teacher.relationshipStatus === 'ACTIVE'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {teacher.relationshipStatus === 'PENDING'
+                              ? t('parentStudents.statusPending')
+                              : teacher.relationshipStatus === 'ACTIVE'
+                                ? t('parentStudents.statusActive')
+                                : t('parentStudents.statusEnded')}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleRequestTeacher(teacher.id)}
+                            disabled={requestingTeacherId === teacher.id}
+                            className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            {requestingTeacherId === teacher.id ? <Loader2 size={12} className="animate-spin" /> : null}
+                            {t('parentStudents.requestTeacherBtn')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {teacherPagination.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-4">
+                  <button
+                    onClick={() => handleTeacherPageChange(Math.max(1, teacherCurrentPage - 1))}
+                    disabled={teacherCurrentPage <= 1}
+                    className="px-3 py-1 text-xs border rounded-lg disabled:opacity-50 text-gray-600"
+                  >
+                    <ChevronRight size={12} className="rotate-180" />
+                  </button>
+                  <span className="text-xs text-gray-500">
+                    {teacherCurrentPage} / {teacherPagination.totalPages}
+                  </span>
+                  <button
+                    onClick={() => handleTeacherPageChange(Math.min(teacherPagination.totalPages, teacherCurrentPage + 1))}
+                    disabled={teacherCurrentPage >= teacherPagination.totalPages}
+                    className="px-3 py-1 text-xs border rounded-lg disabled:opacity-50 text-gray-600"
+                  >
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   );

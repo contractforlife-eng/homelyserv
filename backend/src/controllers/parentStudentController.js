@@ -60,7 +60,7 @@ export const getParentChildren = async (req, res) => {
     if (!ALLOWED_PARENT_ROLES.has(userRole)) {
       return res.status(403).json({
         success: false,
-        message: 'Only WORKER or EMPLOYER accounts can manage parent-student learning'
+        message: 'Only WORKER, EMPLOYER or DOCTOR accounts can manage parent-student learning'
       });
     }
 

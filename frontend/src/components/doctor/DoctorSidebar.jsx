@@ -26,7 +26,8 @@ import {
   User,
   MessageCircle,
   AlertTriangle,
-  Search as SearchIcon
+  Search as SearchIcon,
+  GraduationCap
 } from 'lucide-react';
 
 const DoctorSidebar = ({
@@ -177,6 +178,12 @@ const DoctorSidebar = ({
           icon: Stethoscope,
           path: '/doctor-homelyserv',
           matchPrefix: true
+        },
+        {
+          id: 'myChildren',
+          label: t('parentStudents.pageTitle') || 'My Children',
+          icon: GraduationCap,
+          path: '/parent-students'
         }
       ]
     },

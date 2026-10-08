@@ -35,5 +35,12 @@
   "active_hires": "Aktive Einstellungen",
   "revenue": "Einnahmen",
   "confirm": "Bestätigen",
-  "reject": "Ablehnen"
+  "reject": "Ablehnen",
+  "my_children": "Meine Kinder",
+  "request_teacher": "Lehrer anfragen",
+  "request_teacher_title": "Lehrer anfragen",
+  "student_requests": "Eltern-/Vormundschaftsanfragen",
+  "accept": "Akzeptieren",
+  "teacher_request_success": "Lehreranfrage gesendet und wartet auf die Zustimmung des Lehrers!",
+  "teacher_request_error": "Lehreranfrage konnte nicht gesendet werden."
 }

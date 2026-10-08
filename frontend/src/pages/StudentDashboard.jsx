@@ -10,6 +10,11 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
 import {
+  getStudentParentRequests,
+  acceptParentRequest,
+  rejectParentRequest
+} from '../services/parentStudentService';
+import {
   User,
   GraduationCap,
   Sparkles,
@@ -24,6 +29,7 @@ import {
   Building,
   CheckCircle2,
   AlertCircle,
+  XCircle,
   Loader2,
   Search,
   Clock,
@@ -42,6 +48,12 @@ const StudentDashboardContent = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [summary, setSummary] = useState(null);
+
+  // Parent link requests (student-side)
+  const [parentRequests, setParentRequests] = useState([]);
+  const [parentActionLoading, setParentActionLoading] = useState(null);
+  const [parentRequestError, setParentRequestError] = useState('');
+  const [parentRequestSuccess, setParentRequestSuccess] = useState('');
 
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
@@ -73,6 +85,44 @@ const StudentDashboardContent = () => {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  // Fetch incoming parent link requests (student-side)
+  const fetchParentRequests = useCallback(async () => {
+    try {
+      const data = await getStudentParentRequests();
+      if (data?.success) {
+        setParentRequests(Array.isArray(data.requests) ? data.requests : []);
+      }
+    } catch (err) {
+      console.error('Failed to load parent requests:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchParentRequests();
+  }, [fetchParentRequests]);
+
+  const handleParentRequestAction = async (id, action) => {
+    try {
+      setParentActionLoading(id);
+      setParentRequestError('');
+      setParentRequestSuccess('');
+      const data = action === 'accept'
+        ? await acceptParentRequest(id)
+        : await rejectParentRequest(id);
+      if (data?.success) {
+        setParentRequestSuccess(action === 'accept'
+          ? (t('parentStudents.studentAcceptSuccess') || 'Parent link request accepted.')
+          : (t('parentStudents.studentRejectSuccess') || 'Parent link request rejected.'));
+        await fetchParentRequests();
+        setTimeout(() => setParentRequestSuccess(''), 5000);
+      }
+    } catch (err) {
+      setParentRequestError(err.response?.data?.message || t('parentStudents.studentActionError') || 'Failed to update parent request.');
+    } finally {
+      setParentActionLoading(null);
+    }
+  };
 
   const displayName = authUser?.fullName || authUser?.email?.split('@')[0] || 'Student';
   const isProfileComplete = profile?.isProfileComplete ?? false;
@@ -259,6 +309,77 @@ const StudentDashboardContent = () => {
             <span>{t('studentDashboard.viewBookingsBtn') || 'Review Requests'}</span>
             <ArrowRight size={14} />
           </Link>
+        </div>
+      )}
+
+      {/* Parent Link Requests (student-side accept / reject) */}
+      {!loading && parentRequests.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-3 transition shadow-sm">
+          <div className="flex items-center gap-2">
+            <Users size={18} className="text-blue-600" />
+            <h3 className="text-sm font-bold text-blue-950 dark:text-blue-200">
+              {t('parentStudents.studentRequestsTitle') || 'Parent/Guardian Requests'}
+            </h3>
+          </div>
+
+          {parentRequestSuccess && (
+            <div className="p-3 text-xs bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200">
+              {parentRequestSuccess}
+            </div>
+          )}
+          {parentRequestError && (
+            <div className="p-3 text-xs bg-red-50 text-red-700 rounded-lg border border-red-200">
+              {parentRequestError}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {parentRequests.map((req) => (
+              <div
+                key={req.id}
+                className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/40 flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-sm overflow-hidden">
+                    {req.parent?.avatar ? (
+                      <img src={req.parent.avatar} alt={req.parent.fullName} className="w-full h-full object-cover" />
+                    ) : (
+                      (req.parent?.fullName || 'P').charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {req.parent?.fullName || (t('parentStudents.studentUnknownParent') || 'Parent')}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {req.relationshipType}{req.parent?.role ? ` · ${req.parent.role}` : ''} · {new Date(req.requestedAt).toLocaleDateString()}
+                    </p>
+                    {req.notes && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic">"{req.notes}"</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleParentRequestAction(req.id, 'accept')}
+                    disabled={parentActionLoading === req.id}
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={13} />
+                    {t('parentStudents.studentAcceptBtn') || 'Accept'}
+                  </button>
+                  <button
+                    onClick={() => handleParentRequestAction(req.id, 'reject')}
+                    disabled={parentActionLoading === req.id}
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold transition disabled:opacity-50"
+                  >
+                    <XCircle size={13} />
+                    {t('parentStudents.studentRejectBtn') || 'Reject'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

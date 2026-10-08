@@ -1134,7 +1134,7 @@ function App() {
       <Route 
         path="/parent-students" 
         element={
-          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER']}>
+          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'DOCTOR']}>
             <ParentStudents />
           </ProtectedRoute>
         } 
