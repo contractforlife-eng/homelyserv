@@ -633,6 +633,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteSuccess: 'Record deleted successfully.',
         deleteError: 'Failed to delete record.'
       },
+      csv: {
+        exportBtn: 'Export CSV',
+        date: 'Date',
+        category: 'Category',
+        description: 'Description',
+        amount: 'Amount',
+        currency: 'Currency',
+        notes: 'Notes',
+        collectedIncome: 'Collected Income',
+        outstandingFees: 'Outstanding Fees',
+        directExpenses: 'Direct Expenses',
+        salaryExpenses: 'Salary Expenses',
+        netProfit: 'Net Profit',
+        status: 'Status',
+        source: 'Source',
+        studentOrGroup: 'Student / Group'
+      },
       document: {
         invoiceTitle: 'Lesson Fee Invoice',
         invoiceSubtitle: 'Statement of Due Lesson Fees',
@@ -765,6 +782,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Failed to remove assessment.',
         invalidScore: 'Score cannot be greater than the maximum score.',
         requiredFields: 'Please fill in all required fields.'
+      },
+      csv: {
+        exportBtn: 'Export CSV',
+        student: 'Student',
+        metric: 'Metric',
+        value: 'Value',
+        details: 'Details',
+        date: 'Date',
+        title: 'Assessment Title',
+        subject: 'Subject',
+        type: 'Type',
+        score: 'Score',
+        maxScore: 'Max Score',
+        percentage: 'Percentage (%)',
+        grade: 'Grade',
+        feedback: 'Teacher Feedback',
+        notes: 'Internal Notes'
       }
     },
     teacherPromotion: {
@@ -1485,6 +1519,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteSuccess: 'تم حذف السجل بنجاح.',
         deleteError: 'فشل حذف السجل.'
       },
+      csv: {
+        exportBtn: 'تصدير CSV',
+        date: 'التاريخ',
+        category: 'التصنيف',
+        description: 'الوصف',
+        amount: 'المبلغ',
+        currency: 'العملة',
+        notes: 'ملاحظات',
+        collectedIncome: 'الإيرادات المحصلة',
+        outstandingFees: 'الرسوم المستحقة',
+        directExpenses: 'المصروفات المباشرة',
+        salaryExpenses: 'مصروفات الرواتب',
+        netProfit: 'صافي الربح',
+        status: 'الحالة',
+        source: 'المصدر',
+        studentOrGroup: 'الطالب / المجموعة'
+      },
       document: {
         invoiceTitle: 'فاتورة أتعاب دراسية',
         invoiceSubtitle: 'بيان بمستحقات الحصص الدراسية المستحقة',
@@ -1617,6 +1668,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'فشل حذف التقييم.',
         invalidScore: 'لا يمكن أن تكون الدرجة أكبر من الدرجة العظمى.',
         requiredFields: 'يرجى ملء جميع الحقول المطلوبة.'
+      },
+      csv: {
+        exportBtn: 'تصدير CSV',
+        student: 'الطالب',
+        metric: 'المؤشر',
+        value: 'القيمة',
+        details: 'التفاصيل',
+        date: 'التاريخ',
+        title: 'عنوان التقييم',
+        subject: 'المادة',
+        type: 'النوع',
+        score: 'الدرجة',
+        maxScore: 'الدرجة العظمى',
+        percentage: 'النسبة المئوية (%)',
+        grade: 'التقدير',
+        feedback: 'ملاحظات المعلم',
+        notes: 'ملاحظات داخلية'
       }
     },
     teacherPromotion: {
@@ -2337,6 +2405,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteSuccess: 'Enregistrement supprimé avec succès.',
         deleteError: 'Échec de la suppression.'
       },
+      csv: {
+        exportBtn: 'Exporter CSV',
+        date: 'Date',
+        category: 'Catégorie',
+        description: 'Description',
+        amount: 'Montant',
+        currency: 'Devise',
+        notes: 'Notes',
+        collectedIncome: 'Revenus perçus',
+        outstandingFees: 'Frais dus',
+        directExpenses: 'Dépenses directes',
+        salaryExpenses: 'Dépenses salariales',
+        netProfit: 'Bénéfice net',
+        status: 'Statut',
+        source: 'Source',
+        studentOrGroup: 'Élève / Groupe'
+      },
       document: {
         invoiceTitle: 'Facture de cours',
         invoiceSubtitle: 'Relevé des frais de cours dus',
@@ -2469,6 +2554,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Échec de la suppression de l\'évaluation.',
         invalidScore: 'La note ne peut pas être supérieure au barème maximal.',
         requiredFields: 'Veuillez remplir tous les champs obligatoires.'
+      },
+      csv: {
+        exportBtn: 'Exporter CSV',
+        student: 'Élève',
+        metric: 'Indicateur',
+        value: 'Valeur',
+        details: 'Détails',
+        date: 'Date',
+        title: 'Titre de l\'évaluation',
+        subject: 'Matière',
+        type: 'Type',
+        score: 'Note',
+        maxScore: 'Barème max',
+        percentage: 'Pourcentage (%)',
+        grade: 'Mention',
+        feedback: 'Appréciation enseignant',
+        notes: 'Notes internes'
       }
     },
     teacherPromotion: {
@@ -3189,6 +3291,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteSuccess: 'Запись успешно удалена.',
         deleteError: 'Не удалось удалить запись.'
       },
+      csv: {
+        exportBtn: 'Экспорт CSV',
+        date: 'Дата',
+        category: 'Категория',
+        description: 'Описание',
+        amount: 'Сумма',
+        currency: 'Валюта',
+        notes: 'Заметки',
+        collectedIncome: 'Полученный доход',
+        outstandingFees: 'Ожидаемая оплата',
+        directExpenses: 'Прямые расходы',
+        salaryExpenses: 'Расходы на зарплату',
+        netProfit: 'Чистая прибыль',
+        status: 'Статус',
+        source: 'Источник',
+        studentOrGroup: 'Ученик / Группа'
+      },
       document: {
         invoiceTitle: 'Счет за уроки',
         invoiceSubtitle: 'Ведомость начисленной платы за уроки',
@@ -3321,6 +3440,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Не удалось удалить оценку.',
         invalidScore: 'Балл не может превышать максимальный балл.',
         requiredFields: 'Пожалуйста, заполните все обязательные поля.'
+      },
+      csv: {
+        exportBtn: 'Экспорт CSV',
+        student: 'Ученик',
+        metric: 'Показатель',
+        value: 'Значение',
+        details: 'Подробности',
+        date: 'Дата',
+        title: 'Название работы',
+        subject: 'Предмет',
+        type: 'Тип',
+        score: 'Балл',
+        maxScore: 'Макс. балл',
+        percentage: 'Процент (%)',
+        grade: 'Оценка',
+        feedback: 'Отзыв учителя',
+        notes: 'Внутренние заметки'
       }
     },
     teacherPromotion: {
@@ -4041,6 +4177,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteSuccess: 'Kayıt başarıyla silindi.',
         deleteError: 'Kayıt silinemedi.'
       },
+      csv: {
+        exportBtn: 'CSV Dışa Aktar',
+        date: 'Tarih',
+        category: 'Kategori',
+        description: 'Açıklama',
+        amount: 'Tutar',
+        currency: 'Para Birimi',
+        notes: 'Notlar',
+        collectedIncome: 'Tahsil Edilen Gelir',
+        outstandingFees: 'Bekleyen Alacaklar',
+        directExpenses: 'Doğrudan Giderler',
+        salaryExpenses: 'Maaş Giderleri',
+        netProfit: 'Net Kâr',
+        status: 'Durum',
+        source: 'Kaynak',
+        studentOrGroup: 'Öğrenci / Grup'
+      },
       document: {
         invoiceTitle: 'Ders Ücreti Faturası',
         invoiceSubtitle: 'Ödenmesi Gereken Ders Ücretleri Dökümü',
@@ -4173,6 +4326,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Değerlendirme silinemedi.',
         invalidScore: 'Alınan puan maksimum puandan büyük olamaz.',
         requiredFields: 'Lütfen tüm zorunlu alanları doldurun.'
+      },
+      csv: {
+        exportBtn: 'CSV Dışa Aktar',
+        student: 'Öğrenci',
+        metric: 'Metrik',
+        value: 'Değer',
+        details: 'Detaylar',
+        date: 'Tarih',
+        title: 'Değerlendirme Başlığı',
+        subject: 'Ders',
+        type: 'Tür',
+        score: 'Puan',
+        maxScore: 'Maks. Puan',
+        percentage: 'Yüzde (%)',
+        grade: 'Not',
+        feedback: 'Öğretmen Geri Bildirimi',
+        notes: 'Dahili Notlar'
       }
     },
     teacherPromotion: {
@@ -4893,6 +5063,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteSuccess: 'Eintrag erfolgreich gelöscht.',
         deleteError: 'Eintrag konnte nicht gelöscht werden.'
       },
+      csv: {
+        exportBtn: 'CSV exportieren',
+        date: 'Datum',
+        category: 'Kategorie',
+        description: 'Beschreibung',
+        amount: 'Betrag',
+        currency: 'Währung',
+        notes: 'Notizen',
+        collectedIncome: 'Eingenommenes Honorar',
+        outstandingFees: 'Ausstehende Beiträge',
+        directExpenses: 'Direkte Ausgaben',
+        salaryExpenses: 'Gehaltsausgaben',
+        netProfit: 'Reingewinn',
+        status: 'Status',
+        source: 'Quelle',
+        studentOrGroup: 'Schüler / Gruppe'
+      },
       document: {
         invoiceTitle: 'Unterrichtsgebühren-Rechnung',
         invoiceSubtitle: 'Aufstellung fälliger Unterrichtsgebühren',
@@ -5025,6 +5212,23 @@ export const TEACHER_TRANSLATIONS = {
         deleteError: 'Bewertung konnte nicht gelöscht werden.',
         invalidScore: 'Die erreichte Punktzahl darf die Höchstpunktzahl nicht überschreiten.',
         requiredFields: 'Bitte füllen Sie alle Pflichtfelder aus.'
+      },
+      csv: {
+        exportBtn: 'CSV exportieren',
+        student: 'Schüler',
+        metric: 'Kennzahl',
+        value: 'Wert',
+        details: 'Details',
+        date: 'Datum',
+        title: 'Titel der Leistungsüberprüfung',
+        subject: 'Fach',
+        type: 'Art',
+        score: 'Punkte',
+        maxScore: 'Max. Punkte',
+        percentage: 'Prozent (%)',
+        grade: 'Note',
+        feedback: 'Feedback der Lehrkraft',
+        notes: 'Interne Notizen'
       }
     },
     teacherPromotion: {
