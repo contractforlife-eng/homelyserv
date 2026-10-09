@@ -16,14 +16,19 @@
 import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import User from '../models/User.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 
 /**
  * Builds a safe Teacher relationship DTO for the student.
+ *
+ * `isPremium` is a SERVER-COMPUTED Boolean resolved in batch by the caller and
+ * defaults to false. It reflects ONLY the teacher's active Premium entitlement
+ * (Subscription / ManualPremiumGrant) and is independent of `isVerified`.
  */
-export const toStudentTeacherRelationshipDto = (relDoc, teacherProfileDoc, teacherUserDoc) => {
+export const toStudentTeacherRelationshipDto = (relDoc, teacherProfileDoc, teacherUserDoc, isPremium = false) => {
   if (!relDoc) return null;
   const rel = typeof relDoc.toObject === 'function' ? relDoc.toObject() : relDoc;
   const tp = teacherProfileDoc ? (typeof teacherProfileDoc.toObject === 'function' ? teacherProfileDoc.toObject() : teacherProfileDoc) : null;
@@ -51,7 +56,8 @@ export const toStudentTeacherRelationshipDto = (relDoc, teacherProfileDoc, teach
       languages: Array.isArray(tp?.languages) ? tp.languages : [],
       lessonRate: typeof tp?.lessonRate === 'number' ? tp.lessonRate : 0,
       pricingCurrency: tp?.pricingCurrency || '',
-      isVerified: tu?.identityVerificationStatus === 'VERIFIED' || tu?.identityVerifiedAt !== null
+      isVerified: tu?.identityVerificationStatus === 'VERIFIED' || tu?.identityVerifiedAt !== null,
+      isPremium: isPremium === true
     },
     // Relationship status & dates
     relationshipStatus: rel.relationshipStatus || (rel.status === 'ACTIVE' ? 'ACTIVE' : 'ENDED'),
@@ -101,9 +107,18 @@ export const getStudentTeachers = async (req, res) => {
     const userMap = new Map(teacherUsers.map((u) => [String(u._id), u]));
     const profileMap = new Map(teacherProfiles.map((p) => [String(p.userId), p]));
 
+    // One batched Premium entitlement query for all of the student's teachers
+    // (no N+1). Derived only from Subscription / ManualPremiumGrant state.
+    const premiumIds = await getActivePremiumUserIds(teacherIds);
+
     const teachers = relationships.map((rel) => {
       const tId = String(rel.teacherId);
-      return toStudentTeacherRelationshipDto(rel, profileMap.get(tId), userMap.get(tId));
+      return toStudentTeacherRelationshipDto(
+        rel,
+        profileMap.get(tId),
+        userMap.get(tId),
+        premiumIds.has(tId)
+      );
     });
 
     return res.json({
@@ -159,9 +174,11 @@ export const getStudentTeacherById = async (req, res) => {
         .select('userId title mainSubject additionalSubjects specialization teachingLevels teachingMethod yearsOfExperience bio languages lessonRate pricingCurrency profileImage isPublished')
     ]);
 
+    const premiumIds = await getActivePremiumUserIds([teacherId]);
+
     return res.json({
       success: true,
-      teacher: toStudentTeacherRelationshipDto(relationship, teacherProfile, teacherUser)
+      teacher: toStudentTeacherRelationshipDto(relationship, teacherProfile, teacherUser, premiumIds.has(teacherId))
     });
   } catch (error) {
     console.error('Error fetching student teacher details:', error);

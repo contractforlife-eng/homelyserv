@@ -17,6 +17,7 @@ import TeacherProfile from '../models/TeacherProfile.js';
 import TeacherStudent from '../models/TeacherStudent.js';
 import StudentProfile from '../models/StudentProfile.js';
 import { CANONICAL_TEACHER_SUBJECTS, CANONICAL_TEACHING_LEVELS } from '../constants/teacherTaxonomy.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -24,8 +25,14 @@ const isValidObjectId = (id) =>
 /**
  * Transforms a teacher user and profile into a safe public discovery DTO,
  * enriched with the student's personal relationship status.
+ *
+ * `isPremium` is a SERVER-COMPUTED Boolean resolved in batch by the caller
+ * (see `resolveTeacherPremiumIds` below) and defaults to false. It is derived
+ * ONLY from the teacher's active Premium entitlement (Subscription /
+ * ManualPremiumGrant) and is completely independent of `isVerified`, which is
+ * derived ONLY from identity verification fields. Neither implies the other.
  */
-export const toTeacherDiscoveryDto = (teacherUser, teacherProfile, currentRelationship) => {
+export const toTeacherDiscoveryDto = (teacherUser, teacherProfile, currentRelationship, isPremium = false) => {
   const u = teacherUser ? (typeof teacherUser.toObject === 'function' ? teacherUser.toObject() : teacherUser) : {};
   const p = teacherProfile ? (typeof teacherProfile.toObject === 'function' ? teacherProfile.toObject() : teacherProfile) : {};
   const rel = currentRelationship ? (typeof currentRelationship.toObject === 'function' ? currentRelationship.toObject() : currentRelationship) : null;
@@ -61,10 +68,30 @@ export const toTeacherDiscoveryDto = (teacherUser, teacherProfile, currentRelati
     countryCode: u.countryCode || '',
     city: u.city || '',
     isVerified,
+    isPremium: isPremium === true,
     availableForNewStudents: p.availableForNewStudents !== false,
     relationshipStatus,
     relationshipId
   };
+};
+
+/**
+ * Batch-resolves active Premium entitlements for a list of teacher user ids
+ * in ONE query (no N+1) and returns a lookup predicate.
+ *
+ * Both the student discovery route and the parent discovery route call this so
+ * Premium is resolved by exactly one shared code path. The returned Set only
+ * ever reflects Subscription / ManualPremiumGrant state — never verification.
+ */
+export const resolveTeacherPremiumIds = async (userIds) => {
+  try {
+    return await getActivePremiumUserIds(userIds);
+  } catch (error) {
+    console.error('Error resolving teacher premium entitlements:', error);
+    // Fail closed on the visual indicator only: never surface a false Premium
+    // claim, and never break the discovery listing itself.
+    return new Set();
+  }
 };
 
 /**
@@ -212,9 +239,17 @@ export const discoverTeachers = async (req, res) => {
 
     const relMap = new Map(existingRelationships.map((r) => [String(r.teacherId), r]));
 
+    // One batched Premium entitlement query for this page (no N+1).
+    const premiumIds = await resolveTeacherPremiumIds(currentTeacherIds);
+
     const teachers = teacherUsers.map((u) => {
       const uId = String(u._id);
-      return toTeacherDiscoveryDto(u, profileMap.get(uId), relMap.get(uId));
+      return toTeacherDiscoveryDto(
+        u,
+        profileMap.get(uId),
+        relMap.get(uId),
+        premiumIds.has(uId)
+      );
     });
 
     return res.json({

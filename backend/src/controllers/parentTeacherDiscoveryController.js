@@ -16,7 +16,7 @@ import User from '../models/User.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import TeacherStudent from '../models/TeacherStudent.js';
 import StudentProfile from '../models/StudentProfile.js';
-import { toTeacherDiscoveryDto } from './studentTeacherDiscoveryController.js';
+import { toTeacherDiscoveryDto, resolveTeacherPremiumIds } from './studentTeacherDiscoveryController.js';
 import { ALLOWED_PARENT_ROLES, requireActiveParentStudentRelationship } from '../services/parentStudentService.js';
 
 const isValidObjectId = (id) =>
@@ -143,6 +143,13 @@ export const discoverParentsTeachers = async (req, res) => {
     const teachers = [];
     const seen = new Set();
 
+    // One batched Premium entitlement query for this result set (no N+1),
+    // reusing the shared student-discovery resolver so Premium is derived from
+    // exactly one code path and stays independent of verification.
+    const premiumIds = await resolveTeacherPremiumIds(
+      teacherUserDocs.map((tu) => String(tu._id))
+    );
+
     for (const tu of teacherUserDocs) {
       if (seen.has(String(tu._id))) continue;
       seen.add(String(tu._id));
@@ -155,7 +162,12 @@ export const discoverParentsTeachers = async (req, res) => {
         isActive: true
       }).lean();
 
-      teachers.push(toTeacherDiscoveryDto(tu, teacherProfile, rel));
+      teachers.push(toTeacherDiscoveryDto(
+        tu,
+        teacherProfile,
+        rel,
+        premiumIds.has(String(tu._id))
+      ));
     }
 
     const total = teachers.length;

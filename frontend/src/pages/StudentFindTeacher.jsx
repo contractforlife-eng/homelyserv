@@ -405,7 +405,11 @@ const StudentFindTeacher = () => {
               return (
                 <div
                   key={teacher.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 hover:border-red-500/30"
+                  className={`rounded-2xl border p-5 transition-all flex flex-col justify-between space-y-4 ${
+                    teacher.isPremium
+                      ? 'border-purple-400 dark:border-purple-500 bg-purple-100/80 dark:bg-purple-900/30 shadow-[0_0_16px_rgba(168,85,247,0.40)] hover:shadow-[0_0_22px_rgba(168,85,247,0.50)]'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-red-500/30'
+                  }`}
                 >
                   <div className="space-y-3">
                     {/* Header: Avatar, Name, Title & Verified Badge */}

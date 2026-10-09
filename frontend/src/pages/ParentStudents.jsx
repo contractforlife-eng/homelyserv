@@ -44,7 +44,8 @@ import {
   Award,
   ChevronRight,
   Plus,
-  Search
+  Search,
+  ShieldCheck
 } from 'lucide-react';
 
 const ParentStudents = () => {
@@ -1172,11 +1173,20 @@ const ParentStudents = () => {
                   {discoveredTeachers.map((teacher) => (
                     <div
                       key={teacher.id}
-                      className="p-3 border rounded-xl border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3"
+                      className={`p-3 border rounded-xl flex items-center justify-between gap-3 transition ${
+                        teacher.isPremium
+                          ? 'border-purple-400 dark:border-purple-500 bg-purple-100/80 dark:bg-purple-900/30 shadow-[0_0_16px_rgba(168,85,247,0.40)]'
+                          : 'border-gray-100 dark:border-gray-700'
+                      }`}
                     >
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
-                          {teacher.fullName}
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                          <span className="truncate">{teacher.fullName}</span>
+                          {teacher.isVerified && (
+                            <span title={t('parentStudents.verifiedBadge') || 'Verified Teacher'}>
+                              <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           {teacher.mainSubject || 'General'} · {teacher.yearsOfExperience} {t('parentStudents.yearsSuffix')}

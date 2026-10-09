@@ -274,7 +274,11 @@ const StudentMyTeacher = () => {
               return (
                 <div
                   key={item.id}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-5"
+                  className={`rounded-2xl border p-6 transition-shadow flex flex-col justify-between space-y-5 ${
+                    teacher.isPremium
+                      ? 'border-purple-400 dark:border-purple-500 bg-purple-100/80 dark:bg-purple-900/30 shadow-[0_0_16px_rgba(168,85,247,0.40)] hover:shadow-[0_0_22px_rgba(168,85,247,0.50)]'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md'
+                  }`}
                 >
                   <div className="space-y-4">
                     {/* Teacher Top Info */}
@@ -349,12 +353,17 @@ const StudentMyTeacher = () => {
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-400 block">{t('studentTeachers.experienceLabel') || 'Experience'}</span>
-                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">
-                          {teacher.yearsOfExperience > 0
-                            ? `${teacher.yearsOfExperience} ${t('studentTeachers.yearsSuffix') || 'yrs'}`
-                            : '—'}
-                        </span>
+                        <span className="text-gray-400 block">{t('studentTeachers.verificationLabel') || 'Verification'}</span>
+                        {teacher.isVerified ? (
+                          <span className="mt-0.5 flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                            <ShieldCheck size={14} />
+                            <span>{t('studentTeachers.verifiedBadge') || 'Verified Teacher'}</span>
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-gray-500 dark:text-gray-400 mt-0.5 block">
+                            {t('studentTeachers.unverifiedBadge') || 'Not Verified'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
