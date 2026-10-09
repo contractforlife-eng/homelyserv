@@ -143,6 +143,11 @@ router.delete('/accounts/expenses/:id', requireTeacher, requirePremiumTeacher, d
 router.use('/progress', teacherProgressRoutes);
 
 // ============================================================
+// Teacher Promotion / Premium History (Core feature)
+// ============================================================
+router.get('/promotion-history', requireTeacher, getTeacherPromotionHistory);
+
+// ============================================================
 // Teacher Recorded Courses (Phase 1 LMS - Premium NOT required)
 // ============================================================
 router.get('/courses', requireTeacher, getTeacherCourses);
