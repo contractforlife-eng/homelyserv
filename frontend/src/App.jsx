@@ -58,6 +58,7 @@ import TeacherAccounts from './pages/TeacherAccounts';
 import TeacherProgress from './pages/TeacherProgress';
 import TeacherPromotionHistory from './pages/TeacherPromotionHistory';
 import TeacherComplaints from './pages/TeacherComplaints';
+import TeacherCourses from './pages/TeacherCourses';
 import TeacherHelp from './pages/TeacherHelp';
 import PortalHires from './pages/PortalHires';
 import Employees from './pages/Employees';
@@ -69,6 +70,7 @@ import StudentProfile from './pages/StudentProfile';
 import StudentMyTeacher from './pages/StudentMyTeacher';
 import StudentFindTeacher from './pages/StudentFindTeacher';
 import StudentLessons from './pages/StudentLessons';
+import StudentCourses from './pages/StudentCourses';
 import StudentMyBookings from './pages/StudentMyBookings';
 import StudentSchedule from './pages/StudentSchedule';
 import StudentProgress from './pages/StudentProgress';
@@ -756,6 +758,14 @@ function App() {
           </ProtectedRoute>
         } 
       />
+      <Route
+        path="/teacher-courses"
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherCourses />
+          </ProtectedRoute>
+        }
+      />
       {/* Teacher Help: dedicated Teacher page. The Worker Help page at /help
           is untouched, mirroring the existing /doctor-help and /student-help
           role-specific routes. */}
@@ -814,7 +824,15 @@ function App() {
           </ProtectedRoute>
         } 
       />
-      <Route 
+      <Route
+        path="/student-courses"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <StudentCourses />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/student-bookings" 
         element={
           <ProtectedRoute requiredRole="STUDENT">

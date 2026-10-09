@@ -30,7 +30,8 @@ export const SUBSCRIPTION_PLANS = {
 
 export const PAYMENT_PURPOSES = {
   SUBSCRIPTION: 'SUBSCRIPTION',
-  COMMISSION: 'COMMISSION'
+  COMMISSION: 'COMMISSION',
+  COURSE_PURCHASE: 'COURSE_PURCHASE'
 };
 
 export const normalizeSubscriptionPlanId = (plan) => (

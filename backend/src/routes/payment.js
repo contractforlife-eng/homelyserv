@@ -12,6 +12,9 @@ import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService
 import { sendPushToUser } from '../services/fcmService.js';
 import { notifyAdminsForPaymentReview } from '../services/paymentReviewAlertService.js';
 import User from '../models/User.js';
+import Course from '../models/Course.js';
+import CourseEnrollment from '../models/CourseEnrollment.js';
+import { fulfillCoursePayment } from '../services/courseFulfillmentService.js';
 import {
   PAYMENT_PURPOSES,
   getSubscriptionPlan,
@@ -95,7 +98,7 @@ const authenticatedUserOwnsPayment = async (req, payment) => {
   const authenticatedUserId = req.userId == null ? '' : String(req.userId);
   if (!authenticatedUserId || !payment) return false;
 
-  if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+  if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION || payment.purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
     return payment.userId != null && String(payment.userId) === authenticatedUserId;
   }
 
@@ -831,6 +834,37 @@ const completePaymentTransaction = async (payment, captureRef) => {
           console.error('[EMAIL] Failed to send premium confirmation email:', emailError);
         }
       }
+    } else if (payment.purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      console.log(`🎓 COURSE_PURCHASE payment ${payment.transactionId} completed — activating CourseEnrollment and recording CourseEarning`);
+      const courseFulfillment = await fulfillCoursePayment(payment);
+      if (!courseFulfillment.success) {
+        throw new Error('fulfillCoursePayment did not complete successfully');
+      }
+
+      // Notify the student
+      try {
+        const studentUserId = payment.metadata?.targetStudentUserId || payment.userId;
+        const courseTitle = payment.metadata?.courseTitle || 'Recorded Course';
+        const method = formatPaymentMethod(payment.paymentMethod);
+        await createNotification(String(studentUserId), {
+          type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+          title: 'Course Enrollment Activated',
+          message: `Your payment of ${payment.amount} ${payment.currency} for "${courseTitle}" was confirmed.\nYou are now enrolled!`,
+          entityType: 'COURSE',
+          entityId: String(payment.metadata?.courseId || ''),
+          link: `/student/courses/${payment.metadata?.courseId || ''}`,
+          data: {
+            purpose: 'COURSE_PURCHASE',
+            amount: payment.amount,
+            currency: payment.currency,
+            paymentMethod: payment.paymentMethod,
+            courseId: payment.metadata?.courseId,
+            reference: payment.transactionId
+          }
+        });
+      } catch (notifyError) {
+        console.error('⚠️ Could not send course enrollment notification:', notifyError.message);
+      }
     } else {
       // COMMISSION (default for hire-linked payments) — never grants Premium.
       console.log(`💳 COMMISSION payment ${payment.transactionId} completed — hire update only, NO premium granted`);
@@ -880,7 +914,7 @@ router.get('/providers', authenticate, async (req, res) => {
     const purpose = typeof req.query.purpose === 'string'
       ? req.query.purpose.trim().toUpperCase()
       : '';
-    if (![PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.SUBSCRIPTION].includes(purpose)) {
+    if (![PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COURSE_PURCHASE].includes(purpose)) {
       return res.status(400).json({ success: false, error: 'Unsupported capability purpose' });
     }
     let currency;
@@ -895,6 +929,15 @@ router.get('/providers', authenticate, async (req, res) => {
         return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
       }
       currency = resolveSubscriptionPriceBook({ user, plan: selectedPlan.id }).currency;
+    } else if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      if (!req.query.courseId) {
+        return res.status(400).json({ success: false, error: 'courseId is required' });
+      }
+      const course = await Course.findById(req.query.courseId);
+      if (!course || !course.isPublished) {
+        return res.status(404).json({ success: false, error: 'Course not found or not published' });
+      }
+      currency = course.currency ? String(course.currency).trim().toUpperCase() : 'EGP';
     } else {
       if (!req.query.hireId) {
         return res.status(400).json({ success: false, error: 'hireId is required' });
@@ -958,29 +1001,37 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       hireId,
       phone,
       offerId,
+      courseId,
       purpose: requestedPurpose,
       plan: requestedPlan
     } = req.body;
 
     // Amount is NEVER taken from the client as authority. It is re-derived
     // server-side below (SUBSCRIPTION -> role pricing, COMMISSION -> hire
-    // total), so it starts undefined and is assigned before any use.
+    // total, COURSE_PURCHASE -> Course.price), so it starts undefined and is assigned before any use.
     let amount;
 
     // ============================================================
     // EXPLICIT PAYMENT PURPOSE — explicit discriminator, never inferred
     // from the amount. Defaults to COMMISSION so all existing hire/
-    // commission flows behave identically unless they opt into SUBSCRIPTION.
+    // commission flows behave identically unless they opt into SUBSCRIPTION
+    // or COURSE_PURCHASE.
     // ============================================================
-    const purpose = requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION
-      ? PAYMENT_PURPOSES.SUBSCRIPTION
-      : PAYMENT_PURPOSES.COMMISSION;
+    let purpose;
+    if (requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      purpose = PAYMENT_PURPOSES.SUBSCRIPTION;
+    } else if (requestedPurpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      purpose = PAYMENT_PURPOSES.COURSE_PURCHASE;
+    } else {
+      purpose = PAYMENT_PURPOSES.COMMISSION;
+    }
     const selectedPaymentMethod = paymentMethod || 'paypal';
     if (selectedPaymentMethod !== 'paypal') {
       return res.status(400).json({ success: false, error: 'Unsupported payment method' });
     }
     let transactionCurrency = 'EGP';
     let subscriptionSnapshot = null;
+    let courseSnapshot = null;
 
     if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       // SERVER-SIDE PLAN AUTHORITY: the client selects only a stable plan id.
@@ -1052,6 +1103,76 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           error: 'Subscription payment is not currently available for this provider and currency'
         });
       }
+    } else if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      if (!courseId) {
+        return res.status(400).json({
+          success: false,
+          error: 'courseId is required for course purchase'
+        });
+      }
+
+      const course = await Course.findById(courseId);
+      if (!course || !course.isPublished) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found or not published'
+        });
+      }
+      if (!course.isPaid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Course is free. Direct enrollment should be used instead of payment.'
+        });
+      }
+
+      // Check if student is already enrolled
+      const existingEnrollment = await CourseEnrollment.findOne({
+        courseId: course._id,
+        studentUserId: req.userId,
+        status: 'ACTIVE'
+      });
+      if (existingEnrollment) {
+        return res.status(409).json({
+          success: false,
+          error: 'You are already actively enrolled in this course'
+        });
+      }
+
+      // Teachers cannot buy their own course
+      if (String(course.teacherId) === String(req.userId)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Teachers cannot purchase their own course'
+        });
+      }
+
+      transactionCurrency = course.currency ? String(course.currency).trim().toUpperCase() : 'EGP';
+      const capability = getProviderCapability({
+        provider: selectedPaymentMethod,
+        purpose,
+        transactionCurrency,
+      });
+      if (!capability.enabled) {
+        return res.status(422).json({
+          success: false,
+          error: 'Course payment is not currently available for this provider and currency'
+        });
+      }
+
+      amount = Number(course.price);
+      if (!amount || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid course price'
+        });
+      }
+
+      courseSnapshot = {
+        courseId: String(course._id),
+        courseTitle: course.title,
+        teacherId: String(course.teacherId),
+        targetStudentUserId: String(req.userId),
+      };
     } else {
       // COMMISSION: hire context is required.
       if (!hireId) {
@@ -1338,6 +1459,39 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           payment = existingPayment;
         }
       }
+    } else if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      payment = await prisma.payment.create({
+        data: {
+          orderId,
+          transactionId,
+          amount: Number(amount),
+          currency: transactionCurrency,
+          paymentMethod: selectedPaymentMethod,
+          providerAmount: providerEvidence.amount,
+          providerCurrency: providerEvidence.currency,
+          purpose: PAYMENT_PURPOSES.COURSE_PURCHASE,
+          status: 'pending',
+          userEmail: userEmail || req.user?.email || 'student@example.com',
+          userId: String(req.userId),
+          workerId: null,
+          workerName: null,
+          jobTitle: null,
+          employerId: null,
+          employerName: null,
+          hireId: null,
+          offerId: null,
+          phone: phone || null,
+          metadata: {
+            createdFrom: 'payment-intent',
+            source: 'frontend',
+            originalAmount: amount,
+            originalCurrency: transactionCurrency,
+            ...(providerFxMetadata || {}),
+            ...courseSnapshot
+          }
+        }
+      });
+      console.log('✅ COURSE_PURCHASE payment record created:', transactionId);
     } else {
       // SUBSCRIPTION: no hire context — a fresh Payment row per attempt. The
       // completion flow (webhook / capture) grants Premium via purpose.
@@ -2863,6 +3017,62 @@ const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId
     };
   }
 
+  if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+    const courseId = req.body?.courseId || req.query?.courseId;
+    if (!courseId) {
+      return { error: 'courseId is required for course purchase', status: 400 };
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course || !course.isPublished) {
+      return { error: 'Course not found or not published', status: 404 };
+    }
+    if (!course.isPaid) {
+      return { error: 'Course is free. Direct enrollment should be used instead of payment.', status: 400 };
+    }
+
+    // Check if student is already enrolled
+    const existingEnrollment = await CourseEnrollment.findOne({
+      courseId: course._id,
+      studentUserId: req.userId,
+      status: 'ACTIVE'
+    });
+    if (existingEnrollment) {
+      return { error: 'You are already actively enrolled in this course', status: 409 };
+    }
+
+    if (String(course.teacherId) === String(req.userId)) {
+      return { error: 'Teachers cannot purchase their own course', status: 403 };
+    }
+
+    const transactionCurrency = course.currency ? String(course.currency).trim().toUpperCase() : 'EGP';
+    if (transactionCurrency !== 'EGP') {
+      return { error: 'Manual payments are currently EGP-only', status: 400 };
+    }
+
+    const amount = Number(course.price);
+    if (!amount || amount <= 0) {
+      return { error: 'Invalid course price', status: 400 };
+    }
+
+    return {
+      manualConfig,
+      selectedPaymentMethod,
+      amount: roundMoney(amount, transactionCurrency),
+      transactionCurrency,
+      hireId: null,
+      workerId: null,
+      offerId: null,
+      subscriptionSnapshot: null,
+      courseSnapshot: {
+        courseId: String(course._id),
+        courseTitle: course.title,
+        teacherId: String(course.teacherId),
+        targetStudentUserId: String(req.userId),
+      },
+    };
+  }
+
   if (!hireId) {
     return { error: 'hireId is required for commission payments', status: 400 };
   }
@@ -2913,14 +3123,19 @@ const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId
 // submission, but no Payment record or admin-visible state is created.
 router.get('/manual/instructions', authenticate, async (req, res) => {
   try {
-    const purpose = String(req.query.purpose || '').trim().toUpperCase() === PAYMENT_PURPOSES.SUBSCRIPTION
-      ? PAYMENT_PURPOSES.SUBSCRIPTION
-      : PAYMENT_PURPOSES.COMMISSION;
+    const requestedPurpose = String(req.query.purpose || '').trim().toUpperCase();
+    let purpose = PAYMENT_PURPOSES.COMMISSION;
+    if (requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      purpose = PAYMENT_PURPOSES.SUBSCRIPTION;
+    } else if (requestedPurpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      purpose = PAYMENT_PURPOSES.COURSE_PURCHASE;
+    }
     const details = await resolveManualPaymentDetails({
       req: {
         userId: req.userId,
         userRole: req.userRole,
         body: { ...req.query, paymentMethod: req.query.paymentMethod },
+        query: req.query,
       },
       purpose,
       requestedPlan: req.query.plan,
@@ -2959,9 +3174,13 @@ router.post('/manual/submit', authenticate, proofUpload.single('proof'), async (
   let uploaded = null;
   let paymentCreated = false;
   try {
-    const purpose = String(req.body.purpose || '').trim().toUpperCase() === PAYMENT_PURPOSES.SUBSCRIPTION
-      ? PAYMENT_PURPOSES.SUBSCRIPTION
-      : PAYMENT_PURPOSES.COMMISSION;
+    const requestedPurpose = String(req.body.purpose || '').trim().toUpperCase();
+    let purpose = PAYMENT_PURPOSES.COMMISSION;
+    if (requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      purpose = PAYMENT_PURPOSES.SUBSCRIPTION;
+    } else if (requestedPurpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+      purpose = PAYMENT_PURPOSES.COURSE_PURCHASE;
+    }
     const submissionId = String(req.get('Idempotency-Key') || req.body.submissionId || '').trim();
     if (!MANUAL_SUBMISSION_ID_PATTERN.test(submissionId)) {
       return res.status(400).json({ success: false, error: 'A valid submission id is required' });
@@ -3041,6 +3260,7 @@ router.post('/manual/submit', authenticate, proofUpload.single('proof'), async (
           originalCurrency: details.transactionCurrency,
           submissionId,
           ...details.subscriptionSnapshot,
+          ...details.courseSnapshot,
         },
       },
     });

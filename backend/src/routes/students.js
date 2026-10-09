@@ -49,6 +49,10 @@ import {
   acceptFriendRequest,
   rejectFriendRequest
 } from '../controllers/studentFriendshipController.js';
+import {
+  enrollInFreeCourse,
+  getMyEnrolledCourses
+} from '../controllers/studentCourseController.js';
 
 const router = express.Router();
 
@@ -90,5 +94,9 @@ router.post('/friends/request', requireStudent, sendFriendRequest);
 router.get('/friends', requireStudent, getStudentFriends);
 router.post('/friends/:id/accept', requireStudent, acceptFriendRequest);
 router.post('/friends/:id/reject', requireStudent, rejectFriendRequest);
+
+// Student Recorded Courses endpoints (Phase 1 LMS)
+router.get('/courses/enrolled', requireStudent, getMyEnrolledCourses);
+router.post('/courses/:id/enroll', requireStudent, enrollInFreeCourse);
 
 export default router;

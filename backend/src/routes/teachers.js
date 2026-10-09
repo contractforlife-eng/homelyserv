@@ -51,6 +51,16 @@ import {
 import teacherProgressRoutes from './teacherProgressRoutes.js';
 import { getTeacherPromotionHistory } from '../controllers/teacherPromotionController.js';
 import { isUserPremium } from '../services/premiumService.js';
+import { upload } from '../utils/cloudinary.js';
+import {
+  getTeacherCourses,
+  getTeacherCourseById,
+  createTeacherCourse,
+  updateTeacherCourse,
+  toggleCoursePublish,
+  deleteTeacherCourse,
+  uploadCourseThumbnail
+} from '../controllers/teacherCourseController.js';
 
 const router = express.Router();
 
@@ -133,9 +143,15 @@ router.delete('/accounts/expenses/:id', requireTeacher, requirePremiumTeacher, d
 router.use('/progress', teacherProgressRoutes);
 
 // ============================================================
-// Teacher Promotion / Premium History (Core feature)
+// Teacher Recorded Courses (Phase 1 LMS - Premium NOT required)
 // ============================================================
-router.get('/promotion-history', requireTeacher, getTeacherPromotionHistory);
+router.get('/courses', requireTeacher, getTeacherCourses);
+router.post('/courses', requireTeacher, createTeacherCourse);
+router.post('/courses/upload-thumbnail', requireTeacher, upload.single('thumbnail'), uploadCourseThumbnail);
+router.get('/courses/:id', requireTeacher, getTeacherCourseById);
+router.put('/courses/:id', requireTeacher, updateTeacherCourse);
+router.patch('/courses/:id/publish', requireTeacher, toggleCoursePublish);
+router.delete('/courses/:id', requireTeacher, deleteTeacherCourse);
 
 export default router;
 

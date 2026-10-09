@@ -13,6 +13,7 @@ import {
   Users,
   Layers,
   BookOpen,
+  Video,
   Briefcase,
   Calendar,
   TrendingUp,
@@ -141,6 +142,13 @@ const TeacherSidebar = ({
       icon: BookOpen,
       path: '/teacher-lessons',
       active: location.pathname === '/teacher-lessons'
+    },
+    {
+      id: 'courses',
+      label: t('teacherNav.courses') || 'Recorded Courses',
+      icon: Video,
+      path: '/teacher-courses',
+      active: location.pathname === '/teacher-courses'
     },
     {
       id: 'schedule',

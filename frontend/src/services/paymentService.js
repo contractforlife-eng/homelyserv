@@ -18,6 +18,13 @@ export const getSubscriptionPaymentProviders = async (plan) => {
   return response.data;
 };
 
+export const fetchCoursePaymentProviders = async (courseId) => {
+  const response = await api.get('/api/payments/providers', {
+    params: { purpose: 'COURSE_PURCHASE', courseId },
+  });
+  return response.data;
+};
+
 export const createBankTransferPayment = async ({ purpose, plan, hireId } = {}) => {
   const scope = `${String(purpose || '').toUpperCase()}:${String(plan || '')}:${String(hireId || '')}`;
   const storageKey = `homelyserv.bank-transfer.attempt.${scope}`;

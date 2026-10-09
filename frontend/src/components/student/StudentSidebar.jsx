@@ -27,6 +27,7 @@ import {
   HeartPulse,
   GraduationCap,
   BookOpen,
+  Video,
   Calendar,
   TrendingUp,
   MessageCircle,
@@ -94,6 +95,13 @@ const StudentSidebar = ({
       icon: BookOpen,
       path: '/student-lessons',
       active: location.pathname === '/student-lessons'
+    },
+    {
+      id: 'courses',
+      label: t('studentNav.courses') || 'Recorded Courses',
+      icon: Video,
+      path: '/student-courses',
+      active: location.pathname === '/student-courses'
     },
     {
       id: 'messages',

@@ -2154,6 +2154,7 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
         proofStorageKey: true,
         reviewedBy: true,
         reviewedAt: true,
+        metadata: true,
       },
     });
 
@@ -2283,7 +2284,7 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
     });
 
     try {
-      await completePaymentTransaction({ ...updated, purpose: payment.purpose, amount: payment.amount, currency: payment.currency, transactionId: payment.id, userId: (await prisma.payment.findUnique({ where: { id: paymentId }, select: { userId: true } }))?.userId, hireId: (await prisma.payment.findUnique({ where: { id: paymentId }, select: { hireId: true } }))?.hireId, paymentMethod: payment.paymentMethod, completedAt: now }, payment.externalTransactionReference);
+      await completePaymentTransaction({ ...updated, purpose: payment.purpose, amount: payment.amount, currency: payment.currency, transactionId: payment.id, userId: (await prisma.payment.findUnique({ where: { id: paymentId }, select: { userId: true } }))?.userId, hireId: (await prisma.payment.findUnique({ where: { id: paymentId }, select: { hireId: true } }))?.hireId, paymentMethod: payment.paymentMethod, metadata: payment.metadata, completedAt: now }, payment.externalTransactionReference);
     } catch (fulfillmentError) {
       console.error('❌ Manual payment fulfillment error:', fulfillmentError);
     }
