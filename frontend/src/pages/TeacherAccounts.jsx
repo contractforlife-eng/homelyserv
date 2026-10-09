@@ -18,6 +18,7 @@ import { useDashboard } from '../components/layout/DashboardContext';
 import { isUserPremium } from '../utils/subscriptionService';
 import EmployeeSalaryList from '../components/accounts/EmployeeSalaryList';
 import api from '../utils/api';
+import { downloadCsv } from '../utils/csvExport';
 import {
   formatCurrencyAmount,
   SUPPORTED_CURRENCIES,
@@ -39,8 +40,11 @@ import {
   Crown,
   Sparkles,
   ArrowRight,
-  X
+  Download,
+  X,
+  FileText
 } from 'lucide-react';
+import TeacherFeeDocumentModal from '../components/teacher/TeacherFeeDocumentModal';
 
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors';
@@ -176,6 +180,26 @@ const TeacherAccounts = () => {
 
   const [deletingRecord, setDeletingRecord] = useState(null); // { type: 'income' | 'expense', id: '' }
   const [deleting, setDeleting] = useState(false);
+
+  // Document Modal state (Invoice / Receipt)
+  const [viewingDocument, setViewingDocument] = useState(null);
+  const [loadingDocument, setLoadingDocument] = useState(false);
+
+  const handleOpenDocument = async (incomeItem) => {
+    setLoadingDocument(true);
+    setErrorMessage('');
+    try {
+      const res = await api.get(`/api/teachers/accounts/income/${incomeItem.id}/document`);
+      if (res?.data?.document) {
+        setViewingDocument(res.data.document);
+      }
+    } catch (err) {
+      console.error('Failed to load document:', err);
+      setErrorMessage(err.response?.data?.message || 'Failed to load printable document.');
+    } finally {
+      setLoadingDocument(false);
+    }
+  };
 
   // Load teacher profile default currency
   useEffect(() => {
@@ -413,6 +437,72 @@ const TeacherAccounts = () => {
     return [defaultCurrency, ...SUPPORTED_CURRENCIES.filter((c) => c !== defaultCurrency)];
   }, [defaultCurrency]);
 
+  // CSV Export handler
+  const handleExportAccountsCsv = () => {
+    const rangeSlug = rangePreset === 'custom' && customFrom && customTo
+      ? `${customFrom}_to_${customTo}`
+      : rangePreset;
+
+    if (activeTab === 'expenses') {
+      const headers = [
+        t('teacherAccounts.csv.date') || 'Date',
+        t('teacherAccounts.csv.category') || 'Category',
+        t('teacherAccounts.csv.description') || 'Description',
+        t('teacherAccounts.csv.amount') || 'Amount',
+        t('teacherAccounts.csv.currency') || 'Currency',
+        t('teacherAccounts.csv.notes') || 'Notes'
+      ];
+      const rows = expenseList.map((e) => [
+        e.expenseDate ? new Date(e.expenseDate).toISOString().split('T')[0] : '',
+        e.category || '',
+        e.description || '',
+        e.amount,
+        e.currency || 'EGP',
+        e.notes || ''
+      ]);
+      downloadCsv(`teacher-expenses-${rangeSlug}`, headers, rows);
+    } else if (activeTab === 'summary') {
+      const headers = [
+        t('teacherAccounts.csv.currency') || 'Currency',
+        t('teacherAccounts.csv.collectedIncome') || 'Collected Income',
+        t('teacherAccounts.csv.outstandingFees') || 'Outstanding Fees',
+        t('teacherAccounts.csv.directExpenses') || 'Direct Expenses',
+        t('teacherAccounts.csv.salaryExpenses') || 'Salary Expenses',
+        t('teacherAccounts.csv.netProfit') || 'Net Profit'
+      ];
+      const rows = summaryCurrencies.map((cur) => {
+        const rec = Number(summary?.receivedIncome?.[cur] || 0);
+        const pend = Number(summary?.pendingIncome?.[cur] || 0);
+        const exp = Number(summary?.totalExpenses?.[cur] || 0);
+        const sal = Number(summary?.salaryExpense?.[cur] || 0);
+        const net = rec - (exp + sal);
+        return [cur, rec, pend, exp, sal, net];
+      });
+      downloadCsv(`teacher-financial-summary-${rangeSlug}`, headers, rows);
+    } else {
+      // Default: Income tab or all income records
+      const headers = [
+        t('teacherAccounts.csv.date') || 'Date',
+        t('teacherAccounts.csv.amount') || 'Amount',
+        t('teacherAccounts.csv.currency') || 'Currency',
+        t('teacherAccounts.csv.status') || 'Status',
+        t('teacherAccounts.csv.source') || 'Source',
+        t('teacherAccounts.csv.studentOrGroup') || 'Student / Group',
+        t('teacherAccounts.csv.notes') || 'Notes'
+      ];
+      const rows = incomeList.map((i) => [
+        i.incomeDate ? new Date(i.incomeDate).toISOString().split('T')[0] : '',
+        i.amount,
+        i.currency || 'EGP',
+        i.status === 'RECEIVED' ? 'Collected' : 'Pending / Outstanding',
+        i.source || '',
+        i.student?.fullName || i.group?.name || '',
+        i.notes || ''
+      ]);
+      downloadCsv(`teacher-income-fees-${rangeSlug}`, headers, rows);
+    }
+  };
+
   const summaryCurrencies = useMemo(() => {
     if (!summary) return [];
     const keys = new Set([
@@ -558,6 +648,17 @@ const TeacherAccounts = () => {
                     />
                   </div>
                 )}
+
+                <button
+                  type="button"
+                  onClick={handleExportAccountsCsv}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
+                  title={t('teacherAccounts.csv.exportBtn') || 'Export CSV'}
+                >
+                  <Download size={14} className="text-red-600 dark:text-red-400" />
+                  <span>{t('teacherAccounts.csv.exportBtn') || 'Export CSV'}</span>
+                </button>
               </div>
             </div>
 
@@ -728,6 +829,18 @@ const TeacherAccounts = () => {
                                 </td>
                                 <td className="py-3 px-4 text-end whitespace-nowrap">
                                   <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenDocument(item)}
+                                      className={`p-1.5 rounded-lg transition-colors ${
+                                        item.status === 'PENDING'
+                                          ? 'text-amber-600 hover:text-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                                          : 'text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                                      }`}
+                                      title={item.status === 'PENDING' ? 'Print / View Invoice' : 'Print / View Receipt'}
+                                    >
+                                      <FileText size={14} />
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() => handleOpenEditIncome(item)}
@@ -1240,6 +1353,16 @@ const TeacherAccounts = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* PRINTABLE INVOICE / RECEIPT MODAL                             */}
+      {/* ============================================================ */}
+      {viewingDocument && (
+        <TeacherFeeDocumentModal
+          document={viewingDocument}
+          onClose={() => setViewingDocument(null)}
+        />
       )}
     </DashboardLayout>
   );

@@ -27,7 +27,8 @@ import {
   createTeacherLesson,
   updateTeacherLesson,
   updateLessonAttendance,
-  deleteTeacherLesson
+  deleteTeacherLesson,
+  recordLessonFee
 } from '../controllers/teacherLessonController.js';
 import {
   getTeacherBookings,
@@ -44,7 +45,8 @@ import {
   createTeacherExpense,
   updateTeacherExpense,
   deleteTeacherExpense,
-  getTeacherAccountsSummary
+  getTeacherAccountsSummary,
+  getTeacherIncomeDocument
 } from '../controllers/teacherAccountsController.js';
 import teacherProgressRoutes from './teacherProgressRoutes.js';
 import { getTeacherPromotionHistory } from '../controllers/teacherPromotionController.js';
@@ -101,6 +103,7 @@ router.post('/lessons', requireTeacher, createTeacherLesson);
 router.put('/lessons/:id', requireTeacher, updateTeacherLesson);
 router.put('/lessons/:id/attendance', requireTeacher, updateLessonAttendance);
 router.delete('/lessons/:id', requireTeacher, deleteTeacherLesson);
+router.post('/lessons/:id/fee', requireTeacher, requirePremiumTeacher, recordLessonFee);
 
 // Teacher lesson booking routes (Phase 6A, all scoped by requireTeacher and req.userId)
 router.get('/bookings', requireTeacher, getTeacherBookings);
@@ -114,6 +117,7 @@ router.post('/bookings/:id/reject', requireTeacher, rejectTeacherBooking);
 router.get('/accounts/summary', requireTeacher, requirePremiumTeacher, getTeacherAccountsSummary);
 
 router.get('/accounts/income', requireTeacher, requirePremiumTeacher, getTeacherIncome);
+router.get('/accounts/income/:id/document', requireTeacher, requirePremiumTeacher, getTeacherIncomeDocument);
 router.post('/accounts/income', requireTeacher, requirePremiumTeacher, createTeacherIncome);
 router.put('/accounts/income/:id', requireTeacher, requirePremiumTeacher, updateTeacherIncome);
 router.delete('/accounts/income/:id', requireTeacher, requirePremiumTeacher, deleteTeacherIncome);

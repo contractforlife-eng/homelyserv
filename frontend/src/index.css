@@ -162,3 +162,49 @@ html {
   background-color: #1f2937;
 }
 
+/* ============================================================
+   TEACHER FEE DOCUMENT PRINT ISOLATION
+   When printing an open TeacherFeeDocumentModal, isolate the document
+   and hide all outer application layout elements (sidebars, headers,
+   navs, banners, and modals' outer backdrop).
+   ============================================================ */
+@media print {
+  body.print-teacher-fee-document-active {
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+
+  body.print-teacher-fee-document-active aside,
+  body.print-teacher-fee-document-active header,
+  body.print-teacher-fee-document-active nav,
+  body.print-teacher-fee-document-active footer,
+  body.print-teacher-fee-document-active .no-print {
+    display: none !important;
+  }
+
+  body.print-teacher-fee-document-active #root > div > main > *:not(.teacher-fee-document-modal-portal) {
+    display: none !important;
+  }
+
+  .teacher-fee-document-modal-portal {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .teacher-fee-printable-card {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: transparent !important;
+  }
+}
+

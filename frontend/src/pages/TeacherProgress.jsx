@@ -20,6 +20,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import api from '../utils/api';
+import { downloadCsv } from '../utils/csvExport';
 import {
   TrendingUp,
   Award,
@@ -41,6 +42,7 @@ import {
   UserCheck,
   UserX,
   Check,
+  Download,
   Info
 } from 'lucide-react';
 
@@ -206,6 +208,69 @@ export default function TeacherProgress() {
       return true;
     });
   }, [assessments, typeFilter, subjectFilter]);
+
+  // CSV Export handler
+  const handleExportProgressCsv = () => {
+    const studentName = selectedStudent?.fullName || 'student';
+    const sanitizedStudentName = studentName.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '_');
+
+    if (activeTab === 'attendanceHomework') {
+      const headers = [
+        t('teacherProgress.csv.student') || 'Student',
+        t('teacherProgress.csv.metric') || 'Metric',
+        t('teacherProgress.csv.value') || 'Value',
+        t('teacherProgress.csv.details') || 'Details'
+      ];
+      const rows = [
+        [
+          studentName,
+          'Attendance Rate',
+          `${progressData?.attendance?.attendancePercentage || 0}%`,
+          `Present: ${progressData?.attendance?.present || 0}, Absent: ${progressData?.attendance?.absent || 0}, Excused: ${progressData?.attendance?.excused || 0}`
+        ],
+        [
+          studentName,
+          'Homework Completion Rate',
+          `${progressData?.homework?.homeworkPercentage || 0}%`,
+          `Completed: ${progressData?.homework?.completed || 0}, Total: ${progressData?.homework?.totalWithHomework || 0}`
+        ],
+        [
+          studentName,
+          'Total Evaluated Lessons',
+          progressData?.attendance?.totalEvaluated || 0,
+          ''
+        ]
+      ];
+      downloadCsv(`student-progress-attendance-${sanitizedStudentName}`, headers, rows);
+    } else {
+      // Default & assessments tab
+      const headers = [
+        t('teacherProgress.csv.date') || 'Date',
+        t('teacherProgress.csv.title') || 'Assessment Title',
+        t('teacherProgress.csv.subject') || 'Subject',
+        t('teacherProgress.csv.type') || 'Type',
+        t('teacherProgress.csv.score') || 'Score',
+        t('teacherProgress.csv.maxScore') || 'Max Score',
+        t('teacherProgress.csv.percentage') || 'Percentage (%)',
+        t('teacherProgress.csv.grade') || 'Grade',
+        t('teacherProgress.csv.feedback') || 'Teacher Feedback',
+        t('teacherProgress.csv.notes') || 'Internal Notes'
+      ];
+      const rows = filteredAssessments.map((a) => [
+        a.date ? new Date(a.date).toISOString().split('T')[0] : '',
+        a.title || '',
+        a.subject || '',
+        a.assessmentType || '',
+        a.score,
+        a.maxScore || 100,
+        a.percentage !== undefined && a.percentage !== null ? `${a.percentage}%` : '',
+        a.grade || '',
+        a.feedback || '',
+        a.notes || ''
+      ]);
+      downloadCsv(`student-assessments-${sanitizedStudentName}`, headers, rows);
+    }
+  };
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -427,6 +492,16 @@ export default function TeacherProgress() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportProgressCsv}
+              disabled={!selectedStudent || assessmentsLoading || progressLoading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-sm transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t('teacherProgress.csv.exportBtn') || 'Export CSV'}
+            >
+              <Download size={16} className="text-red-600 dark:text-red-400" />
+              <span>{t('teacherProgress.csv.exportBtn') || 'Export CSV'}</span>
+            </button>
             <button
               onClick={handleOpenCreate}
               disabled={students.length === 0}

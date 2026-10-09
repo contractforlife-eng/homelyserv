@@ -13,6 +13,8 @@ import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherGroup from '../models/TeacherGroup.js';
 import TeacherLesson from '../models/TeacherLesson.js';
 import DoctorEmployee from '../models/DoctorEmployee.js';
+import User from '../models/User.js';
+import TeacherProfile from '../models/TeacherProfile.js';
 import { buildOwnerScope } from '../services/employeeService.js';
 import { fixedMonthlySalary } from './doctorAccountsController.js';
 
@@ -714,5 +716,99 @@ export const getTeacherAccountsSummary = async (req, res) => {
   } catch (err) {
     console.error('Error generating teacher accounts summary:', err);
     return res.status(500).json({ success: false, message: 'Server error generating summary', error: err.message });
+  }
+};
+
+/**
+ * GET /api/teachers/accounts/income/:id/document
+ * Fetch verified, tenancy-scoped invoice/receipt details for a specific TeacherIncome record.
+ * Returns PENDING as an unpaid/due invoice, and RECEIVED as a paid/received receipt.
+ */
+export const getTeacherIncomeDocument = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Income record not found' });
+    }
+
+    const record = await TeacherIncome.findOne({ _id: id, teacherId })
+      .populate('studentId', 'fullName email phone gradeLevel school')
+      .populate('groupId', 'name subject gradeLevel academicYear')
+      .populate('lessonId', 'date subject startTime endTime lessonType');
+
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Income record not found' });
+    }
+
+    // Fetch Teacher user info & profile for document header
+    const [teacherUser, teacherProfile] = await Promise.all([
+      User.findById(teacherId).select('fullName email phone'),
+      TeacherProfile.findOne({ userId: teacherId }).select('title mainSubject specialization pricingCurrency')
+    ]);
+
+    const isPending = record.status === 'PENDING';
+    const documentType = isPending ? 'INVOICE' : 'RECEIPT';
+
+    // Format consistent document ID reference (non-persisted display code based on record ID)
+    const docRefPrefix = isPending ? 'INV' : 'REC';
+    const documentNumber = `${docRefPrefix}-${String(record._id).slice(-6).toUpperCase()}`;
+
+    const studentInfo = record.studentId && typeof record.studentId === 'object' ? {
+      id: String(record.studentId._id),
+      fullName: record.studentId.fullName || '',
+      email: record.studentId.email || '',
+      phone: record.studentId.phone || '',
+      gradeLevel: record.studentId.gradeLevel || '',
+      school: record.studentId.school || ''
+    } : null;
+
+    const groupInfo = record.groupId && typeof record.groupId === 'object' ? {
+      id: String(record.groupId._id),
+      name: record.groupId.name || '',
+      subject: record.groupId.subject || '',
+      gradeLevel: record.groupId.gradeLevel || '',
+      academicYear: record.groupId.academicYear || ''
+    } : null;
+
+    const lessonInfo = record.lessonId && typeof record.lessonId === 'object' ? {
+      id: String(record.lessonId._id),
+      date: record.lessonId.date ? new Date(record.lessonId.date).toISOString().split('T')[0] : null,
+      subject: record.lessonId.subject || '',
+      startTime: record.lessonId.startTime || '',
+      endTime: record.lessonId.endTime || '',
+      lessonType: record.lessonId.lessonType || ''
+    } : null;
+
+    return res.json({
+      success: true,
+      document: {
+        documentType, // 'INVOICE' | 'RECEIPT'
+        documentNumber,
+        issueDate: record.createdAt ? new Date(record.createdAt).toISOString() : new Date().toISOString(),
+        incomeDate: record.incomeDate ? new Date(record.incomeDate).toISOString().split('T')[0] : null,
+        status: record.status, // 'PENDING' | 'RECEIVED'
+        source: record.source,
+        amount: Number(record.amount),
+        currency: record.currency || 'EGP',
+        notes: record.notes || '',
+        teacher: {
+          id: String(teacherId),
+          fullName: teacherUser?.fullName || 'Teacher',
+          email: teacherUser?.email || '',
+          phone: teacherUser?.phone || '',
+          title: teacherProfile?.title || '',
+          mainSubject: teacherProfile?.mainSubject || '',
+          specialization: teacherProfile?.specialization || ''
+        },
+        student: studentInfo,
+        group: groupInfo,
+        lesson: lessonInfo
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching income document:', err);
+    return res.status(500).json({ success: false, message: 'Server error fetching document', error: err.message });
   }
 };

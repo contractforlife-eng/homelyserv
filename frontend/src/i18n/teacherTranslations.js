@@ -632,6 +632,29 @@ export const TEACHER_TRANSLATIONS = {
         saveError: 'Failed to save record.',
         deleteSuccess: 'Record deleted successfully.',
         deleteError: 'Failed to delete record.'
+      },
+      document: {
+        invoiceTitle: 'Lesson Fee Invoice',
+        invoiceSubtitle: 'Statement of Due Lesson Fees',
+        receiptTitle: 'Payment Receipt',
+        receiptSubtitle: 'Proof of Payment Received',
+        statusUnpaid: 'UNPAID / DUE',
+        statusPaid: 'PAID / RECEIVED',
+        printBtn: 'Print / Save PDF',
+        issueDate: 'Issue Date',
+        fromTeacher: 'Teacher (Instructor)',
+        toStudent: 'Billed To (Student / Guardian)',
+        toGroup: 'Billed To (Class / Group)',
+        subject: 'Subject',
+        gradeLevel: 'Grade',
+        unspecifiedRecipient: 'Direct student / private lesson',
+        colDescription: 'Description',
+        colDate: 'Service Date',
+        colAmount: 'Amount',
+        totalDue: 'Total Amount',
+        status: 'Status',
+        invoiceNotice: 'This is an internal instructor invoice issued for lesson services. Please settle with your teacher directly.',
+        receiptNotice: 'This receipt confirms that the specified lesson fees have been received in full by the instructor.'
       }
     },
     teacherProgress: {
@@ -1461,6 +1484,29 @@ export const TEACHER_TRANSLATIONS = {
         saveError: 'فشل حفظ السجل.',
         deleteSuccess: 'تم حذف السجل بنجاح.',
         deleteError: 'فشل حذف السجل.'
+      },
+      document: {
+        invoiceTitle: 'فاتورة أتعاب دراسية',
+        invoiceSubtitle: 'بيان بمستحقات الحصص الدراسية المستحقة',
+        receiptTitle: 'إيصال استلام رسوم',
+        receiptSubtitle: 'إثبات استلام رسوم الحصص الدراسية',
+        statusUnpaid: 'مستحقة / غير مدفوعة',
+        statusPaid: 'مدفوعة / تم الاستلام',
+        printBtn: 'طباعة / حفظ كـ PDF',
+        issueDate: 'تاريخ الإصدار',
+        fromTeacher: 'المعلم (مقدم الخدمة)',
+        toStudent: 'بيانات الطالب / ولي الأمر',
+        toGroup: 'بيانات المجموعة / الفصل الدراسي',
+        subject: 'المادة',
+        gradeLevel: 'المستوى الدراسي',
+        unspecifiedRecipient: 'طالب مباشر / حصة خاصة',
+        colDescription: 'البيان والخدمة',
+        colDate: 'تاريخ الحصة',
+        colAmount: 'المبلغ',
+        totalDue: 'إجمالي المبلغ',
+        status: 'الحالة',
+        invoiceNotice: 'هذه الفاتورة داخلية صادرة من المعلم لمتابعة مستحقات الحصص الدراسية. يرجى السداد مباشرة مع المعلم.',
+        receiptNotice: 'يؤكد هذا الإيصال استلام المعلم للمبلغ المحدد بالكامل عن الخدمات الدراسية الموضحة.'
       }
     },
     teacherProgress: {
@@ -2290,6 +2336,29 @@ export const TEACHER_TRANSLATIONS = {
         saveError: 'Échec de la sauvegarde.',
         deleteSuccess: 'Enregistrement supprimé avec succès.',
         deleteError: 'Échec de la suppression.'
+      },
+      document: {
+        invoiceTitle: 'Facture de cours',
+        invoiceSubtitle: 'Relevé des frais de cours dus',
+        receiptTitle: 'Reçu de paiement',
+        receiptSubtitle: 'Preuve de paiement reçu',
+        statusUnpaid: 'IMPAYÉ / DÛ',
+        statusPaid: 'PAYÉ / REÇU',
+        printBtn: 'Imprimer / Sauvegarder en PDF',
+        issueDate: 'Date d\'émission',
+        fromTeacher: 'Enseignant (Instructeur)',
+        toStudent: 'Facturé à (Élève / Tuteur)',
+        toGroup: 'Facturé à (Classe / Groupe)',
+        subject: 'Matière',
+        gradeLevel: 'Niveau scolaire',
+        unspecifiedRecipient: 'Élève direct / cours particulier',
+        colDescription: 'Description',
+        colDate: 'Date de prestation',
+        colAmount: 'Montant',
+        totalDue: 'Montant total',
+        status: 'Statut',
+        invoiceNotice: 'Ceci est une facture interne d\'instructeur. Veuillez régler directement avec l\'enseignant.',
+        receiptNotice: 'Ce reçu atteste que les frais indiqués ont été intégralement perçus par l\'enseignant.'
       }
     },
     teacherProgress: {
@@ -3119,6 +3188,29 @@ export const TEACHER_TRANSLATIONS = {
         saveError: 'Не удалось сохранить запись.',
         deleteSuccess: 'Запись успешно удалена.',
         deleteError: 'Не удалось удалить запись.'
+      },
+      document: {
+        invoiceTitle: 'Счет за уроки',
+        invoiceSubtitle: 'Ведомость начисленной платы за уроки',
+        receiptTitle: 'Квитанция об оплате',
+        receiptSubtitle: 'Подтверждение получения оплаты',
+        statusUnpaid: 'НЕ ОПЛАЧЕНО / К ОПЛАТЕ',
+        statusPaid: 'ОПЛАЧЕНО / ПОЛУЧЕНО',
+        printBtn: 'Печать / Сохранить в PDF',
+        issueDate: 'Дата выдачи',
+        fromTeacher: 'Преподаватель (Исполнитель)',
+        toStudent: 'Плательщик (Ученик / Родитель)',
+        toGroup: 'Плательщик (Класс / Группа)',
+        subject: 'Предмет',
+        gradeLevel: 'Класс / Уровень',
+        unspecifiedRecipient: 'Индивидуальное занятие',
+        colDescription: 'Наименование услуги',
+        colDate: 'Дата проведения',
+        colAmount: 'Сумма',
+        totalDue: 'Итоговая сумма',
+        status: 'Статус',
+        invoiceNotice: 'Это внутренний преподавательский счет за услуги обучения. Оплата производится напрямую преподавателю.',
+        receiptNotice: 'Настоящая квитанция подтверждает, что указанная сумма за обучение получена преподавателем в полном объеме.'
       }
     },
     teacherProgress: {
@@ -3948,6 +4040,29 @@ export const TEACHER_TRANSLATIONS = {
         saveError: 'Kayıt kaydedilemedi.',
         deleteSuccess: 'Kayıt başarıyla silindi.',
         deleteError: 'Kayıt silinemedi.'
+      },
+      document: {
+        invoiceTitle: 'Ders Ücreti Faturası',
+        invoiceSubtitle: 'Ödenmesi Gereken Ders Ücretleri Dökümü',
+        receiptTitle: 'Ödeme Makbuzu',
+        receiptSubtitle: 'Alınan Ödeme Belgesi',
+        statusUnpaid: 'ÖDENMEDİ / BEKLEYEN',
+        statusPaid: 'ÖDENDİ / ALINDI',
+        printBtn: 'Yazdır / PDF Kaydet',
+        issueDate: 'Düzenlenme Tarihi',
+        fromTeacher: 'Öğretmen (Eğitmen)',
+        toStudent: 'Öğrenci / Veli Bilgileri',
+        toGroup: 'Sınıf / Grup Bilgileri',
+        subject: 'Ders',
+        gradeLevel: 'Sınıf Seviyesi',
+        unspecifiedRecipient: 'Birebir özel ders',
+        colDescription: 'Açıklama',
+        colDate: 'Ders Tarihi',
+        colAmount: 'Tutar',
+        totalDue: 'Toplam Tutar',
+        status: 'Durum',
+        invoiceNotice: 'Bu belge, öğretmen tarafından düzenlenen kurum içi ders faturasıdır. Ödemenizi doğrudan öğretmeninizle gerçekleştiriniz.',
+        receiptNotice: 'Bu makbuz, belirtilen ders ücretinin öğretmen tarafından eksiksiz tahsil edildiğini onaylar.'
       }
     },
     teacherProgress: {
@@ -4777,6 +4892,29 @@ export const TEACHER_TRANSLATIONS = {
         saveError: 'Eintrag konnte nicht gespeichert werden.',
         deleteSuccess: 'Eintrag erfolgreich gelöscht.',
         deleteError: 'Eintrag konnte nicht gelöscht werden.'
+      },
+      document: {
+        invoiceTitle: 'Unterrichtsgebühren-Rechnung',
+        invoiceSubtitle: 'Aufstellung fälliger Unterrichtsgebühren',
+        receiptTitle: 'Zahlungsquittung',
+        receiptSubtitle: 'Bestätigung erhaltener Zahlungen',
+        statusUnpaid: 'OFFEN / FÄLLIG',
+        statusPaid: 'BEZAHLT / ERHALTEN',
+        printBtn: 'Drucken / Als PDF speichern',
+        issueDate: 'Ausstellungsdatum',
+        fromTeacher: 'Lehrkraft (Dozent)',
+        toStudent: 'Rechnungsempfänger (Schüler / Erziehungsberechtigter)',
+        toGroup: 'Rechnungsempfänger (Klasse / Gruppe)',
+        subject: 'Fach',
+        gradeLevel: 'Klassenstufe',
+        unspecifiedRecipient: 'Direkter Schüler / Einzelunterricht',
+        colDescription: 'Leistungsbeschreibung',
+        colDate: 'Unterrichtsdatum',
+        colAmount: 'Betrag',
+        totalDue: 'Gesamtbetrag',
+        status: 'Status',
+        invoiceNotice: 'Dies ist eine interne Lehrkraft-Rechnung für Unterrichtsleistungen. Bitte begleichen Sie den Betrag direkt mit Ihrer Lehrkraft.',
+        receiptNotice: 'Diese Quittung bestätigt, dass die aufgeführten Gebühren vollständig von der Lehrkraft entgegengenommen wurden.'
       }
     },
     teacherProgress: {

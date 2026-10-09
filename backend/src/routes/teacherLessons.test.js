@@ -8,6 +8,9 @@ import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherGroup from '../models/TeacherGroup.js';
 import TeacherGroupEnrollment from '../models/TeacherGroupEnrollment.js';
 import TeacherLesson from '../models/TeacherLesson.js';
+import TeacherIncome from '../models/TeacherIncome.js';
+import TeacherProfile from '../models/TeacherProfile.js';
+import prisma from '../lib/prisma.js';
 import teachersRouter from './teachers.js';
 
 const secret = 'teacher-lessons-test-secret-2026-very-secure-32chars';
@@ -66,11 +69,37 @@ const withTeacherLessonsServer = async (
   const origLessonFindOne = TeacherLesson.findOne;
   const origLessonFindById = TeacherLesson.findById;
   const origLessonCreate = TeacherLesson.create;
+  const origIncomeFind = TeacherIncome.find;
+  const origIncomeFindOne = TeacherIncome.findOne;
+  const origIncomeCreate = TeacherIncome.create;
+  const origProfileFindOne = TeacherProfile.findOne;
+  const origSubFindMany = prisma.subscription?.findMany;
+  const origGrantFindMany = prisma.manualPremiumGrant?.findMany;
+
+  if (prisma.subscription) {
+    prisma.subscription.findMany = async ({ where }) => {
+      const userIds = where?.userId?.in || [];
+      return userIds
+        .filter((id) => id === TEACHER_A_ID || id === TEACHER_B_ID)
+        .map((userId) => ({ userId }));
+    };
+  }
+  if (prisma.manualPremiumGrant) {
+    prisma.manualPremiumGrant.findMany = async () => [];
+  }
 
   let studentStore = [...mockStudents];
   let groupStore = [...mockGroups];
   let enrollStore = [...mockEnrollments];
   let lessonStore = [...mockLessons];
+  let incomeStore = [];
+  let profileStore = [
+    {
+      userId: TEACHER_A_ID,
+      lessonRate: 150,
+      pricingCurrency: 'EGP'
+    }
+  ];
 
   User.findById = (id) => {
     const sId = String(id);
@@ -275,6 +304,88 @@ const withTeacherLessonsServer = async (
     return populateLessonDoc(newDoc);
   };
 
+  TeacherIncome.find = (filter = {}) => {
+    const list = incomeStore.filter((i) => {
+      if (filter.teacherId && String(i.teacherId) !== String(filter.teacherId)) return false;
+      if (filter.lessonId) {
+        if (filter.lessonId.$in) {
+          const ids = filter.lessonId.$in.map(String);
+          if (!ids.includes(String(i.lessonId))) return false;
+        } else if (String(i.lessonId) !== String(filter.lessonId)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    const query = {
+      lean() {
+        return Promise.resolve(list);
+      },
+      then(resolve, reject) {
+        return Promise.resolve(list).then(resolve, reject);
+      }
+    };
+    return query;
+  };
+
+  TeacherIncome.findOne = (filter = {}) => {
+    const found = incomeStore.find((i) => {
+      if (filter._id && String(i._id) !== String(filter._id)) return false;
+      if (filter.teacherId && String(i.teacherId) !== String(filter.teacherId)) return false;
+      if (filter.lessonId && String(i.lessonId) !== String(filter.lessonId)) return false;
+      return true;
+    });
+
+    const populatedDoc = found ? {
+      ...found,
+      studentId: found.studentId ? studentStore.find((s) => String(s._id) === String(found.studentId)) || found.studentId : null,
+      groupId: found.groupId ? groupStore.find((g) => String(g._id) === String(found.groupId)) || found.groupId : null,
+      lessonId: found.lessonId ? lessonStore.find((l) => String(l._id) === String(found.lessonId)) || found.lessonId : null
+    } : null;
+
+    const query = {
+      populate() {
+        return query;
+      },
+      lean() {
+        return Promise.resolve(found || null);
+      },
+      then(resolve, reject) {
+        return Promise.resolve(populatedDoc).then(resolve, reject);
+      }
+    };
+    return query;
+  };
+
+  TeacherIncome.create = async (data) => {
+    // Idempotency: Enforce partial unique index on lessonId
+    if (data.lessonId) {
+      const dup = incomeStore.find((i) => String(i.lessonId) === String(data.lessonId));
+      if (dup) {
+        const err = new Error('E11000 duplicate key error');
+        err.code = 11000;
+        throw err;
+      }
+    }
+    const doc = {
+      _id: '507f1f77bcf86cd7994390f' + (incomeStore.length + 1),
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    incomeStore.push(doc);
+    return doc;
+  };
+
+  TeacherProfile.findOne = (filter = {}) => {
+    const prof = profileStore.find((p) => {
+      if (filter.userId && String(p.userId) !== String(filter.userId)) return false;
+      return true;
+    });
+    return wrapQuery(prof || null);
+  };
+
   const app = express();
   app.use(express.json());
   app.use('/api/teachers', teachersRouter);
@@ -285,7 +396,8 @@ const withTeacherLessonsServer = async (
   try {
     await run({
       baseUrl: `http://127.0.0.1:${port}`,
-      getLessons: () => lessonStore
+      getLessons: () => lessonStore,
+      getIncomes: () => incomeStore
     });
   } finally {
     server.close();
@@ -298,6 +410,16 @@ const withTeacherLessonsServer = async (
     TeacherLesson.findOne = origLessonFindOne;
     TeacherLesson.findById = origLessonFindById;
     TeacherLesson.create = origLessonCreate;
+    TeacherIncome.find = origIncomeFind;
+    TeacherIncome.findOne = origIncomeFindOne;
+    TeacherIncome.create = origIncomeCreate;
+    TeacherProfile.findOne = origProfileFindOne;
+    if (origSubFindMany && prisma.subscription) {
+      prisma.subscription.findMany = origSubFindMany;
+    }
+    if (origGrantFindMany && prisma.manualPremiumGrant) {
+      prisma.manualPremiumGrant.findMany = origGrantFindMany;
+    }
   }
 };
 
@@ -603,6 +725,206 @@ test('Teacher Lessons & Schedule - Date Range Filtering (startDate & endDate)', 
     assert.equal(resBoundaries.status, 200);
     const dataBoundaries = await resBoundaries.json();
     assert.equal(dataBoundaries.count, 2);
+  });
+});
+
+test('Teacher Lessons - Fee Generation: Eligibility, Pricing Defaults, Group Manual Entry, and Idempotency', async () => {
+  const mockStudents = [
+    { _id: STUDENT_1_ID, teacherId: TEACHER_A_ID, fullName: 'Student One', isActive: true },
+    { _id: STUDENT_B_ID, teacherId: TEACHER_B_ID, fullName: 'Student B', isActive: true }
+  ];
+
+  const mockGroups = [
+    { _id: GROUP_1_ID, teacherId: TEACHER_A_ID, name: 'Physics Group A', isActive: true },
+    { _id: GROUP_B_ID, teacherId: TEACHER_B_ID, name: 'Physics Group B', isActive: true }
+  ];
+
+  const mockLessons = [
+    // Completed ONE_ON_ONE lesson belonging to Teacher A
+    {
+      _id: '507f1f77bcf86cd7994390d1',
+      teacherId: TEACHER_A_ID,
+      lessonType: 'ONE_ON_ONE',
+      studentId: STUDENT_1_ID,
+      subject: 'Math Completed',
+      date: new Date('2026-10-05T14:00:00.000Z'),
+      startTime: '14:00',
+      endTime: '15:00',
+      lessonStatus: 'COMPLETED',
+      isActive: true
+    },
+    // Scheduled (not completed) lesson belonging to Teacher A
+    {
+      _id: '507f1f77bcf86cd7994390d2',
+      teacherId: TEACHER_A_ID,
+      lessonType: 'ONE_ON_ONE',
+      studentId: STUDENT_1_ID,
+      subject: 'Math Scheduled',
+      date: new Date('2026-10-06T14:00:00.000Z'),
+      startTime: '14:00',
+      endTime: '15:00',
+      lessonStatus: 'SCHEDULED',
+      isActive: true
+    },
+    // Completed GROUP lesson belonging to Teacher A
+    {
+      _id: '507f1f77bcf86cd7994390d3',
+      teacherId: TEACHER_A_ID,
+      lessonType: 'GROUP',
+      groupId: GROUP_1_ID,
+      subject: 'Physics Group Completed',
+      date: new Date('2026-10-07T10:00:00.000Z'),
+      startTime: '10:00',
+      endTime: '11:30',
+      lessonStatus: 'COMPLETED',
+      isActive: true
+    },
+    // Completed lesson belonging to Teacher B
+    {
+      _id: '507f1f77bcf86cd7994390d4',
+      teacherId: TEACHER_B_ID,
+      lessonType: 'ONE_ON_ONE',
+      studentId: STUDENT_B_ID,
+      subject: 'Teacher B Completed Lesson',
+      date: new Date('2026-10-05T14:00:00.000Z'),
+      startTime: '14:00',
+      endTime: '15:00',
+      lessonStatus: 'COMPLETED',
+      isActive: true
+    }
+  ];
+
+  await withTeacherLessonsServer({ mockStudents, mockGroups, mockLessons }, async ({ baseUrl, getIncomes }) => {
+    // 1. Ineligible: Scheduled lesson cannot record fee (400)
+    const resScheduled = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d2/fee`, {
+      method: 'POST',
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' }),
+      body: JSON.stringify({})
+    });
+    assert.equal(resScheduled.status, 400);
+    const dataSched = await resScheduled.json();
+    assert.match(dataSched.message, /completed lessons/i);
+
+    // 2. Tenancy isolation: Teacher A cannot record fee for Teacher B lesson (404)
+    const resOtherTeacher = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d4/fee`, {
+      method: 'POST',
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' }),
+      body: JSON.stringify({})
+    });
+    assert.equal(resOtherTeacher.status, 404);
+
+    // 3. ONE_ON_ONE lesson: Defaults to profile lessonRate (150) and PENDING status
+    const resOneOnOneDefault = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d1/fee`, {
+      method: 'POST',
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' }),
+      body: JSON.stringify({})
+    });
+    assert.equal(resOneOnOneDefault.status, 201);
+    const dataOneOnOne = await resOneOnOneDefault.json();
+    assert.equal(dataOneOnOne.success, true);
+    assert.equal(dataOneOnOne.fee.amount, 150);
+    assert.equal(dataOneOnOne.fee.currency, 'EGP');
+    assert.equal(dataOneOnOne.fee.status, 'PENDING');
+    assert.equal(dataOneOnOne.fee.source, 'LESSON_ONE_ON_ONE');
+    assert.equal(dataOneOnOne.fee.studentId, STUDENT_1_ID);
+    assert.equal(dataOneOnOne.fee.lessonId, '507f1f77bcf86cd7994390d1');
+
+    // 4. Idempotency: Duplicate request for the same lesson returns 409 Conflict with existing fee details
+    const resDup = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d1/fee`, {
+      method: 'POST',
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' }),
+      body: JSON.stringify({})
+    });
+    assert.equal(resDup.status, 409);
+    const dataDup = await resDup.json();
+    assert.match(dataDup.message, /already been generated/i);
+    assert.equal(dataDup.fee.amount, 150);
+
+    // 5. GROUP lesson without amount: Fails with 400 because group pricing requires explicit manual total
+    const resGroupNoAmount = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d3/fee`, {
+      method: 'POST',
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' }),
+      body: JSON.stringify({})
+    });
+    assert.equal(resGroupNoAmount.status, 400);
+    const dataGroupNoAmt = await resGroupNoAmount.json();
+    assert.match(dataGroupNoAmt.message, /total session fee manually/i);
+
+    // 6. GROUP lesson with valid manual amount and RECEIVED status: Creates single aggregate record
+    const resGroupValid = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d3/fee`, {
+      method: 'POST',
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' }),
+      body: JSON.stringify({
+        amount: 350,
+        status: 'RECEIVED',
+        notes: 'Collected cash from all attendees'
+      })
+    });
+    assert.equal(resGroupValid.status, 201);
+    const dataGroup = await resGroupValid.json();
+    assert.equal(dataGroup.success, true);
+    assert.equal(dataGroup.fee.amount, 350);
+    assert.equal(dataGroup.fee.status, 'RECEIVED');
+    assert.equal(dataGroup.fee.source, 'LESSON_GROUP');
+    assert.equal(dataGroup.fee.groupId, GROUP_1_ID);
+    assert.equal(dataGroup.fee.studentId, null);
+    assert.equal(dataGroup.fee.lessonId, '507f1f77bcf86cd7994390d3');
+
+    // 7. Verify lesson detail endpoint reflects recorded fee state
+    const resLessonDetail = await fetch(`${baseUrl}/api/teachers/lessons/507f1f77bcf86cd7994390d1`, {
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' })
+    });
+    assert.equal(resLessonDetail.status, 200);
+    const dataDetail = await resLessonDetail.json();
+    assert.equal(dataDetail.lesson.feeStatus, 'PENDING');
+    assert.equal(dataDetail.lesson.fee.amount, 150);
+
+    // 8. Verify income store contains exactly 2 fee records linked to their lessons
+    const incomes = getIncomes();
+    assert.equal(incomes.length, 2);
+
+    const pendingIncomeId = dataOneOnOne.fee.id;
+    const receivedIncomeId = dataGroup.fee.id;
+
+    // 9. Phase 3B Document: PENDING fee generates INVOICE with matching status and teacher details
+    const resInvoice = await fetch(`${baseUrl}/api/teachers/accounts/income/${pendingIncomeId}/document`, {
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' })
+    });
+    assert.equal(resInvoice.status, 200);
+    const dataInv = await resInvoice.json();
+    assert.equal(dataInv.success, true);
+    assert.equal(dataInv.document.documentType, 'INVOICE');
+    assert.equal(dataInv.document.status, 'PENDING');
+    assert.equal(dataInv.document.amount, 150);
+    assert.equal(dataInv.document.currency, 'EGP');
+    assert.equal(dataInv.document.teacher.fullName, 'Teacher Alpha');
+    assert.equal(dataInv.document.student.fullName, 'Student One');
+    assert.match(dataInv.document.documentNumber, /^INV-/);
+
+    // 10. Phase 3B Document: RECEIVED fee generates RECEIPT with matching status and group details
+    const resReceipt = await fetch(`${baseUrl}/api/teachers/accounts/income/${receivedIncomeId}/document`, {
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' })
+    });
+    assert.equal(resReceipt.status, 200);
+    const dataRec = await resReceipt.json();
+    assert.equal(dataRec.success, true);
+    assert.equal(dataRec.document.documentType, 'RECEIPT');
+    assert.equal(dataRec.document.status, 'RECEIVED');
+    assert.equal(dataRec.document.amount, 350);
+    assert.equal(dataRec.document.group.name, 'Physics Group A');
+    assert.match(dataRec.document.documentNumber, /^REC-/);
+
+    // 11. Phase 3B Document Tenancy: Teacher B cannot view Teacher A's document (returns 404)
+    const resOtherDoc = await fetch(`${baseUrl}/api/teachers/accounts/income/${pendingIncomeId}/document`, {
+      headers: authHeader({ userId: TEACHER_B_ID, role: 'TEACHER' })
+    });
+    assert.equal(resOtherDoc.status, 404);
+
+    // 12. Phase 3B Document: Non-existent or invalid ID returns 404
+    const resInvalidDoc = await fetch(`${baseUrl}/api/teachers/accounts/income/invalid-id/document`, {
+      headers: authHeader({ userId: TEACHER_A_ID, role: 'TEACHER' })
+    });
+    assert.equal(resInvalidDoc.status, 404);
   });
 });
 

@@ -91,8 +91,7 @@ const teacherIncomeSchema = new mongoose.Schema(
     lessonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'TeacherLesson',
-      default: null,
-      index: true
+      default: null
     },
     notes: {
       type: String,
@@ -110,6 +109,18 @@ const teacherIncomeSchema = new mongoose.Schema(
 teacherIncomeSchema.index(
   { teacherId: 1, incomeDate: -1 },
   { name: 'teacher_income_date_idx' }
+);
+
+// Lesson duplicate protection:
+// At most ONE income record may reference a given lessonId.
+// Partial unique index allows manual records with `lessonId: null` to remain unlimited.
+teacherIncomeSchema.index(
+  { lessonId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { lessonId: { $type: 'objectId' } },
+    name: 'teacher_income_lesson_unique'
+  }
 );
 
 const TeacherIncome = mongoose.models.TeacherIncome || mongoose.model('TeacherIncome', teacherIncomeSchema);

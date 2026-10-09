@@ -18,6 +18,8 @@ import TeacherLesson from '../models/TeacherLesson.js';
 import TeacherStudent from '../models/TeacherStudent.js';
 import TeacherGroup from '../models/TeacherGroup.js';
 import TeacherGroupEnrollment from '../models/TeacherGroupEnrollment.js';
+import TeacherIncome from '../models/TeacherIncome.js';
+import TeacherProfile from '../models/TeacherProfile.js';
 
 const isValidObjectId = (id) =>
   typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -120,6 +122,15 @@ export const toTeacherLessonDto = (doc, groupStudentCount = 0) => {
           studentCompletedAt: d.homework.studentCompletedAt ? new Date(d.homework.studentCompletedAt).toISOString() : null
         }
       : null,
+    feeStatus: d.feeRecord ? d.feeRecord.status : (d.feeStatus || 'UNRECORDED'),
+    fee: d.feeRecord ? {
+      id: String(d.feeRecord._id),
+      amount: Number(d.feeRecord.amount),
+      currency: d.feeRecord.currency,
+      status: d.feeRecord.status,
+      incomeDate: d.feeRecord.incomeDate ? new Date(d.feeRecord.incomeDate).toISOString() : null,
+      source: d.feeRecord.source
+    } : null,
     createdAt: d.createdAt || null,
     updatedAt: d.updatedAt || null
   };
@@ -229,9 +240,25 @@ export const getTeacherLessons = async (req, res) => {
       }, {});
     }
 
+    // Aggregate fees for these lessons
+    const lessonIds = lessons.map((l) => l._id);
+    let feeMap = {};
+    if (lessonIds.length > 0) {
+      const fees = await TeacherIncome.find({
+        teacherId,
+        lessonId: { $in: lessonIds }
+      }).lean();
+      feeMap = fees.reduce((acc, f) => {
+        acc[String(f.lessonId)] = f;
+        return acc;
+      }, {});
+    }
+
     const dtoList = lessons.map((l) => {
       const gId = l.groupId ? String(l.groupId._id || l.groupId) : null;
-      return toTeacherLessonDto(l, gId ? countsMap[gId] || 0 : 0);
+      const docObj = typeof l.toObject === 'function' ? l.toObject() : { ...l };
+      docObj.feeRecord = feeMap[String(l._id)] || null;
+      return toTeacherLessonDto(docObj, gId ? countsMap[gId] || 0 : 0);
     });
 
     return res.json({
@@ -293,9 +320,13 @@ export const getTeacherLessonById = async (req, res) => {
       groupStudentCount = groupStudents.length;
     }
 
+    const feeRecord = await TeacherIncome.findOne({ teacherId, lessonId: lesson._id }).lean();
+    const docObj = typeof lesson.toObject === 'function' ? lesson.toObject() : { ...lesson };
+    docObj.feeRecord = feeRecord || null;
+
     return res.json({
       success: true,
-      lesson: toTeacherLessonDto(lesson, groupStudentCount),
+      lesson: toTeacherLessonDto(docObj, groupStudentCount),
       groupStudents
     });
   } catch (error) {
@@ -506,6 +537,17 @@ export const updateTeacherLesson = async (req, res) => {
 
     const newStart = body.startTime !== undefined ? body.startTime : lesson.startTime;
     const newEnd = body.endTime !== undefined ? body.endTime : lesson.endTime;
+    const timeChanged = body.startTime !== undefined && body.startTime.trim() !== lesson.startTime;
+    const dateChanged = body.date !== undefined;
+    if (timeChanged || dateChanged) {
+      if (!lesson.remindersSent) {
+        lesson.remindersSent = {};
+      }
+      lesson.remindersSent.h24 = false;
+      lesson.remindersSent.h1 = false;
+      lesson.remindersSent.lastScheduledDate = lesson.date;
+      lesson.remindersSent.lastScheduledStartTime = newStart.trim();
+    }
     if (body.startTime !== undefined || body.endTime !== undefined) {
       const timeValidation = validateTimes(newStart, newEnd);
       if (!timeValidation.ok) {
@@ -713,6 +755,175 @@ export const deleteTeacherLesson = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Server error cancelling lesson',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * POST /api/teachers/lessons/:id/fee
+ * Record an internal bookkeeping fee record from an eligible COMPLETED lesson.
+ * Idempotent: rejects duplicate fee creation via database partial unique index and 409 conflict.
+ */
+export const recordLessonFee = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { id } = req.params;
+    const { amount, currency, status, notes } = req.body || {};
+
+    if (!isValidObjectId(String(id || ''))) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    const lesson = await TeacherLesson.findOne({ _id: id, teacherId, isActive: true });
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    // Eligibility check: Only COMPLETED lessons
+    if (lesson.lessonStatus !== 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Lesson fee can only be recorded for completed lessons'
+      });
+    }
+
+    // Check for existing fee first for fast-path feedback
+    const existingFee = await TeacherIncome.findOne({ lessonId: lesson._id });
+    if (existingFee) {
+      return res.status(409).json({
+        success: false,
+        message: 'A fee record has already been generated for this lesson',
+        fee: {
+          id: String(existingFee._id),
+          amount: Number(existingFee.amount),
+          currency: existingFee.currency,
+          status: existingFee.status,
+          incomeDate: existingFee.incomeDate ? new Date(existingFee.incomeDate).toISOString() : null,
+          source: existingFee.source
+        }
+      });
+    }
+
+    // Fetch TeacherProfile for defaults
+    const profile = await TeacherProfile.findOne({ userId: teacherId });
+    const defaultCurrency = (profile?.pricingCurrency || 'EGP').toUpperCase();
+
+    let finalAmount;
+    let source;
+    let studentId = null;
+    let groupId = null;
+
+    if (lesson.lessonType === 'ONE_ON_ONE') {
+      source = 'LESSON_ONE_ON_ONE';
+      studentId = lesson.studentId?._id || lesson.studentId;
+
+      if (amount !== undefined && amount !== null && amount !== '') {
+        const num = Number(amount);
+        if (Number.isNaN(num) || !Number.isFinite(num) || num <= 0 || num > 1000000) {
+          return res.status(400).json({
+            success: false,
+            message: 'Fee amount must be a finite number greater than 0 and up to 1,000,000'
+          });
+        }
+        finalAmount = num;
+      } else {
+        const defaultRate = Number(profile?.lessonRate || 0);
+        if (!defaultRate || defaultRate <= 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'No lesson rate configured in teacher profile. Please specify a fee amount.'
+          });
+        }
+        finalAmount = defaultRate;
+      }
+    } else if (lesson.lessonType === 'GROUP') {
+      source = 'LESSON_GROUP';
+      groupId = lesson.groupId?._id || lesson.groupId;
+
+      // Group lessons require explicit manual amount entry
+      if (amount === undefined || amount === null || amount === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Group lessons require entering the total session fee manually'
+        });
+      }
+
+      const num = Number(amount);
+      if (Number.isNaN(num) || !Number.isFinite(num) || num <= 0 || num > 1000000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Total group session fee must be a finite number greater than 0 and up to 1,000,000'
+        });
+      }
+      finalAmount = num;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid lesson type'
+      });
+    }
+
+    const finalCurrency = cleanString(currency, 10).toUpperCase() || defaultCurrency;
+    const finalStatus = status && ['RECEIVED', 'PENDING'].includes(status.toUpperCase())
+      ? status.toUpperCase()
+      : 'PENDING';
+
+    const incomeDate = lesson.date ? new Date(lesson.date) : new Date();
+
+    try {
+      const doc = await TeacherIncome.create({
+        teacherId,
+        amount: finalAmount,
+        currency: finalCurrency,
+        incomeDate,
+        status: finalStatus,
+        source,
+        studentId,
+        groupId,
+        lessonId: lesson._id,
+        notes: cleanString(notes, 1000)
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Lesson fee recorded successfully',
+        fee: {
+          id: String(doc._id),
+          amount: Number(doc.amount),
+          currency: doc.currency,
+          status: doc.status,
+          incomeDate: doc.incomeDate ? new Date(doc.incomeDate).toISOString() : null,
+          source: doc.source,
+          studentId: doc.studentId ? String(doc.studentId) : null,
+          groupId: doc.groupId ? String(doc.groupId) : null,
+          lessonId: String(doc.lessonId)
+        }
+      });
+    } catch (createErr) {
+      // Handle concurrent request / duplicate-key error (Mongo E11000)
+      if (createErr.code === 11000 || /duplicate key|E11000/i.test(createErr.message || '')) {
+        const existing = await TeacherIncome.findOne({ lessonId: lesson._id });
+        return res.status(409).json({
+          success: false,
+          message: 'A fee record has already been generated for this lesson',
+          fee: existing ? {
+            id: String(existing._id),
+            amount: Number(existing.amount),
+            currency: existing.currency,
+            status: existing.status,
+            incomeDate: existing.incomeDate ? new Date(existing.incomeDate).toISOString() : null,
+            source: existing.source
+          } : null
+        });
+      }
+      throw createErr;
+    }
+  } catch (error) {
+    console.error('Error recording lesson fee:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error recording lesson fee',
       error: error.message
     });
   }

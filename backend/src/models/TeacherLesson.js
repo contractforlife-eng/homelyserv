@@ -163,6 +163,12 @@ const teacherLessonSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'StudentLessonBooking',
       default: null
+    },
+    remindersSent: {
+      h24: { type: Boolean, default: false },
+      h1: { type: Boolean, default: false },
+      lastScheduledStartTime: { type: String, default: null },
+      lastScheduledDate: { type: Date, default: null }
     }
   },
   {
