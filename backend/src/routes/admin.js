@@ -28,6 +28,7 @@ import { getFinancialCenterData } from '../services/financialCenterService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 import { listAccountingEntries, getAccountingSummary, createAccountingEntry, updateAccountingEntry, deleteAccountingEntry } from '../controllers/accountingController.js';
 import { completePaymentTransaction } from '../routes/payment.js';
+import { CoursePurchaseSnapshotError, validateCoursePurchaseSnapshot } from '../services/courseFulfillmentService.js';
 import { BANK_TRANSFER_PROVIDER, BANK_TRANSFER_CURRENCY } from '../config/bankTransfers.js';
 import { isRootAdmin, isRootAdminId, isRootAdminRequest, isRootRecoveryRequest, isRootRecoveryTarget } from '../security/rootAdmin.js';
 import { getDoctorStaffView } from '../services/doctorProfileStaffView.js';
@@ -2172,7 +2173,7 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
 
     const isBankTransfer = payment.paymentMethod === BANK_TRANSFER_PROVIDER;
     if (isBankTransfer) {
-      if (payment.currency !== BANK_TRANSFER_CURRENCY || !['SUBSCRIPTION', 'COMMISSION'].includes(payment.purpose)) {
+      if (payment.currency !== BANK_TRANSFER_CURRENCY || !['SUBSCRIPTION', 'COMMISSION', 'COURSE_PURCHASE'].includes(payment.purpose)) {
         return res.status(400).json({ success: false, error: 'Only valid USD bank-transfer payments can be confirmed' });
       }
       if (!Number.isFinite(Number(payment.amount)) || Number(payment.amount) <= 0) {
@@ -2201,7 +2202,7 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
 
       const retryPayment = await prisma.payment.findUnique({
         where: { id: paymentId },
-        select: { id: true, purpose: true, amount: true, currency: true, userId: true, hireId: true, paymentMethod: true },
+        select: { id: true, purpose: true, amount: true, currency: true, userId: true, hireId: true, paymentMethod: true, metadata: true },
       });
 
       try {
@@ -2234,6 +2235,24 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
 
     if (payment.manualReviewState !== 'pending_verification') {
       return res.status(400).json({ success: false, error: 'Payment is not in a reviewable state' });
+    }
+
+    // Bank Transfer COURSE_PURCHASE: validate the immutable purchase snapshot
+    // BEFORE the atomic claim, so an inconsistent payment is rejected outright and
+    // can never enroll a student or mint duplicate teacher earnings. Safe retries
+    // (already-verified payments) bypass this and stay idempotent.
+    try {
+      await validateCoursePurchaseSnapshot(payment);
+    } catch (snapshotError) {
+      if (snapshotError instanceof CoursePurchaseSnapshotError) {
+        console.warn(`⚠️ Bank-transfer course purchase confirmation rejected: ${snapshotError.code} payment=${paymentId}`);
+        return res.status(snapshotError.status || 409).json({
+          success: false,
+          error: snapshotError.message,
+          code: snapshotError.code,
+        });
+      }
+      throw snapshotError;
     }
 
     if (!payment.externalTransactionReference || (!isBankTransfer && !payment.proofStorageKey)) {

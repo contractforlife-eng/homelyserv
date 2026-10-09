@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createBankTransferPayment, fetchBankTransferCapability, submitBankTransferReference } from '../../services/paymentService';
 
-const BankTransferFlow = ({ purpose, plan, hireId, onCancel, capabilityAvailable }) => {
+const BankTransferFlow = ({ purpose, plan, hireId, courseId, onCancel, capabilityAvailable }) => {
   const { t } = useTranslation();
   const [payment, setPayment] = useState(null);
   const [instructions, setInstructions] = useState(null);
@@ -20,7 +20,7 @@ const BankTransferFlow = ({ purpose, plan, hireId, onCancel, capabilityAvailable
         if (!allowed) return;
         setLoading(true);
         setError(null);
-        const result = await createBankTransferPayment({ purpose, plan, hireId });
+        const result = await createBankTransferPayment({ purpose, plan, hireId, courseId });
         if (!active) return;
         if (!result?.success) throw new Error(result?.error || t('bankTransfer.unavailable'));
         setPayment(result.payment);
@@ -42,7 +42,7 @@ const BankTransferFlow = ({ purpose, plan, hireId, onCancel, capabilityAvailable
         return;
       }
       try {
-        const capability = await fetchBankTransferCapability({ purpose, plan, hireId });
+        const capability = await fetchBankTransferCapability({ purpose, plan, hireId, courseId });
         if (!active) return;
         setCapabilityLoading(false);
         if (capability?.available === true) create(true);
@@ -59,7 +59,7 @@ const BankTransferFlow = ({ purpose, plan, hireId, onCancel, capabilityAvailable
     };
     loadCapability();
     return () => { active = false; };
-  }, [purpose, plan, hireId, capabilityAvailable, t]);
+  }, [purpose, plan, hireId, courseId, capabilityAvailable, t]);
 
   const submitReference = async (event) => {
     event.preventDefault();

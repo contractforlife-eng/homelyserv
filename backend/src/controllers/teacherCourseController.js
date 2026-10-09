@@ -5,6 +5,7 @@
 // Strictly scoped to req.userId (authenticated teacher).
 // Teachers can create and manage their own courses without Premium.
 // ============================================================
+import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import { extractYouTubeVideoId } from '../utils/youtube.js';
@@ -92,15 +93,20 @@ const sanitizeLessons = (lessons) => {
       };
     }
 
-    sanitized.push({
-      _id: item._id,
+    const lessonEntry = {
       title,
       description: String(item.description || '').trim(),
       youtubeUrl,
       youtubeVideoId: videoId,
       order: Number(item.order) || i + 1,
       durationMinutes: Math.max(0, Number(item.durationMinutes) || 0)
-    });
+    };
+
+    if (item._id && mongoose.Types.ObjectId.isValid(String(item._id))) {
+      lessonEntry._id = item._id;
+    }
+
+    sanitized.push(lessonEntry);
   }
 
   // Sort by order ascending

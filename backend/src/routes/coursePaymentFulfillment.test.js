@@ -20,7 +20,8 @@ import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import CourseEnrollment from '../models/CourseEnrollment.js';
 import CourseEarning from '../models/CourseEarning.js';
-import { fulfillCoursePayment, PLATFORM_COURSE_COMMISSION_RATE, TEACHER_COURSE_SHARE_RATE } from '../services/courseFulfillmentService.js';
+import { fulfillCoursePayment, PLATFORM_COURSE_COMMISSION_RATE, TEACHER_COURSE_SHARE_RATE, validateCoursePurchaseSnapshot, CoursePurchaseSnapshotError } from '../services/courseFulfillmentService.js';
+import { clearBankTransferFxCache } from '../services/bankTransferFxService.js';
 import { PAYMENT_PURPOSES } from '../config/subscription.js';
 import paymentRouter, { completePaymentTransaction } from './payment.js';
 import adminRouter from './admin.js';
@@ -36,6 +37,9 @@ const TEACHER_ID = '507f1f77bcf86cd799439090';
 const STUDENT_ID = '507f1f77bcf86cd799439091';
 const OTHER_USER_ID = '507f1f77bcf86cd799439092';
 const ADMIN_ID = '507f1f77bcf86cd799439093';
+// Course ids used by the Bank Transfer canonical-accounting tests (8-10).
+const BT_COURSE_ID = '507f1f77bcf86cd7994390b7';
+const OTHER_COURSE_ID = '507f1f77bcf86cd7994390c1';
 
 const createToken = (payload) => jwt.sign({ ...payload, tokenVersion: 0 }, secret, { expiresIn: '1h' });
 
@@ -844,3 +848,741 @@ test('6. Manual payment admin confirmation: role gating, activation of enrollmen
   }
 });
 
+test('7. Bank Transfer: creation, USD FX settlement, and Admin verification for COURSE_PURCHASE', async (t) => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/payments', paymentRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/courses', coursesRouter);
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  const courseId = '507f1f77bcf86cd7994390b7';
+  const paymentId = '507f1f77bcf86cd7994390b8';
+
+  const mockCourse = {
+    _id: courseId,
+    title: 'Advanced Algebra',
+    teacherId: TEACHER_ID,
+    isPublished: true,
+    isPaid: true,
+    price: 600,
+    currency: 'EGP',
+    lessons: [
+      {
+        _id: '507f1f77bcf86cd7994390b9',
+        title: 'Lesson 1',
+        youtubeVideoId: 'ALGEBRA001',
+        isFreePreview: false,
+        durationMinutes: 40,
+        sortOrder: 1
+      }
+    ]
+  };
+
+  let simulatedPayment = null;
+  let simulatedEnrollment = null;
+  let simulatedEarning = null;
+
+  // Deterministic offline FX: inject the receiving-account env the same way
+  // paymentStatus.test.js does, and stub ONLY the external Frankfurter call so
+  // this unit test never touches the network (600 EGP x 0.02 = 12.00 USD).
+  // The test's own fetch() calls to the local Express server must pass through.
+  const BANK_TRANSFER_ENV = {
+    BANK_TRANSFER_USD_ACCOUNT_NAME: 'Test account',
+    BANK_TRANSFER_USD_BANK_NAME: 'Test bank',
+    BANK_TRANSFER_USD_ACCOUNT_NUMBER: 'test-account',
+    BANK_TRANSFER_USD_ROUTING_NUMBER: 'test-routing',
+  };
+  const TEST_FX_RATE = '0.02';
+  const EXPECTED_USD_SETTLEMENT = 12;
+  const previousEnv = Object.fromEntries(Object.keys(BANK_TRANSFER_ENV).map((key) => [key, process.env[key]]));
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (url, options) => {
+    if (String(url).includes('frankfurter')) {
+      return {
+        ok: true,
+        json: async () => ({ base: 'EGP', quote: 'USD', rate: TEST_FX_RATE, date: new Date().toISOString().slice(0, 10) })
+      };
+    }
+    return originalFetch(url, options);
+  };
+  clearBankTransferFxCache();
+  for (const [key, value] of Object.entries(BANK_TRANSFER_ENV)) process.env[key] = value;
+
+  const originalCourseFindById = Course.findById;
+  const originalEnrollmentFindOne = CourseEnrollment.findOne;
+  const originalEnrollmentCreate = CourseEnrollment.create;
+  const originalEarningFindOne = CourseEarning.findOne;
+  const originalEarningCreate = CourseEarning.create;
+  const originalPaymentFindMany = prisma.payment.findMany;
+  const originalPaymentFindFirst = prisma.payment.findFirst;
+  const originalPaymentCreate = prisma.payment.create;
+  const originalPaymentFindUnique = prisma.payment.findUnique;
+  const originalPaymentUpdate = prisma.payment.update;
+  const originalPaymentUpdateMany = prisma.payment.updateMany;
+
+  try {
+    Course.findById = (id) => ({
+      populate: () => Promise.resolve(String(id) === String(courseId) ? mockCourse : null),
+      then: (resolve) => resolve(String(id) === String(courseId) ? mockCourse : null)
+    });
+
+    CourseEnrollment.findOne = (query) => {
+      if (String(query.courseId) === String(courseId) && String(query.studentUserId) === STUDENT_ID && simulatedEnrollment) {
+        return Promise.resolve(simulatedEnrollment);
+      }
+      return Promise.resolve(null);
+    };
+
+    // courseFulfillmentService passes a single document object to create().
+    CourseEnrollment.create = (doc) => {
+      simulatedEnrollment = {
+        _id: '507f1f77bcf86cd7994390ba',
+        ...doc,
+        status: 'ACTIVE'
+      };
+      return Promise.resolve(simulatedEnrollment);
+    };
+
+    CourseEarning.findOne = (query) => {
+      if (simulatedEarning && String(simulatedEarning.paymentId) === String(query.paymentId)) {
+        return Promise.resolve(simulatedEarning);
+      }
+      return Promise.resolve(null);
+    };
+
+    CourseEarning.create = (doc) => {
+      simulatedEarning = {
+        _id: '507f1f77bcf86cd7994390bb',
+        ...doc,
+        payoutStatus: 'PENDING_PAYOUT'
+      };
+      return Promise.resolve(simulatedEarning);
+    };
+
+    prisma.payment.findMany = () => Promise.resolve([]);
+    prisma.payment.findFirst = () => Promise.resolve(null);
+
+    prisma.payment.create = ({ data }) => {
+      simulatedPayment = {
+        id: paymentId,
+        orderId: data.orderId,
+        transactionId: data.transactionId,
+        amount: data.amount,
+        currency: data.currency,
+        paymentMethod: data.paymentMethod,
+        purpose: data.purpose,
+        status: data.status,
+        fulfillmentStatus: data.fulfillmentStatus,
+        manualReviewState: data.manualReviewState,
+        manualPaymentReference: data.manualPaymentReference,
+        userId: data.userId,
+        metadata: data.metadata,
+        externalTransactionReference: null
+      };
+      return Promise.resolve(simulatedPayment);
+    };
+
+    prisma.payment.findUnique = ({ where }) => {
+      if (where.id === paymentId) {
+        return Promise.resolve(simulatedPayment);
+      }
+      return Promise.resolve(null);
+    };
+
+    prisma.payment.update = ({ where, data }) => {
+      if (where.id === paymentId) {
+        simulatedPayment = {
+          ...simulatedPayment,
+          ...data
+        };
+        return Promise.resolve(simulatedPayment);
+      }
+      return Promise.resolve(null);
+    };
+
+    prisma.payment.updateMany = ({ where, data }) => {
+      if (where.id === paymentId) {
+        simulatedPayment = {
+          ...simulatedPayment,
+          ...data
+        };
+        return Promise.resolve({ count: 1 });
+      }
+      return Promise.resolve({ count: 0 });
+    };
+
+    // Subtest A: Create Bank Transfer payment for COURSE_PURCHASE
+    const resCreate = await fetch(`http://127.0.0.1:${port}/api/payments/bank-transfer/create`, {
+      method: 'POST',
+      headers: authHeader({ id: STUDENT_ID, role: 'STUDENT' }),
+      body: JSON.stringify({
+        purpose: 'COURSE_PURCHASE',
+        courseId,
+        attemptKey: 'attempt-bank-transfer-course-123456789'
+      })
+    });
+    assert.equal(resCreate.status, 201);
+    const createData = await resCreate.json();
+    assert.equal(createData.success, true);
+    assert.equal(createData.payment.paymentMethod, 'bank_transfer');
+    assert.equal(createData.payment.currency, 'USD');
+    assert.equal(createData.payment.purpose, 'COURSE_PURCHASE');
+    assert.equal(createData.payment.manualReviewState, 'awaiting_transfer');
+    assert.ok(createData.transferInstructions);
+    assert.equal(createData.transferInstructions.currency, 'USD');
+
+    // The student transfers the FX settlement in USD, while the canonical course
+    // price (600 EGP) is preserved separately for accounting.
+    assert.equal(createData.payment.amount, EXPECTED_USD_SETTLEMENT);
+    assert.equal(createData.payment.canonicalAmount, '600.00');
+    assert.equal(createData.payment.canonicalCurrency, 'EGP');
+
+    // Immutable purchase snapshot + FX evidence must be persisted on the Payment.
+    assert.equal(simulatedPayment.metadata.courseId, courseId);
+    assert.equal(simulatedPayment.metadata.teacherId, TEACHER_ID);
+    assert.equal(simulatedPayment.metadata.targetStudentUserId, STUDENT_ID);
+    assert.equal(simulatedPayment.metadata.courseTitle, 'Advanced Algebra');
+    assert.equal(simulatedPayment.metadata.canonicalAmount, '600.00');
+    assert.equal(simulatedPayment.metadata.canonicalCurrency, 'EGP');
+    assert.equal(simulatedPayment.metadata.exchangeRate, TEST_FX_RATE);
+    assert.equal(simulatedPayment.metadata.rateDirection, 'SOURCE_TO_USD');
+    assert.equal(simulatedPayment.metadata.exchangeRateSource, 'Frankfurter');
+    assert.ok(simulatedPayment.metadata.exchangeRateVersion);
+    assert.ok(simulatedPayment.metadata.exchangeRateTimestamp);
+    assert.ok(simulatedPayment.metadata.exchangeRateFetchedAt);
+    assert.equal(simulatedPayment.metadata.exchangeRateProvider, 'Frankfurter');
+
+    // Subtest B: Submit reference
+    const resSubmitRef = await fetch(`http://127.0.0.1:${port}/api/payments/bank-transfer/${paymentId}/submit-reference`, {
+      method: 'POST',
+      headers: authHeader({ id: STUDENT_ID, role: 'STUDENT' }),
+      body: JSON.stringify({
+        externalTransactionReference: 'REF-BANK-TEST-999'
+      })
+    });
+    assert.equal(resSubmitRef.status, 200);
+    assert.equal(simulatedPayment.manualReviewState, 'pending_verification');
+    assert.equal(simulatedPayment.externalTransactionReference, 'REF-BANK-TEST-999');
+
+    // Subtest C: Course lessons remain locked prior to Admin confirmation
+    const resStillLocked = await fetch(`http://127.0.0.1:${port}/api/courses/${courseId}`, {
+      method: 'GET',
+      headers: authHeader({ id: STUDENT_ID, role: 'STUDENT' })
+    });
+    const lockedData = await resStillLocked.json();
+    assert.equal(lockedData.isAuthorized, false);
+    assert.equal(lockedData.course.lessons[0].isLocked, true);
+
+    // Subtest D: Admin confirms the USD bank transfer for COURSE_PURCHASE
+    const resAdminConfirm = await fetch(`http://127.0.0.1:${port}/api/admin/manual-payments/${paymentId}/confirm`, {
+      method: 'POST',
+      headers: authHeader({ id: ADMIN_ID, role: 'ADMIN' })
+    });
+    assert.equal(resAdminConfirm.status, 200);
+    const confirmBody = await resAdminConfirm.json();
+    assert.equal(confirmBody.success, true);
+    assert.equal(simulatedPayment.manualReviewState, 'verified');
+    assert.equal(simulatedPayment.status, 'completed');
+    assert.equal(simulatedPayment.fulfillmentStatus, 'fulfilled');
+
+    // Verify course enrollment and teacher earning were created
+    assert.ok(simulatedEnrollment);
+    assert.equal(simulatedEnrollment.status, 'ACTIVE');
+
+    // CANONICAL ACCOUNTING: the ledger must use the original 600 EGP course price,
+    // never the 12.00 USD bank-transfer settlement amount.
+    assert.ok(simulatedEarning);
+    assert.equal(simulatedEarning.grossAmount, 600);
+    assert.equal(simulatedEarning.currency, 'EGP');
+    assert.equal(simulatedEarning.platformCommissionRate, PLATFORM_COURSE_COMMISSION_RATE);
+    assert.equal(simulatedEarning.platformCommissionAmount, 60);
+    assert.equal(simulatedEarning.teacherShareRate, TEACHER_COURSE_SHARE_RATE);
+    assert.equal(simulatedEarning.teacherShareAmount, 540);
+    assert.equal(
+      simulatedEarning.platformCommissionAmount + simulatedEarning.teacherShareAmount,
+      simulatedEarning.grossAmount,
+      'Platform commission + teacher share must reconcile exactly to gross'
+    );
+    assert.equal(simulatedEarning.payoutStatus, 'PENDING_PAYOUT');
+    assert.equal(simulatedEarning.paymentId, paymentId);
+
+    // Exactly-once: a duplicate confirmation must not create a second ledger row.
+    const resDuplicateConfirm = await fetch(`http://127.0.0.1:${port}/api/admin/manual-payments/${paymentId}/confirm`, {
+      method: 'POST',
+      headers: authHeader({ id: ADMIN_ID, role: 'ADMIN' })
+    });
+    assert.equal(resDuplicateConfirm.status, 200);
+    assert.equal(simulatedEarning.grossAmount, 600);
+    assert.equal(simulatedEarning.payoutStatus, 'PENDING_PAYOUT');
+
+    // Subtest E: Course lessons are now unlocked for student
+    const resUnlocked = await fetch(`http://127.0.0.1:${port}/api/courses/${courseId}`, {
+      method: 'GET',
+      headers: authHeader({ id: STUDENT_ID, role: 'STUDENT' })
+    });
+    const unlockedData = await resUnlocked.json();
+    assert.equal(unlockedData.isAuthorized, true);
+    assert.equal(unlockedData.course.lessons[0].isLocked, false);
+    assert.equal(unlockedData.course.lessons[0].youtubeVideoId, 'ALGEBRA001');
+
+    server.close();
+  } finally {
+    Course.findById = originalCourseFindById;
+    CourseEnrollment.findOne = originalEnrollmentFindOne;
+    CourseEnrollment.create = originalEnrollmentCreate;
+    CourseEarning.findOne = originalEarningFindOne;
+    CourseEarning.create = originalEarningCreate;
+    prisma.payment.findMany = originalPaymentFindMany;
+    prisma.payment.findFirst = originalPaymentFindFirst;
+    prisma.payment.create = originalPaymentCreate;
+    prisma.payment.findUnique = originalPaymentFindUnique;
+    prisma.payment.update = originalPaymentUpdate;
+    prisma.payment.updateMany = originalPaymentUpdateMany;
+    globalThis.fetch = originalFetch;
+    clearBankTransferFxCache();
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+// ============================================================
+// BANK TRANSFER COURSE_PURCHASE — CANONICAL ACCOUNTING & SNAPSHOT GUARDS
+// ============================================================
+
+// Builds a persisted-shape bank-transfer COURSE_PURCHASE payment whose USD
+// settlement (12.00) is reproducible from the canonical 600.00 EGP x 0.02 rate.
+const buildBankTransferCoursePayment = (overrides = {}) => {
+  const courseId = String(overrides.courseId || BT_COURSE_ID);
+  const metadata = {
+    createdFrom: "bank-transfer",
+    source: "backend",
+    courseId,
+    courseTitle: "Advanced Algebra",
+    teacherId: TEACHER_ID,
+    targetStudentUserId: STUDENT_ID,
+    originalAmount: "600.00",
+    originalCurrency: "EGP",
+    canonicalAmount: "600.00",
+    canonicalCurrency: "EGP",
+    exchangeRate: "0.02",
+    exchangeRateSource: "Frankfurter",
+    exchangeRateVersion: "v2",
+    exchangeRateTimestamp: new Date().toISOString(),
+    exchangeRateFetchedAt: new Date().toISOString(),
+    exchangeRateProvider: "Frankfurter",
+    rateDirection: "SOURCE_TO_USD",
+    ...(overrides.metadata || {}),
+  };
+
+  return {
+    id: overrides.id || "bt-pay-canonical-1",
+    orderId: overrides.orderId || "BT-order-canonical-1",
+    amount: overrides.amount === undefined ? 12 : overrides.amount,
+    currency: overrides.currency || "USD",
+    paymentMethod: "bank_transfer",
+    purpose: "COURSE_PURCHASE",
+    status: overrides.status || "completed",
+    fulfillmentStatus: overrides.fulfillmentStatus || "pending",
+    manualReviewState: overrides.manualReviewState || "pending_verification",
+    externalTransactionReference: overrides.externalTransactionReference || "REF-BT-CANONICAL-1",
+    userId: overrides.userId || STUDENT_ID,
+    metadata,
+  };
+};
+
+// Installs the Course/CourseEnrollment/CourseEarning mocks used by the
+// service-level tests below and returns their restore handles.
+const installCourseFulfillmentMocks = ({ course, enrollment = null, earning = null }) => {
+  const handles = {
+    courseFindById: Course.findById,
+    enrollmentFindOne: CourseEnrollment.findOne,
+    enrollmentCreate: CourseEnrollment.create,
+    earningFindOne: CourseEarning.findOne,
+    earningCreate: CourseEarning.create,
+  };
+
+  const state = { enrollment, earning };
+
+  Course.findById = async () => course;
+  CourseEnrollment.findOne = async () => state.enrollment;
+  CourseEnrollment.create = async (doc) => {
+    state.enrollment = { _id: "507f1f77bcf86cd7994390cc", ...doc, status: "ACTIVE" };
+    return state.enrollment;
+  };
+  CourseEarning.findOne = async (query) => (
+    state.earning && String(state.earning.paymentId) === String(query.paymentId) ? state.earning : null
+  );
+  CourseEarning.create = async (doc) => {
+    state.earning = { _id: "507f1f77bcf86cd7994390cd", ...doc, payoutStatus: "PENDING_PAYOUT" };
+    return state.earning;
+  };
+
+  return { handles, state };
+};
+
+const restoreCourseFulfillmentMocks = (handles) => {
+  Course.findById = handles.courseFindById;
+  CourseEnrollment.findOne = handles.enrollmentFindOne;
+  CourseEnrollment.create = handles.enrollmentCreate;
+  CourseEarning.findOne = handles.earningFindOne;
+  CourseEarning.create = handles.earningCreate;
+};
+
+const btCourseDoc = () => ({
+  _id: BT_COURSE_ID,
+  teacherId: TEACHER_ID,
+  title: "Advanced Algebra",
+  isPublished: true,
+  isPaid: true,
+  price: 600,
+  currency: "EGP",
+});
+
+test("8. Bank Transfer course fulfillment credits the canonical course currency, never the USD settlement", async (t) => {
+  const course = btCourseDoc();
+  const { handles, state } = installCourseFulfillmentMocks({ course });
+
+  try {
+    const result = await fulfillCoursePayment(buildBankTransferCoursePayment());
+    assert.equal(result.success, true);
+
+    // 600 EGP canonical, NOT the 12.00 USD settlement amount.
+    assert.equal(state.earning.grossAmount, 600);
+    assert.equal(state.earning.currency, "EGP");
+    assert.equal(state.earning.platformCommissionAmount, 60);
+    assert.equal(state.earning.teacherShareAmount, 540);
+    assert.equal(
+      state.earning.platformCommissionAmount + state.earning.teacherShareAmount,
+      state.earning.grossAmount,
+    );
+    assert.equal(state.enrollment.status, "ACTIVE");
+
+    // PayPal / other providers keep Payment.amount semantics unchanged.
+    const paypalResult = await fulfillCoursePayment({
+      id: "bt-pay-paypal-1",
+      amount: 600,
+      currency: "EGP",
+      paymentMethod: "paypal",
+      purpose: "COURSE_PURCHASE",
+      userId: STUDENT_ID,
+      metadata: { courseId: String(BT_COURSE_ID), targetStudentUserId: STUDENT_ID, teacherId: TEACHER_ID },
+    });
+    assert.equal(paypalResult.success, true);
+    assert.equal(state.earning.grossAmount, 600);
+    assert.equal(state.earning.currency, "EGP");
+  } finally {
+    restoreCourseFulfillmentMocks(handles);
+  }
+});
+
+test("9. Bank Transfer course fulfillment fails closed on missing or inconsistent canonical metadata", async (t) => {
+  const cases = [
+    ["missing canonicalAmount", { metadata: { canonicalAmount: undefined } }],
+    ["missing canonicalCurrency", { metadata: { canonicalCurrency: undefined } }],
+    ["unsupported canonicalCurrency", { metadata: { canonicalCurrency: "XYZ" } }],
+    ["canonical/original currency mismatch", { metadata: { originalCurrency: "USD" } }],
+    ["canonical/original amount mismatch", { metadata: { originalAmount: "500.00" } }],
+    ["missing FX evidence", { metadata: { exchangeRate: undefined } }],
+    ["settlement not reproducible from rate", { amount: 99 }],
+    ["non-USD settlement currency", { currency: "EGP" }],
+    ["student reference mismatch", { metadata: { targetStudentUserId: OTHER_USER_ID } }],
+    ["teacher reference mismatch", { metadata: { teacherId: OTHER_USER_ID } }],
+    ["course reference mismatch", { metadata: { courseId: String(OTHER_COURSE_ID) } }],
+  ];
+
+  for (const [label, overrides] of cases) {
+    await t.test(`rejects ${label}`, async () => {
+      const course = btCourseDoc();
+      const { handles, state } = installCourseFulfillmentMocks({ course });
+      try {
+        await assert.rejects(
+          () => fulfillCoursePayment(buildBankTransferCoursePayment(overrides)),
+          (error) => error instanceof CoursePurchaseSnapshotError,
+        );
+        // Fail closed: no enrollment and no earnings were created.
+        assert.equal(state.enrollment, null);
+        assert.equal(state.earning, null);
+      } finally {
+        restoreCourseFulfillmentMocks(handles);
+      }
+    });
+  }
+});
+
+test("10. Bank Transfer confirmation-time guards reject price/state changes and already-enrolled students", async (t) => {
+  const pendingPayment = () => buildBankTransferCoursePayment({ manualReviewState: "pending_verification" });
+
+  await t.test("accepts a consistent, not-yet-enrolled purchase", async () => {
+    const { handles } = installCourseFulfillmentMocks({ course: btCourseDoc() });
+    try {
+      const result = await validateCoursePurchaseSnapshot(pendingPayment());
+      assert.equal(result.checked, true);
+      assert.equal(result.courseId, String(BT_COURSE_ID));
+    } finally {
+      restoreCourseFulfillmentMocks(handles);
+    }
+  });
+
+  await t.test("rejects when the course price changed after payment creation", async () => {
+    const course = { ...btCourseDoc(), price: 750 };
+    const { handles } = installCourseFulfillmentMocks({ course });
+    try {
+      await assert.rejects(
+        () => validateCoursePurchaseSnapshot(pendingPayment()),
+        (error) => error instanceof CoursePurchaseSnapshotError && error.code === "PRICE_CHANGED",
+      );
+    } finally {
+      restoreCourseFulfillmentMocks(handles);
+    }
+  });
+
+  await t.test("rejects when the course is no longer paid", async () => {
+    const course = { ...btCourseDoc(), isPaid: false };
+    const { handles } = installCourseFulfillmentMocks({ course });
+    try {
+      await assert.rejects(
+        () => validateCoursePurchaseSnapshot(pendingPayment()),
+        (error) => error instanceof CoursePurchaseSnapshotError && error.code === "COURSE_NO_LONGER_PAID",
+      );
+    } finally {
+      restoreCourseFulfillmentMocks(handles);
+    }
+  });
+
+  await t.test("rejects when the course is unpublished or missing", async () => {
+    for (const course of [{ ...btCourseDoc(), isPublished: false }, null]) {
+      const { handles } = installCourseFulfillmentMocks({ course });
+      try {
+        await assert.rejects(
+          () => validateCoursePurchaseSnapshot(pendingPayment()),
+          (error) => error instanceof CoursePurchaseSnapshotError && error.code === "COURSE_UNAVAILABLE",
+        );
+      } finally {
+        restoreCourseFulfillmentMocks(handles);
+      }
+    }
+  });
+
+  await t.test("rejects a student who already has active access (no duplicate earnings)", async () => {
+    const enrollment = {
+      _id: "507f1f77bcf86cd7994390ce",
+      courseId: BT_COURSE_ID,
+      studentUserId: STUDENT_ID,
+      status: "ACTIVE",
+    };
+    const { handles } = installCourseFulfillmentMocks({ course: btCourseDoc(), enrollment });
+    try {
+      await assert.rejects(
+        () => validateCoursePurchaseSnapshot(pendingPayment()),
+        (error) => error instanceof CoursePurchaseSnapshotError && error.code === "ALREADY_ENROLLED",
+      );
+    } finally {
+      restoreCourseFulfillmentMocks(handles);
+    }
+  });
+
+  await t.test("skips validation entirely for non-bank-transfer payments", async () => {
+    const { handles } = installCourseFulfillmentMocks({ course: null });
+    try {
+      const result = await validateCoursePurchaseSnapshot({
+        id: "bt-pay-paypal-2",
+        paymentMethod: "paypal",
+        purpose: "COURSE_PURCHASE",
+        currency: "EGP",
+        amount: 600,
+        userId: STUDENT_ID,
+        metadata: {},
+      });
+      assert.equal(result.checked, false);
+    } finally {
+      restoreCourseFulfillmentMocks(handles);
+    }
+  });
+});
+test('11. Bank Transfer retry after verified/failed fulfillment completes with canonical metadata', async (t) => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/payments', paymentRouter);
+  app.use('/api/admin', adminRouter);
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  const courseId = '507f1f77bcf86cd7994390b7';
+  const paymentId = '507f1f77bcf86cd7994390d1';
+
+  const mockCourse = {
+    _id: courseId,
+    title: 'Advanced Algebra',
+    teacherId: TEACHER_ID,
+    isPublished: true,
+    isPaid: true,
+    price: 600,
+    currency: 'EGP',
+    lessons: [],
+  };
+
+  // Simulated persisted payment: verified, but fulfillment failed before
+  // anything was granted. Metadata mirrors /bank-transfer/create exactly.
+  let simulatedPayment = {
+    id: paymentId,
+    orderId: 'BT-retry-order-1',
+    transactionId: paymentId,
+    amount: 12,
+    currency: 'USD',
+    paymentMethod: 'bank_transfer',
+    purpose: 'COURSE_PURCHASE',
+    status: 'completed',
+    fulfillmentStatus: 'failed',
+    fulfillmentAttempts: 1,
+    manualReviewState: 'verified',
+    reviewedBy: ADMIN_ID,
+    manualPaymentReference: 'BT-RETRY-REF-1',
+    externalTransactionReference: 'REF-BANK-RETRY-1',
+    userId: STUDENT_ID,
+    metadata: {
+      createdFrom: 'bank-transfer',
+      originalAmount: '600.00',
+      originalCurrency: 'EGP',
+      canonicalAmount: '600.00',
+      canonicalCurrency: 'EGP',
+      exchangeRate: '0.02',
+      exchangeRateSource: 'Frankfurter',
+      exchangeRateVersion: 'v2',
+      exchangeRateTimestamp: new Date().toISOString(),
+      exchangeRateFetchedAt: new Date().toISOString(),
+      exchangeRateProvider: 'Frankfurter',
+      rateDirection: 'SOURCE_TO_USD',
+      courseId,
+      courseTitle: 'Advanced Algebra',
+      teacherId: TEACHER_ID,
+      targetStudentUserId: STUDENT_ID,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  let simulatedEnrollment = null;
+  let simulatedEarning = null;
+  let enrollmentCreations = 0;
+  let earningCreations = 0;
+
+  const originals = {
+    CourseFindById: Course.findById,
+    EnrollmentFindOne: CourseEnrollment.findOne,
+    EnrollmentCreate: CourseEnrollment.create,
+    EarningFindOne: CourseEarning.findOne,
+    EarningCreate: CourseEarning.create,
+    paymentFindUnique: prisma.payment.findUnique,
+    paymentUpdate: prisma.payment.update,
+    paymentUpdateMany: prisma.payment.updateMany,
+  };
+
+  try {
+    Course.findById = () => Promise.resolve(mockCourse);
+    CourseEnrollment.findOne = () => Promise.resolve(simulatedEnrollment);
+    CourseEnrollment.create = (doc) => {
+      enrollmentCreations += 1;
+      simulatedEnrollment = { _id: '507f1f77bcf86cd7994390d2', ...doc, status: 'ACTIVE' };
+      return Promise.resolve(simulatedEnrollment);
+    };
+    CourseEarning.findOne = (query) => (
+      simulatedEarning && String(simulatedEarning.paymentId) === String(query.paymentId)
+        ? Promise.resolve(simulatedEarning)
+        : Promise.resolve(null)
+    );
+    CourseEarning.create = (doc) => {
+      earningCreations += 1;
+      simulatedEarning = { _id: '507f1f77bcf86cd7994390d3', ...doc, payoutStatus: 'PENDING_PAYOUT' };
+      return Promise.resolve(simulatedEarning);
+    };
+
+    // findUnique honors Prisma-style `select` so the retry read model matches
+    // production: canonical metadata must reach fulfillment through the select.
+    prisma.payment.findUnique = ({ where, select }) => {
+      if (where.id === paymentId) {
+        if (!select) return Promise.resolve(simulatedPayment);
+        const projected = {};
+        for (const key of Object.keys(select)) {
+          if (select[key] === true) projected[key] = simulatedPayment[key];
+        }
+        return Promise.resolve(projected);
+      }
+      return Promise.resolve(null);
+    };
+    prisma.payment.update = ({ where, data }) => {
+      if (where.id === paymentId) {
+        simulatedPayment = { ...simulatedPayment, ...data };
+        return Promise.resolve(simulatedPayment);
+      }
+      return Promise.resolve(null);
+    };
+    // Atomic fulfillment claim: grant once while failed, then refuse replay.
+    prisma.payment.updateMany = ({ where, data }) => {
+      if (where.id === paymentId) {
+        const statusOk = where.NOT?.status !== undefined
+          ? simulatedPayment.status !== where.NOT.status
+          : true;
+        const fulfillmentOk = where.fulfillmentStatus?.in !== undefined
+          ? where.fulfillmentStatus.in.includes(simulatedPayment.fulfillmentStatus)
+          : true;
+        if (statusOk && fulfillmentOk) {
+          simulatedPayment = { ...simulatedPayment, ...data };
+          return Promise.resolve({ count: 1 });
+        }
+        return Promise.resolve({ count: 0 });
+      }
+      return Promise.resolve({ count: 0 });
+    };
+
+    // Retry: verified/failed bank-transfer payment must complete in 600 EGP.
+    const resRetry = await fetch(`http://127.0.0.1:${port}/api/admin/manual-payments/${paymentId}/confirm`, {
+      method: 'POST',
+      headers: authHeader({ id: ADMIN_ID, role: 'ADMIN' })
+    });
+    assert.equal(resRetry.status, 200);
+    const retryBody = await resRetry.json();
+    assert.equal(retryBody.success, true);
+    assert.equal(retryBody.message, 'Retrying failed fulfillment for verified manual payment');
+
+    assert.ok(simulatedEnrollment);
+    assert.equal(simulatedEnrollment.status, 'ACTIVE');
+    assert.ok(simulatedEarning);
+    assert.equal(simulatedEarning.grossAmount, 600);
+    assert.equal(simulatedEarning.currency, 'EGP');
+    assert.equal(simulatedEarning.platformCommissionRate, PLATFORM_COURSE_COMMISSION_RATE);
+    assert.equal(simulatedEarning.platformCommissionAmount, 60);
+    assert.equal(simulatedEarning.teacherShareRate, TEACHER_COURSE_SHARE_RATE);
+    assert.equal(simulatedEarning.teacherShareAmount, 540);
+    assert.equal(simulatedEarning.payoutStatus, 'PENDING_PAYOUT');
+    assert.equal(simulatedPayment.status, 'completed');
+    assert.equal(simulatedPayment.fulfillmentStatus, 'fulfilled');
+
+    // A second retry stays idempotent: no duplicate enrollment or earnings.
+    const resSecondRetry = await fetch(`http://127.0.0.1:${port}/api/admin/manual-payments/${paymentId}/confirm`, {
+      method: 'POST',
+      headers: authHeader({ id: ADMIN_ID, role: 'ADMIN' })
+    });
+    assert.equal(resSecondRetry.status, 200);
+    assert.equal(enrollmentCreations, 1);
+    assert.equal(earningCreations, 1);
+    assert.equal(simulatedEarning.grossAmount, 600);
+    assert.equal(simulatedPayment.fulfillmentStatus, 'fulfilled');
+
+    server.close();
+  } finally {
+    Course.findById = originals.CourseFindById;
+    CourseEnrollment.findOne = originals.EnrollmentFindOne;
+    CourseEnrollment.create = originals.EnrollmentCreate;
+    CourseEarning.findOne = originals.EarningFindOne;
+    CourseEarning.create = originals.EarningCreate;
+    prisma.payment.findUnique = originals.paymentFindUnique;
+    prisma.payment.update = originals.paymentUpdate;
+    prisma.payment.updateMany = originals.paymentUpdateMany;
+  }
+});

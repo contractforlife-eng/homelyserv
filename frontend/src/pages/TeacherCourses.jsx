@@ -77,7 +77,7 @@ const TeacherCourses = () => {
   const fetchCourses = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/teachers/courses');
+      const res = await api.get('/api/teachers/courses');
       if (res.data?.success) {
         setCourses(res.data.courses || []);
       }
@@ -143,7 +143,7 @@ const TeacherCourses = () => {
       const data = new FormData();
       data.append('thumbnail', file);
 
-      const res = await api.post('/teachers/courses/upload-thumbnail', data, {
+      const res = await api.post('/api/teachers/courses/upload-thumbnail', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -252,13 +252,19 @@ const TeacherCourses = () => {
         isPaid: Boolean(formData.isPaid),
         price: formData.isPaid ? Math.max(0, Number(formData.price) || 0) : 0,
         currency: formData.currency.trim().toUpperCase() || 'EGP',
-        lessons: formData.lessons
+        lessons: formData.lessons.map((lesson) => {
+          const item = { ...lesson };
+          if (typeof item._id === 'string' && item._id.startsWith('temp-')) {
+            delete item._id;
+          }
+          return item;
+        })
       };
 
       if (editingCourse) {
-        await api.put(`/teachers/courses/${editingCourse._id}`, payload);
+        await api.put(`/api/teachers/courses/${editingCourse._id}`, payload);
       } else {
-        await api.post('/teachers/courses', payload);
+        await api.post('/api/teachers/courses', payload);
       }
 
       setIsModalOpen(false);
@@ -273,7 +279,7 @@ const TeacherCourses = () => {
 
   const handleTogglePublish = async (course) => {
     try {
-      await api.patch(`/teachers/courses/${course._id}/publish`, {
+      await api.patch(`/api/teachers/courses/${course._id}/publish`, {
         isPublished: !course.isPublished
       });
       await fetchCourses();
@@ -284,7 +290,7 @@ const TeacherCourses = () => {
 
   const handleDeleteCourse = async (courseId) => {
     try {
-      await api.delete(`/teachers/courses/${courseId}`);
+      await api.delete(`/api/teachers/courses/${courseId}`);
       setDeleteConfirmId(null);
       await fetchCourses();
     } catch (err) {
@@ -314,55 +320,55 @@ const TeacherCourses = () => {
       <div className="space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
         <DashboardHeader
           title={t('teacherCourses.title') || 'Recorded Courses'}
-          subtitle={t('teacherCourses.subtitle') || 'Create, manage, and publish your video courses'}
-          action={
-            <button
-              onClick={handleOpenCreateModal}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{t('teacherCourses.createBtn') || 'New Course'}</span>
-            </button>
-          }
         />
 
         {/* Filters and search bar */}
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('teacherCourses.searchPlaceholder') || 'Search courses...'}
-              className="w-full pl-9 rtl:pl-3 rtl:pr-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
-            />
+        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-1">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('teacherCourses.searchPlaceholder') || 'Search courses...'}
+                className="w-full pl-9 rtl:pl-3 rtl:pr-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value)}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="ALL">{t('teacherCourses.allSubjects') || 'All Subjects'}</option>
+                {TEACHER_SUBJECTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {t(s.labelKey) || s.value}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="ALL">{t('teacherCourses.allStatuses') || 'All Statuses'}</option>
+                <option value="PUBLISHED">{t('teacherCourses.published') || 'Published'}</option>
+                <option value="DRAFT">{t('teacherCourses.draft') || 'Draft / Unpublished'}</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <select
-              value={subjectFilter}
-              onChange={(e) => setSubjectFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            >
-              <option value="ALL">{t('teacherCourses.allSubjects') || 'All Subjects'}</option>
-              {TEACHER_SUBJECTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {t(s.labelKey) || s.value}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            >
-              <option value="ALL">{t('teacherCourses.allStatuses') || 'All Statuses'}</option>
-              <option value="PUBLISHED">{t('teacherCourses.published') || 'Published'}</option>
-              <option value="DRAFT">{t('teacherCourses.draft') || 'Draft / Unpublished'}</option>
-            </select>
-          </div>
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t('teacherCourses.createBtn') || 'New Course'}</span>
+          </button>
         </div>
 
         {/* Courses list */}

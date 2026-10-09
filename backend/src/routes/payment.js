@@ -2685,7 +2685,7 @@ export const buildBankTransferFxUnavailableResponse = () => ({
   status: 503,
 });
 
-const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId }) => {
+const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId, courseId }) => {
   const bankConfig = getBankTransferUsdConfig();
   if (!bankConfig.configured) {
     return { error: 'USD bank transfer is not currently configured', status: 503 };
@@ -2722,6 +2722,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
       hireId: null,
       workerId: null,
       offerId: null,
+      courseId: null,
       snapshot: {
         plan: selectedPlan.id,
         purchaserRole: resolved.role,
@@ -2729,6 +2730,66 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
         market: resolved.market,
         countryCode: resolved.countryCode,
         priceBookVersion: resolved.priceBookVersion,
+      },
+    };
+  }
+
+  if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+    const targetCourseId = courseId || req.body?.courseId || req.query?.courseId;
+    if (!targetCourseId) {
+      return { error: 'courseId is required for course purchases', status: 400 };
+    }
+
+    const course = await Course.findById(targetCourseId);
+    if (!course || !course.isPublished) {
+      return { error: 'Course not found or not published', status: 404 };
+    }
+
+    if (!course.isPaid || !course.price || course.price <= 0) {
+      return { error: 'Free courses do not require payment', status: 400 };
+    }
+
+    if (String(course.teacherId) === String(req.userId)) {
+      return { error: 'Teachers cannot purchase their own course', status: 403 };
+    }
+
+    const existingEnrollment = await CourseEnrollment.findOne({
+      courseId: course._id,
+      studentUserId: req.userId,
+      status: 'ACTIVE',
+    });
+    if (existingEnrollment) {
+      return { error: 'You are already actively enrolled in this course', status: 409 };
+    }
+
+    const canonicalCurrency = course.currency ? String(course.currency).trim().toUpperCase() : 'EGP';
+    let fxEvidence;
+    try {
+      fxEvidence = await resolveBankTransferUsdSettlement({
+        canonicalAmount: course.price,
+        canonicalCurrency,
+      });
+    } catch (error) {
+      console.warn('[BankTransferFX] course purchase settlement unavailable:', error?.code || 'UNKNOWN');
+      return buildBankTransferFxUnavailableResponse();
+    }
+
+    return {
+      bankConfig,
+      amount: Number(fxEvidence.settlementAmount),
+      transactionCurrency: BANK_TRANSFER_CURRENCY,
+      canonicalAmount: fxEvidence.canonicalAmount,
+      canonicalCurrency: fxEvidence.canonicalCurrency,
+      fxEvidence,
+      hireId: null,
+      workerId: null,
+      offerId: null,
+      courseId: String(course._id),
+      snapshot: {
+        courseId: String(course._id),
+        courseTitle: course.title,
+        teacherId: String(course.teacherId),
+        targetStudentUserId: String(req.userId),
       },
     };
   }
@@ -2763,6 +2824,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
     hireId: String(hire.id),
     workerId: hire.workerId,
     offerId: hire.offerId,
+    courseId: null,
     snapshot: null,
   };
 };
@@ -2773,7 +2835,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId 
 router.post('/bank-transfer/create', authenticate, async (req, res) => {
   try {
     const purpose = String(req.body.purpose || '').trim().toUpperCase();
-    if (![PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COMMISSION].includes(purpose)) {
+    if (![PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.COURSE_PURCHASE].includes(purpose)) {
       return res.status(400).json({ success: false, error: 'Unsupported payment purpose' });
     }
 
@@ -2782,6 +2844,7 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
       purpose,
       requestedPlan: req.body.plan,
       hireId: req.body.hireId,
+      courseId: req.body.courseId,
     });
     if (details.error) return res.status(details.status).json({ success: false, error: details.error });
 
@@ -2793,6 +2856,7 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
       purpose,
       planId,
       hireId: details.hireId || '',
+      courseId: details.courseId || '',
       attemptKey,
     });
 
@@ -2810,8 +2874,11 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
       },
     });
     const existing = existingMatches
-      .filter((candidate) => purpose !== PAYMENT_PURPOSES.SUBSCRIPTION
-        || candidate.metadata?.plan === details.snapshot?.plan)
+      .filter((candidate) => {
+        if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) return candidate.metadata?.plan === details.snapshot?.plan;
+        if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) return String(candidate.metadata?.courseId || '') === String(details.courseId || '');
+        return true;
+      })
       .sort((a, b) =>
         (MANUAL_REVIEW_STATE_PRIORITY[b.manualReviewState] || 0) -
         (MANUAL_REVIEW_STATE_PRIORITY[a.manualReviewState] || 0)
@@ -2830,37 +2897,37 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
       payment = await prisma.payment.create({
         data: {
           orderId: deterministicOrderId,
-        transactionId: generateId(),
-        amount: details.amount,
-        currency: BANK_TRANSFER_CURRENCY,
-        paymentMethod: BANK_TRANSFER_PROVIDER,
-        purpose,
-        status: 'pending',
-        fulfillmentStatus: 'pending',
-        manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER,
-        manualPaymentReference: reference,
-        userEmail: req.user?.email || null,
-        userId: String(req.userId),
-        workerId: details.workerId || null,
-        employerId: purpose === PAYMENT_PURPOSES.COMMISSION ? String(req.userId) : null,
-        hireId: details.hireId || null,
-        offerId: details.offerId || null,
-        metadata: {
-          createdFrom: 'bank-transfer',
-          source: 'backend',
-          originalAmount: details.canonicalAmount,
-          originalCurrency: details.canonicalCurrency,
-          canonicalAmount: details.canonicalAmount,
-          canonicalCurrency: details.canonicalCurrency,
-          exchangeRate: details.fxEvidence.exchangeRate,
-          exchangeRateSource: details.fxEvidence.exchangeRateSource,
-          exchangeRateVersion: details.fxEvidence.exchangeRateVersion,
-          exchangeRateTimestamp: details.fxEvidence.exchangeRateTimestamp,
-          exchangeRateFetchedAt: details.fxEvidence.exchangeRateFetchedAt,
-          exchangeRateProvider: details.fxEvidence.exchangeRateProvider,
-          rateDirection: details.fxEvidence.rateDirection,
-          ...details.snapshot,
-        },
+          transactionId: generateId(),
+          amount: details.amount,
+          currency: BANK_TRANSFER_CURRENCY,
+          paymentMethod: BANK_TRANSFER_PROVIDER,
+          purpose,
+          status: 'pending',
+          fulfillmentStatus: 'pending',
+          manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER,
+          manualPaymentReference: reference,
+          userEmail: req.user?.email || null,
+          userId: String(req.userId),
+          workerId: details.workerId || null,
+          employerId: purpose === PAYMENT_PURPOSES.COMMISSION ? String(req.userId) : null,
+          hireId: details.hireId || null,
+          offerId: details.offerId || null,
+          metadata: {
+            createdFrom: 'bank-transfer',
+            source: 'backend',
+            originalAmount: details.canonicalAmount,
+            originalCurrency: details.canonicalCurrency,
+            canonicalAmount: details.canonicalAmount,
+            canonicalCurrency: details.canonicalCurrency,
+            exchangeRate: details.fxEvidence.exchangeRate,
+            exchangeRateSource: details.fxEvidence.exchangeRateSource,
+            exchangeRateVersion: details.fxEvidence.exchangeRateVersion,
+            exchangeRateTimestamp: details.fxEvidence.exchangeRateTimestamp,
+            exchangeRateFetchedAt: details.fxEvidence.exchangeRateFetchedAt,
+            exchangeRateProvider: details.fxEvidence.exchangeRateProvider,
+            rateDirection: details.fxEvidence.rateDirection,
+            ...details.snapshot,
+          },
         },
       });
     } catch (error) {
@@ -2870,6 +2937,7 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
       if (!isActionableBankTransfer(concurrent)
         || concurrent.purpose !== purpose
         || (purpose === PAYMENT_PURPOSES.SUBSCRIPTION && concurrent.metadata?.plan !== details.snapshot?.plan)
+        || (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE && String(concurrent.metadata?.courseId || '') !== String(details.courseId || ''))
         || (purpose === PAYMENT_PURPOSES.COMMISSION && String(concurrent.hireId || '') !== String(details.hireId || ''))) {
         throw error;
       }

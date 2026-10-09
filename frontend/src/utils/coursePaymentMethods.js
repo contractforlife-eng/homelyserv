@@ -12,6 +12,7 @@
 export const getCoursePaymentMethods = ({
   currency = 'EGP',
   backendProviders = [],
+  bankTransfer = null,
 } = {}) => {
   const normCurrency = String(currency || '').trim().toUpperCase();
   const availableProviderIds = Array.isArray(backendProviders)
@@ -44,6 +45,18 @@ export const getCoursePaymentMethods = ({
       id: 'instapay',
       nameKey: 'studentCourses.instapayName',
       descKey: 'studentCourses.instapayDesc',
+      type: 'manual',
+    });
+  }
+
+  // Bank Transfer: available when advertised by the backend capability response
+  const bankTransferAvailable = bankTransfer?.available === true
+    || availableProviderIds.includes('bank_transfer');
+  if (bankTransferAvailable) {
+    methods.push({
+      id: 'bank_transfer',
+      nameKey: 'studentCourses.bankTransferName',
+      descKey: 'studentCourses.bankTransferDesc',
       type: 'manual',
     });
   }

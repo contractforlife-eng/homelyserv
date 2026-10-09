@@ -7,8 +7,8 @@ export const normalizeBankTransferAttemptKey = (value) => {
   return ATTEMPT_KEY_PATTERN.test(key) ? key : null;
 };
 
-export const buildBankTransferOrderId = ({ userId, purpose, planId = '', hireId = '', attemptKey }) => {
-  const scope = [String(userId), String(purpose), String(planId), String(hireId), String(attemptKey)].join('|');
+export const buildBankTransferOrderId = ({ userId, purpose, planId = '', hireId = '', courseId = '', attemptKey }) => {
+  const scope = [String(userId), String(purpose), String(planId), String(hireId), String(courseId), String(attemptKey)].join('|');
   return `BT-${crypto.createHash('sha256').update(scope).digest('hex').slice(0, 40)}`;
 };
 

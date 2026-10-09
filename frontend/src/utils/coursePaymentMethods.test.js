@@ -44,3 +44,30 @@ test('handles raw string array for backendProviders', () => {
   });
   assert.deepEqual(methods.map((m) => m.id), ['paypal']);
 });
+
+test('includes bank_transfer when bankTransfer.available is true', () => {
+  const methods = getCoursePaymentMethods({
+    currency: 'EGP',
+    backendProviders: [{ provider: 'paypal', mode: 'DIRECT', providerCurrency: 'USD' }],
+    bankTransfer: { available: true, settlementCurrency: 'USD' },
+  });
+  assert.deepEqual(methods.map((m) => m.id), ['paypal', 'vodafone_cash', 'instapay', 'bank_transfer']);
+});
+
+test('includes bank_transfer for USD when bankTransfer.available is true', () => {
+  const methods = getCoursePaymentMethods({
+    currency: 'USD',
+    backendProviders: ['paypal'],
+    bankTransfer: { available: true, settlementCurrency: 'USD' },
+  });
+  assert.deepEqual(methods.map((m) => m.id), ['paypal', 'bank_transfer']);
+});
+
+test('excludes bank_transfer when bankTransfer is missing or available is false', () => {
+  const methods = getCoursePaymentMethods({
+    currency: 'EGP',
+    backendProviders: ['paypal'],
+    bankTransfer: { available: false, code: 'UNAVAILABLE' },
+  });
+  assert.deepEqual(methods.map((m) => m.id), ['paypal', 'vodafone_cash', 'instapay']);
+});

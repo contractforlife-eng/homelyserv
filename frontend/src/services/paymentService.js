@@ -25,8 +25,8 @@ export const fetchCoursePaymentProviders = async (courseId) => {
   return response.data;
 };
 
-export const createBankTransferPayment = async ({ purpose, plan, hireId } = {}) => {
-  const scope = `${String(purpose || '').toUpperCase()}:${String(plan || '')}:${String(hireId || '')}`;
+export const createBankTransferPayment = async ({ purpose, plan, hireId, courseId } = {}) => {
+  const scope = `${String(purpose || '').toUpperCase()}:${String(plan || '')}:${String(hireId || '')}:${String(courseId || '')}`;
   const storageKey = `homelyserv.bank-transfer.attempt.${scope}`;
   let attemptKey = null;
   try {
@@ -39,7 +39,7 @@ export const createBankTransferPayment = async ({ purpose, plan, hireId } = {}) 
   } catch {
     attemptKey = `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
-  const response = await api.post('/api/payments/bank-transfer/create', { purpose, plan, hireId, attemptKey });
+  const response = await api.post('/api/payments/bank-transfer/create', { purpose, plan, hireId, courseId, attemptKey });
   return response.data;
 };
 
@@ -57,9 +57,9 @@ export const fetchCommissionProviders = async (hireId) => {
   return response.data;
 };
 
-export const fetchBankTransferCapability = async ({ purpose, plan, hireId } = {}) => {
+export const fetchBankTransferCapability = async ({ purpose, plan, hireId, courseId } = {}) => {
   const response = await api.get('/api/payments/providers', {
-    params: { purpose, plan, hireId },
+    params: { purpose, plan, hireId, courseId },
   });
   return response.data?.bankTransfer || null;
 };

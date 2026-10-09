@@ -11,6 +11,7 @@ test('same logical attempt produces the same deterministic order id', () => {
   assert.equal(buildBankTransferOrderId(input), buildBankTransferOrderId(input));
   assert.notEqual(buildBankTransferOrderId(input), buildBankTransferOrderId({ ...input, planId: 'yearly' }));
   assert.notEqual(buildBankTransferOrderId(input), buildBankTransferOrderId({ ...input, hireId: 'hire-1', purpose: 'COMMISSION', planId: '' }));
+  assert.notEqual(buildBankTransferOrderId(input), buildBankTransferOrderId({ ...input, courseId: 'course-1', purpose: 'COURSE_PURCHASE', planId: '' }));
 });
 
 test('attempt keys are narrowly validated and actionable states are reusable', () => {

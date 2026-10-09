@@ -11,6 +11,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
+import BankTransferFlow from '../components/Payment/BankTransferFlow';
 import { TEACHER_SUBJECTS, TEACHING_LEVELS } from '../constants/teacherTaxonomy';
 import api from '../utils/api';
 import {
@@ -38,6 +39,7 @@ import {
   CreditCard,
   Wallet,
   Smartphone,
+  Landmark,
   ArrowLeft,
   AlertCircle
 } from 'lucide-react';
@@ -69,6 +71,7 @@ const StudentCourses = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [providersLoading, setProvidersLoading] = useState(false);
   const [availableProviders, setAvailableProviders] = useState([]);
+  const [bankTransferCapability, setBankTransferCapability] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
@@ -87,7 +90,7 @@ const StudentCourses = () => {
   const fetchCatalog = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/courses');
+      const res = await api.get('/api/courses');
       if (res.data?.success) {
         setCatalogCourses(res.data.courses || []);
       }
@@ -100,7 +103,7 @@ const StudentCourses = () => {
 
   const fetchEnrolled = useCallback(async () => {
     try {
-      const res = await api.get('/students/courses/enrolled');
+      const res = await api.get('/api/students/courses/enrolled');
       if (res.data?.success) {
         setEnrolledCourses(res.data.courses || []);
       }
@@ -123,11 +126,12 @@ const StudentCourses = () => {
       setSelectedMethod(null);
       setCheckoutError('');
       setCheckoutStatus(null);
+      setBankTransferCapability(null);
       if (paypalPollingIntervalRef.current) {
         clearInterval(paypalPollingIntervalRef.current);
       }
 
-      const res = await api.get(`/courses/${courseId}`);
+      const res = await api.get(`/api/courses/${courseId}`);
       if (res.data?.success) {
         const details = res.data.course;
         setSelectedCourse({
@@ -163,12 +167,15 @@ const StudentCourses = () => {
       const data = await fetchCoursePaymentProviders(selectedCourse._id);
       if (data?.success) {
         setAvailableProviders(data.providers || []);
+        setBankTransferCapability(data.bankTransfer || null);
       } else {
         setAvailableProviders([]);
+        setBankTransferCapability(null);
       }
     } catch (err) {
       console.error('Error fetching payment providers for course:', err);
       setAvailableProviders([]);
+      setBankTransferCapability(null);
     } finally {
       setProvidersLoading(false);
     }
@@ -179,8 +186,9 @@ const StudentCourses = () => {
     return getCoursePaymentMethods({
       currency: selectedCourse.currency,
       backendProviders: availableProviders,
+      bankTransfer: bankTransferCapability,
     });
-  }, [selectedCourse, availableProviders]);
+  }, [selectedCourse, availableProviders, bankTransferCapability]);
 
   // Set default method when methods load
   useEffect(() => {
@@ -282,7 +290,7 @@ const StudentCourses = () => {
       setEnrollSuccessMessage('');
       setEnrollErrorMessage('');
 
-      const res = await api.post(`/students/courses/${courseId}/enroll`);
+      const res = await api.post(`/api/students/courses/${courseId}/enroll`);
       if (res.data?.success) {
         setEnrollSuccessMessage(
           t('studentCourses.enrolledSuccess') || 'Successfully enrolled in course!'
@@ -751,6 +759,8 @@ const StudentCourses = () => {
                                 ? Wallet
                                 : method.id === 'vodafone_cash'
                                 ? Smartphone
+                                : method.id === 'bank_transfer'
+                                ? Landmark
                                 : CreditCard;
 
                             return (
@@ -853,6 +863,17 @@ const StudentCourses = () => {
                             }}
                           />
                         </div>
+                      ) : selectedMethod === 'bank_transfer' ? (
+                        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                          <BankTransferFlow
+                            purpose="COURSE_PURCHASE"
+                            courseId={selectedCourse._id}
+                            capabilityAvailable={true}
+                            onCancel={() => {
+                              setSelectedMethod(null);
+                            }}
+                          />
+                        </div>
                       ) : null}
                     </div>
                   )}
@@ -870,6 +891,16 @@ const StudentCourses = () => {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
+                    </div>
+                  ) : (!selectedCourse.lessons || selectedCourse.lessons.length === 0) ? (
+                    <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-900 flex flex-col items-center justify-center text-white p-6 text-center">
+                      <Video className="w-14 h-14 text-amber-500 mb-3 opacity-60" />
+                      <h4 className="text-base font-semibold text-white mb-1">
+                        {t('studentCourses.noLessons') || 'No lessons available.'}
+                      </h4>
+                      <p className="text-xs text-gray-400 max-w-md">
+                        {t('teacherCourses.noLessonsYet') || 'No lessons added yet.'}
+                      </p>
                     </div>
                   ) : (
                     <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-900 flex flex-col items-center justify-center text-white p-6 text-center">
