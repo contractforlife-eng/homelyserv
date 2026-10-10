@@ -194,7 +194,12 @@ export const STUDENT_TRANSLATIONS = {
       profileCompletion: 'Profile Completion',
       profileCompleteBadge: 'Completed',
       profileIncompleteBadge: 'Needs Information',
-      noSubjects: 'No subjects listed yet.'
+      noSubjects: 'No subjects listed yet.',
+      studentAccountId: 'Student Account ID',
+      copyAccountId: 'Copy ID',
+      accountIdCopied: 'Copied to clipboard!',
+      copyAccountIdFailed: 'Failed to copy ID',
+      studentAccountIdHint: 'Share this ID or your email address with your parent or guardian to link accounts.'
     },
     studentTeachers: {
       headerTitle: 'My Teacher',
@@ -854,7 +859,12 @@ export const STUDENT_TRANSLATIONS = {
       profileCompletion: 'اكتمال الملف',
       profileCompleteBadge: 'مكتمل',
       profileIncompleteBadge: 'يحتاج بيانات',
-      noSubjects: 'لم تتم إضافة مواد بعد.'
+      noSubjects: 'لم تتم إضافة مواد بعد.',
+      studentAccountId: 'معرف حساب الطالب',
+      copyAccountId: 'نسخ المعرف',
+      accountIdCopied: 'تم نسخ المعرف بنجاح!',
+      copyAccountIdFailed: 'فشل نسخ المعرف',
+      studentAccountIdHint: 'شارك هذا المعرف أو بريدك الإلكتروني مع ولي أمرك لربط الحسابات.'
     },
     studentTeachers: {
       headerTitle: 'معلمي',
@@ -1514,7 +1524,12 @@ export const STUDENT_TRANSLATIONS = {
       profileCompletion: 'Complétude du profil',
       profileCompleteBadge: 'Complet',
       profileIncompleteBadge: 'Informations requises',
-      noSubjects: 'Aucune matière enregistrée pour le moment.'
+      noSubjects: 'Aucune matière enregistrée pour le moment.',
+      studentAccountId: 'Identifiant du compte élève',
+      copyAccountId: 'Copier l’ID',
+      accountIdCopied: 'Identifiant copié dans le presse-papiers !',
+      copyAccountIdFailed: 'Échec de la copie de l’identifiant',
+      studentAccountIdHint: 'Partagez cet identifiant ou votre adresse e-mail avec votre parent ou tuteur pour lier vos comptes.'
     },
     studentTeachers: {
       headerTitle: 'Mon enseignant',
@@ -2174,7 +2189,12 @@ export const STUDENT_TRANSLATIONS = {
       profileCompletion: 'Заполненность профиля',
       profileCompleteBadge: 'Заполнен',
       profileIncompleteBadge: 'Требуются данные',
-      noSubjects: 'Предметы пока не указаны.'
+      noSubjects: 'Предметы пока не указаны.',
+      studentAccountId: 'ID аккаунта ученика',
+      copyAccountId: 'Копировать ID',
+      accountIdCopied: 'ID скопирован в буфер обмена!',
+      copyAccountIdFailed: 'Не удалось скопировать ID',
+      studentAccountIdHint: 'Поделитесь этим ID или своим адресом электронной почты с родителем или опекуном для привязки аккаунтов.'
     },
     studentTeachers: {
       headerTitle: 'Мой преподаватель',
@@ -2834,7 +2854,12 @@ export const STUDENT_TRANSLATIONS = {
       profileCompletion: 'Profil Tamamlanma Durumu',
       profileCompleteBadge: 'Tamamlandı',
       profileIncompleteBadge: 'Bilgi Gerekli',
-      noSubjects: 'Henüz ders eklenmedi.'
+      noSubjects: 'Henüz ders eklenmedi.',
+      studentAccountId: 'Öğrenci Hesap Kimliği (ID)',
+      copyAccountId: 'Kimliği Kopyala',
+      accountIdCopied: 'Kimlik panoya kopyalandı!',
+      copyAccountIdFailed: 'Kimlik kopyalanamadı',
+      studentAccountIdHint: 'Hesapları bağlamak için bu kimliği veya e-posta adresinizi ebeveyniniz ya da vasinizle paylaşın.'
     },
     studentTeachers: {
       headerTitle: 'Öğretmenim',
@@ -3494,7 +3519,12 @@ export const STUDENT_TRANSLATIONS = {
       profileCompletion: 'Profilvollständigkeit',
       profileCompleteBadge: 'Vollständig',
       profileIncompleteBadge: 'Angaben erforderlich',
-      noSubjects: 'Noch keine Fächer eingetragen.'
+      noSubjects: 'Noch keine Fächer eingetragen.',
+      studentAccountId: 'Schüler-Konto-ID',
+      copyAccountId: 'ID kopieren',
+      accountIdCopied: 'ID in Zwischenablage kopiert!',
+      copyAccountIdFailed: 'Kopieren der ID fehlgeschlagen',
+      studentAccountIdHint: 'Geben Sie diese ID oder Ihre E-Mail-Adresse an Ihre Eltern oder Erziehungsberechtigten weiter, um Konten zu verknüpfen.'
     },
     studentTeachers: {
       headerTitle: 'Mein Lehrer',

@@ -24,7 +24,10 @@ import {
   Mail,
   Phone,
   Calendar,
-  FileText
+  FileText,
+  Copy,
+  Check,
+  Info
 } from 'lucide-react';
 
 const ViewField = ({ label, value, icon: Icon }) => (
@@ -53,6 +56,46 @@ const StudentProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [profileUser, setProfileUser] = useState(null);
+  const [copyFeedback, setCopyFeedback] = useState({ state: 'idle', message: '' });
+
+  const studentAccountId = profileUser?.id || authUser?.id || authUser?._id || '';
+
+  const handleCopyId = async () => {
+    if (!studentAccountId) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(studentAccountId);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = studentAccountId;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (!successful) throw new Error('execCommand failed');
+      }
+      setCopyFeedback({
+        state: 'copied',
+        message: t('studentProfile.accountIdCopied') || 'Copied to clipboard!'
+      });
+      window.setTimeout(() => {
+        setCopyFeedback({ state: 'idle', message: '' });
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to copy Student Account ID:', err);
+      setCopyFeedback({
+        state: 'error',
+        message: t('studentProfile.copyAccountIdFailed') || 'Failed to copy ID'
+      });
+      window.setTimeout(() => {
+        setCopyFeedback({ state: 'idle', message: '' });
+      }, 3000);
+    }
+  };
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -79,25 +122,30 @@ const StudentProfile = () => {
     setErrorMessage('');
     try {
       const res = await api.get('/api/students/profile');
-      if (res.data?.success && res.data?.profile) {
-        const p = res.data.profile;
-        const initial = {
-          firstName: p.firstName || '',
-          lastName: p.lastName || '',
-          gender: p.gender || '',
-          dateOfBirth: p.dateOfBirth ? p.dateOfBirth.slice(0, 10) : '',
-          school: p.school || '',
-          gradeLevel: p.gradeLevel || '',
-          educationLevel: p.educationLevel || '',
-          subjects: Array.isArray(p.subjects) ? p.subjects : [],
-          country: p.country || '',
-          city: p.city || '',
-          address: p.address || '',
-          notes: p.notes || '',
-          isProfileComplete: p.isProfileComplete || false
-        };
-        setFormData(initial);
-        setSnapshot(initial);
+      if (res.data?.success) {
+        if (res.data.user) {
+          setProfileUser(res.data.user);
+        }
+        if (res.data.profile) {
+          const p = res.data.profile;
+          const initial = {
+            firstName: p.firstName || '',
+            lastName: p.lastName || '',
+            gender: p.gender || '',
+            dateOfBirth: p.dateOfBirth ? p.dateOfBirth.slice(0, 10) : '',
+            school: p.school || '',
+            gradeLevel: p.gradeLevel || '',
+            educationLevel: p.educationLevel || '',
+            subjects: Array.isArray(p.subjects) ? p.subjects : [],
+            country: p.country || '',
+            city: p.city || '',
+            address: p.address || '',
+            notes: p.notes || '',
+            isProfileComplete: p.isProfileComplete || false
+          };
+          setFormData(initial);
+          setSnapshot(initial);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch student profile:', err);
@@ -284,6 +332,53 @@ const StudentProfile = () => {
                       : t('studentProfile.profileIncompleteBadge') || 'Needs Information'}
                   </span>
                 </div>
+
+                {studentAccountId && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {t('studentProfile.studentAccountId') || 'Student Account ID'}:
+                      </span>
+                      <code className="text-xs font-mono font-medium px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 select-all">
+                        {studentAccountId}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={handleCopyId}
+                        title={t('studentProfile.copyAccountId') || 'Copy ID'}
+                        aria-label={t('studentProfile.copyAccountId') || 'Copy ID'}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                          copyFeedback.state === 'copied'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                            : copyFeedback.state === 'error'
+                            ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                            : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border border-transparent'
+                        }`}
+                      >
+                        {copyFeedback.state === 'copied' ? (
+                          <>
+                            <Check size={12} className="text-emerald-600 dark:text-emerald-400" />
+                            <span>{copyFeedback.message}</span>
+                          </>
+                        ) : copyFeedback.state === 'error' ? (
+                          <>
+                            <AlertCircle size={12} className="text-red-600 dark:text-red-400" />
+                            <span>{copyFeedback.message}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={12} />
+                            <span>{t('studentProfile.copyAccountId') || 'Copy ID'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1">
+                      <Info size={12} className="text-blue-500 shrink-0" />
+                      <span>{t('studentProfile.studentAccountIdHint') || 'Share this ID or your email address with your parent or guardian to link accounts.'}</span>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
