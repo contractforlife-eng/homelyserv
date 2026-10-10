@@ -213,8 +213,8 @@ const StudentDashboardContent = () => {
       description: t('studentDashboard.moduleMessagesDesc') || 'Communicate directly with your teachers and platform support.',
       icon: MessageCircle,
       path: '/student-messages',
-      active: false,
-      badge: t('studentDashboard.comingSoonBadge') || 'Coming Soon'
+      active: true,
+      badge: t('studentDashboard.moduleActive') || 'Active'
     },
     {
       id: 'medical',

@@ -41,8 +41,11 @@ import {
   Smartphone,
   Landmark,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Download
 } from 'lucide-react';
+import { triggerFileDownload, formatFileSize } from '../utils/fileDownload';
 
 const StudentCourses = () => {
   const { t, i18n } = useTranslation();
@@ -70,6 +73,30 @@ const StudentCourses = () => {
   // Course Checkout State
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [providersLoading, setProvidersLoading] = useState(false);
+
+  // Course Materials Download State
+  const [downloadingMaterialId, setDownloadingMaterialId] = useState(null);
+  const [materialDownloadError, setMaterialDownloadError] = useState('');
+
+  const handleDownloadCourseMaterial = async (materialId, originalFilename) => {
+    if (!selectedCourse) return;
+    setMaterialDownloadError('');
+    try {
+      setDownloadingMaterialId(materialId);
+      const res = await api.get(`/api/students/courses/${selectedCourse._id}/materials/${materialId}/download`);
+      if (res?.data?.downloadUrl) {
+        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf');
+      } else {
+        setMaterialDownloadError(t('studentCourses.downloadError') || 'Failed to generate download link.');
+      }
+    } catch (err) {
+      console.error('Error downloading course material:', err);
+      const msg = err.response?.data?.message || t('studentCourses.downloadError') || 'Failed to generate download link.';
+      setMaterialDownloadError(msg);
+    } finally {
+      setDownloadingMaterialId(null);
+    }
+  };
   const [availableProviders, setAvailableProviders] = useState([]);
   const [bankTransferCapability, setBankTransferCapability] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -122,6 +149,7 @@ const StudentCourses = () => {
       setCourseDetailsLoading(true);
       setEnrollSuccessMessage('');
       setEnrollErrorMessage('');
+      setMaterialDownloadError('');
       setIsCheckingOut(false);
       setSelectedMethod(null);
       setCheckoutError('');
@@ -534,6 +562,12 @@ const StudentCourses = () => {
                             <span>
                               {course.totalDurationMinutes} {t('studentCourses.mins') || 'mins'}
                             </span>
+                            {course.materials && course.materials.length > 0 && (
+                              <span className="flex items-center gap-1 text-amber-700">
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>{course.materials.length} {t('studentCourses.materialsCount') || 'materials'}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -617,9 +651,17 @@ const StudentCourses = () => {
                             {t('studentCourses.byTeacher') || 'By'}: {course.teacherId.fullName}
                           </p>
                         )}
-                        <p className="text-xs text-gray-500">
-                          {course.totalLessons} {t('studentCourses.lessons') || 'lessons'}
-                        </p>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span>
+                            {course.totalLessons} {t('studentCourses.lessons') || 'lessons'}
+                          </span>
+                          {course.materials && course.materials.length > 0 && (
+                            <span className="flex items-center gap-1 text-amber-700">
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>{course.materials.length} {t('studentCourses.materialsCount') || 'materials'}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -1043,6 +1085,94 @@ const StudentCourses = () => {
                     })
                   )}
                 </div>
+              </div>
+
+              {/* Course PDF Materials Section */}
+              <div className="space-y-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-amber-600" />
+                    <h4 className="font-semibold text-gray-900 text-sm">
+                      {t('studentCourses.materialsTitle') || 'Course PDF Materials'}
+                    </h4>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    ({selectedCourse.materials?.length || 0} {t('studentCourses.materialsCount') || 'materials'})
+                  </span>
+                </div>
+
+                {materialDownloadError && (
+                  <div className="p-2.5 rounded-lg bg-red-50 text-red-600 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{materialDownloadError}</span>
+                  </div>
+                )}
+
+                {(!selectedCourse.materials || selectedCourse.materials.length === 0) ? (
+                  <p className="text-xs text-gray-400 italic py-2">
+                    {t('studentCourses.materialsEmpty') || 'No PDF study materials attached to this course.'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedCourse.materials.map((mat) => {
+                      const matId = mat._id || mat.id;
+                      const isDownloading = downloadingMaterialId === matId;
+                      const isAuthorized = selectedCourse.isAuthorized;
+
+                      return (
+                        <div
+                          key={matId}
+                          className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 truncate">
+                                {mat.title}
+                              </p>
+                              <p className="text-[10px] text-gray-500 truncate">
+                                {mat.originalFilename || 'document.pdf'} {mat.fileSize ? `• ${formatFileSize(mat.fileSize)}` : ''}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0">
+                            {isAuthorized ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadCourseMaterial(matId, mat.originalFilename)}
+                                disabled={isDownloading}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 transition-colors"
+                              >
+                                {isDownloading ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>{t('studentCourses.downloadingMaterial') || 'Preparing download...'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>{t('studentCourses.downloadMaterialBtn') || 'Download PDF'}</span>
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <div
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-[11px] font-medium"
+                                title={t('studentCourses.enrollToDownload') || 'Enroll in course to unlock and download study materials'}
+                              >
+                                <Lock className="w-3.5 h-3.5 text-gray-500" />
+                                <span>{t('studentCourses.paidContentLocked') || 'Locked'}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </>
           )}

@@ -23,7 +23,8 @@ import {
 import {
   getStudentLessons,
   getStudentLessonById,
-  submitStudentHomework
+  submitStudentHomework,
+  getLessonMaterialDownloadUrl
 } from '../controllers/studentLessonController.js';
 import {
   getStudentProgressOverview,
@@ -51,7 +52,8 @@ import {
 } from '../controllers/studentFriendshipController.js';
 import {
   enrollInFreeCourse,
-  getMyEnrolledCourses
+  getMyEnrolledCourses,
+  getCourseMaterialDownloadUrl
 } from '../controllers/studentCourseController.js';
 
 const router = express.Router();
@@ -82,6 +84,7 @@ router.post('/bookings/:id/cancel', requireStudent, cancelStudentBooking);
 router.get('/lessons', requireStudent, getStudentLessons);
 router.get('/lessons/:id', requireStudent, getStudentLessonById);
 router.put('/lessons/:id/homework', requireStudent, submitStudentHomework);
+router.get('/lessons/:id/materials/:materialId/download', requireStudent, getLessonMaterialDownloadUrl);
 
 // Student Progress endpoints (READ-ONLY)
 router.get('/progress/overview', requireStudent, getStudentProgressOverview);
@@ -98,5 +101,6 @@ router.post('/friends/:id/reject', requireStudent, rejectFriendRequest);
 // Student Recorded Courses endpoints (Phase 1 LMS)
 router.get('/courses/enrolled', requireStudent, getMyEnrolledCourses);
 router.post('/courses/:id/enroll', requireStudent, enrollInFreeCourse);
+router.get('/courses/:id/materials/:materialId/download', requireStudent, getCourseMaterialDownloadUrl);
 
 export default router;

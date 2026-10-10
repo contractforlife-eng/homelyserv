@@ -52,6 +52,7 @@ import teacherProgressRoutes from './teacherProgressRoutes.js';
 import { getTeacherPromotionHistory } from '../controllers/teacherPromotionController.js';
 import { isUserPremium } from '../services/premiumService.js';
 import { upload } from '../utils/cloudinary.js';
+import { materialUpload, validatePdfSignature } from '../utils/courseMaterialUpload.js';
 import {
   getTeacherCourses,
   getTeacherCourseById,
@@ -59,8 +60,16 @@ import {
   updateTeacherCourse,
   toggleCoursePublish,
   deleteTeacherCourse,
-  uploadCourseThumbnail
+  uploadCourseThumbnail,
+  uploadCourseMaterial,
+  deleteCourseMaterial,
+  getTeacherCourseMaterialDownloadUrl
 } from '../controllers/teacherCourseController.js';
+import {
+  uploadLessonMaterial,
+  deleteLessonMaterial,
+  getTeacherLessonMaterialDownloadUrl
+} from '../controllers/teacherLessonController.js';
 
 const router = express.Router();
 
@@ -114,6 +123,9 @@ router.put('/lessons/:id', requireTeacher, updateTeacherLesson);
 router.put('/lessons/:id/attendance', requireTeacher, updateLessonAttendance);
 router.delete('/lessons/:id', requireTeacher, deleteTeacherLesson);
 router.post('/lessons/:id/fee', requireTeacher, requirePremiumTeacher, recordLessonFee);
+router.post('/lessons/:id/materials', requireTeacher, materialUpload.single('file'), validatePdfSignature, uploadLessonMaterial);
+router.get('/lessons/:id/materials/:materialId/download', requireTeacher, getTeacherLessonMaterialDownloadUrl);
+router.delete('/lessons/:id/materials/:materialId', requireTeacher, deleteLessonMaterial);
 
 // Teacher lesson booking routes (Phase 6A, all scoped by requireTeacher and req.userId)
 router.get('/bookings', requireTeacher, getTeacherBookings);
@@ -157,6 +169,9 @@ router.get('/courses/:id', requireTeacher, getTeacherCourseById);
 router.put('/courses/:id', requireTeacher, updateTeacherCourse);
 router.patch('/courses/:id/publish', requireTeacher, toggleCoursePublish);
 router.delete('/courses/:id', requireTeacher, deleteTeacherCourse);
+router.post('/courses/:id/materials', requireTeacher, materialUpload.single('file'), validatePdfSignature, uploadCourseMaterial);
+router.get('/courses/:id/materials/:materialId/download', requireTeacher, getTeacherCourseMaterialDownloadUrl);
+router.delete('/courses/:id/materials/:materialId', requireTeacher, deleteCourseMaterial);
 
 export default router;
 

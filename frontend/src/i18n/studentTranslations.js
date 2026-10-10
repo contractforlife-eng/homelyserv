@@ -86,7 +86,14 @@ export const STUDENT_TRANSLATIONS = {
       noProvidersAvailable: 'No payment methods are currently available for this course. Please contact support.',
       closeCheckout: 'Close Checkout',
       backToCourse: 'Back to Course',
-      verifyingPayment: 'Verifying payment status...'
+      verifyingPayment: 'Verifying payment status...',
+      materialsTitle: 'Course PDF Materials',
+      materialsEmpty: 'No PDF study materials attached to this course.',
+      downloadMaterialBtn: 'Download PDF',
+      downloadingMaterial: 'Preparing download...',
+      downloadError: 'Failed to generate download link.',
+      enrollToDownload: 'Enroll in course to unlock and download study materials',
+      materialsCount: 'materials'
     },
     studentDashboard: {
       headerTitle: 'Student Dashboard',
@@ -287,7 +294,13 @@ export const STUDENT_TRANSLATIONS = {
       attendanceNoteLabel: 'Attendance Note',
       noAttendance: 'Attendance has not been recorded yet.',
       closeBtn: 'Close',
-      readOnlyNotice: 'This is a read-only view. Lesson details and attendance are managed by your teacher.'
+      readOnlyNotice: 'This is a read-only view. Lesson details and attendance are managed by your teacher.',
+      materialsTitle: 'Lesson PDF Materials',
+      materialsSubtitle: 'Worksheets, handouts, and study documents for this lesson',
+      materialsEmpty: 'No PDF materials attached to this lesson.',
+      downloadMaterialBtn: 'Download PDF',
+      downloadingMaterial: 'Preparing download...',
+      downloadError: 'Failed to generate download link.'
     },
     studentSchedule: {
       headerTitle: 'Schedule',
@@ -733,7 +746,14 @@ export const STUDENT_TRANSLATIONS = {
       noProvidersAvailable: 'لا توجد وسائل دفع متاحة حالياً لهذه الدورة. يرجى التواصل مع الدعم.',
       closeCheckout: 'إغلاق نافذة الدفع',
       backToCourse: 'العودة للدورة',
-      verifyingPayment: 'جاري التحقق من حالة الدفع...'
+      verifyingPayment: 'جاري التحقق من حالة الدفع...',
+      materialsTitle: 'المواد التعليمية بصيغة PDF',
+      materialsEmpty: 'لا توجد مستندات دراسية مرفقة بهذه الدورة.',
+      downloadMaterialBtn: 'تحميل ملف PDF',
+      downloadingMaterial: 'جاري تجهيز التحميل...',
+      downloadError: 'فشل إنشاء رابط التحميل.',
+      enrollToDownload: 'انضم للدورة لفتح وتحميل المواد والمستندات الدراسية',
+      materialsCount: 'ملفات تعليمية'
     },
     studentDashboard: {
       headerTitle: 'لوحة تحكم الطالب',
@@ -934,7 +954,13 @@ export const STUDENT_TRANSLATIONS = {
       attendanceNoteLabel: 'ملاحظة الحضور',
       noAttendance: 'لم يتم تسجيل الحضور بعد.',
       closeBtn: 'إغلاق',
-      readOnlyNotice: 'هذه شاشة للقراءة فقط. تفاصيل الدروس وتسجيل الحضور تتم إدارتها بواسطة معلمك.'
+      readOnlyNotice: 'هذه شاشة للقراءة فقط. تفاصيل الدروس وتسجيل الحضور تتم إدارتها بواسطة معلمك.',
+      materialsTitle: 'المواد التعليمية للدرس (PDF)',
+      materialsSubtitle: 'أوراق العمل والمذكرات والمستندات الدراسية المرفقة بهذا الدرس',
+      materialsEmpty: 'لا توجد مستندات تعليمية مرفقة بهذا الدرس.',
+      downloadMaterialBtn: 'تحميل ملف PDF',
+      downloadingMaterial: 'جاري تجهيز التحميل...',
+      downloadError: 'فشل إنشاء رابط التحميل.'
     },
     studentSchedule: {
       headerTitle: 'الجدول الدراسي',
@@ -1380,7 +1406,14 @@ export const STUDENT_TRANSLATIONS = {
       noProvidersAvailable: 'Aucun moyen de paiement n’est actuellement disponible pour ce cours. Veuillez contacter l’assistance.',
       closeCheckout: 'Fermer le paiement',
       backToCourse: 'Retour au cours',
-      verifyingPayment: 'Vérification du statut du paiement...'
+      verifyingPayment: 'Vérification du statut du paiement...',
+      materialsTitle: 'Supports de cours PDF',
+      materialsEmpty: 'Aucun document PDF associé à ce cours.',
+      downloadMaterialBtn: 'Télécharger le PDF',
+      downloadingMaterial: 'Préparation du téléchargement...',
+      downloadError: 'Échec de la génération du lien de téléchargement.',
+      enrollToDownload: 'Inscrivez-vous au cours pour débloquer et télécharger les supports',
+      materialsCount: 'documents'
     },
     studentDashboard: {
       headerTitle: 'Tableau de bord élève',
@@ -1581,7 +1614,13 @@ export const STUDENT_TRANSLATIONS = {
       attendanceNoteLabel: 'Remarque d’assiduité',
       noAttendance: 'L’assiduité n’a pas encore été enregistrée.',
       closeBtn: 'Fermer',
-      readOnlyNotice: 'Cet écran est en lecture seule. Les détails des cours et l’assiduité sont gérés par votre enseignant.'
+      readOnlyNotice: 'Cet écran est en lecture seule. Les détails des cours et l’assiduité sont gérés par votre enseignant.',
+      materialsTitle: 'Documents de la leçon (PDF)',
+      materialsSubtitle: 'Fiches, exercices et documents d’étude pour cette leçon',
+      materialsEmpty: 'Aucun document PDF associé à cette leçon.',
+      downloadMaterialBtn: 'Télécharger le PDF',
+      downloadingMaterial: 'Préparation du téléchargement...',
+      downloadError: 'Échec de la génération du lien de téléchargement.'
     },
     studentSchedule: {
       headerTitle: 'Emploi du temps',
@@ -2027,7 +2066,14 @@ export const STUDENT_TRANSLATIONS = {
       noProvidersAvailable: 'В данный момент для этого курса нет доступных способов оплаты. Обратитесь в поддержку.',
       closeCheckout: 'Закрыть окно оплаты',
       backToCourse: 'Вернуться к курсу',
-      verifyingPayment: 'Проверка статуса платежа...'
+      verifyingPayment: 'Проверка статуса платежа...',
+      materialsTitle: 'Учебные материалы курса (PDF)',
+      materialsEmpty: 'К этому курсу не прикреплено учебных PDF материалов.',
+      downloadMaterialBtn: 'Скачать PDF',
+      downloadingMaterial: 'Подготовка ссылки...',
+      downloadError: 'Не удалось сформировать ссылку для скачивания.',
+      enrollToDownload: 'Запишитесь на курс, чтобы открыть и скачать материалы',
+      materialsCount: 'материалов'
     },
     studentDashboard: {
       headerTitle: 'Панель управления ученика',
@@ -2228,7 +2274,13 @@ export const STUDENT_TRANSLATIONS = {
       attendanceNoteLabel: 'Примечание к посещаемости',
       noAttendance: 'Посещаемость еще не отмечена.',
       closeBtn: 'Закрыть',
-      readOnlyNotice: 'Это режим только для чтения. Уроки и посещаемость контролируются вашим преподавателем.'
+      readOnlyNotice: 'Это режим только для чтения. Уроки и посещаемость контролируются вашим преподавателем.',
+      materialsTitle: 'Материалы урока (PDF)',
+      materialsSubtitle: 'Методички, рабочие листы и материалы к этому занятию',
+      materialsEmpty: 'К этому уроку не прикреплено PDF материалов.',
+      downloadMaterialBtn: 'Скачать PDF',
+      downloadingMaterial: 'Подготовка ссылки...',
+      downloadError: 'Не удалось сформировать ссылку для скачивания.'
     },
     studentSchedule: {
       headerTitle: 'Расписание',
@@ -2674,7 +2726,14 @@ export const STUDENT_TRANSLATIONS = {
       noProvidersAvailable: 'Bu kurs için şu anda geçerli bir ödeme yöntemi bulunmamaktadır. Lütfen destekle iletişime geçin.',
       closeCheckout: 'Ödeme Penceresini Kapat',
       backToCourse: 'Kursa Geri Dön',
-      verifyingPayment: 'Ödeme durumu doğrulanıyor...'
+      verifyingPayment: 'Ödeme durumu doğrulanıyor...',
+      materialsTitle: 'Kurs PDF Materyalleri',
+      materialsEmpty: 'Bu kursta ekli PDF materyali bulunmamaktadır.',
+      downloadMaterialBtn: 'PDF İndir',
+      downloadingMaterial: 'İndirme hazırlanıyor...',
+      downloadError: 'İndirme bağlantısı oluşturulamadı.',
+      enrollToDownload: 'Çalışma materyallerini indirmek için kursa kaydolun',
+      materialsCount: 'materyal'
     },
     studentDashboard: {
       headerTitle: 'Öğrenci Kontrol Paneli',
@@ -2875,7 +2934,13 @@ export const STUDENT_TRANSLATIONS = {
       attendanceNoteLabel: 'Devam Notu',
       noAttendance: 'Devam durumu henüz işlenmedi.',
       closeBtn: 'Kapat',
-      readOnlyNotice: 'Bu salt okunur bir görünümdür. Ders detayları ve devam durumu öğretmeniniz tarafından yönetilir.'
+      readOnlyNotice: 'Bu salt okunur bir görünümdür. Ders detayları ve devam durumu öğretmeniniz tarafından yönetilir.',
+      materialsTitle: 'Ders Materyalleri (PDF)',
+      materialsSubtitle: 'Bu ders için çalışma kağıtları, özetler ve kaynaklar',
+      materialsEmpty: 'Bu derse eklenmiş bir PDF materyali bulunmuyor.',
+      downloadMaterialBtn: 'PDF İndir',
+      downloadingMaterial: 'İndirme hazırlanıyor...',
+      downloadError: 'İndirme bağlantısı oluşturulamadı.'
     },
     studentSchedule: {
       headerTitle: 'Ders Programı',
@@ -3321,7 +3386,14 @@ export const STUDENT_TRANSLATIONS = {
       noProvidersAvailable: 'Für diesen Kurs sind derzeit keine Zahlungsmethoden verfügbar. Bitte kontaktieren Sie den Support.',
       closeCheckout: 'Zahlungsfenster schließen',
       backToCourse: 'Zurück zum Kurs',
-      verifyingPayment: 'Zahlungsstatus wird überprüft...'
+      verifyingPayment: 'Zahlungsstatus wird überprüft...',
+      materialsTitle: 'Kursunterlagen (PDF)',
+      materialsEmpty: 'Diesem Kurs sind keine PDF-Lernunterlagen beigefügt.',
+      downloadMaterialBtn: 'PDF herunterladen',
+      downloadingMaterial: 'Download wird vorbereitet...',
+      downloadError: 'Download-Link konnte nicht erstellt werden.',
+      enrollToDownload: 'Schreiben Sie sich ein, um Lernunterlagen freizuschalten und herunterzuladen',
+      materialsCount: 'Unterlagen'
     },
     studentDashboard: {
       headerTitle: 'Schüler-Dashboard',
@@ -3522,7 +3594,13 @@ export const STUDENT_TRANSLATIONS = {
       attendanceNoteLabel: 'Anwesenheitsnotiz',
       noAttendance: 'Die Anwesenheit wurde noch nicht erfasst.',
       closeBtn: 'Schließen',
-      readOnlyNotice: 'Dies ist eine schreibgeschützte Ansicht. Unterrichtsdetails und Anwesenheit werden von Ihrer Lehrkraft verwaltet.'
+      readOnlyNotice: 'Dies ist eine schreibgeschützte Ansicht. Unterrichtsdetails und Anwesenheit werden von Ihrer Lehrkraft verwaltet.',
+      materialsTitle: 'Unterrichtsunterlagen (PDF)',
+      materialsSubtitle: 'Arbeitsblätter, Handouts und Lernunterlagen für diese Stunde',
+      materialsEmpty: 'Dieser Stunde sind keine PDF-Unterlagen beigefügt.',
+      downloadMaterialBtn: 'PDF herunterladen',
+      downloadingMaterial: 'Download wird vorbereitet...',
+      downloadError: 'Download-Link konnte nicht erstellt werden.'
     },
     studentSchedule: {
       headerTitle: 'Stundenplan',

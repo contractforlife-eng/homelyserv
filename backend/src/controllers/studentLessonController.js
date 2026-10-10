@@ -108,7 +108,16 @@ export const toStudentLessonDto = (lessonDoc, myStudentIdSet, teacherUserMap = n
     },
     group: groupInfo,
     homework,
-    attendance: studentAttendance
+    attendance: studentAttendance,
+    materials: Array.isArray(d.materials)
+      ? d.materials.map((m) => ({
+          id: String(m._id),
+          title: m.title || 'Lesson Material',
+          fileSize: m.fileSize || 0,
+          originalFilename: m.originalFilename || '',
+          createdAt: m.createdAt
+        }))
+      : []
   };
 };
 
@@ -481,9 +490,84 @@ export const submitStudentHomework = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/students/lessons/:id/materials/:materialId/download
+ * Generates an authorized signed download link for an eligible student.
+ */
+export const getLessonMaterialDownloadUrl = async (req, res) => {
+  try {
+    const studentUserId = req.userId;
+    const { id, materialId } = req.params;
+
+    if (!isValidObjectId(String(id || '')) || !isValidObjectId(String(materialId || ''))) {
+      return res.status(404).json({ success: false, message: 'Lesson material not found' });
+    }
+
+    const { myStudentIds, myGroupIds } = await getStudentAuthorizedScope(studentUserId);
+    if (myStudentIds.length === 0) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    const orConditions = [];
+    if (myStudentIds.length > 0) {
+      orConditions.push({ lessonType: 'ONE_ON_ONE', studentId: { $in: myStudentIds } });
+    }
+    if (myGroupIds.length > 0) {
+      orConditions.push({ lessonType: 'GROUP', groupId: { $in: myGroupIds } });
+    }
+
+    if (orConditions.length === 0) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    // Require active lesson and valid scheduled/completed status
+    const lesson = await TeacherLesson.findOne({
+      _id: id,
+      isActive: true,
+      lessonStatus: { $in: ['SCHEDULED', 'COMPLETED'] },
+      $or: orConditions
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'Lesson not found or unavailable' });
+    }
+
+    const material = (lesson.materials || []).find((m) => String(m._id) === String(materialId));
+    if (!material) {
+      return res.status(404).json({ success: false, message: 'Lesson material not found' });
+    }
+
+    const { generateSignedMaterialUrl } = await import('../utils/courseMaterialUpload.js');
+    const downloadUrl = generateSignedMaterialUrl(material.publicId, 3600);
+
+    if (!downloadUrl) {
+      return res.status(500).json({ success: false, message: 'Failed to generate download link' });
+    }
+
+    return res.json({
+      success: true,
+      downloadUrl,
+      material: {
+        id: String(material._id),
+        title: material.title,
+        originalFilename: material.originalFilename,
+        fileSize: material.fileSize
+      }
+    });
+  } catch (error) {
+    console.error('Error generating lesson material download URL:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate download URL',
+      error: error.message
+    });
+  }
+};
+
 export default {
   getStudentLessons,
   getStudentLessonById,
   submitStudentHomework,
+  getLessonMaterialDownloadUrl,
   toStudentLessonDto
 };

@@ -38,6 +38,27 @@ const formatLessonsForConsumer = (lessons, isAuthorized) => {
 };
 
 /**
+ * Helper to format materials for consumer.
+ * If authorized, expose title, originalFilename, fileSize, createdAt, _id.
+ * Never expose raw publicId.
+ * If unauthorized on paid course, strip details or return empty list.
+ */
+const formatMaterialsForConsumer = (materials, isAuthorized) => {
+  if (!Array.isArray(materials)) return [];
+  return materials.map((m) => {
+    const plain = m.toObject ? m.toObject() : { ...m };
+    return {
+      _id: String(plain._id),
+      title: plain.title || 'Course Material',
+      fileSize: plain.fileSize || 0,
+      originalFilename: plain.originalFilename || '',
+      createdAt: plain.createdAt,
+      isLocked: !isAuthorized
+    };
+  });
+};
+
+/**
  * GET /api/courses
  * Discover published recorded courses (open to authenticated students & public).
  * Query params: subject, gradeLevel, search, isPaid.
@@ -159,12 +180,14 @@ export const getCourseDetails = async (req, res) => {
 
     const doc = course.toObject ? course.toObject() : { ...course };
     const safeLessons = formatLessonsForConsumer(doc.lessons || [], isAuthorized);
+    const safeMaterials = formatMaterialsForConsumer(doc.materials || [], isAuthorized);
 
     return res.json({
       success: true,
       course: {
         ...doc,
-        lessons: safeLessons
+        lessons: safeLessons,
+        materials: safeMaterials
       },
       isEnrolled,
       isAuthorized,
@@ -303,6 +326,76 @@ export const getMyEnrolledCourses = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch enrolled courses',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * GET /api/students/courses/:id/materials/:materialId/download
+ * Generates an authorized, time-limited signed download URL for an enrolled student.
+ * Or for the teacher author if calling.
+ */
+export const getCourseMaterialDownloadUrl = async (req, res) => {
+  try {
+    const studentUserId = req.userId;
+    const { id, materialId } = req.params;
+
+    const course = await Course.findById(id);
+    if (!course || !course.isPublished) {
+      return res.status(404).json({ success: false, message: 'Course not found or not published' });
+    }
+
+    const material = course.materials?.find((m) => String(m._id) === String(materialId));
+    if (!material) {
+      return res.status(404).json({ success: false, message: 'Material not found' });
+    }
+
+    const isAuthor = String(course.teacherId) === String(studentUserId);
+    let isEnrolled = false;
+
+    if (!isAuthor) {
+      const enrollment = await CourseEnrollment.findOne({
+        courseId: id,
+        studentUserId,
+        status: 'ACTIVE'
+      });
+      if (enrollment) {
+        isEnrolled = true;
+      }
+    }
+
+    if (!isAuthor && !isEnrolled) {
+      return res.status(403).json({
+        success: false,
+        message: course.isPaid
+          ? 'Enrollment or payment required to download course materials'
+          : 'Enrollment required to download course materials'
+      });
+    }
+
+    const { generateSignedMaterialUrl } = await import('../utils/courseMaterialUpload.js');
+    const downloadUrl = generateSignedMaterialUrl(material.publicId, 3600); // 1 hour TTL
+
+    if (!downloadUrl) {
+      return res.status(500).json({ success: false, message: 'Failed to generate download link' });
+    }
+
+    return res.json({
+      success: true,
+      downloadUrl,
+      material: {
+        id: String(material._id),
+        title: material.title,
+        originalFilename: material.originalFilename,
+        fileSize: material.fileSize
+      }
+    });
+  } catch (error) {
+    console.error('Error generating course material download URL:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate download URL',
       error: error.message
     });
   }

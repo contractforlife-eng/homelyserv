@@ -30,8 +30,10 @@ import {
   Sparkles,
   Send,
   Check,
-  Edit3
+  Edit3,
+  Download
 } from 'lucide-react';
+import { triggerFileDownload, formatFileSize } from '../utils/fileDownload';
 
 const StudentLessons = () => {
   const { t } = useTranslation();
@@ -54,8 +56,34 @@ const StudentLessons = () => {
   const [hwError, setHwError] = useState('');
   const [hwSuccess, setHwSuccess] = useState('');
 
+  // Lesson Materials Download State
+  const [downloadingMaterialId, setDownloadingMaterialId] = useState(null);
+  const [materialDownloadError, setMaterialDownloadError] = useState('');
+
+  const handleDownloadLessonMaterial = async (materialId, originalFilename) => {
+    if (!selectedLesson) return;
+    setMaterialDownloadError('');
+    try {
+      setDownloadingMaterialId(materialId);
+      const lessonId = selectedLesson.id || selectedLesson._id;
+      const res = await api.get(`/api/students/lessons/${lessonId}/materials/${materialId}/download`);
+      if (res?.data?.downloadUrl) {
+        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf');
+      } else {
+        setMaterialDownloadError(t('studentLessons.downloadError') || 'Failed to generate download link.');
+      }
+    } catch (err) {
+      console.error('Error downloading lesson material:', err);
+      const msg = err.response?.data?.message || t('studentLessons.downloadError') || 'Failed to generate download link.';
+      setMaterialDownloadError(msg);
+    } finally {
+      setDownloadingMaterialId(null);
+    }
+  };
+
   // Sync modal state when selectedLesson changes
   useEffect(() => {
+    setMaterialDownloadError('');
     if (selectedLesson?.homework) {
       setHwStudentNote(selectedLesson.homework.studentNote || '');
       setHwIsCompleted(Boolean(selectedLesson.homework.studentCompletedAt || selectedLesson.homework.isStudentCompleted));
@@ -570,14 +598,22 @@ const StudentLessons = () => {
                         <span>{lesson.lessonType === 'GROUP' ? t('studentLessons.group') || 'Group' : t('studentLessons.oneOnOne') || 'One-on-One'}</span>
                       </span>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLesson(lesson)}
-                        className="text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-700 flex items-center gap-1"
-                      >
-                        <Eye size={14} />
-                        <span>{t('studentLessons.viewDetailsBtn') || 'View Details'}</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {lesson.materials && lesson.materials.length > 0 && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400" title={t('studentLessons.materialsTitle') || 'Lesson PDF Materials'}>
+                            <FileText size={13} className="text-red-500" />
+                            <span>{lesson.materials.length}</span>
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLesson(lesson)}
+                          className="text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-700 flex items-center gap-1"
+                        >
+                          <Eye size={14} />
+                          <span>{t('studentLessons.viewDetailsBtn') || 'View Details'}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -786,6 +822,81 @@ const StudentLessons = () => {
                     </p>
                   )}
                 </div>
+              </div>
+
+              {/* Lesson PDF Materials Section */}
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-red-500" />
+                    <span className="font-semibold text-gray-900 dark:text-white text-xs">
+                      {t('studentLessons.materialsTitle') || 'Lesson PDF Materials'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-400">
+                    ({selectedLesson.materials?.length || 0})
+                  </span>
+                </div>
+
+                {materialDownloadError && (
+                  <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-[11px] border border-red-200 dark:border-red-800 flex items-center gap-2">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{materialDownloadError}</span>
+                  </div>
+                )}
+
+                {(!selectedLesson.materials || selectedLesson.materials.length === 0) ? (
+                  <p className="text-gray-400 dark:text-gray-500 text-xs italic">
+                    {t('studentLessons.materialsEmpty') || 'No PDF materials attached to this lesson.'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedLesson.materials.map((mat) => {
+                      const matId = mat.id || mat._id;
+                      const isDownloading = downloadingMaterialId === matId;
+
+                      return (
+                        <div
+                          key={matId}
+                          className="p-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                              <FileText size={14} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 dark:text-white truncate">
+                                {mat.title}
+                              </p>
+                              <p className="text-[10px] text-gray-400 truncate">
+                                {mat.originalFilename || 'document.pdf'} {mat.fileSize ? `• ${formatFileSize(mat.fileSize)}` : ''}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadLessonMaterial(matId, mat.originalFilename)}
+                            disabled={isDownloading}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold text-xs shadow-xs transition-colors shrink-0"
+                          >
+                            {isDownloading ? (
+                              <>
+                                <Loader2 size={12} className="animate-spin" />
+                                <span>{t('studentLessons.downloadingMaterial') || 'Preparing download...'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download size={12} />
+                                <span>{t('studentLessons.downloadMaterialBtn') || 'Download PDF'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}

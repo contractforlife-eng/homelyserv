@@ -15,6 +15,9 @@ import {
   CANONICAL_TEACHING_LEVELS
 } from '../constants/teacherTaxonomy.js';
 
+const isValidObjectId = (id) =>
+  typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+
 /**
  * GET /api/teachers/courses
  * List all courses authored by the authenticated teacher.
@@ -412,6 +415,178 @@ export const uploadCourseThumbnail = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to upload course thumbnail',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * POST /api/teachers/courses/:id/materials
+ * Upload a PDF learning material to an owned course.
+ */
+export const uploadCourseMaterial = async (req, res) => {
+  let uploadedPublicId = null;
+  try {
+    const teacherId = req.userId;
+    const { id } = req.params;
+    const title = (req.body?.title || req.file?.originalname || 'Course Material').trim();
+
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    const course = await Course.findOne({ _id: id, teacherId });
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ success: false, message: 'No document file was uploaded' });
+    }
+
+    // Dynamic import to support clean dependency injection / isolation
+    const { uploadMaterialDocument, deleteMaterialDocument } = await import('../utils/courseMaterialUpload.js');
+
+    const uploadResult = await uploadMaterialDocument(req.file.buffer, {
+      entityType: 'course',
+      entityId: id,
+      originalFilename: req.file.originalname
+    });
+    uploadedPublicId = uploadResult.public_id;
+
+    const newMaterial = {
+      title: title.slice(0, 200),
+      publicId: uploadResult.public_id,
+      fileSize: req.file.size || req.file.buffer.length,
+      originalFilename: req.file.originalname || '',
+      createdAt: new Date()
+    };
+
+    course.materials.push(newMaterial);
+    await course.save();
+
+    const created = course.materials[course.materials.length - 1];
+
+    return res.status(201).json({
+      success: true,
+      message: 'Course material uploaded successfully',
+      material: created
+    });
+  } catch (error) {
+    console.error('Error uploading course material:', error);
+    // Cleanup orphaned Cloudinary asset if database save failed
+    if (uploadedPublicId) {
+      try {
+        const { deleteMaterialDocument } = await import('../utils/courseMaterialUpload.js');
+        await deleteMaterialDocument(uploadedPublicId);
+      } catch (cleanupErr) {
+        console.error('Failed to cleanup orphaned course material asset:', cleanupErr);
+      }
+    }
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to upload course material',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * DELETE /api/teachers/courses/:id/materials/:materialId
+ * Delete a PDF learning material from an owned course.
+ */
+export const deleteCourseMaterial = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { id, materialId } = req.params;
+
+    if (!isValidObjectId(id) || !isValidObjectId(materialId)) {
+      return res.status(404).json({ success: false, message: 'Course material not found' });
+    }
+
+    const course = await Course.findOne({ _id: id, teacherId });
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    const materialIndex = course.materials.findIndex((m) => String(m._id) === String(materialId));
+    if (materialIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Course material not found' });
+    }
+
+    const [removedMaterial] = course.materials.splice(materialIndex, 1);
+    await course.save();
+
+    // Destroy asset in Cloudinary after database update succeeds
+    if (removedMaterial?.publicId) {
+      try {
+        const { deleteMaterialDocument } = await import('../utils/courseMaterialUpload.js');
+        await deleteMaterialDocument(removedMaterial.publicId);
+      } catch (cloudErr) {
+        console.warn('Non-fatal: failed to delete Cloudinary material asset:', cloudErr.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Course material deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting course material:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete course material',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * GET /api/teachers/courses/:id/materials/:materialId/download
+ * Generate a secure time-limited signed URL for the teacher author to download their own course material.
+ */
+export const getTeacherCourseMaterialDownloadUrl = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { id, materialId } = req.params;
+
+    if (!isValidObjectId(id) || !isValidObjectId(materialId)) {
+      return res.status(404).json({ success: false, message: 'Course material not found' });
+    }
+
+    // Verify course exists and belongs to the authenticated teacher (draft or published)
+    const course = await Course.findOne({ _id: id, teacherId });
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    const material = (course.materials || []).find((m) => String(m._id) === String(materialId));
+    if (!material) {
+      return res.status(404).json({ success: false, message: 'Course material not found' });
+    }
+
+    const { generateSignedMaterialUrl } = await import('../utils/courseMaterialUpload.js');
+    const downloadUrl = generateSignedMaterialUrl(material.publicId, 3600); // 1 hour TTL
+
+    if (!downloadUrl) {
+      return res.status(500).json({ success: false, message: 'Failed to generate download link' });
+    }
+
+    return res.json({
+      success: true,
+      downloadUrl,
+      material: {
+        id: String(material._id),
+        title: material.title,
+        originalFilename: material.originalFilename,
+        fileSize: material.fileSize
+      }
+    });
+  } catch (error) {
+    console.error('Error generating teacher course material download URL:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate download URL',
       error: error.message
     });
   }

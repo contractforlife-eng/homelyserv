@@ -49,8 +49,12 @@ import {
   ExternalLink,
   Filter,
   CheckSquare,
-  FileText
+  FileText,
+  Download,
+  Upload,
+  Trash2
 } from 'lucide-react';
+import { triggerFileDownload, formatFileSize } from '../utils/fileDownload';
 
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -88,6 +92,124 @@ const TeacherSchedule = () => {
 
   // Selected lesson modal
   const [activeLesson, setActiveLesson] = useState(null);
+
+  // Lesson Materials State
+  const [materialTitle, setMaterialTitle] = useState('');
+  const [materialFile, setMaterialFile] = useState(null);
+  const [materialUploading, setMaterialUploading] = useState(false);
+  const [materialDeletingId, setMaterialDeletingId] = useState(null);
+  const [materialDownloadingId, setMaterialDownloadingId] = useState(null);
+  const [materialError, setMaterialError] = useState('');
+  const [materialSuccess, setMaterialSuccess] = useState('');
+
+  const handleUploadLessonMaterial = async (e) => {
+    e.preventDefault();
+    if (!activeLesson) return;
+    setMaterialError('');
+    setMaterialSuccess('');
+
+    if (!materialTitle.trim()) {
+      setMaterialError(t('teacherSchedule.materials.titleRequired') || 'Material title is required.');
+      return;
+    }
+    if (!materialFile) {
+      setMaterialError(t('teacherSchedule.materials.pdfOnlyError') || 'Only authentic PDF documents (.pdf) are allowed.');
+      return;
+    }
+    if (!materialFile.name.toLowerCase().endsWith('.pdf') && materialFile.type !== 'application/pdf') {
+      setMaterialError(t('teacherSchedule.materials.pdfOnlyError') || 'Only authentic PDF documents (.pdf) are allowed.');
+      return;
+    }
+    if (materialFile.size > 10 * 1024 * 1024) {
+      setMaterialError(t('teacherSchedule.materials.maxSizeError') || 'File size exceeds the 10MB limit.');
+      return;
+    }
+
+    try {
+      setMaterialUploading(true);
+      const formData = new FormData();
+      formData.append('title', materialTitle.trim());
+      formData.append('file', materialFile);
+
+      const lessonId = activeLesson._id || activeLesson.id;
+      const res = await api.post(`/api/teachers/lessons/${lessonId}/materials`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res?.data?.success && res.data.material) {
+        const newMat = res.data.material;
+        const updatedMaterials = [...(activeLesson.materials || []), newMat];
+        const updatedLesson = { ...activeLesson, materials: updatedMaterials };
+        setActiveLesson(updatedLesson);
+        setLessons((prev) =>
+          prev.map((l) => ((l._id || l.id) === lessonId ? { ...l, materials: updatedMaterials } : l))
+        );
+        setMaterialTitle('');
+        setMaterialFile(null);
+        setMaterialSuccess(t('teacherSchedule.materials.uploadSuccess') || 'Lesson material uploaded successfully.');
+      }
+    } catch (err) {
+      console.error('Error uploading lesson material:', err);
+      const msg = err.response?.data?.message || t('teacherSchedule.materials.uploadError') || 'Failed to upload lesson material.';
+      setMaterialError(msg);
+    } finally {
+      setMaterialUploading(false);
+    }
+  };
+
+  const handleDeleteLessonMaterial = async (materialId) => {
+    if (!activeLesson) return;
+    const confirmMsg = t('teacherSchedule.materials.deleteConfirm') || 'Are you sure you want to delete this lesson material?';
+    if (!window.confirm(confirmMsg)) return;
+
+    setMaterialError('');
+    setMaterialSuccess('');
+    try {
+      setMaterialDeletingId(materialId);
+      const lessonId = activeLesson._id || activeLesson.id;
+      const res = await api.delete(`/api/teachers/lessons/${lessonId}/materials/${materialId}`);
+
+      if (res?.data?.success) {
+        const updatedMaterials = (activeLesson.materials || []).filter(
+          (m) => (m._id || m.id) !== materialId
+        );
+        const updatedLesson = { ...activeLesson, materials: updatedMaterials };
+        setActiveLesson(updatedLesson);
+        setLessons((prev) =>
+          prev.map((l) => ((l._id || l.id) === lessonId ? { ...l, materials: updatedMaterials } : l))
+        );
+        setMaterialSuccess(t('teacherSchedule.materials.deleteSuccess') || 'Lesson material deleted successfully.');
+      }
+    } catch (err) {
+      console.error('Error deleting lesson material:', err);
+      const msg = err.response?.data?.message || t('teacherSchedule.materials.deleteError') || 'Failed to delete lesson material.';
+      setMaterialError(msg);
+    } finally {
+      setMaterialDeletingId(null);
+    }
+  };
+
+  const handleDownloadLessonMaterial = async (materialId, originalFilename) => {
+    if (!activeLesson) return;
+    setMaterialError('');
+    try {
+      setMaterialDownloadingId(materialId);
+      const lessonId = activeLesson._id || activeLesson.id;
+      const res = await api.get(`/api/teachers/lessons/${lessonId}/materials/${materialId}/download`);
+
+      if (res?.data?.downloadUrl) {
+        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf');
+      } else {
+        setMaterialError(t('teacherSchedule.materials.downloadError') || 'Failed to generate download link.');
+      }
+    } catch (err) {
+      console.error('Error downloading lesson material:', err);
+      const msg = err.response?.data?.message || t('teacherSchedule.materials.downloadError') || 'Failed to generate download link.';
+      setMaterialError(msg);
+    } finally {
+      setMaterialDownloadingId(null);
+    }
+  };
 
   // Compute the visible date range based on viewMode and currentDate
   const visibleRange = useMemo(() => {
@@ -602,9 +724,17 @@ const TeacherSchedule = () => {
                               </span>
                             </div>
                           )}
-                          <span className="text-[11px] font-semibold text-red-600 hover:underline">
-                            {t('teacherSchedule.viewLesson') || 'Details'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {l.materials && l.materials.length > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400" title={t('teacherSchedule.materials.title') || 'Lesson PDF Materials'}>
+                                <FileText className="w-3 h-3 text-red-500" />
+                                <span>{l.materials.length}</span>
+                              </span>
+                            )}
+                            <span className="text-[11px] font-semibold text-red-600 hover:underline">
+                              {t('teacherSchedule.viewLesson') || 'Details'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -835,6 +965,153 @@ const TeacherSchedule = () => {
                   </div>
                 </div>
               )}
+
+              {/* Lesson PDF Materials Section */}
+              <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-red-600" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      {t('teacherSchedule.materials.title') || 'Lesson PDF Materials'}
+                    </h4>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    ({(activeLesson.materials || []).length})
+                  </span>
+                </div>
+
+                {materialError && (
+                  <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{materialError}</span>
+                  </div>
+                )}
+                {materialSuccess && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 shrink-0" />
+                    <span>{materialSuccess}</span>
+                  </div>
+                )}
+
+                {/* Upload Form */}
+                <form
+                  onSubmit={handleUploadLessonMaterial}
+                  className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2.5"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                        {t('teacherSchedule.materials.titleLabel') || 'Material Title'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={materialTitle}
+                        onChange={(e) => setMaterialTitle(e.target.value)}
+                        placeholder={t('teacherSchedule.materials.titlePlaceholder') || 'e.g. Session Handout & Notes'}
+                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                        disabled={materialUploading}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                        {t('teacherSchedule.materials.fileLabel') || 'Select PDF File'} *
+                      </label>
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        onChange={(e) => setMaterialFile(e.target.files?.[0] || null)}
+                        className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-900/30 dark:file:text-red-300"
+                        disabled={materialUploading}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] text-gray-400">
+                      {t('teacherSchedule.materials.subtitle') || 'PDF only, max 10MB'}
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={materialUploading || !materialTitle.trim() || !materialFile}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+                    >
+                      {materialUploading ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>{t('teacherSchedule.materials.uploading') || 'Uploading...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{t('teacherSchedule.materials.uploadBtn') || 'Upload PDF'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Materials List */}
+                {(!activeLesson.materials || activeLesson.materials.length === 0) ? (
+                  <p className="text-xs text-gray-400 italic text-center py-2">
+                    {t('teacherSchedule.materials.empty') || 'No PDF materials attached to this lesson.'}
+                  </p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {activeLesson.materials.map((mat) => {
+                      const matId = mat._id || mat.id;
+                      const isDownloading = materialDownloadingId === matId;
+                      const isDeleting = materialDeletingId === matId;
+                      return (
+                        <div
+                          key={matId}
+                          className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 dark:text-white truncate">
+                                {mat.title}
+                              </p>
+                              <p className="text-[10px] text-gray-400 truncate">
+                                {mat.originalFilename || 'document.pdf'} {mat.fileSize ? `• ${formatFileSize(mat.fileSize)}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadLessonMaterial(matId, mat.originalFilename)}
+                              disabled={isDownloading}
+                              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                              title={t('teacherSchedule.materials.downloadBtn') || 'Download'}
+                            >
+                              {isDownloading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteLessonMaterial(matId)}
+                              disabled={isDeleting}
+                              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                              title={t('teacherSchedule.materials.deleteBtn') || 'Delete'}
+                            >
+                              {isDeleting ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* Modal Actions */}
               <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700/60">

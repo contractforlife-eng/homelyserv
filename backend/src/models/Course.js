@@ -56,6 +56,42 @@ const lessonSubSchema = new mongoose.Schema(
   }
 );
 
+const materialSubSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200
+    },
+    publicId: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    fileSize: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 10 * 1024 * 1024 // 10MB
+    },
+    originalFilename: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 255
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  {
+    _id: true,
+    timestamps: false
+  }
+);
+
 const courseSchema = new mongoose.Schema(
   {
     teacherId: {
@@ -130,6 +166,10 @@ const courseSchema = new mongoose.Schema(
     },
     lessons: {
       type: [lessonSubSchema],
+      default: []
+    },
+    materials: {
+      type: [materialSubSchema],
       default: []
     }
   },

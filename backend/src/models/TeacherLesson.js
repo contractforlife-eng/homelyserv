@@ -83,6 +83,42 @@ const homeworkSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const lessonMaterialSubSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200
+    },
+    publicId: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    fileSize: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 10 * 1024 * 1024 // 10MB
+    },
+    originalFilename: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 255
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  {
+    _id: true,
+    timestamps: false
+  }
+);
+
 const teacherLessonSchema = new mongoose.Schema(
   {
     teacherId: {
@@ -153,6 +189,10 @@ const teacherLessonSchema = new mongoose.Schema(
     homework: {
       type: homeworkSchema,
       default: null
+    },
+    materials: {
+      type: [lessonMaterialSubSchema],
+      default: []
     },
     isActive: {
       type: Boolean,
