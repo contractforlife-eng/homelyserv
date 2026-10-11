@@ -20,6 +20,8 @@ import VerifyEmail from './pages/VerifyEmail';
 import Download from './pages/Download';
 import DeleteAccount from './pages/DeleteAccount';
 import SocialOnboarding from './pages/SocialOnboarding';
+import DoctorPublicProfile from './pages/DoctorPublicProfile';
+import TeacherPublicProfile from './pages/TeacherPublicProfile';
 
 // Common Protected Pages
 import MyHires from './pages/MyHires';
@@ -439,6 +441,10 @@ function App() {
       <Route path="/delete-account" element={<DeleteAccount />} />
       <Route path="/social-onboarding" element={<SocialOnboarding />} />
       <Route path="/download" element={<Download />} />
+      <Route path="/dr/:id" element={<DoctorPublicProfile />} />
+      <Route path="/doctor/:id" element={<DoctorPublicProfile />} />
+      <Route path="/tr/:id" element={<TeacherPublicProfile />} />
+      <Route path="/teacher/:id" element={<TeacherPublicProfile />} />
 
       {/* ========== COMMON PROTECTED ROUTES ========== */}
       

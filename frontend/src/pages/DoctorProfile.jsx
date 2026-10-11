@@ -30,7 +30,8 @@ import {
   Lock,
   BadgeCheck,
   Banknote,
-  Pencil
+  Pencil,
+  Share2
 } from 'lucide-react';
 
 // Read-only presentation of a value while the page is in View Mode. The same
@@ -69,6 +70,28 @@ const DoctorProfile = () => {
   // Last values known to be persisted. Cancel restores exactly this snapshot,
   // so unsaved edits are discarded without another round trip to the server.
   const [savedSnapshot, setSavedSnapshot] = useState(null);
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleShareProfile = async () => {
+    const doctorId = authUser?.id || authUser?._id;
+    if (!doctorId) return;
+    const url = `${window.location.origin}/dr/${doctorId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: fullName || 'Doctor Profile',
+          text: `Book an appointment with ${fullName}`,
+          url
+        });
+        return;
+      } catch {
+        // Fallback
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 3000);
+  };
 
   // SECTION A — Basic account information (read-only except the full name).
   const [fullName, setFullName] = useState('');
@@ -483,9 +506,18 @@ const DoctorProfile = () => {
           </div>
         )}
 
-        {/* Mode bar: View Mode offers only the "Edit Profile" entry point.
+        {/* Mode bar: View Mode offers the "Edit Profile" and "Share My Profile" buttons.
             Save and Cancel exist only while editing. */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleShareProfile}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium transition-colors shadow-sm"
+          >
+            <Share2 size={16} />
+            <span>{copiedShare ? (t('copied') || 'Copied!') : (t('publicProfile.shareProfileBtn') || 'Share My Profile')}</span>
+          </button>
+
           {!isEditing && (
             <button
               type="button"

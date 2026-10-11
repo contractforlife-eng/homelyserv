@@ -14,6 +14,7 @@ import DOCTOR_CMS_TRANSLATIONS, { DOCTOR_CMS_NAV_TRANSLATIONS, CLINIC_PATIENT_TR
 import DOCTOR_ACCOUNTS_TRANSLATIONS, { DOCTOR_ACCOUNTS_NAV_TRANSLATIONS } from './doctorAccounts.js';
 import TEACHER_TRANSLATIONS from './teacherTranslations.js';
 import STUDENT_TRANSLATIONS from './studentTranslations.js';
+import { PUBLIC_PROFILE_TRANSLATIONS } from './publicProfileTranslations.js';
 
 // ---------------------------------------------------------------------------
 // Shared language metadata – used by every language selector in the app.
@@ -13511,6 +13512,18 @@ Object.entries(TEACHER_TRANSLATIONS).forEach(([language, translations]) => {
 // and studentProfile across all 6 languages.
 // ============================================================
 Object.entries(STUDENT_TRANSLATIONS).forEach(([language, translations]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation) {
+    Object.entries(translations).forEach(([ns, copy]) => {
+      target.translation[ns] = { ...target.translation[ns], ...copy };
+    });
+  }
+});
+
+// ============================================================
+// PUBLIC PROFILES & GUEST BOOKING — all 6 locales
+// ============================================================
+Object.entries(PUBLIC_PROFILE_TRANSLATIONS).forEach(([language, translations]) => {
   const target = { en, ar, fr, ru, tr, de }[language];
   if (target && target.translation) {
     Object.entries(translations).forEach(([ns, copy]) => {

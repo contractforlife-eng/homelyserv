@@ -31,6 +31,7 @@ import {
   BadgeCheck,
   Banknote,
   Pencil,
+  Share2,
   X
 } from 'lucide-react';
 
@@ -67,6 +68,28 @@ const TeacherProfile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState(null);
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleShareProfile = async () => {
+    const teacherId = authUser?.id || authUser?._id;
+    if (!teacherId) return;
+    const url = `${window.location.origin}/tr/${teacherId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: fullName || 'Teacher Profile',
+          text: `Book a lesson with ${fullName}`,
+          url
+        });
+        return;
+      } catch {
+        // Fallback
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 3000);
+  };
 
   // SECTION A — Basic account info
   const [fullName, setFullName] = useState('');
@@ -427,6 +450,15 @@ const TeacherProfile = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleShareProfile}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors shadow-sm"
+            >
+              <Share2 size={16} />
+              <span>{copiedShare ? (t('copied') || 'Copied!') : (t('publicProfile.shareProfileBtn') || 'Share My Profile')}</span>
+            </button>
+
             {!isEditing ? (
               <button
                 type="button"
