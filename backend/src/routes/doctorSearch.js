@@ -28,7 +28,8 @@ import DoctorConsultationService from '../models/DoctorConsultationService.js';
 import DoctorClinic from '../models/DoctorClinic.js';
 import DoctorProfile from '../models/DoctorProfile.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
-import { findOverlappingAppointments } from '../controllers/doctorAppointmentController.js';
+// Phase 5B: shared per-doctor booking transaction (guard -> overlap -> insert).
+import { withDoctorBookingTransaction } from '../services/doctorBookingGuard.js';
 import {
   attachDoctorCards,
   escapeRegExp,
@@ -255,15 +256,9 @@ router.post('/doctors/:doctorId/appointments', authenticate, requirePatientRole,
       return res.status(409).json({ success: false, message: 'That appointment slot is no longer available' });
     }
 
-    // Shared overlap protection (same rule the doctor-side create uses).
-    const overlapping = await findOverlappingAppointments(
-      doctorId,
-      new Date(slot.startsAt),
-      new Date(slot.endsAt)
-    );
-    if (overlapping && overlapping.length > 0) {
-      return res.status(409).json({ success: false, message: 'That appointment slot is no longer available' });
-    }
+    // Overlap protection is performed inside the shared per-doctor booking
+    // transaction below (guard write -> overlap re-read -> insert), making
+    // the check and the write atomic (Phase 5B).
 
     // Fee snapshot follows the existing rule: the schedule's service when set,
     // otherwise the doctor's own profile consultation fee.
@@ -283,25 +278,36 @@ router.post('/doctors/:doctorId/appointments', authenticate, requirePatientRole,
       if (clinic?.currency) currency = clinic.currency;
     }
 
-    const appointment = await DoctorAppointment.create({
-      doctorId,
-      // SERVER-DERIVED. A client-supplied patientId can never reach this.
-      patientId: req.userId,
-      clinicPatientId: null,
-      scheduleId: schedule._id,
-      clinicId: schedule.clinicId || null,
-      serviceId: schedule.serviceId || null,
-      consultationType: schedule.consultationType,
-      startsAt: new Date(slot.startsAt),
-      endsAt: new Date(slot.endsAt),
-      // Patient requests always start as PENDING; the doctor confirms.
-      status: 'PENDING',
-      reason: typeof body.reason === 'string' ? body.reason.trim().substring(0, 500) : '',
-      notes: '',
-      feeSnapshot,
-      currency,
-      createdBy: req.userId
-    });
+    const appointment = await withDoctorBookingTransaction(
+      { doctorId, startsAt: new Date(slot.startsAt), endsAt: new Date(slot.endsAt) },
+      async (session) => {
+        const [created] = await DoctorAppointment.create(
+          [
+            {
+              doctorId,
+              // SERVER-DERIVED. A client-supplied patientId can never reach this.
+              patientId: req.userId,
+              clinicPatientId: null,
+              scheduleId: schedule._id,
+              clinicId: schedule.clinicId || null,
+              serviceId: schedule.serviceId || null,
+              consultationType: schedule.consultationType,
+              startsAt: new Date(slot.startsAt),
+              endsAt: new Date(slot.endsAt),
+              // Patient requests always start as PENDING; the doctor confirms.
+              status: 'PENDING',
+              reason: typeof body.reason === 'string' ? body.reason.trim().substring(0, 500) : '',
+              notes: '',
+              feeSnapshot,
+              currency,
+              createdBy: req.userId
+            }
+          ],
+          { session }
+        );
+        return created;
+      }
+    );
 
     // Reuse the existing appointment-request notification.
     createNotification(doctorId, {
@@ -316,6 +322,24 @@ router.post('/doctors/:doctorId/appointments', authenticate, requirePatientRole,
 
     return res.status(201).json({ success: true, appointment });
   } catch (error) {
+    // Booking-transaction outcomes (Phase 5B). Commit ambiguity first: the
+    // outcome is unknown, so never claim success or failure.
+    if (error?.commitOutcome === 'UNKNOWN') {
+      return res.status(503).json({
+        success: false,
+        message:
+          'The booking outcome could not be confirmed. Please check your appointment list before retrying.'
+      });
+    }
+    if (error?.statusCode === 409) {
+      return res.status(409).json({ success: false, message: 'That appointment slot is no longer available' });
+    }
+    if (error?.statusCode === 503) {
+      return res.status(503).json({
+        success: false,
+        message: 'Booking is temporarily unavailable. Please try again shortly.'
+      });
+    }
     console.error('Error booking doctor appointment:', error);
     return res.status(500).json({ success: false, message: 'Server error booking appointment' });
   }

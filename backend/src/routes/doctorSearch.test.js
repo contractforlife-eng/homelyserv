@@ -15,12 +15,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import DoctorProfile from '../models/DoctorProfile.js';
 import DoctorClinic from '../models/DoctorClinic.js';
 import DoctorSchedule from '../models/DoctorSchedule.js';
 import DoctorAppointment from '../models/DoctorAppointment.js';
 import DoctorConsultationService from '../models/DoctorConsultationService.js';
+import DoctorBookingGuard from '../models/DoctorBookingGuard.js';
 import prisma from '../lib/prisma.js';
 import doctorSearchRouter from './doctorSearch.js';
 
@@ -101,6 +103,7 @@ const chain = (result) => {
   c.sort = () => c;
   c.limit = () => c;
   c.populate = () => c;
+  c.session = () => c;
   c.lean = () => Promise.resolve(result);
   c.then = (resolve, reject) => Promise.resolve(result).then(resolve, reject);
   return c;
@@ -303,10 +306,14 @@ DoctorSchedule.findOne = (filter = {}) => {
   return chain(null);
 };
 
-DoctorAppointment.create = async (doc) => {
+DoctorAppointment.create = async (docs) => {
+  // Phase 5B paths call create([doc], { session }) — array form required
+  // by Mongoose when a session is passed.
+  const isArray = Array.isArray(docs);
+  const doc = isArray ? docs[0] : docs;
   const created = { _id: `appt-${createdAppointments.length + 1}`, ...doc };
   createdAppointments.push(created);
-  return created;
+  return isArray ? [created] : created;
 };
 DoctorAppointment.find = (filter = {}) => {
   let rows = createdAppointments;
@@ -331,6 +338,14 @@ prisma.notification = {
     return { id: `n-${notifications.length}`, ...data };
   }
 };
+
+// Phase 5B: transaction-guard stubs (fake session, no database).
+mongoose.startSession = async () => ({
+  withTransaction: async (fn) => fn(),
+  endSession: async () => {}
+});
+DoctorBookingGuard.updateOne = async () => ({ acknowledged: true, matchedCount: 1 });
+DoctorBookingGuard.findOneAndUpdate = async () => ({ _id: DOCTOR_USER_ID, seq: 1 });
 
 // The relationship rule (CONFIRMED/COMPLETED only) is exercised through the
 // shared service, so its two sources are mocked rather than hitting the DB.

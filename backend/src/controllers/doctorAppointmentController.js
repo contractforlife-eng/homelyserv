@@ -8,6 +8,8 @@ import DoctorProfile from '../models/DoctorProfile.js';
 import User from '../models/User.js';
 import ClinicPatient from '../models/ClinicPatient.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
+// Phase 5B: shared per-doctor booking transaction (guard -> overlap -> insert).
+import { withDoctorBookingTransaction } from '../services/doctorBookingGuard.js';
 
 // Helper to check for valid 24-character hexadecimal MongoDB ObjectId
 const isValidObjectId = (id) => {
@@ -142,13 +144,21 @@ export const getDoctorAppointmentById = async (req, res) => {
  * "Live" = PENDING or CONFIRMED. Terminal appointments (COMPLETED /
  * CANCELLED / NO_SHOW) never block a new booking.
  */
-export const findOverlappingAppointments = (doctorId, startDate, endDate) =>
-  DoctorAppointment.find({
+export const findOverlappingAppointments = (doctorId, startDate, endDate, session = null) => {
+  const query = DoctorAppointment.find({
     doctorId,
     status: { $in: ['PENDING', 'CONFIRMED'] },
     startsAt: { $lt: endDate },
     endsAt: { $gt: startDate }
   });
+  // Optional session: when supplied by the booking transaction, the overlap
+  // read joins that transaction. Existing three-argument callers (both
+  // booking endpoints) are unchanged and keep their default behaviour.
+  if (session) {
+    query.session(session);
+  }
+  return query;
+};
 
 /**
  * POST /api/doctors/appointments
@@ -333,35 +343,40 @@ export const createDoctorAppointment = async (req, res) => {
       }
     }
 
-    // Overlap protection: uses the SHARED helper, so the patient-facing
-    // booking endpoint is protected by exactly the same rule.
-    const activeDoctorAppointments = await findOverlappingAppointments(doctorId, startDate, endDate);
-
-    if (activeDoctorAppointments.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'This appointment overlaps with an existing appointment for this doctor'
-      });
-    }
-
-    const appointment = await DoctorAppointment.create({
-      doctorId,
-      // Exactly one of these is set (enforced above and by the model).
-      patientId: resolvedPatientId,
-      clinicPatientId: resolvedClinicPatientId,
-      scheduleId: validScheduleId,
-      clinicId: validClinicId,
-      serviceId: validServiceId,
-      consultationType: cType,
-      startsAt: startDate,
-      endsAt: endDate,
-      status: body.status && APPOINTMENT_STATUSES.includes(body.status) ? body.status : 'PENDING',
-      reason: typeof reason === 'string' ? reason.trim().substring(0, 500) : '',
-      notes: typeof notes === 'string' ? notes.trim().substring(0, 2000) : '',
-      feeSnapshot,
-      currency,
-      createdBy: doctorId
-    });
+    // Overlap protection + insert run inside the shared per-doctor booking
+    // transaction (Phase 5B): guard write -> overlap re-read (same session)
+    // -> appointment insert, so the check and the write are atomic. populate()
+    // and notifications below stay strictly AFTER the commit resolves.
+    const appointment = await withDoctorBookingTransaction(
+      { doctorId, startsAt: startDate, endsAt: endDate },
+      async (session) => {
+        const [created] = await DoctorAppointment.create(
+          [
+            {
+              doctorId,
+              // Exactly one of these is set (enforced above and by the model).
+              patientId: resolvedPatientId,
+              clinicPatientId: resolvedClinicPatientId,
+              scheduleId: validScheduleId,
+              clinicId: validClinicId,
+              serviceId: validServiceId,
+              consultationType: cType,
+              startsAt: startDate,
+              endsAt: endDate,
+              status:
+                body.status && APPOINTMENT_STATUSES.includes(body.status) ? body.status : 'PENDING',
+              reason: typeof reason === 'string' ? reason.trim().substring(0, 500) : '',
+              notes: typeof notes === 'string' ? notes.trim().substring(0, 2000) : '',
+              feeSnapshot,
+              currency,
+              createdBy: doctorId
+            }
+          ],
+          { session }
+        );
+        return created;
+      }
+    );
 
     await appointment.populate('patientId', 'fullName email phone profileImage');
     if (resolvedClinicPatientId) {
@@ -388,6 +403,24 @@ export const createDoctorAppointment = async (req, res) => {
       appointment
     });
   } catch (error) {
+    // Booking-transaction outcomes (Phase 5B). Commit ambiguity first: the
+    // outcome is unknown, so never claim success or failure.
+    if (error?.commitOutcome === 'UNKNOWN') {
+      return res.status(503).json({
+        success: false,
+        message:
+          'The booking outcome could not be confirmed. Please check your appointment list before retrying.'
+      });
+    }
+    if (error?.statusCode === 409) {
+      return res.status(409).json({ success: false, message: error.message });
+    }
+    if (error?.statusCode === 503) {
+      return res.status(503).json({
+        success: false,
+        message: 'Booking is temporarily unavailable. Please try again shortly.'
+      });
+    }
     console.error('Error creating doctor appointment:', error);
     return res.status(500).json({
       success: false,

@@ -3,12 +3,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import DoctorClinic from '../models/DoctorClinic.js';
 import DoctorSchedule from '../models/DoctorSchedule.js';
 import DoctorConsultationService from '../models/DoctorConsultationService.js';
 import DoctorProfile from '../models/DoctorProfile.js';
 import DoctorAppointment from '../models/DoctorAppointment.js';
+import DoctorBookingGuard from '../models/DoctorBookingGuard.js';
 import doctorsRouter from './doctors.js';
 
 const secret = 'doctor-appointments-test-secret-value-2026';
@@ -66,6 +68,9 @@ const withDoctorAppointmentsServer = async ({ initialAppointments = [], initialC
   const originalAppointmentFind = DoctorAppointment.find;
   const originalAppointmentFindOne = DoctorAppointment.findOne;
   const originalAppointmentCreate = DoctorAppointment.create;
+  const originalStartSession = mongoose.startSession;
+  const originalGuardUpdateOne = DoctorBookingGuard.updateOne;
+  const originalGuardFindOneAndUpdate = DoctorBookingGuard.findOneAndUpdate;
 
   const clinicsStore = [
     {
@@ -178,6 +183,7 @@ const withDoctorAppointmentsServer = async ({ initialAppointments = [], initialC
     const chain = {
       populate: () => chain,
       sort: () => chain,
+      session: () => chain,
       then: (resolve, reject) => Promise.resolve(result).then(resolve, reject)
     };
     return chain;
@@ -216,7 +222,19 @@ const withDoctorAppointmentsServer = async ({ initialAppointments = [], initialC
     return createPopulatedQuery(match || null);
   };
 
-  DoctorAppointment.create = async (doc) => {
+  // Phase 5B: transaction-guard stubs (fake session, no database).
+  mongoose.startSession = async () => ({
+    withTransaction: async (fn) => fn(),
+    endSession: async () => {}
+  });
+  DoctorBookingGuard.updateOne = async () => ({ acknowledged: true, matchedCount: 1 });
+  DoctorBookingGuard.findOneAndUpdate = async () => ({ _id: DOCTOR_A_ID, seq: 1 });
+
+  DoctorAppointment.create = async (docs) => {
+    // Phase 5B paths call create([doc], { session }) — array form required
+    // by Mongoose when a session is passed.
+    const isArray = Array.isArray(docs);
+    const doc = isArray ? docs[0] : docs;
     const newDoc = {
       _id: `507f1f77bcf86cd7994390${idCounter++}`,
       doctorId: String(doc.doctorId),
@@ -242,7 +260,7 @@ const withDoctorAppointmentsServer = async ({ initialAppointments = [], initialC
       save: async function() { return this; }
     };
     appointmentsStore.push(newDoc);
-    return newDoc;
+    return isArray ? [newDoc] : newDoc;
   };
 
   const app = express();
@@ -265,6 +283,9 @@ const withDoctorAppointmentsServer = async ({ initialAppointments = [], initialC
     DoctorAppointment.find = originalAppointmentFind;
     DoctorAppointment.findOne = originalAppointmentFindOne;
     DoctorAppointment.create = originalAppointmentCreate;
+    mongoose.startSession = originalStartSession;
+    DoctorBookingGuard.updateOne = originalGuardUpdateOne;
+    DoctorBookingGuard.findOneAndUpdate = originalGuardFindOneAndUpdate;
   }
 };
 
@@ -393,7 +414,8 @@ test('4. Overlapping appointment for the same Doctor is rejected', async () => {
         })
       });
 
-      assert.equal(res.status, 400);
+      // Phase 5B: a confirmed overlap inside the booking transaction is 409.
+      assert.equal(res.status, 409);
       const data = await res.json();
       assert.equal(data.success, false);
       assert.match(data.message, /overlaps with an existing appointment/i);

@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import DoctorClinic from '../models/DoctorClinic.js';
 import DoctorSchedule from '../models/DoctorSchedule.js';
@@ -17,6 +18,7 @@ import DoctorConsultationService from '../models/DoctorConsultationService.js';
 import DoctorProfile from '../models/DoctorProfile.js';
 import DoctorAppointment from '../models/DoctorAppointment.js';
 import ClinicPatient from '../models/ClinicPatient.js';
+import DoctorBookingGuard from '../models/DoctorBookingGuard.js';
 import doctorsRouter from './doctors.js';
 
 const secret = 'clinic-patient-appointments-test-secret-2026';
@@ -57,7 +59,10 @@ const withServer = async ({ clinicPatients = [], appointments = [] } = {}, run) 
     aptFind: DoctorAppointment.find,
     aptFindOne: DoctorAppointment.findOne,
     aptCreate: DoctorAppointment.create,
-    cpOne: ClinicPatient.findOne
+    cpOne: ClinicPatient.findOne,
+    startSession: mongoose.startSession,
+    guardUpdateOne: DoctorBookingGuard.updateOne,
+    guardFindOneAndUpdate: DoctorBookingGuard.findOneAndUpdate
   };
 
   const store = clinicPatients.map((c) => ({
@@ -117,7 +122,7 @@ const withServer = async ({ clinicPatients = [], appointments = [] } = {}, run) 
   DoctorProfile.findOne = (q = {}) => Promise.resolve({ userId: q.userId, consultationFee: 250 });
 
   const chain = (res) => {
-    const c = { populate: () => c, sort: () => c, then: (r, j) => Promise.resolve(res).then(r, j) };
+    const c = { populate: () => c, sort: () => c, session: () => c, then: (r, j) => Promise.resolve(res).then(r, j) };
     return c;
   };
 
@@ -144,7 +149,19 @@ const withServer = async ({ clinicPatients = [], appointments = [] } = {}, run) 
     chain(apts.find((a) => String(a._id) === String(q._id) &&
       (!q.doctorId || String(a.doctorId) === String(q.doctorId))) || null);
 
-  DoctorAppointment.create = async (doc) => {
+  // Phase 5B: transaction-guard stubs (fake session, no database).
+  mongoose.startSession = async () => ({
+    withTransaction: async (fn) => fn(),
+    endSession: async () => {}
+  });
+  DoctorBookingGuard.updateOne = async () => ({ acknowledged: true, matchedCount: 1 });
+  DoctorBookingGuard.findOneAndUpdate = async () => ({ _id: DOCTOR_A_ID, seq: 1 });
+
+  DoctorAppointment.create = async (docs) => {
+    // Phase 5B paths call create([doc], { session }) — array form required
+    // by Mongoose when a session is passed.
+    const isArray = Array.isArray(docs);
+    const doc = isArray ? docs[0] : docs;
     // Enforce the model-level XOR rule so invalid states cannot persist.
     if (Boolean(doc.patientId) === Boolean(doc.clinicPatientId)) {
       const e = new Error('An appointment requires exactly one patient source');
@@ -158,7 +175,7 @@ const withServer = async ({ clinicPatients = [], appointments = [] } = {}, run) 
     }, 100 + seq);
     a._id = `507f1f77bcf86cd7994390e${seq++}`;
     apts.push(a);
-    return a;
+    return isArray ? [a] : a;
   };
 
   const app = express();
@@ -180,6 +197,9 @@ const withServer = async ({ clinicPatients = [], appointments = [] } = {}, run) 
     DoctorAppointment.findOne = orig.aptFindOne;
     DoctorAppointment.create = orig.aptCreate;
     ClinicPatient.findOne = orig.cpOne;
+    mongoose.startSession = orig.startSession;
+    DoctorBookingGuard.updateOne = orig.guardUpdateOne;
+    DoctorBookingGuard.findOneAndUpdate = orig.guardFindOneAndUpdate;
   }
 };
 
