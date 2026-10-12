@@ -1,8 +1,25 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
+import useAuthStore from '../store/authStore';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import {
+  Home,
+  Briefcase,
+  Clock,
+  MessageCircle,
+  Bell,
+  ChevronDown,
+  User,
+  Settings,
+  Heart,
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
 
-const Navbar = ({ user, onLogout }) => {
+const Navbar = ({ user = null, onLogout = () => {} }) => {
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);

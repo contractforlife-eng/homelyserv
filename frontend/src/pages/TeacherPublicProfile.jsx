@@ -226,7 +226,7 @@ export default function TeacherPublicProfile() {
               </div>
             )}
 
-            {teacher.teachingLevels && teacher.teachingLevels.length > 0 && (
+            {Array.isArray(teacher.teachingLevels) && teacher.teachingLevels.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
                 <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                   <GraduationCap size={18} className="text-red-600" />
@@ -238,7 +238,7 @@ export default function TeacherPublicProfile() {
                       key={lvl}
                       className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700/60 text-xs font-medium text-gray-800 dark:text-gray-200 capitalize"
                     >
-                      {lvl.replace('_', ' ')}
+                      {String(lvl).replace('_', ' ')}
                     </span>
                   ))}
                 </div>
