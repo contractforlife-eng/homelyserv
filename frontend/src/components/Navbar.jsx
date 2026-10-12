@@ -19,8 +19,12 @@ import {
   X
 } from 'lucide-react';
 
-const Navbar = ({ user = null, onLogout = () => {} }) => {
+const Navbar = ({ user: propUser = null, onLogout = () => {} }) => {
   const { t, i18n } = useTranslation();
+  const authUser = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = propUser || (isAuthenticated ? authUser : null);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -30,7 +34,7 @@ const Navbar = ({ user = null, onLogout = () => {} }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    if (isNotificationsOpen) {
+    if (isNotificationsOpen && user) {
       const fetchNotifications = async () => {
         try {
           const response = await api.get('/api/notifications');
@@ -41,10 +45,10 @@ const Navbar = ({ user = null, onLogout = () => {} }) => {
       };
       fetchNotifications();
     }
-  }, [isNotificationsOpen]);
+  }, [isNotificationsOpen, user]);
 
   const getDashboardPath = () => {
-    if (!user) return '/login';
+    if (!user) return '/';
     switch (user.role) {
       case 'DOCTOR':
         return '/doctor-dashboard';
@@ -53,7 +57,7 @@ const Navbar = ({ user = null, onLogout = () => {} }) => {
         return '/worker-dashboard';
       case 'EMPLOYER': return '/employer-dashboard';
       case 'ADMIN': return '/admin';
-      default: return '/home';
+      default: return '/';
     }
   };
 
@@ -134,227 +138,270 @@ const Navbar = ({ user = null, onLogout = () => {} }) => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            <Link 
-              to={getDashboardPath()} 
-              className={`flex items-center gap-1 transition-colors ${
-                isActive(getDashboardPath()) 
-                  ? 'text-red-600 font-medium' 
-                  : 'text-gray-700 hover:text-red-600'
-              }`}
-            >
-              <Home size={18} />
-              {t('dashboard')}
-            </Link>
-            
-            <Link 
-              to={getOffersPath()} 
-              className={`flex items-center gap-1 transition-colors ${
-                isActive(getOffersPath()) 
-                  ? 'text-red-600 font-medium' 
-                  : 'text-gray-700 hover:text-red-600'
-              }`}
-            >
-              <Briefcase size={18} />
-              {t('offers')}
-            </Link>
-
-            {(user?.role === 'WORKER' || user?.role === 'TEACHER') && (
-              <Link 
-                to="/my-hires" 
+          {user ? (
+            <div className="hidden md:flex items-center space-x-6">
+              <Link
+                to={getDashboardPath()}
                 className={`flex items-center gap-1 transition-colors ${
-                  isActive('/my-hires') 
-                    ? 'text-red-600 font-medium' 
+                  isActive(getDashboardPath())
+                    ? 'text-red-600 font-medium'
+                    : 'text-gray-700 hover:text-red-600'
+                }`}
+              >
+                <Home size={18} />
+                {t('dashboard')}
+              </Link>
+
+              <Link
+                to={getOffersPath()}
+                className={`flex items-center gap-1 transition-colors ${
+                  isActive(getOffersPath())
+                    ? 'text-red-600 font-medium'
                     : 'text-gray-700 hover:text-red-600'
                 }`}
               >
                 <Briefcase size={18} />
-                {t('myHires')}
+                {t('offers')}
               </Link>
-            )}
 
-            {user?.role === 'EMPLOYER' && (
-              <Link 
-                to="/employer-pending" 
+              {(user?.role === 'WORKER' || user?.role === 'TEACHER') && (
+                <Link
+                  to="/my-hires"
+                  className={`flex items-center gap-1 transition-colors ${
+                    isActive('/my-hires')
+                      ? 'text-red-600 font-medium'
+                      : 'text-gray-700 hover:text-red-600'
+                  }`}
+                >
+                  <Briefcase size={18} />
+                  {t('myHires')}
+                </Link>
+              )}
+
+              {user?.role === 'EMPLOYER' && (
+                <Link
+                  to="/employer-pending"
+                  className={`flex items-center gap-1 transition-colors ${
+                    isActive('/employer-pending')
+                      ? 'text-red-600 font-medium'
+                      : 'text-gray-700 hover:text-red-600'
+                  }`}
+                >
+                  <Clock size={18} />
+                  {t('pending')}
+                </Link>
+              )}
+
+              <Link
+                to={getMessagesPath()}
                 className={`flex items-center gap-1 transition-colors ${
-                  isActive('/employer-pending') 
-                    ? 'text-red-600 font-medium' 
+                  isActive(getMessagesPath())
+                    ? 'text-red-600 font-medium'
                     : 'text-gray-700 hover:text-red-600'
                 }`}
               >
-                <Clock size={18} />
-                {t('pending')}
+                <MessageCircle size={18} />
+                {t('messages')}
               </Link>
-            )}
 
-            <Link 
-              to={getMessagesPath()} 
-              className={`flex items-center gap-1 transition-colors ${
-                isActive(getMessagesPath()) 
-                  ? 'text-red-600 font-medium' 
-                  : 'text-gray-700 hover:text-red-600'
-              }`}
-            >
-              <MessageCircle size={18} />
-              {t('messages')}
-            </Link>
+              {/* Notifications Dropdown Element */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsNotificationsOpen(!isNotificationsOpen);
+                    setIsProfileOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 relative flex items-center p-1"
+                >
+                  <Bell size={20} />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-600 rounded-full"></span>
+                  )}
+                </button>
 
-            {/* Notifications Dropdown Element */}
-            <div className="relative">
-              <button 
-                onClick={() => {
-                  setIsNotificationsOpen(!isNotificationsOpen);
-                  setIsProfileOpen(false); // Close profile dropdown when opening notifications
-                }}
-                className="text-gray-400 hover:text-gray-600 relative flex items-center p-1"
-              >
-                <Bell size={20} />
-                {notifications.length > 0 && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-600 rounded-full"></span>
-                )}
-              </button>
-
-              {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800">
-                    {t('notifications')}
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="px-4 py-6 text-sm text-gray-400 text-center">
-                        {t('noNotifications')}
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div key={n.id} className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer">
-                          <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800">
+                      {t('notifications')}
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                          {t('noNotifications')}
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer">
+                            <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Language Switcher */}
-            <LanguageSwitcher />
+              {/* Language Switcher */}
+              <LanguageSwitcher />
 
-            {/* Profile Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setIsProfileOpen(!isProfileOpen);
-                  setIsNotificationsOpen(false); // Close notifications when opening profile
-                }}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold">
-                  {user?.fullName?.[0] || user?.name?.[0] || 'U'}
-                </div>
-                <ChevronDown size={16} className="text-gray-500" />
-              </button>
+              {/* Profile Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(!isProfileOpen);
+                    setIsNotificationsOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold">
+                    {user?.fullName?.[0] || user?.name?.[0] || 'U'}
+                  </div>
+                  <ChevronDown size={16} className="text-gray-500" />
+                </button>
 
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
-                  <Link
-                    to={getProfilePath()}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <User size={16} />
-                    {t('profile')}
-                  </Link>
-                  <Link 
-                    to={getSettingsPath()} 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <Settings size={16} />
-                    {t('settings')}
-                  </Link>
-                  {['WORKER', 'EMPLOYER', 'TEACHER', 'STUDENT'].includes(user?.role?.toUpperCase()) && (
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
                     <Link
-                      to="/medical-profile"
+                      to={getProfilePath()}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                       onClick={() => setIsProfileOpen(false)}
                     >
-                      <Heart size={16} className="text-rose-500" />
-                      {t('medicalProfile.pageTitle') || 'My Medical Profile'}
+                      <User size={16} />
+                      {t('profile')}
                     </Link>
-                  )}
-                  <hr className="my-1" />
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <LogOut size={16} />
-                    {t('logout')}
-                  </button>
-                </div>
-              )}
+                    <Link
+                      to={getSettingsPath()}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <Settings size={16} />
+                      {t('settings')}
+                    </Link>
+                    {['WORKER', 'EMPLOYER', 'TEACHER', 'STUDENT'].includes(user?.role?.toUpperCase()) && (
+                      <Link
+                        to="/medical-profile"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <Heart size={16} className="text-rose-500" />
+                        {t('medicalProfile.pageTitle') || 'My Medical Profile'}
+                      </Link>
+                    )}
+                    <hr className="my-1" />
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      {t('logout')}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-3">
+              <LanguageSwitcher />
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-gray-700"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition"
+              >
+                {t('home.nav.signIn') || 'Sign In'}
+              </Link>
+
+              <Link
+                to="/register"
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-sm hover:shadow transition transform active:scale-95"
+              >
+                {t('home.nav.register') || 'Register'}
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile Menu Button / Language Switcher */}
+          <div className="flex items-center gap-2 md:hidden">
+            {!user && <LanguageSwitcher />}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-700 p-2 rounded-lg hover:bg-gray-100"
+              aria-label="Toggle navigation menu"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200 py-4">
-          <div className="space-y-3 px-4">
-            <Link 
-              to={getDashboardPath()} 
-              className="block text-gray-700 hover:text-red-600"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('dashboard')}
-            </Link>
-            <Link 
-              to={getOffersPath()} 
-              className="block text-gray-700 hover:text-red-600"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('offers')}
-            </Link>
-            <Link 
-              to={getMessagesPath()} 
-              className="block text-gray-700 hover:text-red-600"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('messages')}
-            </Link>
-            <Link 
-              to={getProfilePath()} 
-              className="block text-gray-700 hover:text-red-600"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('profile')}
-            </Link>
-            <Link 
-              to={getSettingsPath()} 
-              className="block text-gray-700 hover:text-red-600"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('settings')}
-            </Link>
-            <div className="py-2">
-              <LanguageSwitcher />
+          {user ? (
+            <div className="space-y-3 px-4">
+              <Link
+                to={getDashboardPath()}
+                className="block text-gray-700 hover:text-red-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('dashboard')}
+              </Link>
+              <Link
+                to={getOffersPath()}
+                className="block text-gray-700 hover:text-red-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('offers')}
+              </Link>
+              <Link
+                to={getMessagesPath()}
+                className="block text-gray-700 hover:text-red-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('messages')}
+              </Link>
+              <Link
+                to={getProfilePath()}
+                className="block text-gray-700 hover:text-red-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('profile')}
+              </Link>
+              <Link
+                to={getSettingsPath()}
+                className="block text-gray-700 hover:text-red-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('settings')}
+              </Link>
+              <div className="py-2">
+                <LanguageSwitcher />
+              </div>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left text-red-600 hover:text-red-700"
+              >
+                {t('logout')}
+              </button>
             </div>
-            <button
-              onClick={handleLogout}
-              className="block w-full text-left text-red-600 hover:text-red-700"
-            >
-              {t('logout')}
-            </button>
-          </div>
+          ) : (
+            <div className="space-y-3 px-4">
+              <Link
+                to="/login"
+                onClick={() => setIsMenuOpen(false)}
+                className="block w-full text-center py-2.5 font-bold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 transition"
+              >
+                {t('home.nav.signIn') || 'Sign In'}
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setIsMenuOpen(false)}
+                className="block w-full text-center py-2.5 font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-sm transition"
+              >
+                {t('home.nav.register') || 'Register'}
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </nav>
