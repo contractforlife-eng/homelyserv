@@ -174,12 +174,17 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
         isPrimary: true
       }
     ]);
-  DoctorClinic.findOne = () =>
-    wrapQuery({
-      _id: CLINIC_1_ID,
-      doctorId: DOCTOR_1_ID,
-      currency: 'EGP'
-    });
+  DoctorClinic.findOne = (q) => {
+    if (q?._id === CLINIC_1_ID && q?.doctorId === DOCTOR_1_ID) {
+      return wrapQuery({
+        _id: CLINIC_1_ID,
+        doctorId: DOCTOR_1_ID,
+        currency: 'EGP',
+        isActive: true
+      });
+    }
+    return wrapQuery(null);
+  };
 
   DoctorConsultationService.find = () => wrapQuery([]);
   DoctorConsultationService.findOne = () => wrapQuery(null);
@@ -355,6 +360,60 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
           assert.equal(res.status, 409);
           const data = await res.json();
           assert.equal(data.success, false);
+        });
+
+        // 5b. Clinic Validation: Reject invalid, inactive, or foreign doctor clinic
+        await t.test('5b. Public booking rejects invalid or foreign doctor clinic', async () => {
+          const foreignClinicId = '507f1f77bcf86cd799439999';
+          const res = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/appointments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'Visitor Invalid Clinic',
+              phone: '+201009998877',
+              clinicId: foreignClinicId,
+              scheduleId: targetSlot.scheduleId,
+              startsAt: targetSlot.startsAt
+            })
+          });
+
+          assert.equal(res.status, 404);
+          const data = await res.json();
+          assert.equal(data.success, false);
+          assert.match(data.message, /clinic/i);
+        });
+
+        // 5c. Clinic Validation: Reject mismatched clinic when schedule belongs to another clinic
+        await t.test('5c. Public booking rejects mismatched clinic for schedule', async () => {
+          const anotherClinicId = '507f1f77bcf86cd799439132';
+          // Mock findOne to return another clinic belonging to DOCTOR_1_ID
+          const savedFindOne = DoctorClinic.findOne;
+          DoctorClinic.findOne = (q) => wrapQuery({
+            _id: anotherClinicId,
+            doctorId: DOCTOR_1_ID,
+            isActive: true
+          });
+
+          try {
+            const res = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/appointments`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: 'Visitor Mismatch Clinic',
+                phone: '+201009998877',
+                clinicId: anotherClinicId,
+                scheduleId: targetSlot.scheduleId,
+                startsAt: targetSlot.startsAt
+              })
+            });
+
+            assert.equal(res.status, 400);
+            const data = await res.json();
+            assert.equal(data.success, false);
+            assert.match(data.message, /match/i);
+          } finally {
+            DoctorClinic.findOne = savedFindOne;
+          }
         });
       }
 

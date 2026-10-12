@@ -33,6 +33,7 @@ export default function DoctorPublicProfile() {
   const [slotsLoading, setSlotsLoading] = useState(true);
 
   // Booking Modal State
+  const [selectedClinicId, setSelectedClinicId] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -51,7 +52,11 @@ export default function DoctorPublicProfile() {
         setError('');
         const res = await api.get(`/api/public/doctors/${id}`);
         if (res.data?.success) {
-          setDoctor(res.data.doctor);
+          const doc = res.data.doctor;
+          setDoctor(doc);
+          if (Array.isArray(doc?.clinics) && doc.clinics.length === 1) {
+            setSelectedClinicId(doc.clinics[0].id);
+          }
         } else {
           setError(t('publicProfile.notFound') || 'Doctor profile not found');
         }
@@ -101,6 +106,29 @@ export default function DoctorPublicProfile() {
     setTimeout(() => setCopied(false), 3000);
   };
 
+  const handleClinicChange = (clinicId) => {
+    setSelectedClinicId(clinicId);
+    setSelectedSlot(null);
+    setBookingError('');
+  };
+
+  const clinics = Array.isArray(doctor?.clinics) ? doctor.clinics : [];
+  const selectedClinic = clinics.find((c) => c.id === selectedClinicId) || null;
+  const isClinicRequiredButUnselected = clinics.length > 1 && !selectedClinicId;
+
+  // Filter slots by selected clinic when a clinic is selected or when doctor has clinics
+  const visibleSlots = slots.filter((slot) => {
+    if (selectedClinicId) {
+      return slot.clinicId === selectedClinicId;
+    }
+    // If doctor has multiple clinics and none is chosen yet, don't show mixed slots
+    if (clinics.length > 1) {
+      return false;
+    }
+    // If doctor has no clinics or exactly 1 clinic without an explicit selection, show slots
+    return true;
+  });
+
   const handleBook = async (e) => {
     e.preventDefault();
     if (!selectedSlot) return;
@@ -108,13 +136,18 @@ export default function DoctorPublicProfile() {
     setBookingError('');
 
     try {
-      const res = await api.post(`/api/public/doctors/${id}/appointments`, {
+      const payload = {
         name: guestName.trim(),
         phone: guestPhone.trim(),
         reason: guestReason.trim(),
         scheduleId: selectedSlot.scheduleId,
         startsAt: selectedSlot.startsAt
-      });
+      };
+      if (selectedClinicId) {
+        payload.clinicId = selectedClinicId;
+      }
+
+      const res = await api.post(`/api/public/doctors/${id}/appointments`, payload);
 
       if (res.data?.success) {
         setBookingSuccess(res.data.appointment);
@@ -280,22 +313,84 @@ export default function DoctorPublicProfile() {
                 </div>
               </div>
 
+              {/* Clinic Selection if doctor has multiple active clinics */}
+              {Array.isArray(doctor.clinics) && doctor.clinics.length > 1 && (
+                <div className="mb-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                    <Building2 size={16} className="text-red-600" />
+                    <span>{t('publicProfile.selectClinic') || 'Select Clinic'}</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {doctor.clinics.map((clinic) => {
+                      const isSelected = selectedClinicId === clinic.id;
+                      return (
+                        <button
+                          key={clinic.id}
+                          type="button"
+                          onClick={() => handleClinicChange(clinic.id)}
+                          className={`p-3 rounded-xl border text-start transition-all ${
+                            isSelected
+                              ? 'border-red-600 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-200 font-semibold ring-2 ring-red-500/30'
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-300 text-gray-800 dark:text-gray-200'
+                          }`}
+                        >
+                          <div className="text-sm font-bold flex items-center gap-1.5">
+                            <span>{clinic.clinicName}</span>
+                            {clinic.isPrimary && (
+                              <span className="text-[10px] bg-red-100 dark:bg-red-900/60 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded font-medium">
+                                {t('doctorClinics.primaryBadge') || 'Primary'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <MapPin size={12} className="shrink-0" />
+                            <span className="truncate">{clinic.addressLine}, {clinic.city}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Show selected clinic banner if 1 clinic or clinic selected */}
+              {selectedClinic && (
+                <div className="mb-4 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/30 px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <Building2 size={14} className="text-red-600 shrink-0" />
+                  <span className="font-semibold">{selectedClinic.clinicName}</span>
+                  <span className="text-gray-400">|</span>
+                  <MapPin size={12} className="text-gray-400 shrink-0" />
+                  <span className="truncate">{selectedClinic.addressLine}, {selectedClinic.city}</span>
+                </div>
+              )}
+
               {slotsLoading ? (
                 <div className="py-12 flex justify-center">
                   <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
                 </div>
-              ) : slots.length === 0 ? (
+              ) : isClinicRequiredButUnselected ? (
+                <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                  <Building2 size={36} className="mx-auto mb-3 opacity-40 text-red-600" />
+                  <p className="text-sm font-medium">
+                    {t('publicProfile.selectClinicPrompt') || 'Please select a clinic to view available appointment slots.'}
+                  </p>
+                </div>
+              ) : visibleSlots.length === 0 ? (
                 <div className="py-12 text-center text-gray-500 dark:text-gray-400">
                   <Calendar size={36} className="mx-auto mb-3 opacity-40" />
                   <p className="text-sm font-medium">
-                    {t('publicProfile.noSlots') || 'No appointment slots currently available.'}
+                    {selectedClinicId
+                      ? (t('publicProfile.noSlotsAtClinic') || 'No appointment slots available at this clinic.')
+                      : (t('publicProfile.noSlots') || 'No appointment slots currently available.')}
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {slots.map((slot) => {
+                  {visibleSlots.map((slot) => {
                     const start = new Date(slot.startsAt);
                     const isSelected = selectedSlot?.startsAt === slot.startsAt;
+                    const clinicForSlot = clinics.find((c) => c.id === slot.clinicId) || selectedClinic;
+                    const clinicDisplayName = clinicForSlot?.clinicName || slot.consultationType?.toLowerCase() || 'Clinic';
                     return (
                       <button
                         key={slot.startsAt}
@@ -313,8 +408,9 @@ export default function DoctorPublicProfile() {
                         <div className="text-sm font-bold mt-1">
                           {start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 capitalize">
-                          {slot.consultationType?.toLowerCase() || 'Clinic'}
+                        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center gap-1">
+                          <Building2 size={12} className="shrink-0 text-red-500/70" />
+                          <span className="truncate">{clinicDisplayName}</span>
                         </div>
                       </button>
                     );
@@ -403,6 +499,9 @@ export default function DoctorPublicProfile() {
                   </p>
                   <div className="inline-block text-start bg-white dark:bg-gray-800 p-4 rounded-xl border border-green-200 dark:border-green-800 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                     <div><strong>{t('publicProfile.doctorLabel') || 'Doctor'}:</strong> {doctor.fullName}</div>
+                    {selectedClinic && (
+                      <div><strong>{t('publicProfile.clinicLabel') || 'Clinic'}:</strong> {selectedClinic.clinicName} ({selectedClinic.addressLine}, {selectedClinic.city})</div>
+                    )}
                     <div><strong>{t('publicProfile.timeLabel') || 'Time'}:</strong> {new Date(bookingSuccess.startsAt).toLocaleString()}</div>
                     <div><strong>{t('publicProfile.statusLabel') || 'Status'}:</strong> {bookingSuccess.status}</div>
                   </div>

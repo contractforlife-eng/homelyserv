@@ -482,6 +482,44 @@ test('BOOK AN APPOINTMENT (HomelyServ patient books themselves)', async (t) => {
     assert.equal(res.status, 404);
   });
 
+  await t.test('booking with an invalid or inactive clinic is rejected (404)', async () => {
+    resetBooking();
+    const slot = (await getAvailability()).body.slots[0];
+    const foreignClinicId = '507f1f77bcf86cd799439999';
+    const res = await book(DOCTOR_USER_ID, {
+      scheduleId: slot.scheduleId,
+      startsAt: slot.startsAt,
+      clinicId: foreignClinicId
+    });
+    assert.equal(res.status, 404);
+    assert.match(res.body.message, /clinic/i);
+  });
+
+  await t.test('booking with a mismatched clinic is rejected (400)', async () => {
+    resetBooking();
+    const slot = (await getAvailability()).body.slots[0];
+    const anotherClinicId = '507f1f77bcf86cd7994390c2';
+    const savedFindOne = DoctorClinic.findOne;
+    DoctorClinic.findOne = (filter = {}) => {
+      if (filter.doctorId && String(filter.doctorId) === DOCTOR_USER_ID) {
+        return chain({ _id: anotherClinicId, doctorId: DOCTOR_USER_ID, isActive: true });
+      }
+      return chain(null);
+    };
+
+    try {
+      const res = await book(DOCTOR_USER_ID, {
+        scheduleId: slot.scheduleId,
+        startsAt: slot.startsAt,
+        clinicId: anotherClinicId
+      });
+      assert.equal(res.status, 400);
+      assert.match(res.body.message, /match/i);
+    } finally {
+      DoctorClinic.findOne = savedFindOne;
+    }
+  });
+
   await t.test('an already-booked slot is rejected (no double booking)', async () => {
     resetBooking();
     const slot = (await getAvailability()).body.slots[0];

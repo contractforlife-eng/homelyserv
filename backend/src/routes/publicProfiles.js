@@ -157,14 +157,30 @@ router.get('/doctors/:doctorId/availability', publicRateLimit(60000, 60), async 
       endsAt: { $gt: now }
     }).select('startsAt endsAt');
 
-    const slots = await listAvailableSlots(doctorId, { now, booked, days: 14 });
+    const [slots, clinics] = await Promise.all([
+      listAvailableSlots(doctorId, { now, booked, days: 14 }),
+      DoctorClinic.find({ doctorId, isActive: true })
+        .select('clinicName phone email addressLine city countryCode isPrimary instructions')
+        .sort({ isPrimary: -1, createdAt: 1 })
+        .lean()
+    ]);
 
     return res.json({
       success: true,
       count: slots.length,
       consultationFee: discoverable.profile.consultationFee || 0,
       currency: 'EGP',
-      slots
+      slots,
+      clinics: clinics.map((c) => ({
+        id: String(c._id),
+        clinicName: c.clinicName,
+        phone: c.phone || '',
+        addressLine: c.addressLine,
+        city: c.city,
+        countryCode: c.countryCode,
+        isPrimary: Boolean(c.isPrimary),
+        instructions: c.instructions || ''
+      }))
     });
   } catch (error) {
     console.error('Error fetching doctor public availability:', error);
@@ -219,6 +235,22 @@ router.post('/doctors/:doctorId/appointments', publicRateLimit(60000, 15), async
       .lean();
     if (!schedule) {
       return res.status(404).json({ success: false, message: 'That appointment slot schedule is no longer available' });
+    }
+
+    // Clinic selection validation: if clinicId is supplied in body, verify it belongs
+    // to this doctor, is active, and matches the schedule's clinicId.
+    const requestedClinicId = body.clinicId ? String(body.clinicId) : '';
+    if (requestedClinicId) {
+      if (!isObjectId(requestedClinicId)) {
+        return res.status(400).json({ success: false, message: 'Invalid clinic ID' });
+      }
+      const clinicRecord = await DoctorClinic.findOne({ _id: requestedClinicId, doctorId, isActive: true }).lean();
+      if (!clinicRecord) {
+        return res.status(404).json({ success: false, message: 'Selected clinic is invalid or inactive' });
+      }
+      if (String(schedule.clinicId || '') !== requestedClinicId) {
+        return res.status(400).json({ success: false, message: 'Schedule does not match the selected clinic' });
+      }
     }
 
     const offered = await listAvailableSlots(doctorId, { now: new Date(), days: 14 });

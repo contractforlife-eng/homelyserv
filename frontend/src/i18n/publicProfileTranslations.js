@@ -41,7 +41,13 @@ export const PUBLIC_PROFILE_TRANSLATIONS = {
       gradeLevel: 'Grade / Level',
       notes: 'Additional Notes / Message',
       sendInquiryBtn: 'Submit Lesson Inquiry',
-      shareProfileBtn: 'Share My Profile'
+      shareProfileBtn: 'Share My Profile',
+      selectClinic: 'Select Clinic',
+      selectClinicPrompt: 'Please select a clinic to view available appointment slots.',
+      allClinics: 'All Clinics',
+      noSlotsAtClinic: 'No appointment slots available at this clinic.',
+      clinicLabel: 'Clinic',
+      clinicAddress: 'Address'
     }
   },
   ar: {
@@ -79,7 +85,13 @@ export const PUBLIC_PROFILE_TRANSLATIONS = {
       gradeLevel: 'الصف / المرحلة',
       notes: 'ملاحظات إضافية / رسالة',
       sendInquiryBtn: 'إرسال طلب الدرس',
-      shareProfileBtn: 'مشاركة ملفي الشخصي'
+      shareProfileBtn: 'مشاركة ملفي الشخصي',
+      selectClinic: 'اختر العيادة',
+      selectClinicPrompt: 'يرجى اختيار العيادة لعرض المواعيد المتاحة.',
+      allClinics: 'جميع العيادات',
+      noSlotsAtClinic: 'لا توجد مواعيد متاحة في هذه العيادة.',
+      clinicLabel: 'العيادة',
+      clinicAddress: 'العنوان'
     }
   },
   fr: {
@@ -117,7 +129,13 @@ export const PUBLIC_PROFILE_TRANSLATIONS = {
       gradeLevel: 'Classe / Niveau',
       notes: 'Remarques supplémentaires',
       sendInquiryBtn: 'Envoyer la demande',
-      shareProfileBtn: 'Partager mon profil'
+      shareProfileBtn: 'Partager mon profil',
+      selectClinic: 'Choisir la clinique',
+      selectClinicPrompt: 'Veuillez choisir une clinique pour voir les créneaux disponibles.',
+      allClinics: 'Toutes les cliniques',
+      noSlotsAtClinic: 'Aucun créneau disponible dans cette clinique.',
+      clinicLabel: 'Clinique',
+      clinicAddress: 'Adresse'
     }
   },
   ru: {
@@ -155,7 +173,13 @@ export const PUBLIC_PROFILE_TRANSLATIONS = {
       gradeLevel: 'Класс / Уровень',
       notes: 'Дополнительные пожелания',
       sendInquiryBtn: 'Отправить запрос',
-      shareProfileBtn: 'Поделиться профилем'
+      shareProfileBtn: 'Поделиться профилем',
+      selectClinic: 'Выберите клинику',
+      selectClinicPrompt: 'Пожалуйста, выберите клинику, чтобы увидеть доступные окна.',
+      allClinics: 'Все клиники',
+      noSlotsAtClinic: 'В этой клинике нет доступных окон для записи.',
+      clinicLabel: 'Клиника',
+      clinicAddress: 'Адрес'
     }
   },
   tr: {
@@ -193,7 +217,13 @@ export const PUBLIC_PROFILE_TRANSLATIONS = {
       gradeLevel: 'Sınıf / Düzey',
       notes: 'Ek Notlar / Mesaj',
       sendInquiryBtn: 'Ders Talebini Gönder',
-      shareProfileBtn: 'Profilimi Paylaş'
+      shareProfileBtn: 'Profilimi Paylaş',
+      selectClinic: 'Klinik Seçin',
+      selectClinicPrompt: 'Uygun randevu saatlerini görmek için lütfen bir klinik seçin.',
+      allClinics: 'Tüm Klinikler',
+      noSlotsAtClinic: 'Bu klinikte uygun randevu saati bulunmamaktadır.',
+      clinicLabel: 'Klinik',
+      clinicAddress: 'Adres'
     }
   },
   de: {
@@ -231,7 +261,13 @@ export const PUBLIC_PROFILE_TRANSLATIONS = {
       gradeLevel: 'Klasse / Stufe',
       notes: 'Zusätzliche Notizen',
       sendInquiryBtn: 'Anfrage absenden',
-      shareProfileBtn: 'Mein Profil teilen'
+      shareProfileBtn: 'Mein Profil teilen',
+      selectClinic: 'Praxis auswählen',
+      selectClinicPrompt: 'Bitte wählen Sie eine Praxis aus, um verfügbare Termine anzuzeigen.',
+      allClinics: 'Alle Praxen',
+      noSlotsAtClinic: 'In dieser Praxis sind zurzeit keine Termine verfügbar.',
+      clinicLabel: 'Praxis',
+      clinicAddress: 'Adresse'
     }
   }
 };

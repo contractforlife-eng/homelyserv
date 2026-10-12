@@ -428,7 +428,12 @@ const en = {
       bookingFailed: 'Failed to book the appointment.',
       myAppointments: 'My Appointments',
       reason: 'Reason (optional)',
-      premium: 'Premium'
+      premium: 'Premium',
+      selectClinic: 'Select Clinic',
+      selectClinicPrompt: 'Please select a clinic to view available appointment slots.',
+      allClinics: 'All Clinics',
+      noSlotsAtClinic: 'No appointment slots available at this clinic.',
+      clinicAddress: 'Address'
     },
     doctorPrescriptions: {
       pageTitle: 'Prescriptions',
@@ -2248,7 +2253,12 @@ const ar = {
       bookingFailed: 'تعذّر حجز الموعد.',
       myAppointments: 'مواعيدي',
       reason: 'السبب (اختياري)',
-      premium: 'بريميوم'
+      premium: 'بريميوم',
+      selectClinic: 'اختر العيادة',
+      selectClinicPrompt: 'يرجى اختيار العيادة لعرض المواعيد المتاحة.',
+      allClinics: 'جميع العيادات',
+      noSlotsAtClinic: 'لا توجد مواعيد متاحة في هذه العيادة.',
+      clinicAddress: 'العنوان'
     },
     doctorPrescriptions: {
       pageTitle: 'الوصفات الطبية',
@@ -3997,7 +4007,12 @@ const fr = {
       bookingFailed: 'Échec de la réservation du rendez-vous.',
       myAppointments: 'Mes rendez-vous',
       reason: 'Motif (facultatif)',
-      premium: 'Premium'
+      premium: 'Premium',
+      selectClinic: 'Choisir la clinique',
+      selectClinicPrompt: 'Veuillez choisir une clinique pour voir les créneaux disponibles.',
+      allClinics: 'Toutes les cliniques',
+      noSlotsAtClinic: 'Aucun créneau disponible dans cette clinique.',
+      clinicAddress: 'Adresse'
     },
     doctorPrescriptions: {
       pageTitle: 'Ordonnances',
@@ -5727,7 +5742,12 @@ const ru = {
       bookingFailed: 'Не удалось записаться на приём.',
       myAppointments: 'Мои записи',
       reason: 'Причина (необязательно)',
-      premium: 'Премиум'
+      premium: 'Премиум',
+      selectClinic: 'Выберите клинику',
+      selectClinicPrompt: 'Пожалуйста, выберите клинику, чтобы увидеть доступные окна.',
+      allClinics: 'Все клиники',
+      noSlotsAtClinic: 'В этой клинике нет доступных окон для записи.',
+      clinicAddress: 'Адрес'
     },
     doctorPrescriptions: {
       pageTitle: 'Рецепты',
@@ -7455,7 +7475,12 @@ const tr = {
       bookingFailed: 'Randevu oluşturulamadı.',
       myAppointments: 'Randevularım',
       reason: 'Sebep (isteğe bağlı)',
-      premium: 'Premium'
+      premium: 'Premium',
+      selectClinic: 'Klinik Seçin',
+      selectClinicPrompt: 'Uygun randevu saatlerini görmek için lütfen bir klinik seçin.',
+      allClinics: 'Tüm Klinikler',
+      noSlotsAtClinic: 'Bu klinikte uygun randevu saati bulunmamaktadır.',
+      clinicAddress: 'Adres'
     },
     doctorPrescriptions: {
       pageTitle: 'Reçeteler',
@@ -9183,7 +9208,12 @@ const de = {
       bookingFailed: 'Termin konnte nicht vereinbart werden.',
       myAppointments: 'Meine Termine',
       reason: 'Grund (optional)',
-      premium: 'Premium'
+      premium: 'Premium',
+      selectClinic: 'Praxis auswählen',
+      selectClinicPrompt: 'Bitte wählen Sie eine Praxis aus, um verfügbare Termine anzuzeigen.',
+      allClinics: 'Alle Praxen',
+      noSlotsAtClinic: 'In dieser Praxis sind zurzeit keine Termine verfügbar.',
+      clinicAddress: 'Adresse'
     },
     doctorPrescriptions: {
       pageTitle: 'Rezepte',

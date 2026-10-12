@@ -431,10 +431,56 @@ const BOOK_INPUT_CLS =
   'w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100';
 
 /** Date/time/reason picker inside the booking modal. */
-const BookingSlotPicker = ({ dates, selectedDate, setSelectedDate, timesForDate, selectedSlot, setSelectedSlot, reason, setReason, fmtTime }) => {
+const BookingSlotPicker = ({
+  clinics,
+  selectedClinicId,
+  setSelectedClinicId,
+  dates,
+  selectedDate,
+  setSelectedDate,
+  timesForDate,
+  selectedSlot,
+  setSelectedSlot,
+  reason,
+  setReason,
+  fmtTime
+}) => {
   const { t } = useTranslation();
+  const selectedClinic = clinics.find((c) => c.id === selectedClinicId) || null;
+
   return (
     <>
+      {/* Clinic selector if doctor has multiple active clinics */}
+      {clinics.length > 1 && (
+        <div>
+          <label className={SEARCH_LABEL_CLS} htmlFor="book-clinic">
+            {t('findADoctor.selectClinic') || 'Select Clinic'}
+          </label>
+          <select
+            id="book-clinic"
+            value={selectedClinicId}
+            onChange={(e) => setSelectedClinicId(e.target.value)}
+            className={BOOK_INPUT_CLS}
+          >
+            <option value="">{t('findADoctor.selectClinic') || 'Select Clinic'}</option>
+            {clinics.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.clinicName} — {c.addressLine}, {c.city}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Selected clinic address display */}
+      {selectedClinic && (
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+          <Building2 size={14} className="text-red-600 flex-shrink-0" />
+          <span className="font-medium text-slate-700 dark:text-slate-300">{selectedClinic.clinicName}:</span>
+          <span className="truncate">{selectedClinic.addressLine}, {selectedClinic.city}</span>
+        </div>
+      )}
+
       <div>
         <label className={SEARCH_LABEL_CLS} htmlFor="book-date">
           {t('findADoctor.selectDate') || 'Select Date'}
@@ -484,6 +530,8 @@ const BookAppointmentModal = ({ doctor, onClose, onBooked }) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState([]);
+  const [clinics, setClinics] = useState([]);
+  const [selectedClinicId, setSelectedClinicId] = useState('');
   const [consultationFee, setConsultationFee] = useState(0);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -497,7 +545,13 @@ const BookAppointmentModal = ({ doctor, onClose, onBooked }) => {
     api.get(`/api/doctor-search/doctors/${doctor.id}/availability`)
       .then((res) => {
         if (cancelled) return;
-        setSlots(Array.isArray(res.data?.slots) ? res.data.slots : []);
+        const fetchedSlots = Array.isArray(res.data?.slots) ? res.data.slots : [];
+        const fetchedClinics = Array.isArray(res.data?.clinics) ? res.data.clinics : [];
+        setSlots(fetchedSlots);
+        setClinics(fetchedClinics);
+        if (fetchedClinics.length === 1) {
+          setSelectedClinicId(fetchedClinics[0].id);
+        }
         setConsultationFee(Number(res.data?.consultationFee) || 0);
       })
       .catch((err) => {
@@ -507,21 +561,47 @@ const BookAppointmentModal = ({ doctor, onClose, onBooked }) => {
     return () => { cancelled = true; };
   }, [doctor?.id, t]);
 
-  const dates = [...new Set(slots.map((s) => String(s.startsAt).slice(0, 10)))];
+  const handleClinicChange = (clinicId) => {
+    setSelectedClinicId(clinicId);
+    setSelectedDate('');
+    setSelectedSlot(null);
+  };
+
+  const isClinicRequiredButUnselected = clinics.length > 1 && !selectedClinicId;
+
+  // Filter slots by selected clinic
+  const filteredSlots = slots.filter((slot) => {
+    if (selectedClinicId) {
+      return slot.clinicId === selectedClinicId;
+    }
+    if (clinics.length > 1) {
+      return false;
+    }
+    return true;
+  });
+
+  const dates = [...new Set(filteredSlots.map((s) => String(s.startsAt).slice(0, 10)))];
   const timesForDate = selectedDate
-    ? slots.filter((s) => String(s.startsAt).slice(0, 10) === selectedDate)
+    ? filteredSlots.filter((s) => String(s.startsAt).slice(0, 10) === selectedDate)
     : [];
+
+  const selectedClinic = clinics.find((c) => c.id === selectedClinicId) || null;
 
   const submit = async () => {
     if (!selectedSlot) return;
     setSubmitting(true);
     setError('');
     try {
-      await api.post(`/api/doctor-search/doctors/${doctor.id}/appointments`, {
+      const payload = {
         scheduleId: selectedSlot.scheduleId,
         startsAt: selectedSlot.startsAt,
         reason: reason.trim() || undefined
-      });
+      };
+      if (selectedClinicId) {
+        payload.clinicId = selectedClinicId;
+      }
+
+      await api.post(`/api/doctor-search/doctors/${doctor.id}/appointments`, payload);
       setSuccess(true);
       setTimeout(() => onBooked?.(), 1200);
     } catch (err) {
@@ -567,6 +647,11 @@ const BookAppointmentModal = ({ doctor, onClose, onBooked }) => {
             <p className="text-xs text-emerald-700 dark:text-emerald-300">
               {t('findADoctor.bookingSuccess') || 'Booking successful.'}
             </p>
+            {selectedClinic && (
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+                {selectedClinic.clinicName} — {selectedClinic.addressLine}, {selectedClinic.city}
+              </p>
+            )}
           </div>
         )}
         {!loading && !success && (
@@ -576,12 +661,55 @@ const BookAppointmentModal = ({ doctor, onClose, onBooked }) => {
                 <p className="text-xs text-rose-700 dark:text-rose-300">{error}</p>
               </div>
             )}
-            {slots.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400 py-4">
-                {t('findADoctor.noAvailability') || 'No available appointments.'}
-              </p>
+            {isClinicRequiredButUnselected ? (
+              <div className="space-y-3">
+                <BookingSlotPicker
+                  clinics={clinics}
+                  selectedClinicId={selectedClinicId}
+                  setSelectedClinicId={handleClinicChange}
+                  dates={dates}
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  timesForDate={timesForDate}
+                  selectedSlot={selectedSlot}
+                  setSelectedSlot={setSelectedSlot}
+                  reason={reason}
+                  setReason={setReason}
+                  fmtTime={fmtTime}
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-2">
+                  {t('findADoctor.selectClinicPrompt') || 'Please select a clinic to view available appointment slots.'}
+                </p>
+              </div>
+            ) : filteredSlots.length === 0 ? (
+              <div className="space-y-3">
+                {clinics.length > 1 && (
+                  <BookingSlotPicker
+                    clinics={clinics}
+                    selectedClinicId={selectedClinicId}
+                    setSelectedClinicId={handleClinicChange}
+                    dates={dates}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    timesForDate={timesForDate}
+                    selectedSlot={selectedSlot}
+                    setSelectedSlot={setSelectedSlot}
+                    reason={reason}
+                    setReason={setReason}
+                    fmtTime={fmtTime}
+                  />
+                )}
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
+                  {selectedClinicId
+                    ? (t('findADoctor.noSlotsAtClinic') || 'No appointment slots available at this clinic.')
+                    : (t('findADoctor.noAvailability') || 'No available appointments.')}
+                </p>
+              </div>
             ) : (
               <BookingSlotPicker
+                clinics={clinics}
+                selectedClinicId={selectedClinicId}
+                setSelectedClinicId={handleClinicChange}
                 dates={dates}
                 selectedDate={selectedDate}
                 setSelectedDate={setSelectedDate}
