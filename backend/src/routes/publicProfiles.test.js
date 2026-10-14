@@ -505,6 +505,42 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
       await t.test('7. Unpublished Teacher profile returns 404', async () => {
         const res = await fetch(`${base}/api/public/teachers/${TEACHER_UNPUBLISHED_ID}`);
         assert.equal(res.status, 404);
+        const data = await res.json();
+        assert.match(data.message, /not published/i);
+      });
+
+      // 7b. Missing, non-teacher, or suspended teacher returns 404
+      await t.test('7b. Missing profile, non-teacher, or suspended teacher returns 404', async () => {
+        // Missing teacher profile
+        const nonExistentTeacherId = '507f1f77bcf86cd799439888';
+        const resMissing = await fetch(`${base}/api/public/teachers/${nonExistentTeacherId}`);
+        assert.equal(resMissing.status, 404);
+
+        // Non-teacher role (e.g. WORKER or DOCTOR)
+        const resDoctor = await fetch(`${base}/api/public/teachers/${DOCTOR_1_ID}`);
+        assert.equal(resDoctor.status, 404);
+
+        // Suspended teacher
+        const suspendedTeacherId = '507f1f77bcf86cd799439777';
+        const savedTeacherFind = User.findById;
+        User.findById = (id) => {
+          if (String(id) === suspendedTeacherId) {
+            return wrapQuery({
+              _id: suspendedTeacherId,
+              role: 'TEACHER',
+              fullName: 'Suspended Teacher',
+              isSuspended: true
+            });
+          }
+          return savedTeacherFind(id);
+        };
+
+        try {
+          const resSuspended = await fetch(`${base}/api/public/teachers/${suspendedTeacherId}`);
+          assert.equal(resSuspended.status, 404);
+        } finally {
+          User.findById = savedTeacherFind;
+        }
       });
 
       // 8. Teacher Guest Lesson Inquiry

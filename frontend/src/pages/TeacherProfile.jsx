@@ -124,6 +124,7 @@ const TeacherProfile = () => {
     lessonRate: '',
     pricingCurrency: '',
     availableForNewStudents: true,
+    isPublished: false,
     isProfileComplete: false
   });
 
@@ -186,6 +187,7 @@ const TeacherProfile = () => {
             lessonRate: resolvedLessonRate,
             pricingCurrency: resolvedCurrency,
             availableForNewStudents: prof.availableForNewStudents !== undefined ? Boolean(prof.availableForNewStudents) : true,
+            isPublished: Boolean(prof.isPublished),
             isProfileComplete: Boolean(prof.isProfileComplete)
           };
 
@@ -293,7 +295,8 @@ const TeacherProfile = () => {
         hourlyRate: (formData.lessonRate || formData.hourlyRate) ? Number(formData.lessonRate || formData.hourlyRate) : 0,
         lessonRate: (formData.lessonRate || formData.hourlyRate) ? Number(formData.lessonRate || formData.hourlyRate) : 0,
         pricingCurrency: formData.pricingCurrency || undefined,
-        availableForNewStudents: formData.availableForNewStudents
+        availableForNewStudents: formData.availableForNewStudents,
+        isPublished: Boolean(formData.isPublished)
       };
 
       const res = await api.put('/api/teachers/profile', payload);
@@ -302,6 +305,7 @@ const TeacherProfile = () => {
         const updatedProf = res.data.profile || {};
         const savedData = {
           ...formData,
+          isPublished: Boolean(updatedProf.isPublished),
           isProfileComplete: Boolean(updatedProf.isProfileComplete)
         };
         setFormData(savedData);
@@ -836,6 +840,38 @@ const TeacherProfile = () => {
                     ? (t('teacherProfile.acceptingYes') || 'Yes, accepting new students')
                     : (t('teacherProfile.acceptingNo') || 'No, not taking students')}
                 </ViewValue>
+              )}
+            </div>
+
+            <div className="sm:col-span-2 pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/80">
+              <div>
+                <span className="text-sm font-bold text-gray-900 dark:text-white block">
+                  {t('teacherProfile.publishProfile') || 'Publish Profile Online'}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('teacherProfile.publishProfileDesc') || 'Make your profile publicly accessible via your share link and visible to prospective students.'}
+                </span>
+              </div>
+              {isEditing ? (
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isPublished}
+                    onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                </label>
+              ) : (
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  formData.isPublished
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {formData.isPublished
+                    ? (t('teacherProfile.published') || 'Published')
+                    : (t('teacherProfile.unpublished') || 'Unpublished')}
+                </span>
               )}
             </div>
           </div>

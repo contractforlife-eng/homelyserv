@@ -84,8 +84,11 @@ const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialPr
     if (currentProfile && String(filter.userId) === String(currentProfile.userId)) {
       return Promise.resolve({
         ...currentProfile,
-        toObject() { return { ...currentProfile }; },
-        save() { return Promise.resolve(this); }
+        toObject() { return { ...this }; },
+        save() {
+          currentProfile = { ...this };
+          return Promise.resolve(this);
+        }
       });
     }
     return Promise.resolve(null);
@@ -227,6 +230,47 @@ test('Teacher Foundation Tests', async (t) => {
       const data = await res.json();
       assert.equal(data.success, false);
       assert.match(data.message, /non-negative/i);
+    });
+  });
+
+  await t.test('8. PUT /api/teachers/profile updates and persists isPublished state', async () => {
+    await withTeacherServer({
+      initialProfile: {
+        userId: TEACHER_ID,
+        title: 'Mathematics Tutor',
+        mainSubject: 'mathematics',
+        teachingLevels: ['secondary'],
+        bio: 'Professional educator with 10 years experience.',
+        isPublished: false
+      }
+    }, async (baseUrl, { getProfile }) => {
+      // Publish the profile
+      const publishRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          isPublished: true
+        })
+      });
+      assert.equal(publishRes.status, 200);
+      const publishData = await publishRes.json();
+      assert.equal(publishData.success, true);
+      assert.equal(publishData.profile.isPublished, true);
+      assert.equal(getProfile().isPublished, true);
+
+      // Unpublish the profile
+      const unpublishRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          isPublished: false
+        })
+      });
+      assert.equal(unpublishRes.status, 200);
+      const unpublishData = await unpublishRes.json();
+      assert.equal(unpublishData.success, true);
+      assert.equal(unpublishData.profile.isPublished, false);
+      assert.equal(getProfile().isPublished, false);
     });
   });
 });

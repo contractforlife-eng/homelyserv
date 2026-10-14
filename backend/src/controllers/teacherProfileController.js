@@ -376,6 +376,11 @@ export const updateTeacherProfile = async (req, res) => {
       updates.availableForNewStudents = Boolean(body.availableForNewStudents);
     }
 
+    // 15b. isPublished: boolean
+    if (Object.prototype.hasOwnProperty.call(body, 'isPublished')) {
+      updates.isPublished = Boolean(body.isPublished);
+    }
+
     // 16. profileImage: optional string URL
     if (Object.prototype.hasOwnProperty.call(body, 'profileImage')) {
       if (typeof body.profileImage === 'string') {
