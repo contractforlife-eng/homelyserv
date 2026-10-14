@@ -169,20 +169,31 @@ const timeToMinutes = (hhmm) => {
  *
  * Returns booking-relevant fields only — no doctor private/admin data.
  */
-export const listAvailableSlots = async (doctorUserId, { days = 14, now = new Date(), booked = [] } = {}) => {
+export const listAvailableSlots = async (
+  doctorUserId,
+  { days = 14, now = new Date(), booked = [], clinicId } = {}
+) => {
   const schedules = await DoctorSchedule.find({ doctorId: doctorUserId, isActive: true })
     .select('dayOfWeek startTime endTime slotDurationMinutes consultationType clinicId serviceId')
     .sort({ dayOfWeek: 1, startTime: 1 })
     .lean();
 
-  if (!Array.isArray(schedules) || schedules.length === 0) return [];
+  // If a clinic is selected in the public UI, only expand that clinic's
+  // schedules into bookable slots.
+  const clinicsSchedules = clinicId
+    ? Array.isArray(schedules)
+      ? schedules.filter((s) => String(s.clinicId || '') === String(clinicId))
+      : []
+    : schedules;
+
+  if (!Array.isArray(clinicsSchedules) || clinicsSchedules.length === 0) return [];
 
   const slots = [];
   for (let offset = 0; offset < days; offset += 1) {
     const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
     const dow = day.getUTCDay();
 
-    for (const schedule of schedules) {
+    for (const schedule of clinicsSchedules) {
       if (Number(schedule.dayOfWeek) !== dow) continue;
 
       const stepMinutes = Number(schedule.slotDurationMinutes) > 0 ? Number(schedule.slotDurationMinutes) : 30;

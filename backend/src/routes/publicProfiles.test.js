@@ -7,7 +7,7 @@
 // 2. Public DTO privacy and sensitive field exclusion.
 // 3. Guest doctor booking without User account creation.
 // 4. ClinicPatient ownership isolation per doctor.
-// 5. Automatic confirmation of available doctor slot.
+// 5. PENDING request creation (doctor approval required) for booked doctor slot.
 // 6. Invalid, expired, unavailable, or overlapping slots rejected.
 // 7. Atomic concurrency slot lock prevents duplicate booking.
 // 8. Authenticated booking preserves patientId: req.userId invariant.
@@ -17,6 +17,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import DoctorProfile from '../models/DoctorProfile.js';
@@ -26,10 +27,14 @@ import DoctorConsultationService from '../models/DoctorConsultationService.js';
 import DoctorAppointment from '../models/DoctorAppointment.js';
 import ClinicPatient from '../models/ClinicPatient.js';
 import DoctorBookingGuard from '../models/DoctorBookingGuard.js';
+import prisma from '../lib/prisma.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import TeacherStudent from '../models/TeacherStudent.js';
 import publicProfilesRouter from './publicProfiles.js';
 import doctorsRouter from './doctors.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'doctor-public-test-secret-32-chars-long';
+process.env.JWT_SECRET = JWT_SECRET;
 
 const DOCTOR_1_ID = '507f1f77bcf86cd799439111';
 const DOCTOR_UNPUBLISHED_ID = '507f1f77bcf86cd799439112';
@@ -86,6 +91,7 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
   const origStartSession = mongoose.startSession;
   const origGuardUpdateOne = DoctorBookingGuard.updateOne;
   const origGuardFindOneAndUpdate = DoctorBookingGuard.findOneAndUpdate;
+  const origNotificationCreate = prisma.notification?.create;
 
   const mockUsers = {
     [DOCTOR_1_ID]: {
@@ -114,6 +120,14 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
       _id: TEACHER_UNPUBLISHED_ID,
       role: 'TEACHER',
       fullName: 'Prof. Hidden Teacher'
+    },
+    '507f1f77bcf86cd799439099': {
+      _id: '507f1f77bcf86cd799439099',
+      role: 'STUDENT',
+      fullName: 'Student Authenticated',
+      email: 'student.auth@homelyserv.test',
+      isSuspended: false,
+      tokenVersion: 0
     }
   };
 
@@ -206,11 +220,30 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
   DoctorSchedule.find = () => wrapQuery([validSchedule]);
   DoctorSchedule.findOne = (q) => wrapQuery(q?._id === SCHEDULE_1_ID ? validSchedule : null);
 
+  // Second clinic + schedule used by regression test 3b (clinic-specific availability)
+  const CLINIC_2_ID = '507f1f77bcf86cd799439132';
+  const SCHEDULE_2_ID = '507f1f77bcf86cd799439142';
+  const secondSchedule = {
+    _id: SCHEDULE_2_ID,
+    doctorId: DOCTOR_1_ID,
+    clinicId: CLINIC_2_ID,
+    consultationType: 'CLINIC',
+    dayOfWeek: (todayDow + 1) % 7,
+    startTime: '09:00',
+    endTime: '12:00',
+    slotDurationMinutes: 60,
+    isActive: true
+  };
+
   DoctorAppointment.find = (q) => {
     // Return appointments matching filter
     const matches = createdAppointments.filter((a) => {
       if (q?.doctorId && String(a.doctorId) !== String(q.doctorId)) return false;
       if (q?.clinicPatientId && String(a.clinicPatientId) !== String(q.clinicPatientId)) return false;
+      if (q?.patientId && String(a.patientId) !== String(q.patientId)) return false;
+      if (q?.status?.$in && !q.status.$in.includes(a.status)) return false;
+      if (q?.startsAt?.$lt && !(new Date(a.startsAt) < new Date(q.startsAt.$lt))) return false;
+      if (q?.endsAt?.$gt && !(new Date(a.endsAt) > new Date(q.endsAt.$gt))) return false;
       return true;
     });
     return wrapQuery(matches);
@@ -271,6 +304,17 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
   DoctorBookingGuard.updateOne = async () => ({ acknowledged: true, matchedCount: 1 });
   DoctorBookingGuard.findOneAndUpdate = async () => ({ _id: DOCTOR_1_ID, seq: 1 });
 
+  // ISOLATION (critical): the real createNotification writes through
+  // prisma.notification.create against the production DATABASE_URL. Stub it so
+  // no external Postgres connection is ever attempted during these tests.
+  const notifications = [];
+  prisma.notification = {
+    create: async ({ data }) => {
+      notifications.push(data);
+      return { id: `n-${notifications.length}`, ...data };
+    }
+  };
+
   try {
     await withPublicServer(async (base) => {
       // 1. Published Doctor Profile allows anonymous access
@@ -308,10 +352,37 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
         availableSlots = data.slots;
       });
 
-      // 4. Guest Booking Creates ClinicPatient and Confirmed Appointment (Zero User account)
+      // 3b. Clinic-specific availability: slots are served only for the queried clinic
+      await t.test('3b. Availability filtered by clinic returns only that clinic slots', async () => {
+        const savedScheduleFind = DoctorSchedule.find;
+        const savedApptFind = DoctorAppointment.find;
+        // Both clinics' schedules active; no bookings in the mock
+        DoctorSchedule.find = () => wrapQuery([validSchedule, secondSchedule]);
+        DoctorAppointment.find = () => wrapQuery([]);
+
+        try {
+          const resA = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/availability?clinicId=${CLINIC_1_ID}`);
+          assert.equal(resA.status, 200);
+          const dataA = await resA.json();
+          assert.equal(dataA.success, true);
+          assert.ok(dataA.slots.length > 0, 'clinic A must expose its own slots');
+          assert.ok(
+            dataA.slots.every((s) => String(s.clinicId) === CLINIC_1_ID),
+            'clinic A availability must only contain clinic A slots'
+          );
+
+          const resB = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/availability?clinicId=${CLINIC_2_ID}`);
+          assert.equal(resB.status, 404, 'unknown doctor clinic must yield 404');
+        } finally {
+          DoctorSchedule.find = savedScheduleFind;
+          DoctorAppointment.find = savedApptFind;
+        }
+      });
+
+      // 4. Guest Booking Creates ClinicPatient and PENDING Appointment (Zero User account)
       if (availableSlots.length > 0) {
         const targetSlot = availableSlots[0];
-        await t.test('4. Guest can book doctor appointment: auto-confirmed, no User account created', async () => {
+        await t.test('4. Guest can request doctor appointment: PENDING, no User account created', async () => {
           const res = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/appointments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -327,14 +398,14 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
           assert.equal(res.status, 201);
           const data = await res.json();
           assert.equal(data.success, true);
-          assert.equal(data.appointment.status, 'CONFIRMED');
+          assert.equal(data.appointment.status, 'PENDING');
 
           // Check created entities in memory
           const appt = createdAppointments[0];
           assert.ok(appt);
           assert.equal(appt.patientId, null, 'patientId MUST be null for guest bookings');
           assert.ok(appt.clinicPatientId, 'clinicPatientId must be set');
-          assert.equal(appt.status, 'CONFIRMED');
+          assert.equal(appt.status, 'PENDING');
 
           // Check clinic patient
           const cp = createdClinicPatients[0];
@@ -475,6 +546,66 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
         const clinicAppts = createdAppointments.filter((a) => a.doctorId === DOCTOR_1_ID && a.clinicPatientId);
         assert.equal(clinicAppts.length, 1, 'Guest appointment belongs to clinic patients');
       });
+
+      // 10. Authenticated Student Doctor Booking: patientId is set to student user ID and appears in patient account
+      await t.test('10. Authenticated Student Doctor Booking sets patientId and clinicPatientId is null', async () => {
+        const studentId = '507f1f77bcf86cd799439099';
+        const token = jwt.sign({ userId: studentId, role: 'STUDENT', tokenVersion: 0 }, JWT_SECRET, { expiresIn: '1h' });
+
+        // Offer a fresh slot
+        const freshScheduleId = '507f1f77bcf86cd799439199';
+        const freshSchedule = {
+          _id: freshScheduleId,
+          doctorId: DOCTOR_1_ID,
+          clinicId: CLINIC_1_ID,
+          consultationType: 'CLINIC',
+          dayOfWeek: new Date().getUTCDay(),
+          startTime: '14:00',
+          endTime: '15:00',
+          slotDurationMinutes: 30,
+          isActive: true
+        };
+        const prevFind = DoctorSchedule.find;
+        const prevFindOne = DoctorSchedule.findOne;
+        DoctorSchedule.find = () => wrapQuery([freshSchedule]);
+        DoctorSchedule.findOne = (q) => wrapQuery(freshSchedule);
+
+        try {
+          const availRes = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/availability`);
+          const availData = await availRes.json();
+          const slot = (availData.slots || [])[0];
+          assert.ok(slot, 'Fresh slot available');
+
+          const bookRes = await fetch(`${base}/api/public/doctors/${DOCTOR_1_ID}/appointments`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: 'Student Authenticated',
+              phone: '+201005556677',
+              scheduleId: slot.scheduleId,
+              startsAt: slot.startsAt,
+              reason: 'Checkup for student'
+            })
+          });
+
+          const bookData = await bookRes.json();
+          assert.equal(bookRes.status, 201, bookData.message || 'Booking failed');
+          assert.equal(bookData.success, true);
+          assert.equal(bookData.appointment.status, 'PENDING');
+
+          const created = createdAppointments.find((a) => a.scheduleId === slot.scheduleId);
+          assert.ok(created);
+          assert.equal(String(created.patientId), studentId, 'patientId derived strictly from authenticated user');
+          assert.equal(created.clinicPatientId, null, 'clinicPatientId must be null for authenticated patient');
+          assert.equal(created.status, 'PENDING', 'status must remain PENDING until doctor approval');
+        } finally {
+          DoctorSchedule.find = prevFind;
+          DoctorSchedule.findOne = prevFindOne;
+        }
+      });
     });
   } finally {
     // Restore originals
@@ -496,5 +627,10 @@ test('Public Profiles & Guest Bookings Test Suite', async (t) => {
     mongoose.startSession = origStartSession;
     DoctorBookingGuard.updateOne = origGuardUpdateOne;
     DoctorBookingGuard.findOneAndUpdate = origGuardFindOneAndUpdate;
+    if (origNotificationCreate) {
+      prisma.notification.create = origNotificationCreate;
+    } else {
+      delete prisma.notification?.create;
+    }
   }
 });

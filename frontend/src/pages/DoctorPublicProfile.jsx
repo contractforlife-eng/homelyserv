@@ -489,13 +489,13 @@ export default function DoctorPublicProfile() {
 
               {/* Booking Success Banner */}
               {bookingSuccess && (
-                <div className="mt-8 p-6 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-2xl text-center animate-fadeIn">
-                  <CheckCircle size={36} className="text-green-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-green-900 dark:text-green-200 mb-1">
-                    {t('publicProfile.appointmentConfirmed') || 'Appointment Confirmed!'}
+                <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl text-center animate-fadeIn">
+                  <CheckCircle size={36} className="text-blue-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-blue-900 dark:text-blue-200 mb-1">
+                    {t('publicProfile.bookingSubmitted') || 'Booking request submitted'}
                   </h3>
-                  <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                    {t('publicProfile.confirmedDesc') || 'Your appointment has been reserved and confirmed with the doctor.'}
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                    {t('publicProfile.submitDesc') || 'Your appointment request is pending and has been submitted to the doctor for approval.'}
                   </p>
                   <div className="inline-block text-start bg-white dark:bg-gray-800 p-4 rounded-xl border border-green-200 dark:border-green-800 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                     <div><strong>{t('publicProfile.doctorLabel') || 'Doctor'}:</strong> {doctor.fullName}</div>
