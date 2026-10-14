@@ -348,4 +348,95 @@ test('Teacher Foundation Tests', async (t) => {
       assert.equal(unpubPublicRes.status, 404);
     });
   });
+
+  await t.test('9. PUT /api/teachers/profile persists qualifications, languages, education, certifications and maintains them across saves', async () => {
+    await withTeacherServer({
+      initialProfile: {
+        userId: TEACHER_ID,
+        title: 'Mathematics Tutor',
+        mainSubject: 'mathematics',
+        teachingLevels: ['secondary'],
+        bio: 'Professional educator with 10 years experience.',
+        languages: ['English'],
+        qualifications: ['B.Sc. Mathematics'],
+        education: ['Cairo University'],
+        certifications: ['Certified Math Teacher'],
+        isPublished: true
+      }
+    }, async (baseUrl, { getProfile }) => {
+      // 1. Save full profile with expanded qualifications
+      const saveRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          languages: ['English', 'Arabic'],
+          qualifications: ['B.Sc. Mathematics', 'M.Sc. Applied Statistics'],
+          education: ['Cairo University', 'Ain Shams University'],
+          certifications: ['Certified Math Teacher', 'Advanced Pedagogy Certificate'],
+          isPublished: true
+        })
+      });
+      assert.equal(saveRes.status, 200);
+      const saveData = await saveRes.json();
+      assert.equal(saveData.success, true);
+      assert.deepEqual(saveData.profile.qualifications, ['B.Sc. Mathematics', 'M.Sc. Applied Statistics']);
+      assert.deepEqual(saveData.profile.languages, ['English', 'Arabic']);
+      assert.deepEqual(saveData.profile.education, ['Cairo University', 'Ain Shams University']);
+      assert.deepEqual(saveData.profile.certifications, ['Certified Math Teacher', 'Advanced Pedagogy Certificate']);
+      assert.equal(saveData.profile.isPublished, true);
+
+      // 2. Fresh GET confirms persistence of all arrays
+      const getRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' })
+      });
+      assert.equal(getRes.status, 200);
+      const getData = await getRes.json();
+      assert.deepEqual(getData.profile.qualifications, ['B.Sc. Mathematics', 'M.Sc. Applied Statistics']);
+      assert.equal(getData.profile.isPublished, true);
+
+      // 3. Public endpoint reflects the published teacher
+      const publicRes = await fetch(`${baseUrl}/api/public/teachers/${TEACHER_ID}`);
+      assert.equal(publicRes.status, 200);
+      const publicData = await publicRes.json();
+      assert.equal(publicData.success, true);
+      assert.equal(publicData.teacher.mainSubject, 'mathematics');
+    });
+  });
+
+  await t.test('10. PUT /api/teachers/profile validation failures return 400 and do not corrupt existing publication state or profile data', async () => {
+    await withTeacherServer({
+      initialProfile: {
+        userId: TEACHER_ID,
+        title: 'Original Title',
+        mainSubject: 'mathematics',
+        teachingLevels: ['secondary'],
+        bio: 'Valid bio with sufficient length.',
+        isPublished: true
+      }
+    }, async (baseUrl, { getProfile }) => {
+      // Send an invalid payload (invalid subject)
+      const invalidRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          mainSubject: 'invalid_subject_123',
+          isPublished: false
+        })
+      });
+      assert.equal(invalidRes.status, 400);
+      const invalidData = await invalidRes.json();
+      assert.equal(invalidData.success, false);
+      assert.match(invalidData.message, /invalid teacher subject/i);
+
+      // Verify that the existing profile was untouched and remains published
+      const profile = getProfile();
+      assert.equal(profile.isPublished, true);
+      assert.equal(profile.mainSubject, 'mathematics');
+      assert.equal(profile.title, 'Original Title');
+
+      // Public profile continues to return 200
+      const publicRes = await fetch(`${baseUrl}/api/public/teachers/${TEACHER_ID}`);
+      assert.equal(publicRes.status, 200);
+    });
+  });
 });

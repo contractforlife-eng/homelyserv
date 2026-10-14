@@ -332,8 +332,27 @@ const TeacherProfile = () => {
 
       if (res.data?.success) {
         const updatedProf = res.data.profile || {};
+        const resolvedLessonRate = (updatedProf.lessonRate !== undefined && updatedProf.lessonRate !== null)
+          ? String(updatedProf.lessonRate)
+          : (updatedProf.hourlyRate !== undefined && updatedProf.hourlyRate !== null ? String(updatedProf.hourlyRate) : '');
         const savedData = {
-          ...formData,
+          title: updatedProf.title ?? formData.title,
+          mainSubject: updatedProf.mainSubject ?? formData.mainSubject,
+          additionalSubjects: Array.isArray(updatedProf.additionalSubjects) ? updatedProf.additionalSubjects : formData.additionalSubjects,
+          specialization: updatedProf.specialization ?? formData.specialization,
+          teachingLevels: Array.isArray(updatedProf.teachingLevels) ? updatedProf.teachingLevels : formData.teachingLevels,
+          teachingMethod: updatedProf.teachingMethod ?? formData.teachingMethod,
+          experienceSummary: updatedProf.experienceSummary ?? formData.experienceSummary,
+          bio: updatedProf.bio ?? formData.bio,
+          yearsOfExperience: updatedProf.yearsOfExperience !== undefined ? updatedProf.yearsOfExperience : formData.yearsOfExperience,
+          languages: Array.isArray(updatedProf.languages) ? updatedProf.languages : formData.languages,
+          qualifications: Array.isArray(updatedProf.qualifications) ? updatedProf.qualifications : formData.qualifications,
+          education: Array.isArray(updatedProf.education) ? updatedProf.education : formData.education,
+          certifications: Array.isArray(updatedProf.certifications) ? updatedProf.certifications : formData.certifications,
+          hourlyRate: resolvedLessonRate,
+          lessonRate: resolvedLessonRate,
+          pricingCurrency: updatedProf.pricingCurrency ?? formData.pricingCurrency,
+          availableForNewStudents: updatedProf.availableForNewStudents !== undefined ? Boolean(updatedProf.availableForNewStudents) : formData.availableForNewStudents,
           isPublished: Boolean(updatedProf.isPublished),
           isProfileComplete: Boolean(updatedProf.isProfileComplete)
         };
@@ -1052,6 +1071,57 @@ const TeacherProfile = () => {
                   formData.languages.map((l, i) => (
                     <span key={i} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                       {l}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-400">—</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Qualifications */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              {t('teacherProfile.qualifications') || 'Academic Qualifications'}
+            </label>
+            {isEditing ? (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={qualInput}
+                    onChange={(e) => setQualInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addChip('qualifications', qualInput, setQualInput))}
+                    className="flex-1 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none"
+                    placeholder="e.g. Master of Pure Mathematics, Certified High School Instructor"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addChip('qualifications', qualInput, setQualInput)}
+                    className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-semibold transition-colors"
+                  >
+                    {t('teacherProfile.add') || 'Add'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {formData.qualifications.map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40"
+                    >
+                      {item}
+                      <button type="button" onClick={() => removeChip('qualifications', idx)}><X size={12} /></button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {formData.qualifications.length > 0 ? (
+                  formData.qualifications.map((q, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      {q}
                     </span>
                   ))
                 ) : (

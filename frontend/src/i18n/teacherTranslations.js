@@ -197,6 +197,7 @@ export const TEACHER_TRANSLATIONS = {
       experienceSummary: 'Experience Summary',
       sectionQualifications: 'Qualifications & Education',
       languages: 'Languages Spoken',
+      qualifications: 'Academic Qualifications',
       education: 'Education & Degrees',
       certifications: 'Teaching Certifications & Training',
       add: 'Add'
@@ -1203,6 +1204,7 @@ export const TEACHER_TRANSLATIONS = {
       experienceSummary: 'ملخص الخبرات السابقة',
       sectionQualifications: 'المؤهلات والدراسة الأكاديمية',
       languages: 'اللغات',
+      qualifications: 'المؤهلات العلمية',
       education: 'الشهادات والمؤهلات الأكاديمية',
       certifications: 'الدورات والشهادات التدريبية',
       add: 'إضافة'
@@ -2209,6 +2211,7 @@ export const TEACHER_TRANSLATIONS = {
       experienceSummary: 'Résumé de l’expérience',
       sectionQualifications: 'Diplômes et Qualifications',
       languages: 'Langues parlées',
+      qualifications: 'Qualifications académiques',
       education: 'Formation et diplômes universitaires',
       certifications: 'Certifications pédagogiques et formations',
       add: 'Ajouter'
@@ -3215,6 +3218,7 @@ export const TEACHER_TRANSLATIONS = {
       experienceSummary: 'Опыт работы',
       sectionQualifications: 'Квалификация и образование',
       languages: 'Языки преподавания',
+      qualifications: 'Академическая квалификация',
       education: 'Высшее образование и дипломы',
       certifications: 'Педагогические сертификаты и курсы',
       add: 'Добавить'
@@ -4221,6 +4225,7 @@ export const TEACHER_TRANSLATIONS = {
       experienceSummary: 'Deneyim Özeti',
       sectionQualifications: 'Diplomalar ve Nitelikler',
       languages: 'Konuşulan Diller',
+      qualifications: 'Akademik Nitelikler',
       education: 'Eğitim ve Üniversite Dereceleri',
       certifications: 'Pedagojik Formasyon ve Sertifikalar',
       add: 'Ekle'
@@ -5227,6 +5232,7 @@ export const TEACHER_TRANSLATIONS = {
       experienceSummary: 'Erfahrungszusammenfassung',
       sectionQualifications: 'Qualifikationen & Ausbildung',
       languages: 'Unterrichtssprachen',
+      qualifications: 'Akademische Qualifikationen',
       education: 'Hochschulbildung & Abschlüsse',
       certifications: 'Zertifikate & pädagogische Weiterbildungen',
       add: 'Hinzufügen'
