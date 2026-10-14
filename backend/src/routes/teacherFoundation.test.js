@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import VerificationDocument from '../models/VerificationDocument.js';
 import teachersRouter from './teachers.js';
+import publicProfilesRouter from './publicProfiles.js';
 import {
   SUBSCRIPTION_PRICE_BOOKS,
   resolveSubscriptionPriceBook,
@@ -82,16 +83,24 @@ const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialPr
 
   TeacherProfile.findOne = (filter) => {
     if (currentProfile && String(filter.userId) === String(currentProfile.userId)) {
-      return Promise.resolve({
+      const doc = {
         ...currentProfile,
         toObject() { return { ...this }; },
         save() {
           currentProfile = { ...this };
           return Promise.resolve(this);
         }
-      });
+      };
+      return {
+        ...doc,
+        lean() { return Promise.resolve({ ...currentProfile }); },
+        then(resolve, reject) { return Promise.resolve(doc).then(resolve, reject); }
+      };
     }
-    return Promise.resolve(null);
+    return {
+      lean() { return Promise.resolve(null); },
+      then(resolve, reject) { return Promise.resolve(null).then(resolve, reject); }
+    };
   };
 
   // Isolate verification-document reads so the profile route never touches a
@@ -108,6 +117,7 @@ const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialPr
   const app = express();
   app.use(express.json());
   app.use('/api/teachers', teachersRouter);
+  app.use('/api/public', publicProfilesRouter);
 
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
@@ -233,7 +243,7 @@ test('Teacher Foundation Tests', async (t) => {
     });
   });
 
-  await t.test('8. PUT /api/teachers/profile updates and persists isPublished state', async () => {
+  await t.test('8. PUT /api/teachers/profile updates and persists isPublished state, reflects in GET and public endpoint, and survives other field updates', async () => {
     await withTeacherServer({
       initialProfile: {
         userId: TEACHER_ID,
@@ -241,10 +251,18 @@ test('Teacher Foundation Tests', async (t) => {
         mainSubject: 'mathematics',
         teachingLevels: ['secondary'],
         bio: 'Professional educator with 10 years experience.',
+        hourlyRate: 150,
+        lessonRate: 150,
         isPublished: false
       }
     }, async (baseUrl, { getProfile }) => {
-      // Publish the profile
+      // 1. Initially unpublished: public endpoint returns 404
+      const initialPublicRes = await fetch(`${baseUrl}/api/public/teachers/${TEACHER_ID}`);
+      assert.equal(initialPublicRes.status, 404);
+      const initialPublicData = await initialPublicRes.json();
+      assert.match(initialPublicData.message, /not published/i);
+
+      // 2. Publish the profile via handleQuickPublish payload ({ isPublished: true })
       const publishRes = await fetch(`${baseUrl}/api/teachers/profile`, {
         method: 'PUT',
         headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
@@ -258,7 +276,61 @@ test('Teacher Foundation Tests', async (t) => {
       assert.equal(publishData.profile.isPublished, true);
       assert.equal(getProfile().isPublished, true);
 
-      // Unpublish the profile
+      // 3. Fresh GET of the authenticated profile confirms isPublished is true
+      const getAuthRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' })
+      });
+      assert.equal(getAuthRes.status, 200);
+      const getAuthData = await getAuthRes.json();
+      assert.equal(getAuthData.success, true);
+      assert.equal(getAuthData.profile.isPublished, true);
+
+      // 4. Corresponding public endpoint now returns 200 with published teacher DTO
+      const publicRes = await fetch(`${baseUrl}/api/public/teachers/${TEACHER_ID}`);
+      assert.equal(publicRes.status, 200);
+      const publicData = await publicRes.json();
+      assert.equal(publicData.success, true);
+      assert.equal(publicData.teacher.mainSubject, 'mathematics');
+      assert.equal(publicData.teacher.title, 'Mathematics Tutor');
+
+      // 5. Subsequent profile save of other fields without passing isPublished preserves isPublished: true
+      const editOtherFieldsRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          title: 'Senior Mathematics Professor',
+          bio: 'Updated bio with more than 10 characters of experience.',
+          hourlyRate: 250
+        })
+      });
+      assert.equal(editOtherFieldsRes.status, 200);
+      const editOtherData = await editOtherFieldsRes.json();
+      assert.equal(editOtherData.success, true);
+      assert.equal(editOtherData.profile.title, 'Senior Mathematics Professor');
+      assert.equal(editOtherData.profile.isPublished, true, 'isPublished must remain true when updating other fields');
+      assert.equal(getProfile().isPublished, true);
+
+      // 6. Subsequent profile save with full form payload preserving isPublished: true
+      const fullFormSaveRes = await fetch(`${baseUrl}/api/teachers/profile`, {
+        method: 'PUT',
+        headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
+        body: JSON.stringify({
+          title: 'Senior Mathematics Professor',
+          mainSubject: 'mathematics',
+          bio: 'Updated bio with more than 10 characters of experience.',
+          teachingLevels: ['secondary'],
+          hourlyRate: 250,
+          lessonRate: 250,
+          isPublished: true
+        })
+      });
+      assert.equal(fullFormSaveRes.status, 200);
+      const fullFormData = await fullFormSaveRes.json();
+      assert.equal(fullFormData.success, true);
+      assert.equal(fullFormData.profile.isPublished, true);
+      assert.equal(getProfile().isPublished, true);
+
+      // 7. Explicit unpublish returns isPublished: false and makes public endpoint 404 again
       const unpublishRes = await fetch(`${baseUrl}/api/teachers/profile`, {
         method: 'PUT',
         headers: authHeader({ userId: TEACHER_ID, role: 'TEACHER' }),
@@ -271,6 +343,9 @@ test('Teacher Foundation Tests', async (t) => {
       assert.equal(unpublishData.success, true);
       assert.equal(unpublishData.profile.isPublished, false);
       assert.equal(getProfile().isPublished, false);
+
+      const unpubPublicRes = await fetch(`${baseUrl}/api/public/teachers/${TEACHER_ID}`);
+      assert.equal(unpubPublicRes.status, 404);
     });
   });
 });

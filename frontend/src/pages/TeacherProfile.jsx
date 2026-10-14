@@ -69,11 +69,16 @@ const TeacherProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [showUnpublishedNotice, setShowUnpublishedNotice] = useState(false);
+  const [publishingDirectly, setPublishingDirectly] = useState(false);
 
   const handleShareProfile = async () => {
     const teacherId = authUser?.id || authUser?._id;
     if (!teacherId) return;
     const url = `${window.location.origin}/tr/${teacherId}`;
+    if (!formData.isPublished) {
+      setShowUnpublishedNotice(true);
+    }
     if (navigator.share) {
       try {
         await navigator.share({
@@ -89,6 +94,30 @@ const TeacherProfile = () => {
     await navigator.clipboard.writeText(url);
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 3000);
+  };
+
+  const handleQuickPublish = async () => {
+    try {
+      setPublishingDirectly(true);
+      setErrorMessage('');
+      const res = await api.put('/api/teachers/profile', { isPublished: true });
+      if (res.data?.success) {
+        setFormData((prev) => ({ ...prev, isPublished: true }));
+        if (savedSnapshot) {
+          setSavedSnapshot((prev) => prev ? {
+            ...prev,
+            formData: { ...prev.formData, isPublished: true }
+          } : prev);
+        }
+        setShowUnpublishedNotice(false);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Failed to publish profile');
+    } finally {
+      setPublishingDirectly(false);
+    }
   };
 
   // SECTION A — Basic account info
@@ -446,6 +475,23 @@ const TeacherProfile = () => {
                     {t('teacherProfile.profileIncomplete') || 'Incomplete'}
                   </span>
                 )}
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  formData.isPublished
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {formData.isPublished ? (
+                    <>
+                      <Eye size={12} />
+                      {t('teacherProfile.published') || 'Published'}
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff size={12} />
+                      {t('teacherProfile.unpublished') || 'Unpublished'}
+                    </>
+                  )}
+                </span>
               </div>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {formData.title || t('teacherProfile.defaultTitle') || 'Professional Educator'} • {account.email}
@@ -495,6 +541,38 @@ const TeacherProfile = () => {
             )}
           </div>
         </div>
+
+        {/* Unpublished notice / Quick publish prompt */}
+        {showUnpublishedNotice && !formData.isPublished && (
+          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 dark:text-amber-200 text-sm">
+            <div className="flex items-start sm:items-center gap-3">
+              <AlertCircle size={20} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5 sm:mt-0" />
+              <span>
+                {t('teacherProfile.unpublishedShareWarning') ||
+                  'Note: Your profile is currently unpublished. Prospective students visiting this link will see a "not published" page until you publish your profile.'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleQuickPublish}
+                disabled={publishingDirectly}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors shadow-sm disabled:opacity-50"
+              >
+                {publishingDirectly ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
+                <span>{t('teacherProfile.publishNowBtn') || 'Publish Now'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowUnpublishedNotice(false)}
+                className="p-1 rounded-md text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Feedback banners */}
         {saveSuccess && (
