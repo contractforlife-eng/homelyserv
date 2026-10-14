@@ -5,6 +5,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import TeacherProfile from '../models/TeacherProfile.js';
+import VerificationDocument from '../models/VerificationDocument.js';
 import teachersRouter from './teachers.js';
 import {
   SUBSCRIPTION_PRICE_BOOKS,
@@ -60,6 +61,7 @@ const createMockTeacherUser = (overrides = {}) => ({
 const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialProfile = null } = {}, run) => {
   const originalFindById = User.findById;
   const originalProfileFindOne = TeacherProfile.findOne;
+  const originalVerificationFind = VerificationDocument.find;
   let currentProfile = initialProfile ? { ...initialProfile } : null;
 
   User.findById = (id) => {
@@ -89,6 +91,17 @@ const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialPr
     return Promise.resolve(null);
   };
 
+  // Isolate verification-document reads so the profile route never touches a
+  // real database (getTeacherProfile calls VerificationDocument.find).
+  VerificationDocument.find = () => ({
+    select() {
+      return Promise.resolve([]);
+    },
+    then(resolve, reject) {
+      return Promise.resolve([]).then(resolve, reject);
+    }
+  });
+
   const app = express();
   app.use(express.json());
   app.use('/api/teachers', teachersRouter);
@@ -106,6 +119,7 @@ const withTeacherServer = async ({ mockUser = createMockTeacherUser(), initialPr
   } finally {
     User.findById = originalFindById;
     TeacherProfile.findOne = originalProfileFindOne;
+    VerificationDocument.find = originalVerificationFind;
     await new Promise((resolve) => server.close(resolve));
   }
 };
