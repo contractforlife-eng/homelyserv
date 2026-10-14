@@ -19,7 +19,11 @@ import {
   deleteTeacherGroup,
   getGroupStudents,
   enrollStudentInGroup,
-  removeStudentFromGroup
+  removeStudentFromGroup,
+  transferStudentBetweenGroups,
+  approveGroupEnrollment,
+  rejectGroupEnrollment,
+  getGroupEnrollmentRequests
 } from '../controllers/teacherGroupController.js';
 import {
   getTeacherLessons,
@@ -114,6 +118,11 @@ router.delete('/groups/:id', requireTeacher, deleteTeacherGroup);
 router.get('/groups/:groupId/students', requireTeacher, getGroupStudents);
 router.post('/groups/:groupId/students', requireTeacher, enrollStudentInGroup);
 router.delete('/groups/:groupId/students/:studentId', requireTeacher, removeStudentFromGroup);
+router.post('/groups/:groupId/students/:studentId/transfer', requireTeacher, transferStudentBetweenGroups);
+// Teacher group enrollment request routes (teacher-scoped approvals)
+router.get('/groups/:groupId/enrollment-requests', requireTeacher, getGroupEnrollmentRequests);
+router.post('/groups/:groupId/enrollments/:enrollmentId/approve', requireTeacher, approveGroupEnrollment);
+router.post('/groups/:groupId/enrollments/:enrollmentId/reject', requireTeacher, rejectGroupEnrollment);
 
 // Teacher lesson routes (all scoped by requireTeacher and req.userId)
 router.get('/lessons', requireTeacher, getTeacherLessons);

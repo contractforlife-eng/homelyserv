@@ -14,6 +14,9 @@
 // ============================================================
 import express from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import DoctorProfile from '../models/DoctorProfile.js';
 import DoctorClinic from '../models/DoctorClinic.js';
@@ -23,9 +26,14 @@ import DoctorAppointment from '../models/DoctorAppointment.js';
 import ClinicPatient from '../models/ClinicPatient.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import TeacherStudent from '../models/TeacherStudent.js';
+import TeacherGroup from '../models/TeacherGroup.js';
+import TeacherGroupEnrollment from '../models/TeacherGroupEnrollment.js';
 import { getSearchableDoctorProfile, listAvailableSlots, DOCTOR_CARD_FIELDS } from '../services/doctorSearchService.js';
 import { toTeacherDiscoveryDto, resolveTeacherPremiumIds } from '../controllers/studentTeacherDiscoveryController.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
+import { normalizeEmail } from '../security/rootAdmin.js';
+import { sendVerificationOnRegistration } from '../services/verificationService.js';
+import { getJwtSecret } from '../config/jwtSecret.js';
 // Phase 5B: shared per-doctor booking transaction (guard -> overlap -> insert).
 import { withDoctorBookingTransaction } from '../services/doctorBookingGuard.js';
 
@@ -34,6 +42,37 @@ const router = express.Router();
 const isObjectId = (val) => typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val);
 const clean = (val, max) => String(val || '').replace(/[<>]/g, '').trim().slice(0, max);
 const PHONE_REGEX = /^\+?[0-9\s\-()]{7,25}$/;
+
+/**
+ * Safely extracts and verifies the authenticated user from the Bearer token if present.
+ * Never throws; returns null if token is missing, invalid, expired, or user is not found.
+ */
+const resolveOptionalAuthenticatedUser = async (req) => {
+  const authHeader = req.headers?.authorization;
+  if (!authHeader || typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.slice(7).trim();
+  if (!token) return null;
+
+  try {
+    const secret = getJwtSecret();
+    const decoded = jwt.verify(token, secret);
+    const userId = decoded.userId || decoded.id;
+    if (!userId || !isObjectId(String(userId))) return null;
+
+    const user = await User.findById(userId).select('_id email role isSuspended tokenVersion');
+    if (!user || user.isSuspended) return null;
+
+    const tokenVersion = decoded.tokenVersion ?? 0;
+    const currentVersion = user.tokenVersion ?? 0;
+    if (tokenVersion !== currentVersion) return null;
+
+    return user;
+  } catch {
+    return null;
+  }
+};
 
 // Rate limiting map for public operations: key -> { count, resetAt }
 const rateBuckets = new Map();
@@ -157,13 +196,20 @@ router.get('/doctors/:doctorId/availability', publicRateLimit(60000, 60), async 
       endsAt: { $gt: now }
     }).select('startsAt endsAt');
 
+    const clinicId = req.query.clinicId ? String(req.query.clinicId) : '';
+    const isQueryClinicId = isObjectId(clinicId);
+
     const [slots, clinics] = await Promise.all([
-      listAvailableSlots(doctorId, { now, booked, days: 14 }),
+      listAvailableSlots(doctorId, { now, booked, days: 14, clinicId: isQueryClinicId ? clinicId : undefined }),
       DoctorClinic.find({ doctorId, isActive: true })
         .select('clinicName phone email addressLine city countryCode isPrimary instructions')
         .sort({ isPrimary: -1, createdAt: 1 })
         .lean()
     ]);
+
+    if (isQueryClinicId && !clinics.some((c) => String(c._id) === clinicId)) {
+      return res.status(404).json({ success: false, message: 'Selected clinic is invalid or inactive' });
+    }
 
     return res.json({
       success: true,
@@ -191,7 +237,8 @@ router.get('/doctors/:doctorId/availability', publicRateLimit(60000, 60), async 
 /**
  * POST /api/public/doctors/:doctorId/appointments
  * Guest booking without HomelyServ User account.
- * Automatically confirmed. Atomic concurrency protected.
+ * Submits a PENDING request; the doctor must approve before it becomes
+ * confirmed. Atomic concurrency protected.
  */
 router.post('/doctors/:doctorId/appointments', publicRateLimit(60000, 15), async (req, res) => {
   try {
@@ -279,59 +326,76 @@ router.post('/doctors/:doctorId/appointments', publicRateLimit(60000, 15), async
       if (clinic?.currency) currency = clinic.currency;
     }
 
+    // Optional authentication check: if caller is authenticated, derive patient identity safely
+    const authenticatedUser = await resolveOptionalAuthenticatedUser(req);
+    const visitorEmail = body.email ? normalizeEmail(clean(body.email, 100)) : '';
+
     // Guest booking critical section (Phase 5B): guard write -> overlap
     // re-read -> ClinicPatient find/create -> appointment insert, all inside
     // ONE transaction with the SAME session. The in-process slot lock is no
     // longer the correctness mechanism for this path (the lock file itself
-    // is left untouched). No HomelyServ User account is ever created.
+    // is left untouched).
     const appointment = await withDoctorBookingTransaction(
       { doctorId, startsAt: startDate, endsAt: endDate },
       async (session) => {
-        // Create or reuse the doctor-scoped ClinicPatient within the session.
-        let clinicPatient = await ClinicPatient.findOne({
-          doctorId,
-          fullName: visitorName,
-          phone: visitorPhone
-        }).session(session);
+        let clinicPatientId = null;
+        let patientId = null;
 
-        if (!clinicPatient) {
-          const [createdPatient] = await ClinicPatient.create(
-            [
-              {
-                doctorId,
-                clinicId: schedule.clinicId || null,
-                fullName: visitorName,
-                phone: visitorPhone,
-                notes: 'Registered via public profile guest booking',
-                linkedUserId: null,
-                isActive: true
-              }
-            ],
-            { session }
-          );
-          clinicPatient = createdPatient;
+        if (authenticatedUser) {
+          // Authenticated patient linking: derives strictly from verified JWT
+          patientId = authenticatedUser._id;
+        } else {
+          // Anonymous guest booking: Create or reuse the doctor-scoped ClinicPatient within the session.
+          let clinicPatient = await ClinicPatient.findOne({
+            doctorId,
+            fullName: visitorName,
+            phone: visitorPhone
+          }).session(session);
+
+          if (!clinicPatient) {
+            const [createdPatient] = await ClinicPatient.create(
+              [
+                {
+                  doctorId,
+                  clinicId: schedule.clinicId || null,
+                  fullName: visitorName,
+                  phone: visitorPhone,
+                  email: visitorEmail || '',
+                  notes: 'Registered via public profile guest booking',
+                  linkedUserId: null,
+                  isActive: true
+                }
+              ],
+              { session }
+            );
+            clinicPatient = createdPatient;
+          } else if (visitorEmail && !clinicPatient.email) {
+            clinicPatient.email = visitorEmail;
+            await clinicPatient.save({ session });
+          }
+          clinicPatientId = clinicPatient._id;
         }
 
-        // Create DoctorAppointment: patientId is null, clinicPatientId is set,
-        // status is CONFIRMED — the exact-one-patient-source invariant holds.
+        // Create DoctorAppointment: satisfies the exact-one-patient-source invariant
+        // (patientId XOR clinicPatientId)
         const [created] = await DoctorAppointment.create(
           [
             {
               doctorId,
-              patientId: null,
-              clinicPatientId: clinicPatient._id,
+              patientId,
+              clinicPatientId,
               scheduleId: schedule._id,
               clinicId: schedule.clinicId || null,
               serviceId: schedule.serviceId || null,
               consultationType: schedule.consultationType,
               startsAt: startDate,
               endsAt: endDate,
-              status: 'CONFIRMED', // Requirement: automatically confirmed
+              status: 'PENDING', // Awaiting doctor approval
               reason: visitorReason,
               notes: `Guest booking by ${visitorName} (${visitorPhone})`,
               feeSnapshot,
               currency,
-              createdBy: doctorId
+              createdBy: authenticatedUser ? authenticatedUser._id : doctorId
             }
           ],
           { session }
@@ -341,10 +405,10 @@ router.post('/doctors/:doctorId/appointments', publicRateLimit(60000, 15), async
     );
 
     // Doctor notification: dispatched only AFTER the transaction commits,
-    // exactly once per confirmed booking (best-effort, unchanged semantics).
+    // exactly once per pending booking (best-effort, unchanged semantics).
     createNotification(doctorId, {
       type: NOTIFICATION_TYPES.APPOINTMENT_REQUESTED,
-      title: 'New Confirmed Guest Booking',
+      title: 'New Guest Booking Requested',
       message: `${visitorName} booked a ${String(schedule.consultationType || 'clinic').toLowerCase()} appointment for ${startDate.toLocaleString()}.`,
       entityType: 'DOCTOR_APPOINTMENT',
       entityId: String(appointment._id),
@@ -528,6 +592,310 @@ router.post('/teachers/:teacherId/inquiries', publicRateLimit(60000, 15), async 
   } catch (error) {
     console.error('Error submitting public teacher inquiry:', error);
     return res.status(500).json({ success: false, message: 'Server error processing inquiry' });
+  }
+});
+
+/**
+ * GET /api/public/teachers/:teacherId/groups
+ * List a published teacher's groups that currently have OPEN enrollment.
+ * Anonymous-safe: exposes only scheduling/mode/location metadata, never
+ * student records, counts, or private notes.
+ */
+router.get('/teachers/:teacherId/groups', publicRateLimit(60000, 60), async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    if (!isObjectId(teacherId)) {
+      return res.status(400).json({ success: false, message: 'Invalid teacher ID' });
+    }
+
+    const user = await User.findById(teacherId).select('_id role isSuspended');
+    if (!user || String(user.role).toUpperCase() !== 'TEACHER' || user.isSuspended) {
+      return res.status(404).json({ success: false, message: 'Teacher not found or unavailable' });
+    }
+
+    const profile = await TeacherProfile.findOne({ userId: teacherId }).lean();
+    if (!profile || !profile.isPublished) {
+      return res.status(404).json({ success: false, message: 'Teacher profile is not published' });
+    }
+
+    // Only ACTIVE groups with OPEN enrollment are visible to the public.
+    const groups = await TeacherGroup.find({
+      teacherId,
+      isActive: true,
+      status: 'ACTIVE',
+      enrollmentOpen: true
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const groupDtos = groups.map((g) => ({
+      id: String(g._id),
+      name: g.name || '',
+      subject: g.subject || '',
+      gradeLevel: g.gradeLevel || '',
+      academicYear: g.academicYear || '',
+      description: g.description || '',
+      scheduleDays: Array.isArray(g.scheduleDays) ? g.scheduleDays : [],
+      onlineMode: g.onlineMode || 'IN_PERSON',
+      locationAddress: g.locationAddress || '',
+      locationCity: g.locationCity || '',
+      locationCountry: g.locationCountry || '',
+      color: g.color || '#DC2626'
+    }));
+
+    return res.json({ success: true, count: groupDtos.length, groups: groupDtos });
+  } catch (error) {
+    console.error('Error fetching public teacher groups:', error);
+    return res.status(500).json({ success: false, message: 'Server error fetching groups' });
+  }
+});
+
+/**
+ * POST /api/public/teachers/:teacherId/groups/:groupId/enroll
+ * Submit an anonymous/public group-enrollment request.
+ * Creates a PENDING TeacherGroupEnrollment (NOT an active membership) and a
+ * PENDING TeacherStudent roster entry when the visitor is not yet on the
+ * teacher's roster. Requires teacher approval to become active membership.
+ */
+router.post('/teachers/:teacherId/groups/:groupId/enroll', publicRateLimit(60000, 15), async (req, res) => {
+  try {
+    const { teacherId, groupId } = req.params;
+    if (!isObjectId(teacherId) || !isObjectId(groupId)) {
+      return res.status(400).json({ success: false, message: 'Invalid teacher or group ID' });
+    }
+
+    const user = await User.findById(teacherId).select('_id role isSuspended');
+    if (!user || String(user.role).toUpperCase() !== 'TEACHER' || user.isSuspended) {
+      return res.status(404).json({ success: false, message: 'Teacher not found or unavailable' });
+    }
+
+    const profile = await TeacherProfile.findOne({ userId: teacherId }).lean();
+    if (!profile || !profile.isPublished) {
+      return res.status(404).json({ success: false, message: 'Teacher profile is not published' });
+    }
+
+    // Group must be ACTIVE, belong to this teacher, and have OPEN enrollment.
+    const group = await TeacherGroup.findOne({
+      _id: groupId,
+      teacherId,
+      isActive: true,
+      status: 'ACTIVE'
+    }).lean();
+    if (!group) {
+      return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+    if (!group.enrollmentOpen) {
+      return res.status(409).json({ success: false, message: 'Enrollment is closed for this group' });
+    }
+
+    const body = req.body || {};
+    const studentName = clean(body.name || body.studentName, 120);
+    const phone = clean(body.phone, 30);
+    const rawEmail = clean(body.email, 100);
+    const gradeLevel = clean(body.gradeLevel, 100);
+    const school = clean(body.school, 150);
+    const message = clean(body.message || body.notes, 1000);
+
+    if (!studentName) {
+      return res.status(400).json({ success: false, message: 'Student/Visitor name is required' });
+    }
+    if (!phone || !PHONE_REGEX.test(phone)) {
+      return res.status(400).json({ success: false, message: 'A valid contact phone number is required' });
+    }
+
+    const email = rawEmail ? normalizeEmail(rawEmail) : '';
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
+    }
+
+    // Optional authentication check: if caller has a valid Bearer token, resolve their User identity
+    const authenticatedUser = await resolveOptionalAuthenticatedUser(req);
+
+    let linkedStudentUserId = null;
+    let isNewAccountCreated = false;
+    let existingUser = null;
+
+    if (email) {
+      // 1. Look up existing User by normalized email
+      existingUser = await User.findOne({ email });
+
+      if (existingUser) {
+        const userRole = String(existingUser.role || '').toUpperCase();
+
+        if (userRole !== 'STUDENT') {
+          // F-02 & F-01: Generic response to prevent account enumeration / role disclosure
+          return res.status(409).json({
+            success: false,
+            message: 'Unable to process request with this email. Please sign in to your HomelyServ account or contact support.'
+          });
+        }
+
+        // F-01: An existing STUDENT account is only linked if the caller is authenticated
+        // as that exact student. If anonymous, we keep the request unlinked (guest roster entry)
+        // to prevent account hijacking.
+        if (authenticatedUser && String(authenticatedUser._id) === String(existingUser._id)) {
+          linkedStudentUserId = existingUser._id;
+        } else {
+          // Anonymous visitor supplied an existing student email:
+          // Do NOT link to the existing account. Treat as guest/unlinked.
+          linkedStudentUserId = null;
+        }
+      } else {
+        // 2. Create new STUDENT account securely (F-03)
+        const randomPassword = crypto.randomBytes(24).toString('base64url');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+        const newStudent = new User({
+          fullName: studentName,
+          email,
+          password: hashedPassword,
+          role: 'STUDENT',
+          phone,
+          countryCode: group.locationCountry ? String(group.locationCountry).slice(0, 2).toUpperCase() : '',
+          countryName: group.locationCountry || '',
+          mustChangePassword: true,
+          emailVerified: false
+        });
+
+        await newStudent.save();
+        linkedStudentUserId = newStudent._id;
+        isNewAccountCreated = true;
+
+        // Trigger email verification / setup flow (non-blocking, fire-and-forget, safe error logging)
+        try {
+          sendVerificationOnRegistration(newStudent);
+        } catch (mailErr) {
+          console.error('[EMAIL] Failed to trigger registration verification email:', mailErr);
+        }
+      }
+    } else if (authenticatedUser && String(authenticatedUser.role).toUpperCase() === 'STUDENT') {
+      linkedStudentUserId = authenticatedUser._id;
+    }
+
+    // 3. Find or create TeacherStudent roster entry (F-04)
+    // Identity matching rules:
+    // a. If linkedStudentUserId is verified: look up by linkedUserId / studentUserId first.
+    // b. Otherwise, require BOTH phone AND studentName to match before reusing a roster entry,
+    //    and NEVER reuse a record that belongs to another verified user.
+    let teacherStudent = null;
+    if (linkedStudentUserId) {
+      teacherStudent = await TeacherStudent.findOne({
+        teacherId,
+        $or: [
+          { linkedUserId: linkedStudentUserId },
+          { studentUserId: linkedStudentUserId }
+        ]
+      });
+    }
+
+    if (!teacherStudent && phone) {
+      // Find candidate matching exact teacherId, phone, and studentName
+      const candidate = await TeacherStudent.findOne({
+        teacherId,
+        phone,
+        fullName: studentName
+      });
+      // Do NOT reuse if candidate belongs to a different verified student user
+      if (candidate) {
+        const belongsToSameStudent = (linkedStudentUserId && String(candidate.linkedUserId) === String(linkedStudentUserId)) ||
+          (existingUser && String(candidate.linkedUserId) === String(existingUser._id));
+        if (!candidate.linkedUserId || belongsToSameStudent) {
+          teacherStudent = candidate;
+        }
+      }
+    }
+
+    if (teacherStudent) {
+      // If student is verified and record wasn't linked yet, link them safely
+      if (linkedStudentUserId && (!teacherStudent.linkedUserId || !teacherStudent.studentUserId)) {
+        teacherStudent.linkedUserId = linkedStudentUserId;
+        teacherStudent.studentUserId = linkedStudentUserId;
+        if (email && !teacherStudent.email) teacherStudent.email = email;
+        await teacherStudent.save();
+      }
+    } else {
+      teacherStudent = await TeacherStudent.create({
+        teacherId,
+        fullName: studentName,
+        phone,
+        email: email || '',
+        gradeLevel: gradeLevel || '',
+        school: school || '',
+        subjects: group.subject ? [group.subject] : [],
+        notes: message,
+        relationshipStatus: 'PENDING',
+        status: 'ACTIVE',
+        linkedUserId: linkedStudentUserId || null,
+        studentUserId: linkedStudentUserId || null,
+        isActive: true
+      });
+    }
+
+    // 4. Prevent duplicate pending or active enrollment in this group
+    let enrollment;
+    const existing = await TeacherGroupEnrollment.findOne({
+      groupId: group._id,
+      teacherId,
+      studentId: teacherStudent._id
+    });
+
+    if (existing) {
+      if (existing.isActive && (existing.status === 'PENDING' || existing.status === 'ACTIVE')) {
+        return res.status(409).json({
+          success: false,
+          message: 'You already have a pending or active enrollment for this group'
+        });
+      }
+
+      // Reactivate the historical enrollment as a fresh PENDING request.
+      existing.isActive = true;
+      existing.status = 'PENDING';
+      existing.enrolledAt = new Date();
+      if (message) existing.notes = message;
+      await existing.save();
+      enrollment = existing;
+    } else {
+      enrollment = await TeacherGroupEnrollment.create({
+        teacherId,
+        groupId: group._id,
+        studentId: teacherStudent._id,
+        enrolledAt: new Date(),
+        status: 'PENDING',
+        notes: message,
+        isActive: true
+      });
+    }
+
+    // Non-blocking notification to teacher (stubbed in tests).
+    createNotification(teacherId, {
+      type: NOTIFICATION_TYPES.SYSTEM,
+      title: 'New Group Enrollment Request',
+      message: `${studentName} requested to join ${group.name} via your public profile.`,
+      entityType: 'TEACHER_GROUP_ENROLLMENT',
+      entityId: String(enrollment._id),
+      link: '/teacher-groups',
+      data: { phone, groupId: String(group._id) }
+    }).catch((err) => console.error('Group enrollment notification error:', err.message));
+
+    // F-02: Never leak internal studentUserId or account credentials to anonymous callers
+    return res.status(201).json({
+      success: true,
+      message: isNewAccountCreated
+        ? 'Enrollment request submitted! A Student account was created for you; please check your email to verify and set your password.'
+        : 'Enrollment request submitted and is pending teacher review',
+      request: {
+        id: String(enrollment._id),
+        groupId: String(group._id),
+        groupName: group.name,
+        studentName,
+        status: 'PENDING'
+      }
+    });
+  } catch (error) {
+    console.error('Error submitting public group enrollment:', error);
+    return res.status(500).json({ success: false, message: 'Server error processing enrollment request' });
   }
 });
 

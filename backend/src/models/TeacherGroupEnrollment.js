@@ -40,7 +40,7 @@ const teacherGroupEnrollmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['ACTIVE', 'INACTIVE', 'DROPPED'],
+      enum: ['ACTIVE', 'INACTIVE', 'DROPPED', 'PENDING', 'REJECTED'],
       default: 'ACTIVE',
       index: true
     },

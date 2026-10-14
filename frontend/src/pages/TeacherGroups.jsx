@@ -81,7 +81,12 @@ const initialGroupForm = {
   description: '',
   scheduleDays: [],
   color: '#DC2626',
-  status: 'ACTIVE'
+  status: 'ACTIVE',
+  onlineMode: 'IN_PERSON',
+  locationAddress: '',
+  locationCity: '',
+  locationCountry: '',
+  enrollmentOpen: true
 };
 
 const TeacherGroups = () => {
@@ -201,7 +206,12 @@ const TeacherGroups = () => {
       description: group.description || '',
       scheduleDays: Array.isArray(group.scheduleDays) ? group.scheduleDays : [],
       color: group.color || '#DC2626',
-      status: group.status || 'ACTIVE'
+      status: group.status || 'ACTIVE',
+      onlineMode: group.onlineMode || 'IN_PERSON',
+      locationAddress: group.locationAddress || '',
+      locationCity: group.locationCity || '',
+      locationCountry: group.locationCountry || '',
+      enrollmentOpen: group.enrollmentOpen !== false
     });
     setGroupFormError('');
     setIsGroupFormOpen(true);
@@ -243,7 +253,12 @@ const TeacherGroups = () => {
         description: groupForm.description.trim(),
         scheduleDays: groupForm.scheduleDays,
         color: groupForm.color,
-        status: groupForm.status
+        status: groupForm.status,
+        onlineMode: groupForm.onlineMode,
+        locationAddress: groupForm.locationAddress.trim(),
+        locationCity: groupForm.locationCity.trim(),
+        locationCountry: groupForm.locationCountry.trim(),
+        enrollmentOpen: groupForm.enrollmentOpen
       };
 
       if (editingGroup) {
@@ -1087,6 +1102,117 @@ const TeacherGroups = () => {
                   })}
                 </div>
               </div>
+
+              {/* Attendance Mode & Enrollment */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    {t('teacherGroups.fields.onlineMode') || 'Attendance Mode'}
+                  </label>
+                  <select
+                    value={groupForm.onlineMode}
+                    onChange={(e) =>
+                      setGroupForm({ ...groupForm, onlineMode: e.target.value })
+                    }
+                    className={INPUT_CLS}
+                  >
+                    <option value="IN_PERSON">
+                      {t('teacherGroups.fields.modeInPerson') || 'In-person'}
+                    </option>
+                    <option value="ONLINE">
+                      {t('teacherGroups.fields.modeOnline') || 'Online'}
+                    </option>
+                    <option value="HYBRID">
+                      {t('teacherGroups.fields.modeHybrid') || 'Hybrid'}
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    {t('teacherGroups.fields.enrollmentOpen') || 'Enrollment'}
+                  </label>
+                  <select
+                    value={groupForm.enrollmentOpen ? 'OPEN' : 'CLOSED'}
+                    onChange={(e) =>
+                      setGroupForm({
+                        ...groupForm,
+                        enrollmentOpen: e.target.value === 'OPEN'
+                      })
+                    }
+                    className={INPUT_CLS}
+                  >
+                    <option value="OPEN">
+                      {t('teacherGroups.fields.enrollmentOpenOption') || 'Open for requests'}
+                    </option>
+                    <option value="CLOSED">
+                      {t('teacherGroups.fields.enrollmentClosedOption') || 'Closed'}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Location (in-person groups) */}
+              {groupForm.onlineMode !== 'ONLINE' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      {t('teacherGroups.fields.locationAddress') || 'Location Address'}
+                    </label>
+                    <input
+                      type="text"
+                      value={groupForm.locationAddress}
+                      onChange={(e) =>
+                        setGroupForm({
+                          ...groupForm,
+                          locationAddress: e.target.value
+                        })
+                      }
+                      placeholder={
+                        t('teacherGroups.fields.locationAddressPlaceholder') ||
+                        'e.g. 12 Elm Street, Building B'
+                      }
+                      className={INPUT_CLS}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        {t('teacherGroups.fields.locationCity') || 'City'}
+                      </label>
+                      <input
+                        type="text"
+                        value={groupForm.locationCity}
+                        onChange={(e) =>
+                          setGroupForm({
+                            ...groupForm,
+                            locationCity: e.target.value
+                          })
+                        }
+                        placeholder="e.g. Cairo"
+                        className={INPUT_CLS}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        {t('teacherGroups.fields.locationCountry') || 'Country'}
+                      </label>
+                      <input
+                        type="text"
+                        value={groupForm.locationCountry}
+                        onChange={(e) =>
+                          setGroupForm({
+                            ...groupForm,
+                            locationCountry: e.target.value
+                          })
+                        }
+                        placeholder="e.g. Egypt"
+                        className={INPUT_CLS}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Display Color */}
               <div>

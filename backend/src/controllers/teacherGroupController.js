@@ -43,6 +43,11 @@ export const toTeacherGroupDto = (doc, enrollmentCount = 0) => {
     color: d.color || '#DC2626',
     status: d.status || 'ACTIVE',
     isActive: d.isActive !== false,
+    onlineMode: d.onlineMode || 'IN_PERSON',
+    locationAddress: d.locationAddress || '',
+    locationCity: d.locationCity || '',
+    locationCountry: d.locationCountry || '',
+    enrollmentOpen: d.enrollmentOpen !== false,
     studentCount: typeof enrollmentCount === 'number' ? enrollmentCount : 0,
     createdAt: d.createdAt || null,
     updatedAt: d.updatedAt || null
@@ -247,6 +252,13 @@ export const createTeacherGroup = async (req, res) => {
         .filter(Boolean);
     }
 
+    const onlineMode = body.onlineMode === 'ONLINE' || body.onlineMode === 'IN_PERSON' || body.onlineMode === 'HYBRID'
+      ? body.onlineMode
+      : 'IN_PERSON';
+    const enrollmentOpen = body.enrollmentOpen === true || body.enrollmentOpen === false
+      ? Boolean(body.enrollmentOpen)
+      : true;
+
     const group = await TeacherGroup.create({
       teacherId,
       name,
@@ -255,7 +267,12 @@ export const createTeacherGroup = async (req, res) => {
       academicYear: cleanString(body.academicYear, 50),
       description: cleanString(body.description, 1000),
       scheduleDays,
+      onlineMode,
+      locationAddress: cleanString(body.locationAddress, 500),
+      locationCity: cleanString(body.locationCity, 100),
+      locationCountry: cleanString(body.locationCountry, 100),
       color: cleanString(body.color, 30) || '#DC2626',
+      enrollmentOpen,
       status: body.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE',
       isActive: true
     });
@@ -324,6 +341,24 @@ export const updateTeacherGroup = async (req, res) => {
 
     if (body.color !== undefined) {
       group.color = cleanString(body.color, 30) || '#DC2626';
+    }
+
+    if (body.onlineMode !== undefined) {
+      group.onlineMode = body.onlineMode === 'ONLINE' || body.onlineMode === 'IN_PERSON' || body.onlineMode === 'HYBRID'
+        ? body.onlineMode
+        : 'IN_PERSON';
+    }
+    if (body.enrollmentOpen !== undefined) {
+      group.enrollmentOpen = Boolean(body.enrollmentOpen);
+    }
+    if (body.locationAddress !== undefined) {
+      group.locationAddress = cleanString(body.locationAddress, 500);
+    }
+    if (body.locationCity !== undefined) {
+      group.locationCity = cleanString(body.locationCity, 100);
+    }
+    if (body.locationCountry !== undefined) {
+      group.locationCountry = cleanString(body.locationCountry, 100);
     }
 
     if (body.status !== undefined) {
@@ -492,7 +527,7 @@ export const enrollStudentInGroup = async (req, res) => {
     });
 
     if (enrollment) {
-      if (enrollment.isActive && enrollment.status === 'ACTIVE') {
+      if (enrollment.isActive && (enrollment.status === 'ACTIVE' || enrollment.status === 'PENDING')) {
         return res.status(400).json({
           success: false,
           message: 'Student is already enrolled in this group'
@@ -532,6 +567,303 @@ export const enrollStudentInGroup = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Server error enrolling student in group',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * POST /api/teachers/groups/:groupId/enrollments/:enrollmentId/approve
+ * Teacher approves a PENDING enrollment request.
+ * Promotes the PENDING enrollment to ACTIVE and links the student to the
+ * group using the teacher's existing TeacherStudent record.
+ */
+export const approveGroupEnrollment = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { groupId, enrollmentId } = req.params;
+    const body = req.body || {};
+
+    if (!isValidObjectId(String(groupId || '')) || !isValidObjectId(String(enrollmentId || ''))) {
+      return res.status(404).json({ success: false, message: 'Invalid group or enrollment ID' });
+    }
+
+    // 1. Verify group ownership
+    const group = await TeacherGroup.findOne({ _id: groupId, teacherId, isActive: true });
+    if (!group) {
+      return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+
+    // 2. Verify enrollment is PENDING and belongs to this teacher
+    const enrollment = await TeacherGroupEnrollment.findOne({
+      _id: enrollmentId,
+      groupId,
+      teacherId,
+      status: 'PENDING',
+      isActive: true
+    });
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending enrollment request not found'
+      });
+    }
+
+    // 3. Verify the student record exists and belongs to this teacher
+    const student = await TeacherStudent.findOne({
+      _id: enrollment.studentId,
+      teacherId,
+      isActive: true
+    });
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student record not found' });
+    }
+
+    // 4. Activate the enrollment
+    enrollment.status = 'ACTIVE';
+    enrollment.isActive = true;
+    enrollment.enrolledAt = new Date();
+    await enrollment.save();
+
+    return res.json({
+      success: true,
+      message: 'Enrollment approved',
+      enrollment: toEnrolledStudentDto(enrollment)
+    });
+  } catch (error) {
+    console.error('Error approving group enrollment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error approving enrollment',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * POST /api/teachers/groups/:groupId/enrollments/:enrollmentId/reject
+ * Teacher rejects a PENDING enrollment request.
+ * Does NOT delete the student record or the enrollment; the request is
+ * persisted as REJECTED for audit and can be re-opened later.
+ */
+export const rejectGroupEnrollment = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { groupId, enrollmentId } = req.params;
+    const body = req.body || {};
+
+    if (!isValidObjectId(String(groupId || '')) || !isValidObjectId(String(enrollmentId || ''))) {
+      return res.status(404).json({ success: false, message: 'Invalid group or enrollment ID' });
+    }
+
+    // 1. Verify group ownership
+    const group = await TeacherGroup.findOne({ _id: groupId, teacherId, isActive: true });
+    if (!group) {
+      return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+
+    // 2. Verify enrollment is PENDING and belongs to this teacher
+    const enrollment = await TeacherGroupEnrollment.findOne({
+      _id: enrollmentId,
+      groupId,
+      teacherId,
+      status: 'PENDING',
+      isActive: true
+    });
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending enrollment request not found'
+      });
+    }
+
+    // 3. Verify the student record exists and belongs to this teacher
+    const student = await TeacherStudent.findOne({
+      _id: enrollment.studentId,
+      teacherId,
+      isActive: true
+    });
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student record not found' });
+    }
+
+    // 4. Mark the request as rejected (membership NOT created)
+    enrollment.status = 'REJECTED';
+    if (body.reason !== undefined) {
+      enrollment.notes = cleanString(body.reason, 1000);
+    }
+    await enrollment.save();
+
+    return res.json({
+      success: true,
+      message: 'Enrollment request rejected',
+      enrollment: toEnrolledStudentDto(enrollment)
+    });
+  } catch (error) {
+    console.error('Error rejecting group enrollment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error rejecting enrollment',
+      error: error.message
+    });
+  }
+};
+/**
+ * GET /api/teachers/groups/:groupId/enrollment-requests
+ * Teacher views all PENDING enrollment requests for a group.
+ */
+export const getGroupEnrollmentRequests = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { groupId } = req.params;
+
+    if (!isValidObjectId(String(groupId || ''))) {
+      return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+
+    const group = await TeacherGroup.findOne({ _id: groupId, teacherId, isActive: true });
+    if (!group) {
+      return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+
+    const requests = await TeacherGroupEnrollment.find({
+      groupId,
+      teacherId,
+      status: 'PENDING',
+      isActive: true
+    })
+      .sort({ enrolledAt: -1 })
+      .populate('studentId', 'fullName phone email gradeLevel school subjects');
+
+    const dtoList = requests.map((r) => ({
+      id: String(r._id),
+      studentId: String(r.studentId?._id || r.studentId),
+      studentName: r.studentId?.fullName || '',
+      phone: r.studentId?.phone || '',
+      email: r.studentId?.email || '',
+      gradeLevel: r.studentId?.gradeLevel || '',
+      school: r.studentId?.school || '',
+      subjects: Array.isArray(r.studentId?.subjects) ? r.studentId.subjects : [],
+      notes: r.notes || '',
+      requestedAt: r.enrolledAt || r.createdAt
+    }));
+
+    return res.json({
+      success: true,
+      count: dtoList.length,
+      requests: dtoList
+    });
+  } catch (error) {
+    console.error('Error fetching group enrollment requests:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error fetching enrollment requests',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * POST /api/teachers/groups/:groupId/students/:studentId/transfer
+ * Transfer student between groups without deleting the underlying record.
+ */
+export const transferStudentBetweenGroups = async (req, res) => {
+  try {
+    const teacherId = req.userId;
+    const { groupId, studentId } = req.params;
+    const { targetGroupId, notes } = req.body || {};
+
+    if (!isValidObjectId(String(groupId || '')) || !isValidObjectId(String(studentId || ''))) {
+      return res.status(404).json({ success: false, message: 'Invalid group or student ID' });
+    }
+
+    if (!isValidObjectId(String(targetGroupId || ''))) {
+      return res.status(400).json({ success: false, message: 'Valid target group ID is required' });
+    }
+
+    if (String(groupId) === String(targetGroupId)) {
+      return res.status(400).json({ success: false, message: 'Target group must differ from source group' });
+    }
+
+    // Verify source group belongs to this teacher
+    const group = await TeacherGroup.findOne({ _id: groupId, teacherId, isActive: true });
+    if (!group) {
+      return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+
+    // Verify target group exists and belongs to this teacher
+    const targetGroup = await TeacherGroup.findOne({ _id: targetGroupId, teacherId, isActive: true });
+    if (!targetGroup) {
+      return res.status(404).json({ success: false, message: 'Target group not found' });
+    }
+
+    // Verify enrollment in the source group exists
+    const existing = await TeacherGroupEnrollment.findOne({
+      groupId: group._id,
+      studentId,
+      teacherId,
+      isActive: true,
+      status: 'ACTIVE'
+    });
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Active enrollment not found for this student in this group'
+      });
+    }
+
+    // Deactivate the old membership only (never delete the student record)
+    existing.isActive = false;
+    existing.status = 'DROPPED';
+    await existing.save();
+
+    // Enroll into the target group
+    const target = await TeacherGroupEnrollment.findOne({
+      groupId: targetGroup._id,
+      studentId,
+      teacherId
+    });
+
+    let enrollment;
+    if (target) {
+      if (target.isActive && (target.status === 'ACTIVE' || target.status === 'PENDING')) {
+        // Keep the original transfer already effective
+        return res.status(400).json({
+          success: false,
+          message: 'Student is already enrolled in this group'
+        });
+      }
+      target.isActive = true;
+      target.status = 'ACTIVE';
+      target.enrolledAt = new Date();
+      if (notes !== undefined) {
+        target.notes = cleanString(notes, 1000);
+      }
+      await target.save();
+      enrollment = target;
+    } else {
+      enrollment = await TeacherGroupEnrollment.create({
+        teacherId,
+        groupId: targetGroup._id,
+        studentId,
+        enrolledAt: new Date(),
+        status: 'ACTIVE',
+        notes: cleanString(notes, 1000),
+        isActive: true
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Student transferred successfully',
+      enrollment: toEnrolledStudentDto(enrollment)
+    });
+  } catch (error) {
+    console.error('Error transferring student between groups:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error transferring student between groups',
       error: error.message
     });
   }

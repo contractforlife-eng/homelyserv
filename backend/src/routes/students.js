@@ -55,6 +55,10 @@ import {
   getMyEnrolledCourses,
   getCourseMaterialDownloadUrl
 } from '../controllers/studentCourseController.js';
+import {
+  getMyGroupEnrollments,
+  claimPendingRequests
+} from '../controllers/studentGroupEnrollmentController.js';
 
 const router = express.Router();
 
@@ -102,5 +106,9 @@ router.post('/friends/:id/reject', requireStudent, rejectFriendRequest);
 router.get('/courses/enrolled', requireStudent, getMyEnrolledCourses);
 router.post('/courses/:id/enroll', requireStudent, enrollInFreeCourse);
 router.get('/courses/:id/materials/:materialId/download', requireStudent, getCourseMaterialDownloadUrl);
+
+// Student Teacher Groups & Claims endpoints
+router.get('/groups/enrollments', requireStudent, getMyGroupEnrollments);
+router.post('/claim-pending-requests', requireStudent, claimPendingRequests);
 
 export default router;

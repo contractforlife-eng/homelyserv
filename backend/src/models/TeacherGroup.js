@@ -55,12 +55,47 @@ const teacherGroupSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
+    // Attendance mode: ONLINE (video), IN_PERSON (physical location),
+    // HYBRID (both). Controls what the public profile displays.
+    onlineMode: {
+      type: String,
+      enum: ['ONLINE', 'IN_PERSON', 'HYBRID'],
+      default: 'IN_PERSON',
+      index: true
+    },
+    // Physical location for IN_PERSON / HYBRID groups (free-form text).
+    locationAddress: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: ''
+    },
+    // City/state/country for in-person groups (optional display fields).
+    locationCity: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: ''
+    },
+    locationCountry: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: ''
+    },
     // Visual badge/accent color (hex or standard color key)
     color: {
       type: String,
       default: '#DC2626', // default red accent
       trim: true,
       maxlength: 30
+    },
+    // Whether new enrollment requests are accepted. Closed groups reject
+    // new requests. Defaults to true (open) for backward compatibility.
+    enrollmentOpen: {
+      type: Boolean,
+      default: true,
+      index: true
     },
     status: {
       type: String,
