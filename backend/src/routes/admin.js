@@ -1259,8 +1259,8 @@ router.post('/start-conversation', async (req, res) => {
     if (scope === 'STAFF' && !['SUPPORT', 'SUPPORT_HELPER'].includes(targetUser.role)) {
       return res.status(403).json({ error: 'Target is not an approved staff participant' });
     }
-    if (scope === 'USERS' && !['EMPLOYER', 'WORKER'].includes(targetUser.role)) {
-      return res.status(403).json({ error: 'Target is not an Employer or Worker' });
+    if (scope === 'USERS' && !['EMPLOYER', 'WORKER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(targetUser.role)) {
+      return res.status(403).json({ error: 'Target is not an approved user participant' });
     }
 
     // Determine conversation type:
