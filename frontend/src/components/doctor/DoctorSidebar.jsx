@@ -252,7 +252,7 @@ const DoctorSidebar = ({
         className={`fixed top-0 bottom-0 z-50 lg:z-40 bg-white dark:bg-[#1f2937] border-r border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0'
         } rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l`}
       >
         {/* Doctor Identity Header */}
