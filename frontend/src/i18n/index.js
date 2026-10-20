@@ -1257,6 +1257,7 @@ const en = {
     auth: {
       alreadyHaveAccount: 'Already have an account?',
       signInLink: 'Sign in',
+      backToHome: 'Back to Home',
       country: 'Country',
       countrySelect: { placeholder: 'Select your country', searchPlaceholder: 'Search countries...', searchLabel: 'Search countries', countriesLabel: 'Countries', noCountries: 'No countries found', selectedCountry: 'Selected country: {{country}}' }
     },
@@ -3065,6 +3066,7 @@ const ar = {
     auth: {
       alreadyHaveAccount: 'لديك حساب بالفعل؟',
       signInLink: 'تسجيل الدخول',
+      backToHome: 'العودة للرئيسية',
       country: 'البلد',
       countrySelect: { placeholder: 'اختر بلدك', searchPlaceholder: 'ابحث عن البلدان...', searchLabel: 'البحث عن البلدان', countriesLabel: 'البلدان', noCountries: 'لم يتم العثور على بلدان', selectedCountry: 'البلد المحدد: {{country}}' }
     },
@@ -4810,6 +4812,7 @@ const fr = {
     auth: {
       alreadyHaveAccount: 'Vous avez déjà un compte ?',
       signInLink: 'Se connecter',
+      backToHome: "Retour à l'accueil",
       country: 'Pays',
       countrySelect: { placeholder: 'Sélectionnez votre pays', searchPlaceholder: 'Rechercher des pays...', searchLabel: 'Rechercher des pays', countriesLabel: 'Pays', noCountries: 'Aucun pays trouvé', selectedCountry: 'Pays sélectionné : {{country}}' }
     },
@@ -6543,6 +6546,7 @@ const ru = {
     auth: {
       alreadyHaveAccount: 'Уже есть аккаунт?',
       signInLink: 'Войти',
+      backToHome: 'На главную',
       country: 'Страна',
       countrySelect: { placeholder: 'Выберите страну', searchPlaceholder: 'Поиск стран...', searchLabel: 'Поиск стран', countriesLabel: 'Страны', noCountries: 'Страны не найдены', selectedCountry: 'Выбранная страна: {{country}}' }
     },
@@ -8276,6 +8280,7 @@ const tr = {
     auth: {
       alreadyHaveAccount: 'Zaten hesabınız var mı?',
       signInLink: 'Giriş Yap',
+      backToHome: 'Ana Sayfaya Dön',
       country: 'Ülke',
       countrySelect: { placeholder: 'Ülkenizi seçin', searchPlaceholder: 'Ülke ara...', searchLabel: 'Ülke ara', countriesLabel: 'Ülkeler', noCountries: 'Ülke bulunamadı', selectedCountry: 'Seçilen ülke: {{country}}' }
     },
@@ -10009,6 +10014,7 @@ const de = {
     auth: {
       alreadyHaveAccount: 'Schon ein Konto?',
       signInLink: 'Anmelden',
+      backToHome: 'Zurück zur Startseite',
       country: 'Land',
       countrySelect: { placeholder: 'Wählen Sie Ihr Land', searchPlaceholder: 'Länder suchen...', searchLabel: 'Länder suchen', countriesLabel: 'Länder', noCountries: 'Keine Länder gefunden', selectedCountry: 'Ausgewähltes Land: {{country}}' }
     },

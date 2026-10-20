@@ -3,6 +3,8 @@
 // Draft legal copy; review by qualified legal counsel recommended before major commercial launch.
 import React from 'react';
 import LegalDocument from '../components/common/LegalDocument';
+import PageMetadata from '../components/PageMetadata';
+import { useTranslation } from 'react-i18next';
 
 const CONTENT = {
   en: {
@@ -456,6 +458,21 @@ const CONTENT = {
   }
 };
 
-const PrivacyPolicy = () => <LegalDocument content={CONTENT} showDeleteAccountLink />;
+const PrivacyPolicy = () => {
+  const { i18n } = useTranslation();
+  const lang = i18n?.language && String(i18n.language).toLowerCase().startsWith('ar') ? 'ar' : 'en';
+  const page = CONTENT[lang] || CONTENT.en;
+  const title = `${page.title} | HomelyServ`;
+  const description =
+    lang === 'ar'
+      ? 'اطّلع على سياسة الخصوصية لمنصة HomelyServ وكيفية جمع البيانات واستخدامها ومشاركتها.'
+      : page.subtitle;
+  return (
+    <>
+      <PageMetadata title={title} description={description} />
+      <LegalDocument content={CONTENT} showDeleteAccountLink />
+    </>
+  );
+};
 
 export default PrivacyPolicy;

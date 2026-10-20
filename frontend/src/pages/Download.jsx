@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Download as DownloadIcon, Facebook, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Download as DownloadIcon, Facebook, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import appIcon from '../assets/homelyserv-app-icon.png';
 import markDark from '../assets/branding/homelyserv-mark-dark.png';
 import markLight from '../assets/branding/homelyserv-mark-light.png';
@@ -25,9 +26,9 @@ const FALLBACK_RELEASE = {
   signingCertificateSha256: 'b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50',
   downloadUrl: FALLBACK_DOWNLOAD_URL
 };
-const DOWNLOAD_PAGE_URL = 'https://homelyserv.com/download';
+const DOWNLOAD_PAGE_URL = 'https://www.homelyserv.com/download';
 const SOCIAL_IMAGE_URL = 'https://www.homelyserv.com/downloads/android/homelyserv-android-share.jpg';
-const SOCIAL_DESCRIPTION = 'Download the official HomelyServ Android app directly from homelyserv.com. View version, signing, checksum, and installation information.';
+const SOCIAL_DESCRIPTION = 'Download the official HomelyServ Android app directly from www.homelyserv.com. View version, signing, checksum, and installation information.';
 const UPDATE_NOTE_TRANSLATIONS = {
   en: 'Already have HomelyServ installed? Installing this version will update the existing app.',
   ar: 'هل لديك HomelyServ مثبتاً بالفعل؟ سيؤدي تثبيت هذا الإصدار إلى تحديث التطبيق الحالي.',
@@ -70,6 +71,11 @@ const Download = () => {
   const [copied, setCopied] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
   const [deviceType, setDeviceType] = useState('unknown');
+  // The download page root is forced to dir="ltr" (so the APK/technical
+  // tables stay readable), which disables Tailwind's `rtl:` variants inside
+  // it. Resolve the direction from the active language instead so the
+  // Back to Home arrow and text still flip correctly for Arabic.
+  const isRtlLanguage = i18n.language === 'ar';
 
   useEffect(() => {
     setDeviceType(classifyDevice(navigator.userAgent, navigator.platform, navigator.maxTouchPoints));
@@ -210,6 +216,19 @@ const Download = () => {
         <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
+            {/* Back to Home - rendered at the very top of the hero, above the
+                brand logo, so it never overlaps the logo or the download
+                buttons. Arrow flips in RTL, matching Login/Register. */}
+            <div className="mb-5 flex items-center justify-start">
+              <Link
+                to="/"
+                dir="auto"
+                className="inline-flex min-h-11 cursor-pointer touch-manipulation items-center gap-1.5 rounded-xl border border-white/40 bg-white/20 px-3 py-2 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/35 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              >
+                <ArrowLeft size={16} className={isRtlLanguage ? 'rotate-180' : ''} aria-hidden="true" />
+                {t('auth.backToHome')}
+              </Link>
+            </div>
             <div className="mb-7 flex items-center gap-3">
               <img src={markLight} alt="HomelyServ" className="h-11 w-auto shrink-0 object-contain" />
               <span className="text-xl font-extrabold tracking-tight text-slate-900">

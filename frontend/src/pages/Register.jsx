@@ -15,6 +15,7 @@ import {
   Globe, 
   AlertCircle, 
   CheckCircle,
+  ArrowLeft,
   Briefcase,
   Phone,
   Shield,
@@ -32,6 +33,7 @@ import { trackCompleteRegistration } from '../utils/metaPixel';
 import { trackTikTokCompleteRegistration } from '../utils/tiktokPixel';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS } from '../constants/tutorSpecializations';
+import PageMetadata from '../components/PageMetadata';
 
 function Register() {
   const navigate = useNavigate();
@@ -289,6 +291,11 @@ function Register() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-3 sm:p-4 relative overflow-hidden">
+      <PageMetadata
+        title="Create Account | HomelyServ"
+        description="Create a HomelyServ account to hire trusted professionals or offer your services."
+        noindex
+      />
       {/* Decorative background elements - Red only */}
       <div className="absolute top-0 left-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
@@ -326,6 +333,19 @@ function Register() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Back to Home Link - returns the visitor to the Homepage.
+              Placed in the card header (below the language selector, above
+              the brand logo) so it never interrupts the registration form. */}
+          <div className="mb-1 flex items-center justify-start rtl:justify-end">
+            <Link
+              to="/"
+              className="inline-flex min-h-11 cursor-pointer touch-manipulation items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800/60 dark:hover:text-red-400"
+            >
+              <ArrowLeft size={16} className="rtl:rotate-180" aria-hidden="true" />
+              {t('auth.backToHome')}
+            </Link>
           </div>
 
           {/* Logo & Brand - Red only */}

@@ -1,47 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://homelyserv.com/</loc>
+    <loc>https://www.homelyserv.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://homelyserv.com/about</loc>
+    <loc>https://www.homelyserv.com/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://homelyserv.com/contact</loc>
+    <loc>https://www.homelyserv.com/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://homelyserv.com/terms</loc>
+    <loc>https://www.homelyserv.com/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://homelyserv.com/privacy</loc>
+    <loc>https://www.homelyserv.com/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://homelyserv.com/refund-policy</loc>
+    <loc>https://www.homelyserv.com/refund-policy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://homelyserv.com/download</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://homelyserv.com/login</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://homelyserv.com/register</loc>
+    <loc>https://www.homelyserv.com/download</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

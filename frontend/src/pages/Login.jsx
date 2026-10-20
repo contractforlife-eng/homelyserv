@@ -1,7 +1,7 @@
 // src/pages/Login.jsx - BRIGHT RED, WHITE, AND BLACK THEME
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle, Download as DownloadIcon } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, ArrowLeft, CheckCircle, Download as DownloadIcon } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
 import useAuthStore from '../store/authStore';
@@ -12,6 +12,7 @@ import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 import { Capacitor } from '@capacitor/core';
 import MobileLoginView from '../components/mobile/MobileLoginView';
 import { trackOperationalAnalytics } from '../utils/operationalAnalytics';
+import PageMetadata from '../components/PageMetadata';
 
 function Login() {
   const navigate = useNavigate();
@@ -311,6 +312,24 @@ function Login() {
     </div>
   );
 
+  // Back to Home - kept outside the form fields so it never interrupts
+  // the login flow. Rendered in the card header above the brand logo.
+  // The language selector is pinned to the physical top-right corner
+  // (absolute right-4), so this link stays physically top-left in BOTH
+  // LTR and RTL: justify-start => left in LTR, rtl:justify-end => left in
+  // RTL. That keeps the two controls from ever overlapping.
+  const backToHomeElement = (
+    <div className="flex items-center justify-start rtl:justify-end">
+      <Link
+        to="/"
+        className="inline-flex min-h-11 cursor-pointer touch-manipulation items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800/60 dark:hover:text-red-400"
+      >
+        <ArrowLeft size={16} className="rtl:rotate-180" aria-hidden="true" />
+        {t('auth.backToHome')}
+      </Link>
+    </div>
+  );
+
   const loginContent = (
     <>
       {/* Language Selector */}
@@ -581,7 +600,20 @@ function Login() {
 
   if (isNative) {
     return (
-      <MobileLoginView branding={brandingElement} footer={<LegalFooter className="relative z-10 mt-6" />}>
+      <MobileLoginView
+        branding={
+          <>
+            {backToHomeElement}
+            {brandingElement}
+          </>
+        }
+        footer={<LegalFooter className="relative z-10 mt-6" />}
+      >
+        <PageMetadata
+          title="Sign In | HomelyServ"
+          description="Sign in to your HomelyServ account to manage bookings, messages, and services."
+          noindex
+        />
         {loginContent}
       </MobileLoginView>
     );
@@ -589,6 +621,11 @@ function Login() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-gradient-to-br from-red-100 via-white to-red-50 relative">
+      <PageMetadata
+        title="Sign In | HomelyServ"
+        description="Sign in to your HomelyServ account to manage bookings, messages, and services."
+        noindex
+      />
       {/* Decorative background elements - clipped to prevent scroll overflow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Radiant decorative background elements */}
@@ -606,6 +643,9 @@ function Login() {
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10 w-full">
         <div className="w-full max-w-lg">
           <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/20 p-6 sm:p-10 border border-red-100/60 transition-all duration-300 hover:shadow-red-500/30">
+
+            {/* Back to Home - above the brand logo, outside the form fields */}
+            {backToHomeElement}
 
             {/* Logo & Brand - Radiant Red, White, Black */}
             <div className="text-center mb-6 sm:mb-8 pt-2">

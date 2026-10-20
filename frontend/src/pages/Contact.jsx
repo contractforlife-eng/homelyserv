@@ -5,6 +5,7 @@ import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle, AlertCircle } fr
 import LegalFooter from '../components/common/LegalFooter';
 import useAuthStore from '../store/authStore';
 import { getMessagesRoute } from '../utils/supportRoutes';
+import PageMetadata from '../components/PageMetadata';
 
 function Contact() {
   const { t } = useTranslation();
@@ -69,6 +70,11 @@ function Contact() {
   ];
 
   return (
+    <>
+      <PageMetadata
+        title={t('contactPage.title')}
+        description={t('contactPage.description')}
+      />
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -208,7 +214,8 @@ function Contact() {
       </div>
 
       <LegalFooter />
-    </div>
+      </div>
+    </>
   );
 }
 

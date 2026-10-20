@@ -1,10 +1,11 @@
 // frontend/src/pages/DoctorPublicProfile.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import LegalFooter from '../components/common/LegalFooter';
+import PageMetadata from '../components/PageMetadata';
 import {
   Calendar,
   Clock,
@@ -25,6 +26,11 @@ import {
 export default function DoctorPublicProfile() {
   const { id } = useParams();
   const { t } = useTranslation();
+  const location = useLocation();
+
+  const doctorCanonicalOverride = location.pathname.startsWith('/dr/')
+    ? `https://www.homelyserv.com/doctor/${id}`
+    : undefined;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -166,6 +172,11 @@ export default function DoctorPublicProfile() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-between">
+        <PageMetadata
+          title="Doctor Profile | HomelyServ"
+          description="View this doctor's public profile on HomelyServ."
+          noindex
+        />
         <Navbar />
         <div className="flex items-center justify-center py-24">
           <Loader2 className="w-10 h-10 text-red-600 animate-spin" />
@@ -178,6 +189,11 @@ export default function DoctorPublicProfile() {
   if (error || !doctor) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-between">
+        <PageMetadata
+          title="Doctor Profile Not Found | HomelyServ"
+          description="This doctor profile is not available or is currently unpublished on HomelyServ."
+          noindex
+        />
         <Navbar />
         <div className="max-w-xl mx-auto my-16 p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm text-center">
           <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
@@ -201,6 +217,23 @@ export default function DoctorPublicProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-between">
+      <PageMetadata
+        title={`${doctor.fullName}${doctor.professionalTitle || doctor.specialty ? ` - ${doctor.professionalTitle || doctor.specialty}` : ''} | HomelyServ`}
+        description={
+          doctor.bio
+            ? String(doctor.bio).replace(/\s+/g, ' ').trim().slice(0, 155)
+            : [
+                doctor.fullName,
+                doctor.professionalTitle || doctor.specialty,
+                doctor.subspecialty,
+              ]
+                .filter(Boolean)
+                .join(' - ')
+                .concat(' on HomelyServ. View clinics, availability, and booking options.')
+                .slice(0, 160)
+        }
+        canonicalOverride={doctorCanonicalOverride}
+      />
       <Navbar />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">

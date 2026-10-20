@@ -6,6 +6,14 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
       "source": "/download",
       "destination": "/download.html"
     },
@@ -67,3 +75,4 @@
     "VITE_API_URL": "https://adventurous-grace-production-1b38.up.railway.app"
   }
 }
+
