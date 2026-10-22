@@ -15,6 +15,7 @@ import {
   disable as disableNativeBiometric
 } from '../native/biometricUnlock';
 import { clearRuntimeAuthToken, getRuntimeAuthToken, setRuntimeAuthToken } from '../utils/runtimeAuthToken';
+import { stopNativeTracking } from '../native/familyTracking';
 
 const isAndroidCapacitor = Capacitor.getPlatform() === 'android';
 let activeAuthCheck = null;
@@ -53,6 +54,7 @@ const useAuthStore = create(
       language: (typeof window !== 'undefined' && localStorage.getItem('homelyserv_language')) || 'en',
 
       register: async (userData, userType) => {
+        if (isAndroidCapacitor) await stopNativeTracking().catch(() => {});
         authEpoch += 1;
         biometricStartupAttempted = false;
         set({ isLoading: true, error: null });
@@ -90,6 +92,7 @@ const useAuthStore = create(
       },
 
       login: async (email, password, role) => {
+        if (isAndroidCapacitor) await stopNativeTracking().catch(() => {});
         authEpoch += 1;
         biometricStartupAttempted = false;
         set({ isLoading: true, error: null });
@@ -131,6 +134,7 @@ const useAuthStore = create(
         authEpoch += 1;
         biometricStartupAttempted = false;
         disconnectSocket();
+        if (isAndroidCapacitor) await stopNativeTracking().catch(() => {});
 
         const token = get().token || getStoredAuthToken() || getRuntimeAuthToken();
         if (token) {

@@ -89,6 +89,47 @@ export const requestChildTeacher = async (studentId, teacherId, message) => {
   return response.data;
 };
 
+export const getFamilyTrackingStatus = async (studentId) => {
+  const response = await api.get(`/api/parent-students/${studentId}/tracking/status`);
+  return response.data;
+};
+
+export const getFamilyTrackingCurrent = async (studentId) => {
+  const response = await api.get(`/api/parent-students/${studentId}/tracking/current`);
+  return response.data;
+};
+
+export const getFamilyTrackingHistory = async (studentId, date) => {
+  const suffix = date ? `history/${date}` : 'history/today';
+  const response = await api.get(`/api/parent-students/${studentId}/tracking/${suffix}`);
+  return response.data;
+};
+
+export const requestFamilyTrackingActivation = async (studentId, activation) => {
+  const response = await api.post(`/api/parent-students/${studentId}/tracking/activation/request`, activation);
+  return response.data;
+};
+
+export const reportFamilyTrackingPermission = async (studentId, permission) => {
+  const response = await api.put(`/api/parent-students/${studentId}/tracking/status`, permission);
+  return response.data;
+};
+
+export const pauseFamilyTracking = async (studentId) => {
+  const response = await api.post(`/api/parent-students/${studentId}/tracking/pause`);
+  return response.data;
+};
+
+export const approveFamilyTrackingSafeguard = async (studentId) => {
+  const response = await api.post(`/api/parent-students/${studentId}/tracking/activation/guardian-approve`);
+  return response.data;
+};
+
+export const disableFamilyTracking = async (studentId) => {
+  const response = await api.post(`/api/parent-students/${studentId}/tracking/disable`);
+  return response.data;
+};
+
 export default {
   getParentChildren,
   requestChildLink,
@@ -105,5 +146,11 @@ export default {
   acceptParentRequest,
   rejectParentRequest,
   discoverChildTeachers,
-  requestChildTeacher
+  requestChildTeacher,
+  getFamilyTrackingStatus,
+  getFamilyTrackingCurrent,
+  getFamilyTrackingHistory,
+  requestFamilyTrackingActivation,
+  reportFamilyTrackingPermission,
+  pauseFamilyTracking
 };

@@ -63,6 +63,7 @@ import Conversation from './models/Conversation.js';
 import { verifyGuestConversation, verifyStaffToken } from './services/publicSupportAccessService.js';
 import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
 import { startTeacherLessonReminderWorker } from './services/teacherLessonReminderService.js';
+import { startFamilyTrackingRetentionWorker } from './services/familyTrackingService.js';
 import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './services/socketAuthService.js';
 import './config.js'; // Running your base configuration routines
 import { initializeFcm } from './services/fcmInit.js';
@@ -253,6 +254,7 @@ mongoose.connect(MONGODB_URI)
     console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
     startPublicSupportExpiryWorker();
     startTeacherLessonReminderWorker();
+    startFamilyTrackingRetentionWorker();
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);

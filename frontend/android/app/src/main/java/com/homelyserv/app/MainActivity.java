@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(HomelyServBiometricUnlockPlugin.class);
+        registerPlugin(HomelyServFamilyTrackingPlugin.class);
         super.onCreate(savedInstanceState);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);

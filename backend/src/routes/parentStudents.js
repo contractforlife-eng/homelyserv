@@ -28,8 +28,34 @@ import {
   discoverParentsTeachers,
   requestParentTeacher
 } from '../controllers/parentTeacherDiscoveryController.js';
+import {
+  getHistoricalDay,
+  getLastKnownLocation,
+  getTodayHistory,
+  getTrackingStatus,
+  approveStudentTrackingSafeguard,
+  completeNativeTrackingActivation,
+  disableTracking,
+  pauseTracking,
+  receiveLocationObservations,
+  requestTrackingActivation,
+  reportTrackingStatus
+} from '../controllers/familyTrackingController.js';
+import { createFamilyTrackingRateLimit } from '../middleware/familyTrackingRateLimit.js';
 
 const router = express.Router();
+const asyncHandler = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+const protectTrackingResponse = (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, private, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+};
+
+router.use((req, res, next) => (
+  req.path.includes('/tracking/') ? protectTrackingResponse(req, res, next) : next()
+));
 
 // Apply base authentication to all parent-student endpoints
 router.use(authenticate);
@@ -46,6 +72,26 @@ router.post('/:id/reject', rejectParentRequest);
 // 3. Request cancellation & ending
 router.post('/:id/cancel', cancelParentRequest);
 router.post('/:id/end', endParentStudentRelationship);
+
+const trackingReadLimit = createFamilyTrackingRateLimit({ windowMs: 60_000, maximum: 60 });
+const trackingWriteLimit = createFamilyTrackingRateLimit({ windowMs: 60_000, maximum: 12 });
+const observationLimit = createFamilyTrackingRateLimit({
+  windowMs: 60_000,
+  maximum: 120,
+  cost: (req) => Array.isArray(req.body?.observations) ? req.body.observations.length : 1
+});
+
+router.post('/:studentId/tracking/activation/request', trackingWriteLimit, asyncHandler(requestTrackingActivation));
+router.post('/:studentId/tracking/activation/guardian-approve', trackingWriteLimit, asyncHandler(approveStudentTrackingSafeguard));
+router.post('/:studentId/tracking/activation/native-complete', trackingWriteLimit, asyncHandler(completeNativeTrackingActivation));
+router.post('/:studentId/tracking/pause', trackingWriteLimit, asyncHandler(pauseTracking));
+router.post('/:studentId/tracking/disable', trackingWriteLimit, asyncHandler(disableTracking));
+router.put('/:studentId/tracking/status', trackingWriteLimit, asyncHandler(reportTrackingStatus));
+router.post('/:studentId/tracking/observations', trackingWriteLimit, observationLimit, asyncHandler(receiveLocationObservations));
+router.get('/:studentId/tracking/status', trackingReadLimit, asyncHandler(getTrackingStatus));
+router.get('/:studentId/tracking/current', trackingReadLimit, asyncHandler(getLastKnownLocation));
+router.get('/:studentId/tracking/history/today', trackingReadLimit, asyncHandler(getTodayHistory));
+router.get('/:studentId/tracking/history/:date', trackingReadLimit, asyncHandler(getHistoricalDay));
 
 // 4. Controlled educational child views (Server validates ACTIVE relationship)
 router.get('/:studentId/overview', getChildOverview);

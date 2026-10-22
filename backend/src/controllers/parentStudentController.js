@@ -31,6 +31,7 @@ import StudentLessonBooking from '../models/StudentLessonBooking.js';
 import TeacherProfile from '../models/TeacherProfile.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { checkTeacherScheduleConflict, validateTimeRange } from '../services/lessonBookingConflictService.js';
+import { cleanupStudentHistory, disableTrackingIfNoActiveGuardians } from '../services/familyTrackingService.js';
 import {
   ALLOWED_PARENT_ROLES,
   requireActiveParentStudentRelationship,
@@ -60,7 +61,7 @@ export const getParentChildren = async (req, res) => {
     if (!ALLOWED_PARENT_ROLES.has(userRole)) {
       return res.status(403).json({
         success: false,
-        message: 'Only WORKER, EMPLOYER or DOCTOR accounts can manage parent-student learning'
+        message: 'Only eligible guardian accounts can manage parent-student learning'
       });
     }
 
@@ -112,7 +113,7 @@ export const requestChildLink = async (req, res) => {
     if (!ALLOWED_PARENT_ROLES.has(userRole)) {
       return res.status(403).json({
         success: false,
-        message: 'Only WORKER or EMPLOYER accounts can send parent link requests'
+        message: 'Only eligible guardian accounts can send parent link requests'
       });
     }
 
@@ -457,6 +458,9 @@ export const cancelParentRequest = async (req, res) => {
     rel.relationshipStatus = 'ENDED';
     rel.endedAt = new Date();
     await rel.save();
+    if (await disableTrackingIfNoActiveGuardians(rel.studentUserId)) {
+      await cleanupStudentHistory(rel.studentUserId);
+    }
 
     return res.json({
       success: true,
@@ -502,6 +506,10 @@ export const endParentStudentRelationship = async (req, res) => {
     rel.relationshipStatus = 'ENDED';
     rel.endedAt = new Date();
     await rel.save();
+
+    if (await disableTrackingIfNoActiveGuardians(rel.studentUserId)) {
+      await cleanupStudentHistory(rel.studentUserId);
+    }
 
     return res.json({
       success: true,
@@ -969,7 +977,7 @@ export const createChildBooking = async (req, res) => {
     if (!ALLOWED_PARENT_ROLES.has(userRole)) {
       return res.status(403).json({
         success: false,
-        message: 'Only WORKER or EMPLOYER accounts can book lessons for linked children'
+        message: 'Only eligible guardian accounts can book lessons for linked children'
       });
     }
 

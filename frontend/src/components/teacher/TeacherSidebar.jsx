@@ -130,6 +130,13 @@ const TeacherSidebar = ({
       active: location.pathname === '/teacher-students'
     },
     {
+      id: 'myChildren',
+      label: t('parentStudents.pageTitle') || 'My Children',
+      icon: GraduationCap,
+      path: '/parent-students',
+      active: location.pathname.startsWith('/parent-students')
+    },
+    {
       id: 'groups',
       label: t('teacherNav.groups') || 'Groups / Classes',
       icon: Layers,

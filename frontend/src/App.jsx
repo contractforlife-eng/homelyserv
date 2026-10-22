@@ -110,6 +110,8 @@ import DoctorHomelyServProfile from './pages/DoctorHomelyServProfile';
 import EmployerDashboard from './pages/EmployerDashboard';
 import EmployerFamily from './pages/EmployerFamily';
 import ParentStudents from './pages/ParentStudents';
+const FamilyTracking = React.lazy(() => import('./pages/FamilyTracking'));
+const StudentFamilyTracking = React.lazy(() => import('./pages/StudentFamilyTracking'));
 import EmployerSearch from './pages/EmployerSearch';
 import EmployerPending from './pages/EmployerPending';
 import EmployerPast from './pages/EmployerPast';
@@ -1158,10 +1160,30 @@ function App() {
       <Route 
         path="/parent-students" 
         element={
-          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'DOCTOR']}>
+          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER']}>
             <ParentStudents />
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/parent-students/:studentId/tracking"
+        element={
+          <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER']}>
+            <React.Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
+              <FamilyTracking />
+            </React.Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student-family-tracking"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <React.Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
+              <StudentFamilyTracking />
+            </React.Suspense>
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/employer-search" 

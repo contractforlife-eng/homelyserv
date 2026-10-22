@@ -3,7 +3,7 @@
 // PARENT-STUDENT MODEL (PHASE 10)
 //
 // Represents the educational link between a parent/guardian account
-// (WORKER or EMPLOYER) and an independent child (STUDENT).
+// (WORKER, EMPLOYER, DOCTOR or TEACHER) and an independent child (STUDENT).
 //
 // LIFECYCLE / STATUSES:
 // - PENDING:   Request sent by parentUserId. Awaiting student confirmation.
@@ -12,7 +12,7 @@
 // - ENDED:     Terminated by either party.
 //
 // INTEGRITY & SECURITY:
-// - parentUserId must have role WORKER or EMPLOYER.
+// - parentUserId must have an eligible guardian role.
 // - studentUserId must have role STUDENT.
 // - Compound unique index on [parentUserId, studentUserId] prevents duplicate links.
 // - Self-linking is prohibited (parentUserId !== studentUserId).

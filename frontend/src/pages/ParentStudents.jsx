@@ -2,12 +2,13 @@
 // ============================================================
 // PARENT / CHILD LEARNING MANAGEMENT (PHASE 10)
 //
-// Accessible to WORKER, EMPLOYER and DOCTOR accounts acting as parents/guardians.
+// Accessible to WORKER, EMPLOYER, DOCTOR and TEACHER accounts acting as parents/guardians.
 // Allows monitoring linked children, academic overviews, connected teachers,
 // lessons, progress, homework, and booking lessons on behalf of children.
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -45,12 +46,14 @@ import {
   ChevronRight,
   Plus,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  MapPinned
 } from 'lucide-react';
 
 const ParentStudents = () => {
   const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
+  const navigate = useNavigate();
 
   // Parent relationships state
   const [children, setChildren] = useState([]);
@@ -529,7 +532,21 @@ const ParentStudents = () => {
                   </div>
 
                   {child.relationshipStatus === 'ACTIVE' ? (
-                    <div className="flex items-center gap-2">
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => navigate(`/parent-students/${child.studentId}/tracking`)}
+                        className="w-full flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-left transition hover:border-red-300 hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:hover:bg-red-950/50"
+                      >
+                        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-red-600 text-white shadow-sm">
+                          <MapPinned size={18} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-bold text-red-700 dark:text-red-300">HomelyServ Family Tracking</span>
+                          <span className="block text-xs text-teal-700 dark:text-teal-300">Current Location &amp; Movement History</span>
+                        </span>
+                        <ChevronRight size={17} className="text-red-500" />
+                      </button>
+                      <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleSelectChild(child)}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition"
@@ -544,6 +561,7 @@ const ParentStudents = () => {
                         <Calendar size={14} />
                         {t('parentStudents.bookLessonBtn')}
                       </button>
+                      </div>
                     </div>
                   ) : child.relationshipStatus === 'PENDING' ? (
                     <button

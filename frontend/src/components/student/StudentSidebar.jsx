@@ -39,7 +39,8 @@ import {
   X,
   Sparkles,
   Search,
-  AlertTriangle
+  AlertTriangle,
+  MapPinned
 } from 'lucide-react';
 
 const StudentSidebar = ({
@@ -151,6 +152,13 @@ const StudentSidebar = ({
       icon: HeartPulse,
       path: '/medical-profile',
       active: location.pathname === '/medical-profile'
+    },
+    {
+      id: 'familyTracking',
+      label: 'Family Tracking',
+      icon: MapPinned,
+      path: '/student-family-tracking',
+      active: location.pathname === '/student-family-tracking'
     },
     {
       id: 'help',

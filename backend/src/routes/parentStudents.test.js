@@ -34,6 +34,8 @@ import TeacherAssessment from '../models/TeacherAssessment.js';
 import StudentLessonBooking from '../models/StudentLessonBooking.js';
 import TeacherGroupEnrollment from '../models/TeacherGroupEnrollment.js';
 import StudentProfile from '../models/StudentProfile.js';
+import StudentLocationObservation from '../models/StudentLocationObservation.js';
+import StudentTrackingSetting from '../models/StudentTrackingSetting.js';
 import parentStudentRouter from './parentStudents.js';
 
 // Prevent activity throttling mongo timeout
@@ -65,6 +67,7 @@ const makeMockQuery = (result) => {
     populate() { return q; },
     sort() { return q; },
     select() { return q; },
+    limit() { return q; },
     lean() { return Promise.resolve(result); },
     then(resolve, reject) {
       return Promise.resolve(result).then(resolve, reject);
@@ -193,6 +196,10 @@ test('Parent-Student Learning Management Test Suite (Phase 10)', async (t) => {
   };
 
   StudentProfile.findOne = () => makeMockQuery(null);
+  StudentTrackingSetting.findOne = () => makeMockQuery(null);
+  StudentTrackingSetting.updateOne = async () => ({ modifiedCount: 0 });
+  StudentLocationObservation.find = () => makeMockQuery([]);
+  StudentLocationObservation.deleteMany = async () => ({ deletedCount: 0 });
   TeacherGroupEnrollment.find = () => makeMockQuery([]);
 
   ParentStudent.find = (query) => {
