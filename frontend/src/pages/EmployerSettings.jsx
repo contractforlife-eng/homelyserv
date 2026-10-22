@@ -181,9 +181,9 @@ const EmployerSettings = () => {
 
   // Language change handler removed - using global LanguageSwitcher in header
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   const handleSettingChange = (key, value) => {
@@ -285,8 +285,8 @@ const EmployerSettings = () => {
       if (response.data.success) {
         localStorage.removeItem('employer_settings');
         alert(t('employerSettings.accountDeleted'));
-        logout();
-        navigate('/login');
+        await logout();
+        navigate('/login', { replace: true });
       } else {
         throw new Error(response.data.message || t('employerSettings.deleteFailed'));
       }

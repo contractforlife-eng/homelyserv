@@ -324,8 +324,8 @@ useEffect(() => {
       if (response.data.success) {
         localStorage.removeItem('worker_settings');
         alert(t('workerSettings.accountDeleted'));
-        logout();
-        navigate('/login');
+        await logout();
+        navigate('/login', { replace: true });
       } else {
         throw new Error(response.data.message || t('workerSettings.deleteFailed'));
       }

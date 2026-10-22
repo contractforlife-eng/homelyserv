@@ -202,11 +202,11 @@ const Home = () => {
     navigate(`/search?category=${categoryId}`);
   };
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
     setIsLoggedIn(false);
     setUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const toggleLanguage = () => {

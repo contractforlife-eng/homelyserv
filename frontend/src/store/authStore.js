@@ -133,6 +133,7 @@ const useAuthStore = create(
       logout: async ({ skipBiometricCleanup = false } = {}) => {
         authEpoch += 1;
         biometricStartupAttempted = false;
+        activeAuthCheck = null;
         disconnectSocket();
         if (isAndroidCapacitor) await stopNativeTracking().catch(() => {});
 
@@ -153,12 +154,12 @@ const useAuthStore = create(
           biometricEnabled: false
         });
 
-        removeStoredAuthTokens();
-        StorageService.clearSession().catch(() => {});
+        clearRuntimeAuthToken();
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth-storage');
         }
-        clearRuntimeAuthToken();
+
+        await removeStoredAuthTokens();
 
         if (isAndroidCapacitor && !skipBiometricCleanup) {
           try {

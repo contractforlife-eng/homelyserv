@@ -115,10 +115,10 @@ const Navbar = ({ user: propUser = null, onLogout = () => {} }) => {
     }
   };
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
     onLogout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const isActive = (path) => {

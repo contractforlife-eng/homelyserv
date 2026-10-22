@@ -115,9 +115,9 @@ const WorkerProfile = () => {
   // TOGGLE FUNCTIONS - DEFINED AT THE TOP
   // ============================================================
   
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await authLogout();
+    navigate('/login', { replace: true });
   };
 
   // ============================================================

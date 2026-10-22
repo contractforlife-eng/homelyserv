@@ -27,9 +27,9 @@ export default function Layout({ children, activeTab }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   const handleSwitchRole = async () => {

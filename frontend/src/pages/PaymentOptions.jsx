@@ -708,9 +708,9 @@ const PaymentOptions = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    navigate('/login', { replace: true });
   };
 
   const handleBack = () => {

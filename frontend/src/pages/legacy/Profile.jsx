@@ -154,8 +154,8 @@ function Profile() {
     }));
   };
 
-  const handleLogout = () => {
-    authLogout();
+  const handleLogout = async () => {
+    await authLogout();
   };
 
   if (loading) {

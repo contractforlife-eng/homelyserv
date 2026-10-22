@@ -73,9 +73,9 @@ const EmployerJobApplicants = () => {
     loadApplicants();
   }, [authLoading, isAuthenticated, authUser, navigate, loadApplicants]);
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    navigate('/login', { replace: true });
   };
 
   const handleShortlist = async (app) => {

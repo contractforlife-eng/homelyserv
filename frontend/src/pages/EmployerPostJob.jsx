@@ -70,9 +70,9 @@ const EmployerPostJob = () => {
   const [compensationDirty, setCompensationDirty] = useState(false);
   const [currencyChangeRequiresAmount, setCurrencyChangeRequiresAmount] = useState(false);
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    navigate('/login', { replace: true });
   };
 
   // Prefill form when editing an existing job

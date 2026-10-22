@@ -82,9 +82,9 @@ const WorkerApplications = () => {
     loadApplications();
   }, [authLoading, isAuthenticated, authUser, navigate, loadApplications]);
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    navigate('/login', { replace: true });
   };
 
   const handleWithdraw = async (applicationId) => {

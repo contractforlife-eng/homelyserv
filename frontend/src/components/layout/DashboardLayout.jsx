@@ -117,9 +117,9 @@ const DashboardLayout = ({
     setMobileMenuOpen(prev => !prev);
   };
 
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await authLogout();
+    navigate('/login', { replace: true });
   };
 
   // Determine which sidebar to render based on user role

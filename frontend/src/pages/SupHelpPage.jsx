@@ -19,9 +19,9 @@ const SupHelpPage = () => {
   const navigate = useNavigate();
   const { logout } = useAuthStore();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   return (

@@ -70,9 +70,9 @@ const SupportLayout = ({
     setMobileMenuOpen(prev => !prev);
   };
 
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await authLogout();
+    navigate('/login', { replace: true });
   };
 
   if (authLoading && !authUser) {

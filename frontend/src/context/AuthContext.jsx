@@ -69,9 +69,9 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading: !startupReady || isLoading,
     login,
-    logout: () => {
-      logout();
-      navigate('/login');
+    logout: async () => {
+      await logout();
+      navigate('/login', { replace: true });
     },
     checkAuth,
     markStartupReady

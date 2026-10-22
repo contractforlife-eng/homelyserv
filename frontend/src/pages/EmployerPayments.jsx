@@ -66,9 +66,9 @@ const EmployerPayments = () => {
   const isLoadingRef = React.useRef(false);
 
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    navigate('/login', { replace: true });
   };
 
   const loadData = async () => {

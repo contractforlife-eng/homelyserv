@@ -125,9 +125,9 @@ const EmployerProfile = () => {
     setImagePreview(authUser.profileImage || '');
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await authLogout();
+    navigate('/login', { replace: true });
   };
 
   const handleEditToggle = () => {

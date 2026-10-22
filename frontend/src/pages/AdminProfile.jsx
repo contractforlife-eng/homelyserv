@@ -122,9 +122,9 @@ const AdminProfile = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await authLogout();
+    navigate('/login', { replace: true });
   };
 
   const handleEditToggle = () => {

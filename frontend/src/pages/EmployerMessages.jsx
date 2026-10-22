@@ -588,9 +588,9 @@ const EmployerMessages = () => {
     }
   }, [showSupportModal]);
 
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await authLogout();
+    navigate('/login', { replace: true });
   };
 
   const handleSelectConversation = (conversationId) => {

@@ -21,8 +21,8 @@ export function getStoredAuthToken() {
   return (typeof window !== 'undefined' && (localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY))) || null;
 }
 
-export function removeStoredAuthTokens() {
-  StorageService.clearSession().catch(() => {});
+export async function removeStoredAuthTokens() {
+  await StorageService.clearSession().catch(() => {});
   if (typeof window !== 'undefined') {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     sessionStorage.removeItem(AUTH_TOKEN_KEY);
