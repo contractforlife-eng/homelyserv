@@ -7,7 +7,7 @@ import markDark from '../assets/branding/homelyserv-mark-dark.png';
 import markLight from '../assets/branding/homelyserv-mark-light.png';
 import { createQrMatrix } from '../utils/qrCode';
 import { classifyDevice } from '../utils/deviceType';
-import { getAnalyticsSource, getOperationalAnalyticsDedupeKey } from '../utils/operationalAnalytics';
+import { trackOperationalAnalytics } from '../utils/operationalAnalytics';
 import { API_BASE } from '../config/api';
 
 const RELEASE_MANIFEST_URL = '/downloads/android/1.0.30-31/release.json';
@@ -126,8 +126,10 @@ const Download = () => {
     };
   }, [i18n.language, t]);
 
-  const analyticsApiBase = API_BASE.replace(/\/$/, '').replace(/\/api$/, '');
-  const downloadUrl = `${analyticsApiBase}/api/analytics/apk-download?source=${getAnalyticsSource()}&dedupeKey=${encodeURIComponent(getOperationalAnalyticsDedupeKey() || '')}`;
+  const downloadUrl = release?.downloadUrl || FALLBACK_DOWNLOAD_URL;
+  const handleDownloadClick = () => {
+    trackOperationalAnalytics('APK_DOWNLOAD');
+  };
   const minimumAndroid = release?.minAndroid?.endsWith('+')
     ? release.minAndroid
     : String(release?.minAndroid || 'Android 7.0') + '+';
@@ -252,6 +254,7 @@ const Download = () => {
             )}
             <a
               href={downloadUrl}
+              onClick={handleDownloadClick}
               download
               className={`mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-extrabold shadow-xl transition focus-visible:outline-slate-900 sm:w-auto ${
                 isIosVisitor
