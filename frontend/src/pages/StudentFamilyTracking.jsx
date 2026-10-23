@@ -71,7 +71,15 @@ const StudentFamilyTracking = () => {
     } finally { setBusy(false); }
   };
 
-  const verifyAndStart = async () => {
+  const activationErrorMessages = {
+  'PRODUCTION_DEVICE_ATTESTATION_REQUIRED': t('familyTracking.errProductionAttestationRequired'),
+  'ACTIVATION_NOT_READY': t('familyTracking.errActivationNotReady'),
+  'NATIVE_KEY_MISMATCH': t('familyTracking.errNativeKeyMismatch'),
+  'INVALID_NATIVE_SIGNATURE': t('familyTracking.errInvalidNativeSignature'),
+  'INVALID_NATIVE_PROOF': t('familyTracking.errInvalidNativeProof'),
+};
+
+const verifyAndStart = async () => {
     setBusy(true); setError(''); setNotice('');
     try {
       const permissions = await getNativeTrackingStatus();
@@ -102,7 +110,10 @@ const StudentFamilyTracking = () => {
       setNotice(t('familyTracking.activeNotice'));
       await refresh();
     } catch (activationError) {
-      setError(activationError?.message || t('familyTracking.errVerificationFailed'));
+      // Surface backend error codes through the native bridge
+      const errorCode = activationError?.code || activationError?.response?.data?.code;
+      const backendMessage = activationErrorMessages[errorCode];
+      setError(backendMessage || activationError?.message || t('familyTracking.errVerificationFailed'));
     } finally { setBusy(false); }
   };
 
