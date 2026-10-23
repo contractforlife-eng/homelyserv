@@ -30,8 +30,22 @@ const StudentFamilyTracking = () => {
     if (!studentId) return;
     try {
       const response = await getFamilyTrackingStatus(studentId);
-      setStatus(response.status);
-      if (android) setNativeStatus(await getNativeTrackingStatus());
+      const serverStatus = response.status;
+      setStatus(serverStatus);
+
+      // Hydrate consent from server state if student already consented or is activated
+      if (serverStatus?.consentAt || ['AWAITING_AGE_SAFEGUARD', 'AWAITING_NATIVE_VERIFICATION', 'ACTIVE', 'PAUSED'].includes(serverStatus?.activationState)) {
+        setConsented(true);
+      }
+
+      if (android) {
+        try {
+          const natStatus = await getNativeTrackingStatus();
+          setNativeStatus(natStatus);
+        } catch {
+          // Native bridge status error shouldn't crash the entire screen
+        }
+      }
     } catch (requestError) {
       setError(requestError?.response?.data?.message || t('familyTracking.errRequiresGuardian'));
     }
@@ -52,6 +66,16 @@ const StudentFamilyTracking = () => {
   }, [refresh]);
 
   const begin = async () => {
+    if (busy) return;
+    if (!android) {
+      setError(t('familyTracking.androidOnlyNotice'));
+      return;
+    }
+    if (!consented) {
+      setError(t('familyTracking.consentRequiredNotice'));
+      return;
+    }
+
     setBusy(true); setError(''); setNotice('');
     try {
       const activation = await requestFamilyTrackingActivation(studentId, {
@@ -72,14 +96,20 @@ const StudentFamilyTracking = () => {
   };
 
   const activationErrorMessages = {
-  'PRODUCTION_DEVICE_ATTESTATION_REQUIRED': t('familyTracking.errProductionAttestationRequired'),
-  'ACTIVATION_NOT_READY': t('familyTracking.errActivationNotReady'),
-  'NATIVE_KEY_MISMATCH': t('familyTracking.errNativeKeyMismatch'),
-  'INVALID_NATIVE_SIGNATURE': t('familyTracking.errInvalidNativeSignature'),
-  'INVALID_NATIVE_PROOF': t('familyTracking.errInvalidNativeProof'),
-};
+    'PRODUCTION_DEVICE_ATTESTATION_REQUIRED': t('familyTracking.errProductionAttestationRequired'),
+    'ACTIVATION_NOT_READY': t('familyTracking.errActivationNotReady'),
+    'NATIVE_KEY_MISMATCH': t('familyTracking.errNativeKeyMismatch'),
+    'INVALID_NATIVE_SIGNATURE': t('familyTracking.errInvalidNativeSignature'),
+    'INVALID_NATIVE_PROOF': t('familyTracking.errInvalidNativeProof'),
+  };
 
-const verifyAndStart = async () => {
+  const verifyAndStart = async () => {
+    if (busy) return;
+    if (!android) {
+      setError(t('familyTracking.androidOnlyNotice'));
+      return;
+    }
+
     setBusy(true); setError(''); setNotice('');
     try {
       const permissions = await getNativeTrackingStatus();
@@ -118,6 +148,14 @@ const verifyAndStart = async () => {
   };
 
   const stop = async (disable) => {
+    if (busy) return;
+    // For pause action, verify that tracking is actually active or paused
+    if (!disable && status?.activationState !== 'ACTIVE') {
+      setNotice('');
+      setError(t('familyTracking.pauseUnavailableNotice'));
+      return;
+    }
+
     setBusy(true); setError('');
     try {
       if (disable) await disableFamilyTracking(studentId); else await pauseFamilyTracking(studentId);
@@ -130,14 +168,28 @@ const verifyAndStart = async () => {
     } finally { setBusy(false); }
   };
 
+  const handleOpenSettings = async () => {
+    if (!android) {
+      setError(t('familyTracking.androidOnlyNotice'));
+      return;
+    }
+    try {
+      await openBackgroundTrackingSettings();
+    } catch (openError) {
+      setError(openError?.message || t('familyTracking.errForegroundRequired'));
+    }
+  };
+
   const getSafeguardLabel = (code) => {
     switch (code) {
       case 'GUARDIAN_APPROVED':
         return t('familyTracking.safeguardApproved');
       case 'VERIFIED_ADULT':
         return t('familyTracking.safeguardAdult');
-      default:
+      case 'REQUIRED':
         return t('familyTracking.safeguardRequired');
+      default:
+        return code || t('familyTracking.safeguardRequired');
     }
   };
 
@@ -147,6 +199,10 @@ const verifyAndStart = async () => {
         return t('familyTracking.statusActive');
       case 'PAUSED':
         return t('familyTracking.statusPaused');
+      case 'AWAITING_NATIVE_VERIFICATION':
+        return t('familyTracking.statusAwaitingNative');
+      case 'AWAITING_AGE_SAFEGUARD':
+        return t('familyTracking.statusAwaitingSafeguard');
       case 'DISABLED':
         return t('familyTracking.statusNotActivated');
       default:
@@ -166,7 +222,18 @@ const verifyAndStart = async () => {
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t('familyTracking.visibleActivationDesc1')}</p>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t('familyTracking.visibleActivationDesc2')}</p>
         </div></div>
-        <label className="mt-5 flex items-start gap-3 text-sm cursor-pointer"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} className="mt-1" /><span>{t('familyTracking.consentLabel')}</span></label>
+        <label className="mt-5 flex items-start gap-3 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={consented}
+            onChange={(event) => {
+              setConsented(event.target.checked);
+              if (error === t('familyTracking.consentRequiredNotice')) setError('');
+            }}
+            className="mt-1"
+          />
+          <span>{t('familyTracking.consentLabel')}</span>
+        </label>
       </section>
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -185,22 +252,47 @@ const verifyAndStart = async () => {
         </div>
       </section>
       <div className="flex flex-wrap gap-3">
-        <button type="button" disabled={!consented || busy || !android} onClick={begin} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-bold text-white transition hover:bg-red-700 disabled:opacity-50">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={begin}
+          className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+        >
           {busy ? <Loader2 className="animate-spin" size={18} /> : null}
           <span>{t('familyTracking.beginActivation')}</span>
         </button>
-        <button type="button" disabled={busy || !android} onClick={openBackgroundTrackingSettings} className="rounded-xl bg-teal-600 px-5 py-3 font-bold text-white transition hover:bg-teal-700 disabled:opacity-50">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleOpenSettings}
+          className="rounded-xl bg-teal-600 px-5 py-3 font-bold text-white transition hover:bg-teal-700 disabled:opacity-50"
+        >
           {t('familyTracking.openSettings')}
         </button>
-        <button type="button" disabled={busy || !android} onClick={verifyAndStart} className="inline-flex items-center gap-2 rounded-xl border border-teal-600 px-5 py-3 font-bold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/30 disabled:opacity-50">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={verifyAndStart}
+          className="inline-flex items-center gap-2 rounded-xl border border-teal-600 px-5 py-3 font-bold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/30 disabled:opacity-50"
+        >
           {busy ? <Loader2 className="animate-spin" size={18} /> : null}
           <span>{t('familyTracking.verifyAndStart')}</span>
         </button>
-        <button type="button" disabled={busy} onClick={() => stop(false)} className="inline-flex items-center gap-2 rounded-xl border border-amber-500 px-5 py-3 font-bold text-amber-700 transition hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30 disabled:opacity-50">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => stop(false)}
+          className="inline-flex items-center gap-2 rounded-xl border border-amber-500 px-5 py-3 font-bold text-amber-700 transition hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30 disabled:opacity-50"
+        >
           <PauseCircle size={18} />
           <span>{t('familyTracking.pause')}</span>
         </button>
-        <button type="button" disabled={busy} onClick={() => stop(true)} className="rounded-xl border border-red-300 px-5 py-3 font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 disabled:opacity-50">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => stop(true)}
+          className="rounded-xl border border-red-300 px-5 py-3 font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 disabled:opacity-50"
+        >
           {t('familyTracking.disableAndClear')}
         </button>
       </div>

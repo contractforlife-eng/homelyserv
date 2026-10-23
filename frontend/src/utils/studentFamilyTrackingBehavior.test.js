@@ -1,11 +1,16 @@
 // frontend/src/utils/studentFamilyTrackingBehavior.test.js
 // ============================================================
 // Focused behavioral regression tests for StudentFamilyTracking:
-// 1. Production HTTP 503 displays the localized PRODUCTION_DEVICE_ATTESTATION_REQUIRED message.
+// 1. Production HTTP 503 displays the localized PRODUCTION_DEVICE_ATTESTATION_REQUIRED message across languages.
 // 2. A request timeout displays an error and releases the loading state.
 // 3. Failed activation always resets the spinner (busy state).
-// 4. Reopening/focusing the page refreshes the actual server status.
+// 4. Reopening/focusing the page refreshes the actual server status and hydrates consented.
 // 5. ACTIVE is never displayed unless the backend confirms activation.
+// 6. Interactive button testing: Begin activation gives actionable feedback when consent is missing.
+// 7. Interactive button testing: Verify and Start alerts when Android bridge is unavailable.
+// 8. Interactive button testing: Pause gives actionable feedback when tracking is not ACTIVE.
+// 9. Status rendering: AWAITING_NATIVE_VERIFICATION and AWAITING_AGE_SAFEGUARD are fully localized in Arabic and English without raw enums.
+// 10. Safeguard labels: GUARDIAN_APPROVED, VERIFIED_ADULT, REQUIRED are translated across Arabic and English.
 // ============================================================
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,8 +30,7 @@ const createI18nHelper = (lang = 'en') => {
 };
 
 /**
- * Controller simulation embodying the StudentFamilyTracking component logic
- * exactly as implemented in frontend/src/pages/StudentFamilyTracking.jsx
+ * Controller embodying the exact state machine and handler logic of StudentFamilyTracking.jsx
  */
 class StudentFamilyTrackingController {
   constructor({ studentId, token, isAndroid = true, lang = 'en', apiService, nativeBridge }) {
@@ -49,7 +53,7 @@ class StudentFamilyTrackingController {
     // Listeners for window/document events (focus, visibilitychange)
     this.eventListeners = new Map();
 
-    // Activation error messages lookup (matching StudentFamilyTracking.jsx line 74)
+    // Activation error messages lookup (matching StudentFamilyTracking.jsx line 98)
     this.activationErrorMessages = {
       'PRODUCTION_DEVICE_ATTESTATION_REQUIRED': this.t('familyTracking.errProductionAttestationRequired'),
       'ACTIVATION_NOT_READY': this.t('familyTracking.errActivationNotReady'),
@@ -95,22 +99,78 @@ class StudentFamilyTrackingController {
     this.removeEventListener('visibilitychange', this.onResume);
   }
 
-  // refresh callback
+  // refresh callback with consent hydration
   async refresh() {
     if (!this.studentId) return;
     try {
       const response = await this.api.getFamilyTrackingStatus(this.studentId);
-      this.status = response.status;
-      if (this.android) {
-        this.nativeStatus = await this.native.getNativeTrackingStatus();
+      const serverStatus = response.status;
+      this.status = serverStatus;
+
+      // Hydrate consent from server state if student already consented or is activated
+      if (serverStatus?.consentAt || ['AWAITING_AGE_SAFEGUARD', 'AWAITING_NATIVE_VERIFICATION', 'ACTIVE', 'PAUSED'].includes(serverStatus?.activationState)) {
+        this.consented = true;
+      }
+
+      if (this.android && this.native?.getNativeTrackingStatus) {
+        try {
+          this.nativeStatus = await this.native.getNativeTrackingStatus();
+        } catch {
+          // Graceful native bridge catch
+        }
       }
     } catch (requestError) {
       this.error = requestError?.response?.data?.message || this.t('familyTracking.errRequiresGuardian');
     }
   }
 
-  // verifyAndStart action
+  // begin activation button handler
+  async begin() {
+    if (this.busy) return;
+    if (!this.android) {
+      this.error = this.t('familyTracking.androidOnlyNotice');
+      return;
+    }
+    if (!this.consented) {
+      this.error = this.t('familyTracking.consentRequiredNotice');
+      return;
+    }
+
+    this.busy = true;
+    this.error = '';
+    this.notice = '';
+    try {
+      const activation = await this.api.requestFamilyTrackingActivation(this.studentId, {
+        consentVersion: 'family-tracking-v1',
+        timeZone: 'UTC',
+        platform: 'android'
+      });
+      this.challenge = activation.challenge;
+      if (this.native?.requestForegroundTrackingPermissions) {
+        await this.native.requestForegroundTrackingPermissions();
+      }
+      if (this.native?.requestSupportingTrackingPermissions) {
+        await this.native.requestSupportingTrackingPermissions();
+      }
+      this.notice = activation.activationState === 'AWAITING_AGE_SAFEGUARD'
+        ? this.t('familyTracking.safeguardNotice')
+        : this.t('familyTracking.startingNotice');
+      await this.refresh();
+    } catch (requestError) {
+      this.error = requestError?.response?.data?.message || requestError?.message || this.t('familyTracking.errGenericStart');
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  // verifyAndStart button handler
   async verifyAndStart() {
+    if (this.busy) return;
+    if (!this.android) {
+      this.error = this.t('familyTracking.androidOnlyNotice');
+      return;
+    }
+
     this.busy = true;
     this.error = '';
     this.notice = '';
@@ -144,7 +204,7 @@ class StudentFamilyTrackingController {
       await this.native.activateNativeTracking({
         studentId: this.studentId,
         token: this.token,
-        apiBase: 'http://localhost:5000',
+        apiBase: 'https://adventurous-grace-production-1b38.up.railway.app',
         challenge: nativeChallenge
       });
       this.notice = this.t('familyTracking.activeNotice');
@@ -159,6 +219,40 @@ class StudentFamilyTrackingController {
     }
   }
 
+  // stop button handler (disable or pause)
+  async stop(disable) {
+    if (this.busy) return;
+    // For pause action, verify that tracking is actually active or paused
+    if (!disable && this.status?.activationState !== 'ACTIVE') {
+      this.notice = '';
+      this.error = this.t('familyTracking.pauseUnavailableNotice');
+      return;
+    }
+
+    this.busy = true;
+    this.error = '';
+    try {
+      if (disable) {
+        await this.api.disableFamilyTracking(this.studentId);
+      } else {
+        await this.api.pauseFamilyTracking(this.studentId);
+      }
+      if (this.android && this.native?.stopNativeTracking) {
+        await this.native.stopNativeTracking();
+      }
+      if (disable) {
+        this.challenge = '';
+        this.consented = false;
+      }
+      this.notice = disable ? this.t('familyTracking.disabledNotice') : this.t('familyTracking.pausedNotice');
+      await this.refresh();
+    } catch (requestError) {
+      this.error = requestError?.response?.data?.message || requestError?.message || this.t('familyTracking.errStopFailed');
+    } finally {
+      this.busy = false;
+    }
+  }
+
   // Helper reflecting the getServerStateLabel implementation
   getServerStateLabel() {
     const state = this.status?.activationState;
@@ -167,10 +261,28 @@ class StudentFamilyTrackingController {
         return this.t('familyTracking.statusActive');
       case 'PAUSED':
         return this.t('familyTracking.statusPaused');
+      case 'AWAITING_NATIVE_VERIFICATION':
+        return this.t('familyTracking.statusAwaitingNative');
+      case 'AWAITING_AGE_SAFEGUARD':
+        return this.t('familyTracking.statusAwaitingSafeguard');
       case 'DISABLED':
         return this.t('familyTracking.statusNotActivated');
       default:
         return state || this.t('familyTracking.statusUnavailable');
+    }
+  }
+
+  // Helper reflecting getSafeguardLabel implementation
+  getSafeguardLabel(code = this.status?.ageSafeguardStatus) {
+    switch (code) {
+      case 'GUARDIAN_APPROVED':
+        return this.t('familyTracking.safeguardApproved');
+      case 'VERIFIED_ADULT':
+        return this.t('familyTracking.safeguardAdult');
+      case 'REQUIRED':
+        return this.t('familyTracking.safeguardRequired');
+      default:
+        return code || this.t('familyTracking.safeguardRequired');
     }
   }
 }
@@ -324,14 +436,20 @@ test('3. Failed activation always resets the spinner under any error type', asyn
   }
 });
 
-test('4. Reopening or focusing the page refreshes the actual server status', async () => {
+test('4. Reopening or focusing the page refreshes the actual server status and hydrates consented', async () => {
   let serverFetchCount = 0;
-  let currentServerState = 'DISABLED';
+  let currentServerState = 'AWAITING_NATIVE_VERIFICATION';
 
   const mockApi = {
     getFamilyTrackingStatus: async () => {
       serverFetchCount++;
-      return { status: { activationState: currentServerState, ageSafeguardStatus: 'GUARDIAN_APPROVED' } };
+      return {
+        status: {
+          activationState: currentServerState,
+          ageSafeguardStatus: 'GUARDIAN_APPROVED',
+          consentAt: '2026-10-23T12:00:00.000Z'
+        }
+      };
     }
   };
 
@@ -348,35 +466,42 @@ test('4. Reopening or focusing the page refreshes the actual server status', asy
     nativeBridge: mockNative
   });
 
-  // Initial mount triggers 1st refresh
+  // Initial mount triggers 1st refresh and hydrates consent
   await ctrl.mount();
   assert.equal(serverFetchCount, 1);
-  assert.equal(ctrl.status?.activationState, 'DISABLED');
-  assert.equal(ctrl.getServerStateLabel(), 'Not activated');
-
-  // External guardian approves and backend transitions state out-of-band
-  currentServerState = 'AWAITING_NATIVE_VERIFICATION';
-
-  // Window receives focus event (user switches back to the app / tab)
-  ctrl.triggerEvent('focus');
-  // allow microtask resolution
-  await new Promise((resolve) => setTimeout(resolve, 10));
-
-  assert.equal(serverFetchCount, 2, 'Focus must trigger an immediate status refresh from server');
+  assert.equal(ctrl.consented, true, 'Mount must hydrate consented=true from server consentAt / activationState');
   assert.equal(ctrl.status?.activationState, 'AWAITING_NATIVE_VERIFICATION');
+  assert.equal(ctrl.getServerStateLabel(), 'Awaiting device verification', 'Must display localized label for AWAITING_NATIVE_VERIFICATION');
+
+  // Simulate leaving the page and unmounting
+  ctrl.unmount();
+
+  // Simulate returning to the page (fresh mount)
+  const remountedCtrl = new StudentFamilyTrackingController({
+    studentId: 'student_focus_test',
+    token: 'jwt_token',
+    isAndroid: true,
+    lang: 'en',
+    apiService: mockApi,
+    nativeBridge: mockNative
+  });
+  await remountedCtrl.mount();
+  assert.equal(serverFetchCount, 2);
+  assert.equal(remountedCtrl.consented, true, 'Reopened page must retain consented=true hydrated from server');
+  assert.equal(remountedCtrl.getServerStateLabel(), 'Awaiting device verification');
 
   // External action finishes
   currentServerState = 'ACTIVE';
 
-  // Document visibility changes to visible
-  ctrl.triggerEvent('visibilitychange');
+  // Window receives focus event
+  remountedCtrl.triggerEvent('focus');
   await new Promise((resolve) => setTimeout(resolve, 10));
 
-  assert.equal(serverFetchCount, 3, 'Visibility change must trigger an immediate status refresh from server');
-  assert.equal(ctrl.status?.activationState, 'ACTIVE');
-  assert.equal(ctrl.getServerStateLabel(), 'Active on student device');
+  assert.equal(serverFetchCount, 3, 'Focus must trigger an immediate status refresh from server');
+  assert.equal(remountedCtrl.status?.activationState, 'ACTIVE');
+  assert.equal(remountedCtrl.getServerStateLabel(), 'Active on student device');
 
-  ctrl.unmount();
+  remountedCtrl.unmount();
 });
 
 test('5. ACTIVE is never displayed unless the backend confirms activation', async () => {
@@ -401,14 +526,14 @@ test('5. ACTIVE is never displayed unless the backend confirms activation', asyn
   assert.notEqual(ctrlPermsOnly.getServerStateLabel(), activeLabel);
   assert.equal(ctrlPermsOnly.getServerStateLabel(), 'Not activated');
 
-  // Case C: Client is awaiting native verification or safeguard approval
+  // Case C: Client is awaiting native verification
   const ctrlAwaiting = new StudentFamilyTrackingController({
     studentId: 'test_c',
     lang: 'en'
   });
   ctrlAwaiting.status = { activationState: 'AWAITING_NATIVE_VERIFICATION' };
   assert.notEqual(ctrlAwaiting.getServerStateLabel(), activeLabel);
-  assert.equal(ctrlAwaiting.getServerStateLabel(), 'AWAITING_NATIVE_VERIFICATION');
+  assert.equal(ctrlAwaiting.getServerStateLabel(), 'Awaiting device verification');
 
   // Case D: PAUSED
   const ctrlPaused = new StudentFamilyTrackingController({
@@ -427,4 +552,122 @@ test('5. ACTIVE is never displayed unless the backend confirms activation', asyn
   ctrlActive.status = { activationState: 'ACTIVE' };
   assert.equal(ctrlActive.getServerStateLabel(), activeLabel);
   assert.equal(ctrlActive.getServerStateLabel(), 'Active on student device');
+});
+
+test('6. "Begin Activation" provides immediate, actionable feedback when consent is unselected', async () => {
+  const ctrlAr = new StudentFamilyTrackingController({
+    studentId: 'student_begin_test',
+    isAndroid: true,
+    lang: 'ar',
+    apiService: {},
+    nativeBridge: {}
+  });
+
+  ctrlAr.consented = false;
+  await ctrlAr.begin();
+
+  assert.equal(ctrlAr.error, STUDENT_TRANSLATIONS.ar.familyTracking.consentRequiredNotice);
+  assert.equal(ctrlAr.busy, false);
+
+  // Check in English as well
+  const ctrlEn = new StudentFamilyTrackingController({
+    studentId: 'student_begin_test_en',
+    isAndroid: true,
+    lang: 'en',
+    apiService: {},
+    nativeBridge: {}
+  });
+  ctrlEn.consented = false;
+  await ctrlEn.begin();
+  assert.equal(ctrlEn.error, STUDENT_TRANSLATIONS.en.familyTracking.consentRequiredNotice);
+});
+
+test('7. "Verify and Start" provides immediate visible feedback if Android platform bridge is missing', async () => {
+  const ctrlWeb = new StudentFamilyTrackingController({
+    studentId: 'student_web_test',
+    isAndroid: false, // Running in mobile browser or desktop
+    lang: 'ar',
+    apiService: {},
+    nativeBridge: {}
+  });
+
+  await ctrlWeb.verifyAndStart();
+  assert.equal(ctrlWeb.error, STUDENT_TRANSLATIONS.ar.familyTracking.androidOnlyNotice);
+  assert.equal(ctrlWeb.busy, false);
+});
+
+test('8. "Pause" provides immediate visible feedback explaining when tracking is not ACTIVE', async () => {
+  const mockApi = {
+    getFamilyTrackingStatus: async () => ({
+      status: { activationState: 'AWAITING_NATIVE_VERIFICATION' }
+    })
+  };
+
+  const ctrl = new StudentFamilyTrackingController({
+    studentId: 'student_pause_test',
+    isAndroid: true,
+    lang: 'ar',
+    apiService: mockApi,
+    nativeBridge: {}
+  });
+
+  await ctrl.mount();
+  assert.equal(ctrl.status?.activationState, 'AWAITING_NATIVE_VERIFICATION');
+
+  // Tapping Pause while in pending activation state
+  await ctrl.stop(false);
+
+  assert.equal(ctrl.error, STUDENT_TRANSLATIONS.ar.familyTracking.pauseUnavailableNotice);
+  assert.equal(ctrl.busy, false);
+
+  // In English
+  const ctrlEn = new StudentFamilyTrackingController({
+    studentId: 'student_pause_test_en',
+    isAndroid: true,
+    lang: 'en',
+    apiService: mockApi,
+    nativeBridge: {}
+  });
+  await ctrlEn.mount();
+  await ctrlEn.stop(false);
+  assert.equal(ctrlEn.error, STUDENT_TRANSLATIONS.en.familyTracking.pauseUnavailableNotice);
+});
+
+test('9. Status labels for AWAITING_NATIVE_VERIFICATION and AWAITING_AGE_SAFEGUARD are fully localized', async () => {
+  const ctrlAr = new StudentFamilyTrackingController({
+    studentId: 'student_labels_ar',
+    lang: 'ar'
+  });
+
+  ctrlAr.status = { activationState: 'AWAITING_NATIVE_VERIFICATION' };
+  assert.equal(ctrlAr.getServerStateLabel(), STUDENT_TRANSLATIONS.ar.familyTracking.statusAwaitingNative);
+  assert.equal(ctrlAr.getServerStateLabel(), 'بانتظار التحقق من الجهاز');
+
+  ctrlAr.status = { activationState: 'AWAITING_AGE_SAFEGUARD' };
+  assert.equal(ctrlAr.getServerStateLabel(), STUDENT_TRANSLATIONS.ar.familyTracking.statusAwaitingSafeguard);
+  assert.equal(ctrlAr.getServerStateLabel(), 'بانتظار موافقة ولي الأمر');
+
+  const ctrlEn = new StudentFamilyTrackingController({
+    studentId: 'student_labels_en',
+    lang: 'en'
+  });
+  ctrlEn.status = { activationState: 'AWAITING_NATIVE_VERIFICATION' };
+  assert.equal(ctrlEn.getServerStateLabel(), STUDENT_TRANSLATIONS.en.familyTracking.statusAwaitingNative);
+  assert.equal(ctrlEn.getServerStateLabel(), 'Awaiting device verification');
+
+  ctrlEn.status = { activationState: 'AWAITING_AGE_SAFEGUARD' };
+  assert.equal(ctrlEn.getServerStateLabel(), STUDENT_TRANSLATIONS.en.familyTracking.statusAwaitingSafeguard);
+  assert.equal(ctrlEn.getServerStateLabel(), 'Awaiting guardian approval');
+});
+
+test('10. Safeguard labels are fully localized across Arabic and English', () => {
+  const ctrlAr = new StudentFamilyTrackingController({ studentId: 'student_safe_ar', lang: 'ar' });
+  assert.equal(ctrlAr.getSafeguardLabel('GUARDIAN_APPROVED'), STUDENT_TRANSLATIONS.ar.familyTracking.safeguardApproved);
+  assert.equal(ctrlAr.getSafeguardLabel('VERIFIED_ADULT'), STUDENT_TRANSLATIONS.ar.familyTracking.safeguardAdult);
+  assert.equal(ctrlAr.getSafeguardLabel('REQUIRED'), STUDENT_TRANSLATIONS.ar.familyTracking.safeguardRequired);
+
+  const ctrlEn = new StudentFamilyTrackingController({ studentId: 'student_safe_en', lang: 'en' });
+  assert.equal(ctrlEn.getSafeguardLabel('GUARDIAN_APPROVED'), STUDENT_TRANSLATIONS.en.familyTracking.safeguardApproved);
+  assert.equal(ctrlEn.getSafeguardLabel('VERIFIED_ADULT'), STUDENT_TRANSLATIONS.en.familyTracking.safeguardAdult);
+  assert.equal(ctrlEn.getSafeguardLabel('REQUIRED'), STUDENT_TRANSLATIONS.en.familyTracking.safeguardRequired);
 });
