@@ -21,6 +21,7 @@ import {
   validateObservation
 } from '../services/familyTrackingService.js';
 import { verifyAndroidKeyAttestation } from '../services/attestation/keyAttestationVerifier.js';
+import { executeShadowAttestation, isShadowPilotEligible } from '../services/attestation/shadowAttestationService.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
 const permissionStatuses = new Set(['UNSUPPORTED', 'NOT_REQUESTED', 'DENIED', 'GRANTED_WHILE_IN_USE', 'GRANTED_BACKGROUND']);
@@ -168,6 +169,31 @@ export const approveStudentTrackingSafeguard = async (req, res) => {
 export const completeNativeTrackingActivation = async (req, res) => {
   const studentId = requireStudentSelf(req, res);
   if (!studentId) return;
+
+  // STAGE 1: SAFE SHADOW ATTESTATION PROBE
+  // If pilot is enabled for this student, run isolated cryptographic verification
+  // and log sanitized diagnostics without altering state or consuming the challenge.
+  if (isShadowPilotEligible(studentId)) {
+    try {
+      const [settingForShadow, guardianActive] = await Promise.all([
+        StudentTrackingSetting.findOne({ studentUserId: studentId })
+          .select('+activationChallengeHash +activationChallengeExpiresAt +nativePublicKey')
+          .lean(),
+        hasActiveGuardian(studentId)
+      ]);
+
+      await executeShadowAttestation({
+        studentId,
+        requestBody: req.body,
+        setting: settingForShadow,
+        hasActiveGuardianResult: guardianActive,
+        nativeProofVersion: NATIVE_PROOF_VERSION
+      });
+    } catch {
+      // Shadow execution errors must never disrupt the response or leak exceptions
+    }
+  }
+
   if (process.env.NODE_ENV === 'production') {
     return res.status(503).json({
       success: false,

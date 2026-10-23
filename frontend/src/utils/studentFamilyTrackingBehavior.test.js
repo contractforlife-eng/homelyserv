@@ -210,10 +210,26 @@ class StudentFamilyTrackingController {
       this.notice = this.t('familyTracking.activeNotice');
       await this.refresh();
     } catch (activationError) {
-      // Surface backend error codes through the native bridge
-      const errorCode = activationError?.code || activationError?.response?.data?.code;
-      const backendMessage = this.activationErrorMessages[errorCode];
-      this.error = backendMessage || activationError?.message || this.t('familyTracking.errVerificationFailed');
+      // Map error code or message to clean localized UI translation
+      const rawCode = activationError?.code || activationError?.response?.data?.code;
+      const rawMessage = activationError?.message || activationError?.response?.data?.message || '';
+      let backendMessage = this.activationErrorMessages[rawCode];
+      if (!backendMessage && typeof rawMessage === 'string') {
+        if (rawMessage.includes('PRODUCTION_DEVICE_ATTESTATION_REQUIRED') || rawMessage.includes('approved Android app-attestation provider')) {
+          backendMessage = this.t('familyTracking.errProductionAttestationRequired');
+        } else if (rawMessage.includes('ACTIVATION_NOT_READY')) {
+          backendMessage = this.t('familyTracking.errActivationNotReady');
+        } else if (rawMessage.includes('NATIVE_KEY_MISMATCH')) {
+          backendMessage = this.t('familyTracking.errNativeKeyMismatch');
+        } else if (rawMessage.includes('INVALID_NATIVE_SIGNATURE')) {
+          backendMessage = this.t('familyTracking.errInvalidNativeSignature');
+        } else if (rawMessage.includes('INVALID_NATIVE_PROOF')) {
+          backendMessage = this.t('familyTracking.errInvalidNativeProof');
+        } else if (rawMessage.includes('NO_ACTIVE_GUARDIAN')) {
+          backendMessage = this.t('familyTracking.errRequiresGuardian');
+        }
+      }
+      this.error = backendMessage || rawMessage || this.t('familyTracking.errVerificationFailed');
     } finally {
       this.busy = false;
     }
@@ -670,4 +686,43 @@ test('10. Safeguard labels are fully localized across Arabic and English', () =>
   assert.equal(ctrlEn.getSafeguardLabel('GUARDIAN_APPROVED'), STUDENT_TRANSLATIONS.en.familyTracking.safeguardApproved);
   assert.equal(ctrlEn.getSafeguardLabel('VERIFIED_ADULT'), STUDENT_TRANSLATIONS.en.familyTracking.safeguardAdult);
   assert.equal(ctrlEn.getSafeguardLabel('REQUIRED'), STUDENT_TRANSLATIONS.en.familyTracking.safeguardRequired);
+});
+
+test('11. Raw backend English rejection message is mapped to localized Arabic translation', async () => {
+  const mockApi = {
+    getFamilyTrackingStatus: async () => ({ status: { activationState: 'AWAITING_NATIVE_VERIFICATION' } }),
+    requestFamilyTrackingActivation: async () => ({ challenge: 'valid-challenge' })
+  };
+
+  // Capacitor plugin throws raw backend English message as error.message
+  const mockNative = {
+    getNativeTrackingStatus: async () => ({
+      foregroundPermission: true,
+      backgroundPermission: true,
+      notificationPermission: true
+    }),
+    activateNativeTracking: async () => {
+      // Exactly as Capacitor HomelyServFamilyTrackingPlugin rejects:
+      const err = new Error('Production activation requires an approved Android app-attestation provider');
+      err.code = 'ACTIVATION_REJECTED';
+      throw err;
+    }
+  };
+
+  const ctrl = new StudentFamilyTrackingController({
+    studentId: 'student_raw_en_test',
+    isAndroid: true,
+    lang: 'ar',
+    apiService: mockApi,
+    nativeBridge: mockNative
+  });
+
+  await ctrl.mount();
+  await ctrl.verifyAndStart();
+
+  // Must NOT display the raw English string
+  assert.notEqual(ctrl.error, 'Production activation requires an approved Android app-attestation provider');
+  // MUST display the localized Arabic translation
+  assert.equal(ctrl.error, STUDENT_TRANSLATIONS.ar.familyTracking.errProductionAttestationRequired);
+  assert.equal(ctrl.busy, false);
 });

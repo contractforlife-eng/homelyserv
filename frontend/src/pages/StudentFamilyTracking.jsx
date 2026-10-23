@@ -25,6 +25,7 @@ const StudentFamilyTracking = () => {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [errorTimestamp, setErrorTimestamp] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!studentId) return;
@@ -103,6 +104,39 @@ const StudentFamilyTracking = () => {
     'INVALID_NATIVE_PROOF': t('familyTracking.errInvalidNativeProof'),
   };
 
+  const resolveActivationErrorMessage = (errorObj) => {
+    // 1. Direct code lookup if returned as an error property
+    const rawCode = errorObj?.code || errorObj?.response?.data?.code;
+    if (rawCode && activationErrorMessages[rawCode]) {
+      return activationErrorMessages[rawCode];
+    }
+
+    // 2. Check message string for embedded backend error codes or known backend English responses
+    const rawMessage = errorObj?.message || errorObj?.response?.data?.message || '';
+    if (typeof rawMessage === 'string') {
+      if (rawMessage.includes('PRODUCTION_DEVICE_ATTESTATION_REQUIRED') || rawMessage.includes('approved Android app-attestation provider')) {
+        return t('familyTracking.errProductionAttestationRequired');
+      }
+      if (rawMessage.includes('ACTIVATION_NOT_READY')) {
+        return t('familyTracking.errActivationNotReady');
+      }
+      if (rawMessage.includes('NATIVE_KEY_MISMATCH')) {
+        return t('familyTracking.errNativeKeyMismatch');
+      }
+      if (rawMessage.includes('INVALID_NATIVE_SIGNATURE')) {
+        return t('familyTracking.errInvalidNativeSignature');
+      }
+      if (rawMessage.includes('INVALID_NATIVE_PROOF')) {
+        return t('familyTracking.errInvalidNativeProof');
+      }
+      if (rawMessage.includes('NO_ACTIVE_GUARDIAN')) {
+        return t('familyTracking.errRequiresGuardian');
+      }
+    }
+
+    return rawMessage || t('familyTracking.errVerificationFailed');
+  };
+
   const verifyAndStart = async () => {
     if (busy) return;
     if (!android) {
@@ -140,10 +174,10 @@ const StudentFamilyTracking = () => {
       setNotice(t('familyTracking.activeNotice'));
       await refresh();
     } catch (activationError) {
-      // Surface backend error codes through the native bridge
-      const errorCode = activationError?.code || activationError?.response?.data?.code;
-      const backendMessage = activationErrorMessages[errorCode];
-      setError(backendMessage || activationError?.message || t('familyTracking.errVerificationFailed'));
+      // Map error code or message to clean localized UI translation
+      const localizedMsg = resolveActivationErrorMessage(activationError);
+      setError(localizedMsg);
+      setErrorTimestamp(Date.now());
     } finally { setBusy(false); }
   };
 
@@ -214,7 +248,12 @@ const StudentFamilyTracking = () => {
     <DashboardLayout><div className="space-y-6">
       <RolePageHeader title={t('familyTracking.studentTitle')} subtitle={t('familyTracking.studentSubtitle')} icon={MapPin} />
       {!android && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">{t('familyTracking.androidOnlyNotice')}</div>}
-      {error && <div className="flex gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"><AlertCircle className="shrink-0" /><span>{error}</span></div>}
+      {error && (
+        <div key={errorTimestamp || error} className="flex gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 animate-in fade-in duration-200 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+          <AlertCircle className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
       {notice && <div className="flex gap-2 rounded-xl border border-teal-200 bg-teal-50 p-4 text-teal-900 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-200"><CheckCircle2 className="shrink-0" /><span>{notice}</span></div>}
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="flex gap-4"><ShieldCheck className="shrink-0 text-teal-600" /><div>

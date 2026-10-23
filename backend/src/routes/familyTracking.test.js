@@ -256,6 +256,50 @@ test('Family Tracking route security and activation state machine', async (t) =>
     assert.ok([403, 409].includes(badAttestation.status));
   });
 
+  await t.test('production returns HTTP 503 and runs shadow verification without enabling tracking', async () => {
+    const oldEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    process.env.SHADOW_ATTESTATION_PILOT_ENABLED = 'true';
+    process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS = STUDENT_ID;
+
+    // Set setting in AWAITING_NATIVE_VERIFICATION
+    trackingSetting = {
+      ...trackingSetting,
+      activationState: 'AWAITING_NATIVE_VERIFICATION',
+      ageSafeguardStatus: 'VERIFIED_ADULT',
+      collectionEnabled: false,
+      activationChallengeHash: crypto.createHash('sha256').update('prod-challenge-xyz').digest('hex'),
+      activationChallengeExpiresAt: new Date(Date.now() + 600000)
+    };
+
+    const response = await request(
+      'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+      authHeader(STUDENT_ID, 'STUDENT'),
+      {
+        proofVersion: 'android-native-v1',
+        challenge: 'prod-challenge-xyz',
+        permissionStatus: 'GRANTED_BACKGROUND',
+        publicKey: 'pubKey',
+        signature: 'sig',
+        certificateChain: ['certA', 'certB']
+      }
+    );
+
+    // Assert that HTTP 503 guard is strictly preserved
+    assert.equal(response.status, 503);
+    assert.equal(response.body.code, 'PRODUCTION_DEVICE_ATTESTATION_REQUIRED');
+    assert.equal(response.body.message, 'Production activation requires an approved Android app-attestation provider');
+
+    // Assert that tracking remains disabled and unactivated
+    assert.equal(trackingSetting.activationState, 'AWAITING_NATIVE_VERIFICATION');
+    assert.equal(trackingSetting.collectionEnabled, false);
+
+    // Reset env
+    process.env.NODE_ENV = oldEnv;
+    delete process.env.SHADOW_ATTESTATION_PILOT_ENABLED;
+    delete process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS;
+  });
+
   await t.test('idempotent observation UUID prevents retry duplicates', async () => {
     trackingSetting = {
       ...trackingSetting,
