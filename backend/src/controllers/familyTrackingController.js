@@ -20,6 +20,7 @@ import {
   serializeObservation,
   validateObservation
 } from '../services/familyTrackingService.js';
+import { verifyAndroidKeyAttestation } from '../services/attestation/keyAttestationVerifier.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
 const permissionStatuses = new Set(['UNSUPPORTED', 'NOT_REQUESTED', 'DENIED', 'GRANTED_WHILE_IN_USE', 'GRANTED_BACKGROUND']);
@@ -177,7 +178,7 @@ export const completeNativeTrackingActivation = async (req, res) => {
   if (!await hasActiveGuardian(studentId)) {
     return res.status(409).json({ success: false, code: 'NO_ACTIVE_GUARDIAN', message: 'Tracking requires an active guardian relationship' });
   }
-  const { challenge, publicKey, signature, permissionStatus, proofVersion } = req.body || {};
+  const { challenge, publicKey, signature, permissionStatus, proofVersion, certificateChain } = req.body || {};
   if (proofVersion !== NATIVE_PROOF_VERSION || permissionStatus !== 'GRANTED_BACKGROUND'
     || typeof challenge !== 'string' || typeof publicKey !== 'string' || typeof signature !== 'string') {
     return res.status(400).json({ success: false, code: 'INVALID_NATIVE_PROOF' });
@@ -193,6 +194,22 @@ export const completeNativeTrackingActivation = async (req, res) => {
   if (setting.nativePublicKey && setting.nativePublicKey !== publicKey) {
     return res.status(409).json({ success: false, code: 'NATIVE_KEY_MISMATCH' });
   }
+
+  // If certificateChain is provided, verify hardware-backed key attestation
+  if (Array.isArray(certificateChain) && certificateChain.length > 0) {
+    const attestationResult = await verifyAndroidKeyAttestation({
+      certificateChain,
+      expectedChallenge: challenge
+    });
+    if (!attestationResult.valid) {
+      return res.status(403).json({
+        success: false,
+        code: attestationResult.code || 'ATTESTATION_VERIFICATION_FAILED',
+        message: attestationResult.message || 'Hardware attestation verification failed'
+      });
+    }
+  }
+
   const payload = `${NATIVE_PROOF_VERSION}\n${studentId}\n${challenge}\n${permissionStatus}`;
   let verified = false;
   try {

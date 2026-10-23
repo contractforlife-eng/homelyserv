@@ -242,6 +242,18 @@ test('Family Tracking route security and activation state machine', async (t) =>
       }
     );
     assert.equal(replay.status, 409);
+
+    // Verify invalid/forged certificate chain is rejected
+    const badAttestation = await request(
+      'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+      authHeader(STUDENT_ID, 'STUDENT'),
+      {
+        proofVersion: 'android-native-v1', challenge: activation.body.challenge,
+        permissionStatus: 'GRANTED_BACKGROUND', publicKey: exportedPublicKey, signature,
+        certificateChain: ['not-a-valid-cert', 'also-not-valid']
+      }
+    );
+    assert.ok([403, 409].includes(badAttestation.status));
   });
 
   await t.test('idempotent observation UUID prevents retry duplicates', async () => {

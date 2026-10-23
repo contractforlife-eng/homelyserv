@@ -155,7 +155,7 @@ const StudentSidebar = ({
     },
     {
       id: 'familyTracking',
-      label: 'Family Tracking',
+      label: t('studentNav.familyTracking') || 'Family Tracking',
       icon: MapPinned,
       path: '/student-family-tracking',
       active: location.pathname === '/student-family-tracking'

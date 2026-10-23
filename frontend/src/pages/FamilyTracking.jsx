@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -46,19 +47,12 @@ const MapViewport = ({ points }) => {
   return null;
 };
 
-const formatTime = (value, timeZone) => value
+const formatTime = (value, timeZone, fallback) => value
   ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(value))
-  : 'No successful observation';
-
-const getTrackingLabel = (status) => {
-  if (!status) return 'Status unavailable';
-  if (status.activationState === 'ACTIVE' && status.collectionEnabled) return 'Active on student device';
-  if (status.activationState === 'PAUSED') return 'Paused';
-  if (status.activationState?.startsWith('AWAITING_')) return 'Activation incomplete';
-  return 'Not activated';
-};
+  : fallback;
 
 const FamilyTracking = () => {
+  const { t } = useTranslation();
   const { studentId } = useParams();
   const [selectedDate, setSelectedDate] = useState('');
   const [status, setStatus] = useState(null);
@@ -68,6 +62,14 @@ const FamilyTracking = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState('');
   const [approving, setApproving] = useState(false);
+
+  const getTrackingLabel = useCallback((trackingStatus) => {
+    if (!trackingStatus) return t('familyTracking.statusUnavailable');
+    if (trackingStatus.activationState === 'ACTIVE' && trackingStatus.collectionEnabled) return t('familyTracking.statusActive');
+    if (trackingStatus.activationState === 'PAUSED') return t('familyTracking.statusPaused');
+    if (trackingStatus.activationState?.startsWith('AWAITING_')) return t('familyTracking.statusIncomplete');
+    return t('familyTracking.statusNotActivated');
+  }, [t]);
 
   const loadSummary = useCallback(async () => {
     try {
@@ -81,11 +83,11 @@ const FamilyTracking = () => {
       setCurrent(currentResponse.location);
       setSelectedDate((existing) => existing || statusResponse.status.todayDate);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Unable to load family tracking data.');
+      setError(requestError?.response?.data?.message || t('familyTracking.statusUnavailable'));
     } finally {
       setLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, t]);
 
   useEffect(() => {
     loadSummary();
@@ -104,14 +106,14 @@ const FamilyTracking = () => {
         );
         if (active) setHistory(response);
       } catch (requestError) {
-        if (active) setError(requestError?.response?.data?.message || 'Unable to load movement history.');
+        if (active) setError(requestError?.response?.data?.message || t('familyTracking.noObservationsForDate'));
       } finally {
         if (active) setHistoryLoading(false);
       }
     };
     loadHistory();
     return () => { active = false; };
-  }, [selectedDate, status?.todayDate, studentId]);
+  }, [selectedDate, status?.todayDate, studentId, t]);
 
   const observations = history?.observations || [];
   const mapPoints = useMemo(
@@ -130,9 +132,7 @@ const FamilyTracking = () => {
     : false;
 
   const approveSafeguard = async () => {
-    const confirmed = window.confirm(
-      'Approve this student-device activation? Location may be collected in the background only after the student grants Android permissions. A persistent notification will remain visible while tracking runs.'
-    );
+    const confirmed = window.confirm(t('familyTracking.approveSafeguardConfirm'));
     if (!confirmed) return;
     try {
       setApproving(true);
@@ -140,7 +140,7 @@ const FamilyTracking = () => {
       await approveFamilyTrackingSafeguard(studentId);
       await loadSummary();
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Unable to approve the tracking safeguard.');
+      setError(requestError?.response?.data?.message || t('familyTracking.errVerificationFailed'));
     } finally {
       setApproving(false);
     }
@@ -150,12 +150,12 @@ const FamilyTracking = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <RolePageHeader
-          title="HomelyServ Family Tracking"
-          subtitle={status?.student?.fullName ? `${status.student.fullName} — Recorded Location & Movement History` : 'Recorded Location & Movement History'}
+          title={t('familyTracking.guardianTitle')}
+          subtitle={status?.student?.fullName ? `${status.student.fullName} — ${t('familyTracking.guardianSubtitle')}` : t('familyTracking.guardianSubtitle')}
           icon={MapPinned}
           actions={(
             <Link to="/parent-students" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/30">
-              <ArrowLeft size={17} /> My Children
+              <ArrowLeft size={17} /> {t('familyTracking.myChildren')}
             </Link>
           )}
         />
@@ -163,7 +163,7 @@ const FamilyTracking = () => {
         {error && (
           <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
             <AlertCircle size={20} /><span>{error}</span>
-            <button type="button" onClick={loadSummary} className="ml-auto text-sm font-bold underline">Retry</button>
+            <button type="button" onClick={loadSummary} className="ml-auto text-sm font-bold underline">{t('familyTracking.retry')}</button>
           </div>
         )}
 
@@ -176,39 +176,39 @@ const FamilyTracking = () => {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 <LocateFixed className="mb-3 text-red-600" />
-                <p className="text-xs font-semibold uppercase text-gray-500">Last recorded location</p>
-                <p className="mt-1 font-bold text-gray-900 dark:text-white">{formatTime(current?.recordedAt, status?.timeZone)}</p>
+                <p className="text-xs font-semibold uppercase text-gray-500">{t('familyTracking.lastRecordedLocation')}</p>
+                <p className="mt-1 font-bold text-gray-900 dark:text-white">{formatTime(current?.recordedAt, status?.timeZone, t('familyTracking.noSuccessfulObservation'))}</p>
                 {current ? (
                   <p className="mt-1 text-xs text-gray-500">
-                    Accuracy {Math.round(current.accuracy)} m{lastUpdateIsStale ? ' • Stale observation, not live' : ' • Recent observation, not live'}
+                    {t('familyTracking.accuracyMeters', { accuracy: Math.round(current.accuracy) })} • {lastUpdateIsStale ? t('familyTracking.staleObservation') : t('familyTracking.recentObservation')}
                   </p>
-                ) : <p className="mt-1 text-xs text-gray-500">No observation within the 24-hour last-known policy.</p>}
+                ) : <p className="mt-1 text-xs text-gray-500">{t('familyTracking.noRecentObservation')}</p>}
               </div>
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 {status?.activationState === 'PAUSED' ? <PauseCircle className="mb-3 text-amber-600" /> : <ShieldCheck className="mb-3 text-teal-600" />}
-                <p className="text-xs font-semibold uppercase text-gray-500">Tracking & permission</p>
+                <p className="text-xs font-semibold uppercase text-gray-500">{t('familyTracking.trackingAndPermission')}</p>
                 <p className="mt-1 font-bold text-gray-900 dark:text-white">{getTrackingLabel(status)}</p>
                 <p className="text-xs text-gray-500">{String(status?.permissionStatus || 'NOT_REQUESTED').replaceAll('_', ' ')}</p>
-                {!status?.nativePermissionVerified && <p className="text-xs text-amber-600">Native permission is not verified; collection remains unavailable.</p>}
+                {!status?.nativePermissionVerified && <p className="text-xs text-amber-600">{t('familyTracking.nativeUnverifiedWarning')}</p>}
                 {status?.activationState === 'AWAITING_AGE_SAFEGUARD' && (
                   <button type="button" disabled={approving} onClick={approveSafeguard} className="mt-3 rounded-lg bg-teal-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
-                    {approving ? 'Approving…' : 'Approve age safeguard'}
+                    {approving ? t('familyTracking.approvingSafeguard') : t('familyTracking.approveSafeguardBtn')}
                   </button>
                 )}
               </div>
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 <CalendarDays className="mb-3 text-teal-600" />
-                <p className="text-xs font-semibold uppercase text-gray-500">History plan</p>
-                <p className="mt-1 font-bold text-gray-900 dark:text-white">{status?.premium ? 'Premium — 90 days' : 'Free — 3 days'}</p>
-                <p className="text-xs text-gray-500">Calendar days use {status?.timeZone || 'the student timezone'}.</p>
+                <p className="text-xs font-semibold uppercase text-gray-500">{t('familyTracking.historyPlan')}</p>
+                <p className="mt-1 font-bold text-gray-900 dark:text-white">{status?.premium ? t('familyTracking.premiumPlan') : t('familyTracking.freePlan')}</p>
+                <p className="text-xs text-gray-500">{t('familyTracking.studentTimezoneNotice', { timeZone: status?.timeZone || 'UTC' })}</p>
               </div>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
               <div className="flex flex-col gap-3 border-b border-gray-100 p-5 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="font-bold text-gray-900 dark:text-white">Recorded movement for selected day</h2>
-                  <p className="text-xs text-gray-500">Only recorded points from this date are shown. Gaps, poor accuracy, and implausible jumps are not joined.</p>
+                  <h2 className="font-bold text-gray-900 dark:text-white">{t('familyTracking.recordedMovementTitle')}</h2>
+                  <p className="text-xs text-gray-500">{t('familyTracking.recordedMovementDesc')}</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
                   <CalendarDays size={17} className="text-teal-600" />
@@ -225,7 +225,7 @@ const FamilyTracking = () => {
 
               {!configuredTileUrl && (
                 <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                  Basemap tiles are disabled until HomelyServ approves a privacy-compliant map provider. Recorded geometry remains interactive without third-party tile requests.
+                  {t('familyTracking.tilesDisabledWarning')}
                 </div>
               )}
 
@@ -234,8 +234,8 @@ const FamilyTracking = () => {
               ) : observations.length === 0 ? (
                 <div className="flex min-h-96 flex-col items-center justify-center px-6 text-center">
                   <Navigation className="mb-3 h-12 w-12 text-gray-300" />
-                  <h3 className="font-bold text-gray-800 dark:text-gray-100">No observations for this date</h3>
-                  <p className="mt-1 max-w-lg text-sm text-gray-500">No current or last-known marker is placed on an unrelated historical day.</p>
+                  <h3 className="font-bold text-gray-800 dark:text-gray-100">{t('familyTracking.noObservationsForDate')}</h3>
+                  <p className="mt-1 max-w-lg text-sm text-gray-500">{t('familyTracking.noObservationsDesc')}</p>
                 </div>
               ) : (
                 <div className="h-[520px] w-full">
@@ -255,11 +255,11 @@ const FamilyTracking = () => {
                       <React.Fragment key={point.id}>
                         <Marker position={[point.latitude, point.longitude]} icon={recordedPointIcon}>
                           <Popup>
-                            <strong>Recorded observation</strong><br />
-                            <Clock3 size={13} className="inline" /> {formatTime(point.recordedAt, history?.timeZone)}<br />
-                            Accuracy: {Math.round(point.accuracy)} m<br />
-                            {point.speed != null && <>Speed: {point.speed.toFixed(1)} m/s<br /></>}
-                            {point.heading != null && <>Heading: {Math.round(point.heading)}°</>}
+                            <strong>{t('familyTracking.recordedObservation')}</strong><br />
+                            <Clock3 size={13} className="inline" /> {formatTime(point.recordedAt, history?.timeZone, '')}<br />
+                            {t('familyTracking.accuracyMeters', { accuracy: Math.round(point.accuracy) })}<br />
+                            {point.speed != null && <>{t('familyTracking.speedUnit', { speed: point.speed.toFixed(1) })}<br /></>}
+                            {point.heading != null && <>{t('familyTracking.headingUnit', { heading: Math.round(point.heading) })}</>}
                           </Popup>
                         </Marker>
                         <Circle
@@ -271,12 +271,12 @@ const FamilyTracking = () => {
                     ))}
                     {routeStart && (
                       <Marker position={[routeStart.latitude, routeStart.longitude]} icon={routeStartIcon}>
-                        <Popup>Valid route geometry start<br />{formatTime(routeStart.recordedAt, history?.timeZone)}</Popup>
+                        <Popup>{t('familyTracking.routeStart')}<br />{formatTime(routeStart.recordedAt, history?.timeZone, '')}</Popup>
                       </Marker>
                     )}
                     {routeEnd && (
                       <Marker position={[routeEnd.latitude, routeEnd.longitude]} icon={routeEndIcon}>
-                        <Popup>Valid route geometry end<br />{formatTime(routeEnd.recordedAt, history?.timeZone)}</Popup>
+                        <Popup>{t('familyTracking.routeEnd')}<br />{formatTime(routeEnd.recordedAt, history?.timeZone, '')}</Popup>
                       </Marker>
                     )}
                   </MapContainer>

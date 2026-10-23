@@ -137,23 +137,45 @@ public class HomelyServFamilyTrackingPlugin extends Plugin {
         try {
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
-            if (!keyStore.containsAlias(SIGNING_KEY_ALIAS)) {
-                KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
-                generator.initialize(new KeyGenParameterSpec.Builder(SIGNING_KEY_ALIAS, KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
-                    .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
-                    .setDigests(KeyProperties.DIGEST_SHA256)
-                    .build());
-                generator.generateKeyPair();
+            // Re-generate the key on each activation to ensure the server-issued challenge
+            // is embedded in the hardware-backed attestation extension certificate
+            if (keyStore.containsAlias(SIGNING_KEY_ALIAS)) {
+                keyStore.deleteEntry(SIGNING_KEY_ALIAS);
             }
+            KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
+            KeyGenParameterSpec.Builder specBuilder = new KeyGenParameterSpec.Builder(
+                SIGNING_KEY_ALIAS,
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY
+            )
+                .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
+                .setDigests(KeyProperties.DIGEST_SHA256);
+
+            // Set the attestation challenge byte array to trigger hardware key attestation
+            byte[] challengeBytes = challenge.getBytes(StandardCharsets.UTF_8);
+            specBuilder.setAttestationChallenge(challengeBytes);
+            generator.initialize(specBuilder.build());
+            generator.generateKeyPair();
+
             PrivateKey privateKey = (PrivateKey) keyStore.getKey(SIGNING_KEY_ALIAS, null);
-            Certificate certificate = keyStore.getCertificate(SIGNING_KEY_ALIAS);
+            Certificate[] certChain = keyStore.getCertificateChain(SIGNING_KEY_ALIAS);
+            if (certChain == null || certChain.length == 0) {
+                call.reject("Hardware attestation certificate chain could not be obtained from Android Keystore.", "ATTESTATION_UNAVAILABLE");
+                return;
+            }
+            Certificate leafCertificate = certChain[0];
             String permissionStatus = "GRANTED_BACKGROUND";
             String payload = PROOF_VERSION + "\n" + studentId + "\n" + challenge + "\n" + permissionStatus;
             Signature signer = Signature.getInstance("SHA256withECDSA");
             signer.initSign(privateKey);
             signer.update(payload.getBytes(StandardCharsets.UTF_8));
             String signature = Base64.encodeToString(signer.sign(), Base64.NO_WRAP);
-            String publicKey = pemPublicKey(certificate.getPublicKey().getEncoded());
+            String publicKey = pemPublicKey(leafCertificate.getPublicKey().getEncoded());
+
+            // Build certificate chain array for attestation verification
+            org.json.JSONArray certificateChainJson = new org.json.JSONArray();
+            for (Certificate cert : certChain) {
+                certificateChainJson.put(pemCertificate(cert.getEncoded()));
+            }
 
             JSONObject requestBody = new JSONObject();
             requestBody.put("proofVersion", PROOF_VERSION);
@@ -161,6 +183,7 @@ public class HomelyServFamilyTrackingPlugin extends Plugin {
             requestBody.put("permissionStatus", permissionStatus);
             requestBody.put("publicKey", publicKey);
             requestBody.put("signature", signature);
+            requestBody.put("certificateChain", certificateChainJson);
             connection = (HttpURLConnection) new URL(apiBase + "/api/parent-students/" + studentId + "/tracking/activation/native-complete").openConnection();
             connection.setRequestMethod("POST");
             connection.setConnectTimeout(15_000);
@@ -175,7 +198,19 @@ public class HomelyServFamilyTrackingPlugin extends Plugin {
             int status = connection.getResponseCode();
             String responseBody = readBody(status >= 400 ? connection.getErrorStream() : connection.getInputStream());
             if (status < 200 || status >= 300) {
-                call.reject("Server did not activate tracking.", "ACTIVATION_REJECTED", new Exception(responseBody));
+                String serverMessage = null;
+                try {
+                    JSONObject errJson = new JSONObject(responseBody);
+                    if (errJson.has("message")) {
+                        serverMessage = errJson.getString("message");
+                    } else if (errJson.has("code")) {
+                        serverMessage = errJson.getString("code");
+                    }
+                } catch (Exception ignored) {}
+                String rejectionMsg = (serverMessage != null && !serverMessage.isEmpty())
+                    ? serverMessage
+                    : "Server rejected activation (HTTP " + status + ").";
+                call.reject(rejectionMsg, "ACTIVATION_REJECTED", new Exception(responseBody));
                 return;
             }
             getContext().getSharedPreferences(FamilyTrackingService.PREFS, android.content.Context.MODE_PRIVATE).edit()
@@ -188,7 +223,8 @@ public class HomelyServFamilyTrackingPlugin extends Plugin {
             result.put("active", true);
             call.resolve(result);
         } catch (Exception exception) {
-            call.reject("Native activation could not be completed.", "NATIVE_ACTIVATION_FAILED");
+            String msg = exception.getMessage() != null ? exception.getMessage() : "Native activation could not be completed.";
+            call.reject(msg, "NATIVE_ACTIVATION_FAILED", exception);
         } finally {
             if (connection != null) connection.disconnect();
         }
@@ -229,6 +265,15 @@ public class HomelyServFamilyTrackingPlugin extends Plugin {
             body.append(base64, index, Math.min(index + 64, base64.length())).append('\n');
         }
         return "-----BEGIN PUBLIC KEY-----\n" + body + "-----END PUBLIC KEY-----\n";
+    }
+
+    private String pemCertificate(byte[] encoded) {
+        String base64 = Base64.encodeToString(encoded, Base64.NO_WRAP);
+        StringBuilder body = new StringBuilder();
+        for (int index = 0; index < base64.length(); index += 64) {
+            body.append(base64, index, Math.min(index + 64, base64.length())).append('\n');
+        }
+        return "-----BEGIN CERTIFICATE-----\n" + body + "-----END CERTIFICATE-----\n";
     }
 
     private String readBody(InputStream stream) throws Exception {

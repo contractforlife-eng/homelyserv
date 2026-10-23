@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, CheckCircle2, Loader2, MapPin, PauseCircle, ShieldCheck, Smartphone } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -12,6 +13,7 @@ import {
 } from '../native/familyTracking';
 
 const StudentFamilyTracking = () => {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
   const studentId = user?.id || user?._id;
@@ -31,11 +33,23 @@ const StudentFamilyTracking = () => {
       setStatus(response.status);
       if (android) setNativeStatus(await getNativeTrackingStatus());
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Tracking requires an active linked guardian.');
+      setError(requestError?.response?.data?.message || t('familyTracking.errRequiresGuardian'));
     }
-  }, [android, studentId]);
+  }, [android, studentId, t]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  useEffect(() => {
+    const onResume = () => {
+      refresh();
+    };
+    window.addEventListener('focus', onResume);
+    document.addEventListener('visibilitychange', onResume);
+    return () => {
+      window.removeEventListener('focus', onResume);
+      document.removeEventListener('visibilitychange', onResume);
+    };
+  }, [refresh]);
 
   const begin = async () => {
     setBusy(true); setError(''); setNotice('');
@@ -49,11 +63,11 @@ const StudentFamilyTracking = () => {
       await requestForegroundTrackingPermissions();
       await requestSupportingTrackingPermissions();
       setNotice(activation.activationState === 'AWAITING_AGE_SAFEGUARD'
-        ? 'A linked guardian must approve the age safeguard before activation can finish.'
-        : 'Now grant “Allow all the time” from Android App permissions, then verify and start.');
+        ? t('familyTracking.safeguardNotice')
+        : t('familyTracking.startingNotice'));
       await refresh();
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || requestError?.message || 'Activation could not start.');
+      setError(requestError?.response?.data?.message || requestError?.message || t('familyTracking.errGenericStart'));
     } finally { setBusy(false); }
   };
 
@@ -62,8 +76,14 @@ const StudentFamilyTracking = () => {
     try {
       const permissions = await getNativeTrackingStatus();
       setNativeStatus(permissions);
-      if (!permissions.backgroundPermission || !permissions.notificationPermission) {
-        throw new Error('Background location and notification permissions are required.');
+      if (!permissions.foregroundPermission) {
+        throw new Error(t('familyTracking.errForegroundRequired'));
+      }
+      if (!permissions.backgroundPermission) {
+        throw new Error(t('familyTracking.errBackgroundRequired'));
+      }
+      if (!permissions.notificationPermission) {
+        throw new Error(t('familyTracking.errNotificationsRequired'));
       }
       let nativeChallenge = challenge;
       if (!nativeChallenge) {
@@ -72,15 +92,17 @@ const StudentFamilyTracking = () => {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           platform: 'android'
         });
-        if (activation.activationState === 'AWAITING_AGE_SAFEGUARD') throw new Error('Guardian approval is still required.');
+        if (activation.activationState === 'AWAITING_AGE_SAFEGUARD') {
+          throw new Error(t('familyTracking.errSafeguardRequired'));
+        }
         nativeChallenge = activation.challenge;
         setChallenge(nativeChallenge);
       }
       await activateNativeTracking({ studentId, token, apiBase: API_BASE, challenge: nativeChallenge });
-      setNotice('Tracking is active. Android displays a persistent notification while collection runs.');
+      setNotice(t('familyTracking.activeNotice'));
       await refresh();
     } catch (activationError) {
-      setError(activationError?.message || 'Native verification failed. Tracking remains disabled.');
+      setError(activationError?.message || t('familyTracking.errVerificationFailed'));
     } finally { setBusy(false); }
   };
 
@@ -90,37 +112,86 @@ const StudentFamilyTracking = () => {
       if (disable) await disableFamilyTracking(studentId); else await pauseFamilyTracking(studentId);
       if (android) await stopNativeTracking();
       if (disable) { setChallenge(''); setConsented(false); }
-      setNotice(disable ? 'Tracking is disabled and the encrypted device queue was cleared.' : 'Tracking is paused and the encrypted device queue was cleared.');
+      setNotice(disable ? t('familyTracking.disabledNotice') : t('familyTracking.pausedNotice'));
       await refresh();
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || requestError?.message || 'Tracking could not be stopped.');
+      setError(requestError?.response?.data?.message || requestError?.message || t('familyTracking.errStopFailed'));
     } finally { setBusy(false); }
+  };
+
+  const getSafeguardLabel = (code) => {
+    switch (code) {
+      case 'GUARDIAN_APPROVED':
+        return t('familyTracking.safeguardApproved');
+      case 'VERIFIED_ADULT':
+        return t('familyTracking.safeguardAdult');
+      default:
+        return t('familyTracking.safeguardRequired');
+    }
+  };
+
+  const getServerStateLabel = (state) => {
+    switch (state) {
+      case 'ACTIVE':
+        return t('familyTracking.statusActive');
+      case 'PAUSED':
+        return t('familyTracking.statusPaused');
+      case 'DISABLED':
+        return t('familyTracking.statusNotActivated');
+      default:
+        return state || t('familyTracking.statusUnavailable');
+    }
   };
 
   return (
     <DashboardLayout><div className="space-y-6">
-      <RolePageHeader title="Family Tracking on this device" subtitle="You control when location collection runs" icon={MapPin} />
-      {!android && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">Collection can only be activated in the HomelyServ Android app.</div>}
-      {error && <div className="flex gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800"><AlertCircle />{error}</div>}
-      {notice && <div className="flex gap-2 rounded-xl border border-teal-200 bg-teal-50 p-4 text-teal-900"><CheckCircle2 />{notice}</div>}
+      <RolePageHeader title={t('familyTracking.studentTitle')} subtitle={t('familyTracking.studentSubtitle')} icon={MapPin} />
+      {!android && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">{t('familyTracking.androidOnlyNotice')}</div>}
+      {error && <div className="flex gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"><AlertCircle className="shrink-0" /><span>{error}</span></div>}
+      {notice && <div className="flex gap-2 rounded-xl border border-teal-200 bg-teal-50 p-4 text-teal-900 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-200"><CheckCircle2 className="shrink-0" /><span>{notice}</span></div>}
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="flex gap-4"><ShieldCheck className="shrink-0 text-teal-600" /><div>
-          <h2 className="font-bold text-gray-900 dark:text-white">Visible, explicit activation</h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">When active, GPS observations are sent to approved guardians and may be collected in the background. Android always shows a persistent notification. Sampling is adaptive and is not guaranteed continuous or real-time.</p>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Students under 18, or without a verified birth date, require explicit approval from an active linked guardian.</p>
+          <h2 className="font-bold text-gray-900 dark:text-white">{t('familyTracking.visibleActivationTitle')}</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t('familyTracking.visibleActivationDesc1')}</p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t('familyTracking.visibleActivationDesc2')}</p>
         </div></div>
-        <label className="mt-5 flex items-start gap-3 text-sm"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} className="mt-1" /><span>I understand and choose to start the Android permission and activation process.</span></label>
+        <label className="mt-5 flex items-start gap-3 text-sm cursor-pointer"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} className="mt-1" /><span>{t('familyTracking.consentLabel')}</span></label>
       </section>
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800"><Smartphone className="mb-3 text-red-600" /><p className="text-xs font-semibold uppercase text-gray-500">Server state</p><p className="font-bold dark:text-white">{status?.activationState || 'Unavailable'}</p><p className="text-sm text-gray-500">Safeguard: {status?.ageSafeguardStatus || 'REQUIRED'}</p></div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800"><MapPin className="mb-3 text-teal-600" /><p className="text-xs font-semibold uppercase text-gray-500">Android permissions</p><p className="text-sm text-gray-600 dark:text-gray-300">Foreground: {nativeStatus?.foregroundPermission ? 'Granted' : 'Not granted'} · Background: {nativeStatus?.backgroundPermission ? 'Granted' : 'Not granted'} · Notifications: {nativeStatus?.notificationPermission ? 'Granted' : 'Not granted'}</p><p className="text-xs text-gray-500">Encrypted queue: {nativeStatus?.queueSize || 0}</p></div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <Smartphone className="mb-3 text-red-600" />
+          <p className="text-xs font-semibold uppercase text-gray-500">{t('familyTracking.serverState')}</p>
+          <p className="font-bold dark:text-white">{getServerStateLabel(status?.activationState)}</p>
+          <p className="text-sm text-gray-500">{t('familyTracking.safeguard')}: {getSafeguardLabel(status?.ageSafeguardStatus)}</p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <MapPin className="mb-3 text-teal-600" />
+          <p className="text-xs font-semibold uppercase text-gray-500">{t('familyTracking.androidPermissions')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            {t('familyTracking.foreground')}: {nativeStatus?.foregroundPermission ? t('familyTracking.granted') : t('familyTracking.notGranted')} · {t('familyTracking.background')}: {nativeStatus?.backgroundPermission ? t('familyTracking.granted') : t('familyTracking.notGranted')} · {t('familyTracking.notifications')}: {nativeStatus?.notificationPermission ? t('familyTracking.granted') : t('familyTracking.notGranted')}
+          </p>
+          <p className="text-xs text-gray-500">{t('familyTracking.encryptedQueue')}: {nativeStatus?.queueSize || 0}</p>
+        </div>
       </section>
       <div className="flex flex-wrap gap-3">
-        <button type="button" disabled={!consented || busy || !android} onClick={begin} className="rounded-xl bg-red-600 px-5 py-3 font-bold text-white disabled:opacity-50">{busy ? <Loader2 className="animate-spin" /> : 'Begin activation'}</button>
-        <button type="button" disabled={busy || !android} onClick={openBackgroundTrackingSettings} className="rounded-xl bg-teal-600 px-5 py-3 font-bold text-white">Open Android permission settings</button>
-        <button type="button" disabled={busy || !android} onClick={verifyAndStart} className="rounded-xl border border-teal-600 px-5 py-3 font-bold text-teal-700">Verify and start</button>
-        <button type="button" disabled={busy} onClick={() => stop(false)} className="flex items-center gap-2 rounded-xl border border-amber-500 px-5 py-3 font-bold text-amber-700"><PauseCircle size={18} />Pause</button>
-        <button type="button" disabled={busy} onClick={() => stop(true)} className="rounded-xl border border-red-300 px-5 py-3 font-bold text-red-700">Disable and clear</button>
+        <button type="button" disabled={!consented || busy || !android} onClick={begin} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-bold text-white transition hover:bg-red-700 disabled:opacity-50">
+          {busy ? <Loader2 className="animate-spin" size={18} /> : null}
+          <span>{t('familyTracking.beginActivation')}</span>
+        </button>
+        <button type="button" disabled={busy || !android} onClick={openBackgroundTrackingSettings} className="rounded-xl bg-teal-600 px-5 py-3 font-bold text-white transition hover:bg-teal-700 disabled:opacity-50">
+          {t('familyTracking.openSettings')}
+        </button>
+        <button type="button" disabled={busy || !android} onClick={verifyAndStart} className="inline-flex items-center gap-2 rounded-xl border border-teal-600 px-5 py-3 font-bold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/30 disabled:opacity-50">
+          {busy ? <Loader2 className="animate-spin" size={18} /> : null}
+          <span>{t('familyTracking.verifyAndStart')}</span>
+        </button>
+        <button type="button" disabled={busy} onClick={() => stop(false)} className="inline-flex items-center gap-2 rounded-xl border border-amber-500 px-5 py-3 font-bold text-amber-700 transition hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30 disabled:opacity-50">
+          <PauseCircle size={18} />
+          <span>{t('familyTracking.pause')}</span>
+        </button>
+        <button type="button" disabled={busy} onClick={() => stop(true)} className="rounded-xl border border-red-300 px-5 py-3 font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 disabled:opacity-50">
+          {t('familyTracking.disableAndClear')}
+        </button>
       </div>
     </div></DashboardLayout>
   );
