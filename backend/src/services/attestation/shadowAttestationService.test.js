@@ -227,7 +227,7 @@ test('4. Shadow verification fails gracefully on expired or invalid challenges',
     activationState: 'AWAITING_NATIVE_VERIFICATION',
     ageSafeguardStatus: 'VERIFIED_ADULT',
     activationChallengeExpiresAt: new Date(Date.now() + 60000),
-    activationChallengeHash: crypto.createHash('sha256').update('expected_chal').digest('base64url')
+    activationChallengeHash: crypto.createHash('sha256').update('expected_chal').digest('hex')
   };
 
   const resMismatch = await executeShadowAttestation({
@@ -248,6 +248,35 @@ test('4. Shadow verification fails gracefully on expired or invalid challenges',
   assert.equal(resMismatch.valid, false);
   assert.equal(resMismatch.code, 'CHALLENGE_HASH_MISMATCH');
 
+  // Case C: Real SHA-256 hex challenge hash matching passes CHALLENGE_CHECK and reaches hardware attestation
+  const realHexChallenge = 'real_pilot_challenge_token_2026';
+  const matchingHexSetting = {
+    activationState: 'AWAITING_NATIVE_VERIFICATION',
+    ageSafeguardStatus: 'VERIFIED_ADULT',
+    activationChallengeExpiresAt: new Date(Date.now() + 60000),
+    activationChallengeHash: crypto.createHash('sha256').update(realHexChallenge).digest('hex')
+  };
+
+  const resMatching = await executeShadowAttestation({
+    studentId: 'student_pilot_1',
+    requestBody: {
+      proofVersion: 'android-native-v1',
+      permissionStatus: 'GRANTED_BACKGROUND',
+      challenge: realHexChallenge,
+      publicKey: 'pub',
+      signature: 'sig',
+      certificateChain: ['cert1', 'cert2']
+    },
+    setting: matchingHexSetting,
+    hasActiveGuardianResult: true
+  });
+
+  assert.equal(resMatching.executed, true);
+  assert.equal(resMatching.valid, false);
+  // Confirms that CHALLENGE_CHECK successfully passed and reached the hardware verifier (Step D)
+  assert.notEqual(resMatching.code, 'CHALLENGE_HASH_MISMATCH');
+  assert.equal(resMatching.code, 'MALFORMED_CERTIFICATE');
+
   delete process.env.SHADOW_ATTESTATION_PILOT_ENABLED;
   delete process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS;
 });
@@ -256,7 +285,7 @@ test('5. Shadow verification NEVER consumes or mutates the challenge or activati
   process.env.SHADOW_ATTESTATION_PILOT_ENABLED = 'true';
   process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS = 'student_pilot_1';
 
-  const originalChallengeHash = crypto.createHash('sha256').update('test_challenge').digest('base64url');
+  const originalChallengeHash = crypto.createHash('sha256').update('test_challenge').digest('hex');
   const originalExpiresAt = new Date(Date.now() + 60000);
   const setting = {
     activationState: 'AWAITING_NATIVE_VERIFICATION',

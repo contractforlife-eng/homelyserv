@@ -138,7 +138,7 @@ export const executeShadowAttestation = async ({
         return { valid: false, code: 'CHALLENGE_EXPIRED_OR_STATE_INVALID', stage: 'CHALLENGE_CHECK' };
       }
 
-      const challengeHash = crypto.createHash('sha256').update(challenge).digest('base64url');
+      const challengeHash = crypto.createHash('sha256').update(challenge).digest('hex');
       if (setting.activationChallengeHash !== challengeHash) {
         return { valid: false, code: 'CHALLENGE_HASH_MISMATCH', stage: 'CHALLENGE_CHECK' };
       }
