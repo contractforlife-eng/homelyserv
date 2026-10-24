@@ -131,6 +131,57 @@ export const VerifiedBootState = {
   Failed: 3
 };
 
+// Strict DER INTEGER and ENUMERATED Decoders
+export const parseDerInteger = (buffer, { min = -2147483648, max = 2147483647 } = {}) => {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('DER INTEGER cannot be empty');
+  }
+  // Up to 5 bytes supported (4 content bytes plus optional leading 0x00 sign-extension byte)
+  if (buffer.length > 5) {
+    throw new Error('DER INTEGER exceeds maximum supported length (32-bit range)');
+  }
+  // Canonical minimal encoding check:
+  // Redundant leading 0x00 if the high bit of the next byte is NOT 1
+  if (buffer.length > 1 && buffer[0] === 0x00 && (buffer[1] & 0x80) === 0) {
+    throw new Error('DER INTEGER contains non-minimal leading zero byte');
+  }
+  // Redundant leading 0xFF if the high bit of the next byte IS 1
+  if (buffer.length > 1 && buffer[0] === 0xFF && (buffer[1] & 0x80) !== 0) {
+    throw new Error('DER INTEGER contains non-minimal leading 0xFF byte');
+  }
+
+  // Two's complement big-endian decoding
+  let value = (buffer[0] & 0x80) !== 0 ? -1 : 0;
+  for (let i = 0; i < buffer.length; i++) {
+    value = (value * 256) + buffer[i];
+  }
+
+  if (value < min || value > max) {
+    throw new Error(`DER INTEGER value ${value} out of allowed range [${min}, ${max}]`);
+  }
+  return value;
+};
+
+export const parseDerEnumerated = (buffer, { min = 0, max = 2 } = {}) => {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('DER ENUMERATED cannot be empty');
+  }
+  if (buffer.length > 2) {
+    throw new Error('DER ENUMERATED exceeds supported length');
+  }
+  if (buffer.length > 1 && buffer[0] === 0x00 && (buffer[1] & 0x80) === 0) {
+    throw new Error('DER ENUMERATED contains non-minimal leading zero byte');
+  }
+  let value = (buffer[0] & 0x80) !== 0 ? -1 : 0;
+  for (let i = 0; i < buffer.length; i++) {
+    value = (value * 256) + buffer[i];
+  }
+  if (value < min || value > max) {
+    throw new Error(`DER ENUMERATED value ${value} out of allowed range [${min}, ${max}]`);
+  }
+  return value;
+};
+
 // DER TLV Parser Helper Functions
 export const parseTLV = (buffer, offset = 0) => {
   if (!buffer || offset >= buffer.length) return null;
@@ -293,7 +344,7 @@ export const parseRootOfTrust = (rootOfTrustBuffer) => {
 
   const verifiedBootKey = children[0].value.toString('hex');
   const deviceLocked = children[1].value[0] !== 0;
-  const verifiedBootState = children[2].value[0];
+  const verifiedBootState = parseDerEnumerated(children[2].value, { min: 0, max: 3 });
   const verifiedBootHash = children[3] ? children[3].value.toString('hex') : null;
 
   return {
@@ -326,7 +377,7 @@ export const parseAttestationApplicationId = (appIdOctetBuffer) => {
       if (fields.length >= 2) {
         packageInfos.push({
           packageName: fields[0].value.toString('utf8'),
-          version: fields[1].value.length === 1 ? fields[1].value[0] : fields[1].value.readInt32BE(0)
+          version: parseDerInteger(fields[1].value, { min: 0 })
         });
       }
     }
@@ -360,10 +411,10 @@ export const parseKeyDescription = (extValueBuffer) => {
     throw new Error(`KeyDescription expected 8 fields, got ${children.length}`);
   }
 
-  const attestationVersion = children[0].value.length === 1 ? children[0].value[0] : children[0].value.readInt32BE(0);
-  const attestationSecurityLevel = children[1].value[0];
-  const keymasterVersion = children[2].value.length === 1 ? children[2].value[0] : children[2].value.readInt32BE(0);
-  const keymasterSecurityLevel = children[3].value[0];
+  const attestationVersion = parseDerInteger(children[0].value, { min: 1 });
+  const attestationSecurityLevel = parseDerEnumerated(children[1].value, { min: 0, max: 2 });
+  const keymasterVersion = parseDerInteger(children[2].value, { min: 0 });
+  const keymasterSecurityLevel = parseDerEnumerated(children[3].value, { min: 0, max: 2 });
   const attestationChallenge = children[4].value; // Buffer
   const uniqueId = children[5].value; // Buffer
   const softwareEnforced = parseAuthorizationList(children[6].value);
