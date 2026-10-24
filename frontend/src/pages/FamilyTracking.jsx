@@ -36,10 +36,11 @@ const routeStartIcon = markerIcon('#16a34a', 22);
 const routeEndIcon = markerIcon('#dc2626', 22);
 const recordedPointIcon = markerIcon('#0d9488', 14);
 
-// Approved privacy-compliant basemap provider default (CartoDB Voyager raster tiles)
-// Displays clear roads, street names, and building shapes with high-contrast labels.
-const DEFAULT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>';
+// OpenStreetMap Standard raster tiles (low-volume pilot / educational usage).
+// Compliant with OSMF Tile Usage Policy: standard browser Referer, no prefetching, browser caching respected.
+// Migration note: Replace with dedicated vector or self-hosted raster provider prior to broad commercial rollout.
+const DEFAULT_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
 
 const configuredTileUrl = String(import.meta.env.VITE_FAMILY_TRACKING_TILE_URL || DEFAULT_TILE_URL).trim();
 const configuredTileAttribution = String(import.meta.env.VITE_FAMILY_TRACKING_TILE_ATTRIBUTION || DEFAULT_TILE_ATTRIBUTION).trim();
@@ -263,6 +264,7 @@ const FamilyTracking = () => {
                         key={`tile-layer-${tileRetryKey}`}
                         attribution={configuredTileAttribution}
                         url={configuredTileUrl}
+                        maxZoom={19}
                         eventHandlers={{
                           tileerror: () => setTileError(true),
                           tileload: () => setTileError(false)
