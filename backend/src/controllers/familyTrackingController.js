@@ -195,11 +195,21 @@ export const completeNativeTrackingActivation = async (req, res) => {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    return res.status(503).json({
-      success: false,
-      code: 'PRODUCTION_DEVICE_ATTESTATION_REQUIRED',
-      message: 'Production activation requires an approved Android app-attestation provider'
-    });
+    if (process.env.ENABLE_ANDROID_KEY_ATTESTATION !== 'true') {
+      return res.status(503).json({
+        success: false,
+        code: 'PRODUCTION_DEVICE_ATTESTATION_REQUIRED',
+        message: 'Production activation requires an approved Android app-attestation provider'
+      });
+    }
+    const chain = req.body?.certificateChain;
+    if (!Array.isArray(chain) || chain.length === 0) {
+      return res.status(403).json({
+        success: false,
+        code: 'HARDWARE_ATTESTATION_REQUIRED',
+        message: 'Hardware-backed Android device attestation certificate chain is required in production'
+      });
+    }
   }
   if (!await hasActiveGuardian(studentId)) {
     return res.status(409).json({ success: false, code: 'NO_ACTIVE_GUARDIAN', message: 'Tracking requires an active guardian relationship' });

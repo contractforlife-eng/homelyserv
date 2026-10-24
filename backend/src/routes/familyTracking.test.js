@@ -256,9 +256,10 @@ test('Family Tracking route security and activation state machine', async (t) =>
     assert.ok([403, 409].includes(badAttestation.status));
   });
 
-  await t.test('production returns HTTP 503 and runs shadow verification without enabling tracking', async () => {
+  await t.test('production rejects with 503 by default and requires certificateChain when ENABLE_ANDROID_KEY_ATTESTATION=true', async () => {
     const oldEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
+    delete process.env.ENABLE_ANDROID_KEY_ATTESTATION;
     process.env.SHADOW_ATTESTATION_PILOT_ENABLED = 'true';
     process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS = STUDENT_ID;
 
@@ -285,17 +286,86 @@ test('Family Tracking route security and activation state machine', async (t) =>
       }
     );
 
-    // Assert that HTTP 503 guard is strictly preserved
+    // Assert that HTTP 503 guard is strictly preserved when gate is OFF
     assert.equal(response.status, 503);
     assert.equal(response.body.code, 'PRODUCTION_DEVICE_ATTESTATION_REQUIRED');
     assert.equal(response.body.message, 'Production activation requires an approved Android app-attestation provider');
+    assert.equal(trackingSetting.activationState, 'AWAITING_NATIVE_VERIFICATION');
+    assert.equal(trackingSetting.collectionEnabled, false);
 
-    // Assert that tracking remains disabled and unactivated
+    // Now enable attestation gate in production and verify it requires certificateChain
+    process.env.ENABLE_ANDROID_KEY_ATTESTATION = 'true';
+
+    const testChallenge = 'prod-challenge-xyz';
+    const resetSetting = () => {
+      trackingSetting = {
+        ...trackingSetting,
+        activationState: 'AWAITING_NATIVE_VERIFICATION',
+        ageSafeguardStatus: 'VERIFIED_ADULT',
+        collectionEnabled: false,
+        activationChallengeHash: crypto.createHash('sha256').update(testChallenge).digest('hex'),
+        activationChallengeExpiresAt: new Date(Date.now() + 600000),
+        nativePublicKey: null
+      };
+    };
+
+    // 1. Missing certificateChain -> 403 HARDWARE_ATTESTATION_REQUIRED
+    resetSetting();
+    const missingChainResponse = await request(
+      'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+      authHeader(STUDENT_ID, 'STUDENT'),
+      {
+        proofVersion: 'android-native-v1',
+        challenge: testChallenge,
+        permissionStatus: 'GRANTED_BACKGROUND',
+        publicKey: 'pubKey',
+        signature: 'sig'
+      }
+    );
+    assert.equal(missingChainResponse.status, 403);
+    assert.equal(missingChainResponse.body.code, 'HARDWARE_ATTESTATION_REQUIRED');
+
+    // 2. Empty certificateChain -> 403 HARDWARE_ATTESTATION_REQUIRED
+    resetSetting();
+    const emptyChainResponse = await request(
+      'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+      authHeader(STUDENT_ID, 'STUDENT'),
+      {
+        proofVersion: 'android-native-v1',
+        challenge: testChallenge,
+        permissionStatus: 'GRANTED_BACKGROUND',
+        publicKey: 'pubKey',
+        signature: 'sig',
+        certificateChain: []
+      }
+    );
+    assert.equal(emptyChainResponse.status, 403);
+    assert.equal(emptyChainResponse.body.code, 'HARDWARE_ATTESTATION_REQUIRED');
+
+    // 3. Invalid/untrusted chain -> 403 ATTESTATION_VERIFICATION_FAILED
+    resetSetting();
+    const invalidChainResponse = await request(
+      'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+      authHeader(STUDENT_ID, 'STUDENT'),
+      {
+        proofVersion: 'android-native-v1',
+        challenge: testChallenge,
+        permissionStatus: 'GRANTED_BACKGROUND',
+        publicKey: 'pubKey',
+        signature: 'sig',
+        certificateChain: ['not-a-valid-cert', 'still-not-valid']
+      }
+    );
+    assert.equal(invalidChainResponse.status, 403);
+    assert.equal(invalidChainResponse.body.code, 'MALFORMED_CERTIFICATE');
+
+    // Tracking still disabled and unactivated
     assert.equal(trackingSetting.activationState, 'AWAITING_NATIVE_VERIFICATION');
     assert.equal(trackingSetting.collectionEnabled, false);
 
     // Reset env
     process.env.NODE_ENV = oldEnv;
+    delete process.env.ENABLE_ANDROID_KEY_ATTESTATION;
     delete process.env.SHADOW_ATTESTATION_PILOT_ENABLED;
     delete process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS;
   });
