@@ -36,6 +36,8 @@ import {
   Pause,
   Play,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   UserCog,
   Globe,
   Smartphone,
@@ -328,6 +330,8 @@ const AdminUsers = () => {
   const [isChangingRole, setIsChangingRole] = useState(false);
   const [roleChangeError, setRoleChangeError] = useState('');
   const [roleChangeSuccess, setRoleChangeSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
 
   // Use authStore as single source of truth
@@ -407,7 +411,8 @@ const AdminUsers = () => {
     }
 
     setFilteredUsers(filtered);
-  }, [users, roleFilter, statusFilter, platformFilter, searchTerm]);
+    setCurrentPage(1);
+  }, [users, roleFilter, statusFilter, platformFilter, searchTerm, pageSize]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -640,6 +645,28 @@ const AdminUsers = () => {
     return null;
   }
 
+  // Pagination calculations
+  const totalItems = filteredUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
+
+  // Generate responsive page number range with ellipsis
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (safeCurrentPage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (safeCurrentPage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, '...', totalPages];
+  };
+  const pageNumbers = getPageNumbers();
+
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
@@ -831,7 +858,7 @@ const AdminUsers = () => {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Users Section: Desktop Compact Table + Mobile Cards + Pagination */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           {filteredUsers.length === 0 ? (
             <div className="p-12 text-center">
@@ -844,95 +871,172 @@ const AdminUsers = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      {t.table.user}
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      {t.table.email}
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      {t.table.role}
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      {t.table.status}
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      {t.table.joined}
-                    </th>
-                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      {t.table.actions}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredUsers.map((u) => (
-                    <tr key={u._id || u.id || u.email} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <UserAvatar
-                            name={u.fullName}
-                            image={u.profileImage}
-                            role={u.role}
-                            size="md"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <UserDisplayName user={u} size="lg" className="shrink min-w-0" />
-                              {u.verifiedProfileStatus === 'VERIFIED' && (
-                                <VerifiedBadge isVerified={true} size="xs" />
-                              )}
-                              <PlatformIcon
-                                platform={u.lastPlatform}
-                                lastActiveAt={u.lastActiveAt}
-                                appVersion={u.lastAppVersion}
-                                lang={i18n.resolvedLanguage || 'en'}
+            <>
+              {/* Desktop Table View (>= md) */}
+              <div className="hidden md:block w-full max-w-full overflow-hidden border-t border-gray-200 dark:border-gray-700">
+                <table className="w-full table-fixed border-collapse">
+                  <colgroup>
+                    <col style={{ width: '28%' }} />
+                    <col style={{ width: '24%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '8%' }} />
+                  </colgroup>
+                  <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <tr>
+                      <th className="text-left rtl:text-right px-4 py-2.5 whitespace-nowrap">
+                        {t.table.user}
+                      </th>
+                      <th className="text-left rtl:text-right px-4 py-2.5 whitespace-nowrap">
+                        {t.table.email}
+                      </th>
+                      <th className="text-left rtl:text-right px-4 py-2.5 whitespace-nowrap">
+                        {t.table.role}
+                      </th>
+                      <th className="text-left rtl:text-right px-4 py-2.5 whitespace-nowrap">
+                        {t.table.status}
+                      </th>
+                      <th className="text-left rtl:text-right px-4 py-2.5 whitespace-nowrap">
+                        {t.table.joined}
+                      </th>
+                      <th className="text-right rtl:text-left px-4 py-2.5 whitespace-nowrap">
+                        {t.table.actions}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {paginatedUsers.map((u) => (
+                      <tr key={u._id || u.id || u.email} className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="shrink-0">
+                              <UserAvatar
+                                name={u.fullName}
+                                image={u.profileImage}
+                                role={u.role}
+                                size="md"
                               />
                             </div>
-                            {isVerificationPending(u) && (
-                              <div className="mt-1">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                  <Clock size={11} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                                  <span>{i18nT('adminUsersPage.verificationRequested', 'Verified Profile review requested')}</span>
-                                </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="truncate text-sm font-semibold text-gray-900 dark:text-white" title={u.fullName}>
+                                  <UserDisplayName user={u} size="sm" />
+                                </div>
+                                {u.verifiedProfileStatus === 'VERIFIED' && (
+                                  <VerifiedBadge isVerified={true} size="xs" />
+                                )}
+                                <PlatformIcon
+                                  platform={u.lastPlatform}
+                                  lastActiveAt={u.lastActiveAt}
+                                  appVersion={u.lastAppVersion}
+                                  lang={i18n.resolvedLanguage || 'en'}
+                                />
                               </div>
-                            )}
-                            {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
-                              <p className="text-xs font-semibold text-purple-600 mt-0.5">Root Admin</p>
-                            )}
-                            {u.subscription?.isPremium && (
-                              <p className="text-xs font-semibold text-amber-600 mt-0.5">
-                                {t.premiumActive} · {new Date(u.subscription.endDate).toLocaleDateString(i18n.resolvedLanguage || 'en')}
-                              </p>
-                            )}
-                            {u.phone && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                <Phone size={10} />
-                                {u.phone}
-                              </p>
-                            )}
+                              {isVerificationPending(u) && (
+                                <div className="mt-0.5">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                    <Clock size={10} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <span className="truncate">{i18nT('adminUsersPage.verificationRequested', 'Verified Profile review requested')}</span>
+                                  </span>
+                                </div>
+                              )}
+                              {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
+                                <p className="text-[11px] font-semibold text-purple-600 mt-0.5">Root Admin</p>
+                              )}
+                              {u.subscription?.isPremium && (
+                                <p className="text-[11px] font-semibold text-amber-600 mt-0.5 truncate">
+                                  {t.premiumActive} · {new Date(u.subscription.endDate).toLocaleDateString(i18n.resolvedLanguage || 'en')}
+                                </p>
+                              )}
+                              {u.phone && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 truncate" title={u.phone}>
+                                  <Phone size={10} className="shrink-0" />
+                                  <span className="truncate">{u.phone}</span>
+                                </p>
+                              )}
+                            </div>
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 min-w-0" title={u.email}>
+                            <Mail size={13} className="shrink-0 text-gray-400" />
+                            <span className="truncate font-mono">{u.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <RoleBadge role={u.role} label={t.roles[u.role] || t.roles.USER} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <StatusBadge isSuspended={isSuspendedAccount(u)} isVerified={u.emailVerified === true} labels={t.status} />
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString(i18n.resolvedLanguage || 'en') : t.notAvailable}
+                        </td>
+                        <td className="px-4 py-3 text-right rtl:text-left whitespace-nowrap">
+                          <UserActionsMenu
+                            user={u}
+                            currentAdminId={user?.id || user?._id || authUser?.id || authUser?._id}
+                            isRootAdmin={isRootAdmin}
+                            onViewProfile={handleViewProfile}
+                            onChangeRole={openRoleChangeModal}
+                            onResetPassword={openPasswordModal}
+                            onSuspend={handleSuspend}
+                            onActivate={handleActivate}
+                            labels={t.menu}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View (< md) */}
+              <div className="block md:hidden divide-y divide-gray-200 dark:divide-gray-700 border-t border-gray-200 dark:border-gray-700">
+                {paginatedUsers.map((u) => (
+                  <div key={u._id || u.id || u.email} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <UserAvatar
+                          name={u.fullName}
+                          image={u.profileImage}
+                          role={u.role}
+                          size="md"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="truncate text-sm font-semibold text-gray-900 dark:text-white" title={u.fullName}>
+                              <UserDisplayName user={u} size="sm" />
+                            </div>
+                            {u.verifiedProfileStatus === 'VERIFIED' && (
+                              <VerifiedBadge isVerified={true} size="xs" />
+                            )}
+                            <PlatformIcon
+                              platform={u.lastPlatform}
+                              lastActiveAt={u.lastActiveAt}
+                              appVersion={u.lastAppVersion}
+                              lang={i18n.resolvedLanguage || 'en'}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={u.email}>
+                            <Mail size={12} className="shrink-0" />
+                            <span className="truncate font-mono">{u.email}</span>
+                          </div>
+                          {u.phone && (
+                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={u.phone}>
+                              <Phone size={12} className="shrink-0" />
+                              <span className="truncate">{u.phone}</span>
+                            </div>
+                          )}
+                          {String(u.email || '').trim().toLowerCase() === 'emad@homelyserv.com' && (
+                            <p className="text-xs font-semibold text-purple-600 mt-0.5">Root Admin</p>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Mail size={14} />
-                          {u.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <RoleBadge role={u.role} label={t.roles[u.role] || t.roles.USER} />
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusBadge isSuspended={isSuspendedAccount(u)} isVerified={u.emailVerified === true} labels={t.status} />
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString(i18n.resolvedLanguage || 'en') : t.notAvailable}
-                      </td>
-                      <td className="px-6 py-4 text-right">
+                      </div>
+
+                      {/* Actions Menu Trigger */}
+                      <div className="shrink-0">
                         <UserActionsMenu
                           user={u}
                           currentAdminId={user?.id || user?._id || authUser?.id || authUser?._id}
@@ -944,12 +1048,102 @@ const AdminUsers = () => {
                           onActivate={handleActivate}
                           labels={t.menu}
                         />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-gray-700/60 text-xs">
+                      <div className="flex items-center gap-2">
+                        <RoleBadge role={u.role} label={t.roles[u.role] || t.roles.USER} />
+                        <StatusBadge isSuspended={isSuspendedAccount(u)} isVerified={u.emailVerified === true} labels={t.status} />
+                      </div>
+                      <div className="text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{t.table.joined}: </span>
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString(i18n.resolvedLanguage || 'en') : t.notAvailable}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Footer */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 text-sm">
+                {/* Page Size & Summary Count */}
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <span>Rows per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 cursor-pointer"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {i18nT('registrationGeography.pageOf', {
+                      page: currentPage,
+                      totalPages,
+                      total: totalItems,
+                      defaultValue: `Page ${currentPage} of ${totalPages} · ${totalItems} users`
+                    })}
+                  </span>
+                </div>
+
+                {/* Page Navigation Buttons */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    title={i18nT('registrationGeography.previous', 'Previous')}
+                  >
+                    <ChevronLeft size={14} className="rtl:rotate-180" />
+                    <span className="hidden sm:inline">{i18nT('registrationGeography.previous', 'Previous')}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {pageNumbers.map((p, idx) => {
+                      if (p === '...') {
+                        return (
+                          <span key={`ellipsis-${idx}`} className="px-2 py-1 text-xs text-gray-400 dark:text-gray-500 select-none">
+                            …
+                          </span>
+                        );
+                      }
+                      const isCurrent = p === currentPage;
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                            isCurrent
+                              ? 'bg-yellow-500 text-black shadow-xs font-bold'
+                              : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    title={i18nT('registrationGeography.next', 'Next')}
+                  >
+                    <span className="hidden sm:inline">{i18nT('registrationGeography.next', 'Next')}</span>
+                    <ChevronRight size={14} className="rtl:rotate-180" />
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>

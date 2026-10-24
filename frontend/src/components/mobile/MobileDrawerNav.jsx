@@ -4,26 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../layout/DashboardContext';
 import { getDisplayName, getRoleLabel } from '../../utils/userDisplay';
 import { UserDisplayName } from '../users';
-import {
-  X,
-  LogOut,
-  Home,
-  Search,
-  FileText,
-  User,
-  Star,
-  MessageCircle,
-  CreditCard,
-  Settings,
-  HelpCircle,
-  PlusCircle,
-  Briefcase,
-  Users,
-  Headphones,
-  Globe,
-  Heart,
-  GraduationCap
-} from 'lucide-react';
+import { getCanonicalNavItems } from '../../config/navigationConfig';
+import { X, LogOut } from 'lucide-react';
 
 const MobileDrawerNav = () => {
   const { t } = useTranslation();
@@ -35,6 +17,10 @@ const MobileDrawerNav = () => {
   const role = (authUser?.role || '').toUpperCase();
   const isWorker = role === 'WORKER';
   const isEmployer = role === 'EMPLOYER';
+  const isDoctor = role === 'DOCTOR';
+  const isTeacher = role === 'TEACHER';
+  const isStudent = role === 'STUDENT';
+  const isAdmin = role === 'ADMIN';
   const isSupport = role === 'SUPPORT';
   const isSupportHelper = role === 'SUPPORT_HELPER';
 
@@ -45,71 +31,80 @@ const MobileDrawerNav = () => {
     return null;
   };
 
-  const workerItems = [
-    { to: '/worker-dashboard', icon: Home, label: t('workerSidebar.dashboard') },
-    { to: '/worker-jobs', icon: Search, label: t('workerSidebar.findJobs') },
-    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
-    { to: '/worker-applications', icon: FileText, label: t('workerSidebar.myApplications') },
-    { to: '/parent-students', icon: GraduationCap, label: t('parentStudents.pageTitle') || 'My Children' },
-    { to: '/worker-profile', icon: User, label: t('workerSidebar.myProfile') },
-    { to: '/worker/offers', icon: Star, label: t('workerSidebar.myOffers') },
-    { to: '/worker-messages', icon: MessageCircle, label: t('workerSidebar.messages') },
-    { to: '/worker-complaints', icon: FileText, label: t('workerSidebar.complaints') },
-    { to: '/worker-payment', icon: CreditCard, label: t('workerSidebar.payment') },
-    { to: '/subscription', icon: Star, label: t('workerSidebar.premium') },
-    { to: '/worker-settings', icon: Settings, label: t('workerSidebar.settings') },
-    { to: '/help', icon: HelpCircle, label: t('workerSidebar.help') },
-  ];
+  const canonicalItems = getCanonicalNavItems(role, t, { authUser });
 
-  const employerItems = [
-    { to: '/employer-dashboard', icon: Home, label: t('employerSidebar.dashboard') },
-    { to: '/employer-post-job', icon: PlusCircle, label: t('employerSidebar.postJob') },
-    { to: '/medical-profile', icon: Heart, label: t('medicalProfile.pageTitle') || 'My Medical Profile' },
-    { to: '/employer-jobs', icon: Briefcase, label: t('employerSidebar.myJobs') },
-    { to: '/employer-profile', icon: User, label: t('employerSidebar.myProfile') },
-    { to: '/my-hires', icon: Users, label: t('employerSidebar.myHires') },
-    { to: '/parent-students', icon: GraduationCap, label: t('parentStudents.pageTitle') || 'My Children' },
-    { to: '/employer-search', icon: Search, label: t('employerSidebar.searchWorkers') },
-    { to: '/employer-messages', icon: MessageCircle, label: t('employerSidebar.messages') },
-    { to: '/employer-complaints', icon: FileText, label: t('employerSidebar.complaints') },
-    { to: '/employer-payments', icon: CreditCard, label: t('employerSidebar.payment') },
-    { to: '/subscription', icon: Star, label: t('employerSidebar.premium') },
-    { to: '/employer-settings', icon: Settings, label: t('employerSidebar.settings') },
-    { to: '/help', icon: HelpCircle, label: t('employerSidebar.help') },
-  ];
-
-  const supportItems = [
-    { to: '/support-dashboard', icon: Home, label: t('supportNavigation.dashboard') },
-    { to: '/support-users', icon: Users, label: t('supportNavigation.users') },
-    { to: '/support-complaints', icon: FileText, label: t('supportNavigation.complaints') },
-    { to: '/support-messages', icon: MessageCircle, label: t('supportNavigation.messages') },
-    { to: '/support-live-support', icon: Headphones, label: t('publicSupport.liveSupport') },
-    { to: '/support-registration-geography', icon: Globe, label: t('supportNavigation.registrationGeography') || t('adminSidebar.registrationGeography') },
-    { to: '/support-profile', icon: User, label: t('supportNavigation.profile') },
-    { to: '/support-settings', icon: Settings, label: t('supportNavigation.settings') },
-  ];
-
-  const supHelpItems = [
-    { to: '/sup-help', icon: Home, label: t('supHelpNavigation.dashboard') },
-    { to: '/sup-help/users', icon: Users, label: t('supHelpNavigation.users') || t('supportNavigation.users') },
-    { to: '/sup-help/messages', icon: MessageCircle, label: t('supportNavigation.messages') },
-    { to: '/sup-help/complaints', icon: FileText, label: t('supportNavigation.complaints') },
-    { to: '/sup-help/live-support', icon: Headphones, label: t('publicSupport.liveSupport') },
-    { to: '/sup-help/settings', icon: Settings, label: t('supHelpNavigation.settings') || t('supportNavigation.settings') },
-  ];
-
-  const items = isWorker ? workerItems : isEmployer ? employerItems : isSupport ? supportItems : isSupportHelper ? supHelpItems : [];
-
-  const isActive = (path) => {
-    if (location.pathname === path) return true;
-    if (path === '/worker-jobs' && location.pathname.startsWith('/job/')) return true;
-    if (path === '/employer-jobs' && location.pathname.startsWith('/job/')) return true;
+  const isActive = (item) => {
+    if (location.pathname === item.path) return true;
+    if (item.matchPrefixPath && location.pathname.startsWith(item.matchPrefixPath)) return true;
+    if (item.matchPrefix && location.pathname.startsWith(`${item.path}/`)) return true;
     return false;
   };
 
-  const activeBg = isWorker ? 'bg-red-50 dark:bg-red-900/20' : isEmployer ? 'bg-teal-50 dark:bg-teal-900/20' : isSupport ? 'bg-green-50 dark:bg-green-900/20' : isSupportHelper ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-100 dark:bg-gray-700';
-  const activeText = isWorker ? 'text-red-600 dark:text-red-400' : isEmployer ? 'text-teal-600 dark:text-teal-400' : isSupport ? 'text-green-600 dark:text-green-400' : isSupportHelper ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-white';
-  const hoverBg = isWorker ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : isEmployer ? 'hover:bg-teal-50 dark:hover:bg-teal-900/20' : isSupport ? 'hover:bg-green-50 dark:hover:bg-green-900/20' : isSupportHelper ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700';
+  const getThemeClasses = () => {
+    if (isWorker) {
+      return {
+        activeBg: 'bg-red-50 dark:bg-red-900/20',
+        activeText: 'text-red-600 dark:text-red-400',
+        hoverBg: 'hover:bg-red-50 dark:hover:bg-red-900/20',
+        avatarBg: 'bg-gradient-to-br from-red-500 to-red-600',
+        logoutText: 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
+      };
+    }
+    if (isEmployer) {
+      return {
+        activeBg: 'bg-teal-50 dark:bg-teal-900/20',
+        activeText: 'text-teal-600 dark:text-teal-400',
+        hoverBg: 'hover:bg-teal-50 dark:hover:bg-teal-900/20',
+        avatarBg: 'bg-gradient-to-br from-teal-500 to-teal-600',
+        logoutText: 'text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20',
+      };
+    }
+    if (isAdmin) {
+      return {
+        activeBg: 'bg-yellow-50 dark:bg-yellow-900/20',
+        activeText: 'text-yellow-600 dark:text-yellow-400',
+        hoverBg: 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
+        avatarBg: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
+        logoutText: 'text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
+      };
+    }
+    if (isDoctor || isTeacher || isStudent) {
+      return {
+        activeBg: 'bg-red-50 dark:bg-red-900/20',
+        activeText: 'text-red-600 dark:text-red-400',
+        hoverBg: 'hover:bg-red-50 dark:hover:bg-red-900/20',
+        avatarBg: 'bg-gradient-to-br from-red-500 to-red-600',
+        logoutText: 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20',
+      };
+    }
+    if (isSupport) {
+      return {
+        activeBg: 'bg-green-50 dark:bg-green-900/20',
+        activeText: 'text-green-600 dark:text-green-400',
+        hoverBg: 'hover:bg-green-50 dark:hover:bg-green-900/20',
+        avatarBg: 'bg-gradient-to-br from-green-500 to-green-600',
+        logoutText: 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20',
+      };
+    }
+    if (isSupportHelper) {
+      return {
+        activeBg: 'bg-red-50 dark:bg-red-900/20',
+        activeText: 'text-red-600 dark:text-red-400',
+        hoverBg: 'hover:bg-red-50 dark:hover:bg-red-900/20',
+        avatarBg: 'bg-gradient-to-br from-red-500 to-red-600',
+        logoutText: 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
+      };
+    }
+    return {
+      activeBg: 'bg-gray-100 dark:bg-gray-700',
+      activeText: 'text-gray-800 dark:text-white',
+      hoverBg: 'hover:bg-gray-100 dark:hover:bg-gray-700',
+      avatarBg: 'bg-gray-500',
+      logoutText: 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700',
+    };
+  };
+
+  const theme = getThemeClasses();
 
   return (
     <>
@@ -125,9 +120,7 @@ const MobileDrawerNav = () => {
       }`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden ${
-              isWorker ? 'bg-gradient-to-br from-red-500 to-red-600' : isEmployer ? 'bg-gradient-to-br from-teal-500 to-teal-600' : isSupport ? 'bg-gradient-to-br from-green-500 to-green-600' : isSupportHelper ? 'bg-gradient-to-br from-red-500 to-red-600' : 'bg-gray-500'
-            }`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden ${theme.avatarBg}`}>
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -152,21 +145,25 @@ const MobileDrawerNav = () => {
         </div>
 
         <nav className="p-4 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 180px)' }}>
-          {items.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={toggleMobileMenu}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                isActive(item.to) ? `${activeBg} ${activeText}` : `text-gray-700 dark:text-gray-200 ${hoverBg}`
-              }`}
-            >
-              <span className={isActive(item.to) ? '' : 'text-gray-500 dark:text-gray-400'}>
-                <item.icon size={20} />
-              </span>
-              <span className="text-base font-medium">{item.label}</span>
-            </Link>
-          ))}
+          {canonicalItems.map((item) => {
+            const active = isActive(item);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.id || item.path}
+                to={item.path}
+                onClick={toggleMobileMenu}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                  active ? `${theme.activeBg} ${theme.activeText}` : `text-gray-700 dark:text-gray-200 ${theme.hoverBg}`
+                }`}
+              >
+                <span className={active ? '' : 'text-gray-500 dark:text-gray-400'}>
+                  <Icon size={20} />
+                </span>
+                <span className="text-base font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
@@ -175,16 +172,12 @@ const MobileDrawerNav = () => {
               toggleMobileMenu();
               handleLogout();
             }}
-            className={`flex items-center gap-3 px-4 py-3 w-full rounded-lg transition ${
-              isWorker ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' :
-              isEmployer ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' :
-              isSupport ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20' :
-              isSupportHelper ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' :
-              'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 w-full rounded-lg transition ${theme.logoutText}`}
           >
             <LogOut size={20} />
-            <span className="text-base font-medium">{isSupport ? t('supportNavigation.logout') : isSupportHelper ? t('supHelpNavigation.logout') : t('workerSidebar.logout')}</span>
+            <span className="text-base font-medium">
+              {isSupport ? t('supportNavigation.logout') : isSupportHelper ? t('supHelpNavigation.logout') : t('workerSidebar.logout')}
+            </span>
           </button>
         </div>
       </div>

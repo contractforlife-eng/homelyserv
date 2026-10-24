@@ -186,7 +186,7 @@ const DashboardLayout = ({
         />
 
         {isWorkerEmployer || isAdmin || isDoctor || isTeacher || isStudent ? <MobileHeader /> : null}
-        {isWorkerEmployer && <MobileDrawerNav />}
+        {authUser && <MobileDrawerNav />}
         {isWorkerEmployer && <MobileBottomNav />}
 
         <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
