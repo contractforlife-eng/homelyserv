@@ -173,7 +173,8 @@ export const completeNativeTrackingActivation = async (req, res) => {
   // STAGE 1: SAFE SHADOW ATTESTATION PROBE
   // If pilot is enabled for this student, run isolated cryptographic verification
   // and log sanitized diagnostics without altering state or consuming the challenge.
-  if (isShadowPilotEligible(studentId)) {
+  const shadowEligible = isShadowPilotEligible(studentId);
+  if (shadowEligible) {
     try {
       const [settingForShadow, guardianActive] = await Promise.all([
         StudentTrackingSetting.findOne({ studentUserId: studentId })
@@ -190,8 +191,24 @@ export const completeNativeTrackingActivation = async (req, res) => {
         nativeProofVersion: NATIVE_PROOF_VERSION
       });
     } catch {
-      // Shadow execution errors must never disrupt the response or leak exceptions
+      // Emit strictly sanitized diagnostic on unhandled exception without leaking error messages or sensitive payload data
+      console.log(JSON.stringify({
+        tag: 'SHADOW_ATTESTATION_AUDIT',
+        timestamp: new Date().toISOString(),
+        stage: 'SHADOW_SETUP',
+        outcome: 'FAIL',
+        code: 'SHADOW_EXECUTION_ERROR'
+      }));
     }
+  } else if (process.env.SHADOW_ATTESTATION_PILOT_ENABLED === 'true') {
+    // Audit when shadow pilot is globally enabled but the student is not in the whitelist
+    console.log(JSON.stringify({
+      tag: 'SHADOW_ATTESTATION_AUDIT',
+      timestamp: new Date().toISOString(),
+      stage: 'SCOPING_CHECK',
+      outcome: 'SKIPPED',
+      code: 'STUDENT_NOT_IN_PILOT_LIST'
+    }));
   }
 
   if (process.env.NODE_ENV === 'production') {

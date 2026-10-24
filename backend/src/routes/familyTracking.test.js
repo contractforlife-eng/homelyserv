@@ -370,6 +370,127 @@ test('Family Tracking route security and activation state machine', async (t) =>
     delete process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS;
   });
 
+  await t.test('shadow attestation observability emits sanitized audit events for eligible, ineligible, and exception paths', async () => {
+    const oldEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    delete process.env.ENABLE_ANDROID_KEY_ATTESTATION;
+
+    const loggedLines = [];
+    const originalLog = console.log;
+    console.log = (msg) => {
+      loggedLines.push(msg);
+    };
+
+    try {
+      // Setup base tracking setting awaiting native verification
+      const challengeToken = 'obs-challenge-token-123';
+      trackingSetting = {
+        ...trackingSetting,
+        activationState: 'AWAITING_NATIVE_VERIFICATION',
+        ageSafeguardStatus: 'VERIFIED_ADULT',
+        collectionEnabled: false,
+        activationChallengeHash: crypto.createHash('sha256').update(challengeToken).digest('hex'),
+        activationChallengeExpiresAt: new Date(Date.now() + 600000),
+        nativePublicKey: null
+      };
+
+      // 1. Ineligible Student Path: Pilot ENABLED, but studentId is NOT in whitelist
+      process.env.SHADOW_ATTESTATION_PILOT_ENABLED = 'true';
+      process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS = 'other_student_id_only';
+      loggedLines.length = 0;
+
+      const resIneligible = await request(
+        'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+        authHeader(STUDENT_ID, 'STUDENT'),
+        {
+          proofVersion: 'android-native-v1',
+          challenge: challengeToken,
+          permissionStatus: 'GRANTED_BACKGROUND',
+          publicKey: 'pubKey',
+          signature: 'sig',
+          certificateChain: ['certA', 'certB']
+        }
+      );
+      assert.equal(resIneligible.status, 503);
+      assert.equal(trackingSetting.activationState, 'AWAITING_NATIVE_VERIFICATION');
+      assert.equal(trackingSetting.collectionEnabled, false);
+
+      const ineligibleAudit = loggedLines.map(l => { try { return JSON.parse(l); } catch { return null; } }).find(e => e?.code === 'STUDENT_NOT_IN_PILOT_LIST');
+      assert.ok(ineligibleAudit, 'Must emit STUDENT_NOT_IN_PILOT_LIST audit event');
+      assert.equal(ineligibleAudit.tag, 'SHADOW_ATTESTATION_AUDIT');
+      assert.equal(ineligibleAudit.stage, 'SCOPING_CHECK');
+      assert.equal(ineligibleAudit.outcome, 'SKIPPED');
+
+      // 2. Eligible Student Path: Student IS in whitelist
+      process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS = STUDENT_ID;
+      loggedLines.length = 0;
+
+      const resEligible = await request(
+        'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+        authHeader(STUDENT_ID, 'STUDENT'),
+        {
+          proofVersion: 'android-native-v1',
+          challenge: challengeToken,
+          permissionStatus: 'GRANTED_BACKGROUND',
+          publicKey: 'pubKey',
+          signature: 'sig',
+          certificateChain: ['certA', 'certB']
+        }
+      );
+      assert.equal(resEligible.status, 503);
+      assert.equal(trackingSetting.activationState, 'AWAITING_NATIVE_VERIFICATION');
+      assert.equal(trackingSetting.collectionEnabled, false);
+
+      const eligibleAudit = loggedLines.map(l => { try { return JSON.parse(l); } catch { return null; } }).find(e => e?.tag === 'SHADOW_ATTESTATION_AUDIT' && e?.correlationId);
+      assert.ok(eligibleAudit, 'Must execute shadow verifier and emit audit event with correlationId');
+
+      // 3. Exception Path: When setup or execution throws an unhandled error inside try/catch
+      const originalFindOne = StudentTrackingSetting.findOne;
+      StudentTrackingSetting.findOne = () => {
+        throw new Error('Database connection unexpectedly interrupted with sensitive details: mongo://secret:pass@cluster');
+      };
+      loggedLines.length = 0;
+
+      const resException = await request(
+        'POST', `/api/parent-students/${STUDENT_ID}/tracking/activation/native-complete`,
+        authHeader(STUDENT_ID, 'STUDENT'),
+        {
+          proofVersion: 'android-native-v1',
+          challenge: challengeToken,
+          permissionStatus: 'GRANTED_BACKGROUND',
+          publicKey: 'pubKey',
+          signature: 'sig',
+          certificateChain: ['certA', 'certB']
+        }
+      );
+      // Restore findOne immediately
+      StudentTrackingSetting.findOne = originalFindOne;
+
+      assert.equal(resException.status, 503);
+      assert.equal(trackingSetting.activationState, 'AWAITING_NATIVE_VERIFICATION');
+      assert.equal(trackingSetting.collectionEnabled, false);
+
+      const errorAudit = loggedLines.map(l => { try { return JSON.parse(l); } catch { return null; } }).find(e => e?.code === 'SHADOW_EXECUTION_ERROR');
+      assert.ok(errorAudit, 'Must emit SHADOW_EXECUTION_ERROR audit event');
+      assert.equal(errorAudit.tag, 'SHADOW_ATTESTATION_AUDIT');
+      assert.equal(errorAudit.stage, 'SHADOW_SETUP');
+      assert.equal(errorAudit.outcome, 'FAIL');
+
+      // Ensure no sensitive data, error messages, or connection strings were logged
+      const combinedLogs = loggedLines.join(' ');
+      assert.ok(!combinedLogs.includes('sensitive details'), 'Must not leak exception message');
+      assert.ok(!combinedLogs.includes('secret:pass'), 'Must not leak credentials');
+      assert.ok(!combinedLogs.includes(STUDENT_ID), 'Must not leak student ID');
+      assert.ok(!combinedLogs.includes(challengeToken), 'Must not leak challenge token');
+    } finally {
+      console.log = originalLog;
+      process.env.NODE_ENV = oldEnv;
+      delete process.env.ENABLE_ANDROID_KEY_ATTESTATION;
+      delete process.env.SHADOW_ATTESTATION_PILOT_ENABLED;
+      delete process.env.SHADOW_ATTESTATION_PILOT_STUDENT_IDS;
+    }
+  });
+
   await t.test('idempotent observation UUID prevents retry duplicates', async () => {
     trackingSetting = {
       ...trackingSetting,
