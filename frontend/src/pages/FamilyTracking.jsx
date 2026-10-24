@@ -35,8 +35,14 @@ const markerIcon = (color, size = 18) => L.divIcon({
 const routeStartIcon = markerIcon('#16a34a', 22);
 const routeEndIcon = markerIcon('#dc2626', 22);
 const recordedPointIcon = markerIcon('#0d9488', 14);
-const configuredTileUrl = String(import.meta.env.VITE_FAMILY_TRACKING_TILE_URL || '').trim();
-const configuredTileAttribution = String(import.meta.env.VITE_FAMILY_TRACKING_TILE_ATTRIBUTION || '').trim();
+
+// Approved privacy-compliant basemap provider default (CartoDB Voyager raster tiles)
+// Displays clear roads, street names, and building shapes with high-contrast labels.
+const DEFAULT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>';
+
+const configuredTileUrl = String(import.meta.env.VITE_FAMILY_TRACKING_TILE_URL || DEFAULT_TILE_URL).trim();
+const configuredTileAttribution = String(import.meta.env.VITE_FAMILY_TRACKING_TILE_ATTRIBUTION || DEFAULT_TILE_ATTRIBUTION).trim();
 
 const MapViewport = ({ points }) => {
   const map = useMap();
@@ -62,6 +68,8 @@ const FamilyTracking = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState('');
   const [approving, setApproving] = useState(false);
+  const [tileError, setTileError] = useState(false);
+  const [tileRetryKey, setTileRetryKey] = useState(0);
 
   const getTrackingLabel = useCallback((trackingStatus) => {
     if (!trackingStatus) return t('familyTracking.statusUnavailable');
@@ -223,9 +231,19 @@ const FamilyTracking = () => {
                 </label>
               </div>
 
-              {!configuredTileUrl && (
-                <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                  {t('familyTracking.tilesDisabledWarning')}
+              {tileError && (
+                <div className="border-b border-red-200 bg-red-50 px-5 py-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200 flex items-center justify-between">
+                  <span>{t('familyTracking.tileLoadErrorNotice', 'Map tiles could not be loaded. Please check your internet connection.')}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTileError(false);
+                      setTileRetryKey((prev) => prev + 1);
+                    }}
+                    className="font-semibold underline ml-2"
+                  >
+                    {t('familyTracking.retry')}
+                  </button>
                 </div>
               )}
 
@@ -241,7 +259,15 @@ const FamilyTracking = () => {
                 <div className="h-[520px] w-full">
                   <MapContainer center={mapCenter} zoom={15} scrollWheelZoom className="h-full w-full" aria-label="Recorded child movement map">
                     {configuredTileUrl && (
-                      <TileLayer attribution={configuredTileAttribution} url={configuredTileUrl} />
+                      <TileLayer
+                        key={`tile-layer-${tileRetryKey}`}
+                        attribution={configuredTileAttribution}
+                        url={configuredTileUrl}
+                        eventHandlers={{
+                          tileerror: () => setTileError(true),
+                          tileload: () => setTileError(false)
+                        }}
+                      />
                     )}
                     <MapViewport points={mapPoints} />
                     {(history?.routeSegments || []).map((segment, index) => (

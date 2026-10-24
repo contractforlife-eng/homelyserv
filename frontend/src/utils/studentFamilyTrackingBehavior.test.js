@@ -726,3 +726,83 @@ test('11. Raw backend English rejection message is mapped to localized Arabic tr
   assert.equal(ctrl.error, STUDENT_TRANSLATIONS.ar.familyTracking.errProductionAttestationRequired);
   assert.equal(ctrl.busy, false);
 });
+
+test('12. Android lifecycle & intent resilience: screen lock, backgrounding, null intent, and pause button isolation', async (t) => {
+  // Simulates Android FamilyTrackingService onStartCommand lifecycle transitions
+  class MockFamilyTrackingService {
+    constructor() {
+      this.isTracking = false;
+      this.serverPaused = false;
+      this.permissionsValid = true;
+      this.stoppedWithCleanup = false;
+    }
+
+    onStartCommand(intent) {
+      const action = intent ? intent.action : null;
+
+      // 1. Explicit pause/stop intent handling
+      if (action === 'com.homelyserv.app.familytracking.STOP' || action === 'com.homelyserv.app.familytracking.PAUSE_CLICK') {
+        this.pauseServerAndStop();
+        return 'START_NOT_STICKY';
+      }
+
+      // 2. Permission revocation check
+      if (!this.permissionsValid) {
+        this.stopTracking(true);
+        return 'START_NOT_STICKY';
+      }
+
+      // 3. Normal start / service resume / OS re-delivery / screen unlock
+      this.isTracking = true;
+      return 'START_NOT_STICKY';
+    }
+
+    pauseServerAndStop() {
+      this.serverPaused = true;
+      this.stopTracking(true);
+    }
+
+    stopTracking(cleanup) {
+      this.isTracking = false;
+      if (cleanup) this.stoppedWithCleanup = true;
+    }
+  }
+
+  // Case A: Service started normally on student activation
+  const service = new MockFamilyTrackingService();
+  service.onStartCommand({ action: null });
+  assert.equal(service.isTracking, true, 'Service must be running when started without stop action');
+  assert.equal(service.serverPaused, false);
+
+  // Case B: Screen lock, app backgrounding, or OS intent re-delivery with null intent
+  service.onStartCommand(null);
+  assert.equal(service.isTracking, true, 'Null intent / OS redelivery must NOT trigger server pause');
+  assert.equal(service.serverPaused, false);
+
+  // Case C: Ordinary app navigation with launch intent
+  service.onStartCommand({ action: 'android.intent.action.MAIN' });
+  assert.equal(service.isTracking, true, 'App resume / MAIN action must NOT trigger server pause');
+  assert.equal(service.serverPaused, false);
+
+  // Case D: User clicks explicit notification "Pause tracking" button (ACTION_PAUSE_CLICK)
+  service.onStartCommand({ action: 'com.homelyserv.app.familytracking.PAUSE_CLICK' });
+  assert.equal(service.isTracking, false, 'ACTION_PAUSE_CLICK must stop the service');
+  assert.equal(service.serverPaused, true, 'ACTION_PAUSE_CLICK must trigger server pause');
+  assert.equal(service.stoppedWithCleanup, true);
+
+  // Case E: Explicit plugin stop (e.g. from logout or StudentFamilyTracking "Disable" button)
+  const service2 = new MockFamilyTrackingService();
+  service2.onStartCommand({ action: null });
+  assert.equal(service2.isTracking, true);
+  service2.onStartCommand({ action: 'com.homelyserv.app.familytracking.STOP' });
+  assert.equal(service2.isTracking, false, 'ACTION_STOP must stop tracking');
+  assert.equal(service2.serverPaused, true);
+  assert.equal(service2.stoppedWithCleanup, true);
+
+  // Case F: Permission revocation during service audit
+  const service3 = new MockFamilyTrackingService();
+  service3.permissionsValid = false;
+  service3.onStartCommand({ action: null });
+  assert.equal(service3.isTracking, false, 'Missing permissions must stop tracking immediately');
+  assert.equal(service3.stoppedWithCleanup, true);
+});

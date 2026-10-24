@@ -53,6 +53,7 @@ import java.util.concurrent.Executors;
 public class FamilyTrackingService extends Service implements SensorEventListener {
     static final String PREFS = "homelyserv_family_tracking";
     static final String ACTION_STOP = "com.homelyserv.app.familytracking.STOP";
+    static final String ACTION_PAUSE_CLICK = "com.homelyserv.app.familytracking.PAUSE_CLICK";
     private static final String CHANNEL_ID = "family_tracking_active";
     private static final int NOTIFICATION_ID = 8104;
 
@@ -95,7 +96,7 @@ public class FamilyTrackingService extends Service implements SensorEventListene
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_STOP.equals(intent.getAction())) {
+        if (intent != null && (ACTION_STOP.equals(intent.getAction()) || ACTION_PAUSE_CLICK.equals(intent.getAction()))) {
             networkExecutor.execute(this::pauseServerAndStop);
             return START_NOT_STICKY;
         }
@@ -265,7 +266,7 @@ public class FamilyTrackingService extends Service implements SensorEventListene
     private Notification notification() {
         Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
         PendingIntent content = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        Intent stopIntent = new Intent(this, FamilyTrackingService.class).setAction(ACTION_STOP);
+        Intent stopIntent = new Intent(this, FamilyTrackingService.class).setAction(ACTION_PAUSE_CLICK);
         PendingIntent stop = PendingIntent.getService(this, 1, stopIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
