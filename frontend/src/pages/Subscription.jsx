@@ -76,13 +76,15 @@ const Subscription = () => {
   const isDoctor = rawRole === 'DOCTOR';
   const isTeacher = rawRole === 'TEACHER';
   const isEmployer = rawRole === 'EMPLOYER';
-  const isWorker = !isDoctor && !isTeacher && !isEmployer;
-  const userRole = isDoctor ? 'DOCTOR' : isTeacher ? 'TEACHER' : isEmployer ? 'EMPLOYER' : 'WORKER';
+  const isStudent = rawRole === 'STUDENT';
+  const isWorker = !isDoctor && !isTeacher && !isEmployer && !isStudent;
+  const userRole = isDoctor ? 'DOCTOR' : isTeacher ? 'TEACHER' : isEmployer ? 'EMPLOYER' : isStudent ? 'STUDENT' : 'WORKER';
 
   const getRolePremiumTitle = () => {
     if (isDoctor) return t('subscriptionPage.roles.doctorPremium', 'Doctor Premium');
     if (isTeacher) return t('subscriptionPage.roles.teacherPremium', 'Teacher Premium');
     if (isEmployer) return t('subscriptionPage.roles.employerPremium', 'Employer Premium');
+    if (isStudent) return t('subscriptionPage.roles.studentPremium', 'Student Plan');
     return t('subscriptionPage.roles.workerPremium', 'Worker Premium');
   };
 
@@ -396,7 +398,7 @@ const Subscription = () => {
         city: 'Cairo',
         items: [
           {
-            name: isDoctor ? 'Doctor Premium Subscription' : isEmployer ? 'Employer Premium Subscription' : 'Worker Premium Subscription',
+            name: isDoctor ? 'Doctor Premium Subscription' : isTeacher ? 'Teacher Premium Subscription' : isEmployer ? 'Employer Premium Subscription' : 'Worker Premium Subscription',
             amount: price,
             quantity: 1
           }
@@ -567,6 +569,10 @@ const Subscription = () => {
       navigate('/teacher-dashboard');
       return;
     }
+    if (isStudent) {
+      navigate('/student-dashboard');
+      return;
+    }
     navigate(isEmployer ? '/employer-dashboard' : '/worker-dashboard');
   };
 
@@ -733,9 +739,13 @@ const Subscription = () => {
                     <div className="space-y-4">
                       {((isDoctor
                         ? t('subscriptionPage.pricing.doctorFeatures', { returnObjects: true })
-                        : isEmployer
-                          ? t('subscriptionPage.pricing.employerFeatures', { returnObjects: true })
-                          : t('subscriptionPage.pricing.workerFeatures', { returnObjects: true })
+                        : isTeacher
+                          ? t('subscriptionPage.pricing.teacherFeatures', { returnObjects: true })
+                          : isEmployer
+                            ? t('subscriptionPage.pricing.employerFeatures', { returnObjects: true })
+                            : isStudent
+                              ? t('subscriptionPage.pricing.studentFeatures', { returnObjects: true })
+                              : t('subscriptionPage.pricing.workerFeatures', { returnObjects: true })
                       ) || []).map((feature, index) => (
                         <div key={index} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                           <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
