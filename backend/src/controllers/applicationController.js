@@ -698,7 +698,12 @@ export const getMyApplications = async (req, res) => {
 
       let cvUrl = null;
       if (rawDoc.cvPublicId) {
-        cvUrl = generateSignedDocumentUrl(rawDoc.cvPublicId, rawDoc.cvResourceType || 'image');
+        cvUrl = generateSignedDocumentUrl(
+          rawDoc.cvPublicId,
+          rawDoc.cvResourceType || 'image',
+          3600,
+          rawDoc.cvOriginalName || null
+        );
       }
 
       return {
@@ -869,7 +874,12 @@ export const getJobApplications = async (req, res) => {
       const attendanceDetails = rawDoc.attendanceDetails || null;
       let cvUrl = null;
       if (rawDoc.cvPublicId) {
-        cvUrl = generateSignedDocumentUrl(rawDoc.cvPublicId, rawDoc.cvResourceType || 'image');
+        cvUrl = generateSignedDocumentUrl(
+          rawDoc.cvPublicId,
+          rawDoc.cvResourceType || 'image',
+          3600,
+          rawDoc.cvOriginalName || null
+        );
       }
 
       return {

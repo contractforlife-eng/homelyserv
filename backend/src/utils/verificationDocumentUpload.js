@@ -56,32 +56,54 @@ export const uploadVerificationDocument = async (fileBuffer, { mimetype = 'image
 };
 
 /**
- * Generates a signed, time-limited URL for secure review by Admin/Staff.
+ * Generates a signed, time-limited URL for secure review by Admin/Staff or Employer.
  * Raw URLs are NEVER public or permanent.
  *
  * @param {string} publicId - Cloudinary authenticated public ID
  * @param {string} resourceType - 'image' or 'raw'
  * @param {number} expiresInSeconds - Default 3600 (1 hour)
+ * @param {string|null} [downloadFilename=null] - Optional original filename to preserve on download via attachment flag
  * @returns {string} Signed URL
  */
-export const generateSignedDocumentUrl = (publicId, resourceType = 'image', expiresInSeconds = 3600) => {
+export const generateSignedDocumentUrl = (publicId, resourceType = 'image', expiresInSeconds = 3600, downloadFilename = null) => {
   if (!publicId) return null;
   const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
-  
+
+  let sanitizedAttachment = null;
+  if (downloadFilename && typeof downloadFilename === 'string') {
+    const fallbackExt = resourceType === 'raw' ? 'pdf' : 'jpg';
+    let clean = downloadFilename
+      .replace(/[/\\?%*:|"<>]/g, '_')
+      .replace(/[\x00-\x1f\x80-\x9f]/g, '')
+      .trim();
+    const dotIdx = clean.lastIndexOf('.');
+    if (dotIdx === -1 || dotIdx === clean.length - 1) {
+      clean = clean.replace(/\.+$/, '') + '.' + fallbackExt;
+    }
+    sanitizedAttachment = clean;
+  }
+
   try {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME || cloudinary.config().cloud_name;
     if (!cloudName) {
       // In unconfigured or test environments, return a safe placeholder signed URL structure
       return `https://res.cloudinary.com/homelyserv/${resourceType || 'image'}/authenticated/s--test--/v1/${publicId}`;
     }
-    return cloudinary.url(publicId, {
+    const urlOptions = {
       type: 'authenticated',
       sign_url: true,
       expires_at: expiresAt,
       resource_type: resourceType || 'image',
       cloud_name: cloudName,
-      ...(resourceType === 'image' ? { transformation: [{ width: 1600, height: 1600, crop: 'limit' }] } : {})
-    });
+      secure: true,
+      ...(resourceType === 'image' && !sanitizedAttachment ? { transformation: [{ width: 1600, height: 1600, crop: 'limit' }] } : {})
+    };
+
+    if (sanitizedAttachment) {
+      urlOptions.flags = `attachment:${sanitizedAttachment}`;
+    }
+
+    return cloudinary.url(publicId, urlOptions);
   } catch (error) {
     console.error('Failed to generate signed document URL:', error);
     return null;

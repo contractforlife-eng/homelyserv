@@ -487,12 +487,13 @@ const EmployerJobApplicants = () => {
                                 href={app.cvUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                download={app.cvOriginalName || 'Applicant_CV.pdf'}
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800"
                               >
                                 <FileText size={14} />
                                 <span>{t('jobApplicants.viewCv', { defaultValue: 'View Applicant CV' })}</span>
                                 {app.cvOriginalName && (
-                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 max-w-[120px] truncate">({app.cvOriginalName})</span>
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 max-w-[180px] truncate" title={app.cvOriginalName}>({app.cvOriginalName})</span>
                                 )}
                               </a>
                             </div>
