@@ -106,25 +106,22 @@ test('PHASE: Doctor Premium pricing & context Suite', async (t) => {
     }
   });
 
-  await t.test('8. Doctor cannot message a stranger without a clinical relationship', async () => {
-    const DoctorAppointment = (await import('../models/DoctorAppointment.js')).default;
-    const originalCount = DoctorAppointment.countDocuments;
+  await t.test('8. Doctor cannot message an unlinked student under safeguarding rules', async () => {
     const originalUserFindUnique = prisma.user.findUnique;
 
-    DoctorAppointment.countDocuments = async () => 0;
     prisma.user.findUnique = async ({ where }) => (
-      where.id === '507f1f77bcf86cd7994390ff' ? { id: '507f1f77bcf86cd7994390ff', role: 'WORKER' } : null
+      where.id === '507f1f77bcf86cd7994390ff' ? { id: '507f1f77bcf86cd7994390ff', role: 'STUDENT' } : null
     );
 
     try {
-      const stranger = await authorizePaidChatRelationship({
+      const studentTarget = await authorizePaidChatRelationship({
         senderId: DOCTOR_ID,
         senderRole: 'DOCTOR',
         recipientId: '507f1f77bcf86cd7994390ff'
       });
-      assert.equal(stranger.allowed, false);
+      assert.equal(studentTarget.allowed, false);
+      assert.equal(studentTarget.required, true);
     } finally {
-      DoctorAppointment.countDocuments = originalCount;
       prisma.user.findUnique = originalUserFindUnique;
     }
   });

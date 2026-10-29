@@ -144,32 +144,22 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
   // requirement: the doctor-patient relationship itself is the authorization.
   // This must run BEFORE the customer-roles gate because DOCTOR is neither a
   // customer nor staff role and would otherwise be blanket-allowed.
+  // Doctor / Teacher messaging.
+  // Gating requirements based on payment, contracts, bookings, or clinical
+  // appointments have been removed: authenticated professionals can exchange messages
+  // with eligible adult roles (WORKER, EMPLOYER, USER/PATIENT, etc.).
+  // Staff routing remains exempt and allowed.
+  // Child/student safeguarding rules remain strictly enforced.
   if (PROFESSIONAL_USER_ROLES.has(role)) {
     const recipientParty = await resolveUserParty(recipientId, db);
     if (!recipientParty) return { required: false, allowed: false };
-    // Doctor / Teacher -> HomelyServ staff (Co-Admin / Sup-Admin / Sup-Help) is a
-    // platform-support channel, not a clinical relationship or worker hire. The recipient
-    // role above comes from the database, so a crafted request cannot
-    // present a WORKER/EMPLOYER as staff.
     if (DOCTOR_STAFF_ROLES.has(recipientParty.role)) {
       return { required: false, allowed: true };
     }
-    // Doctor / Teacher -> Worker: requires paid recruitment commission on an active Hire
-    // owned by this Doctor/Teacher for this Worker. Reuses the canonical canContactWorker().
-    if (recipientParty.role === 'WORKER') {
-      const workerProfile = recipientParty.profileId
-        ? { id: recipientParty.profileId }
-        : await db.workerProfile.findUnique({
-            where: { userId: recipientParty.userId },
-            select: { id: true }
-          });
-      const allowed = workerProfile
-        ? await canContactWorker(senderId, workerProfile.id, db)
-        : false;
-      return { required: true, allowed };
+    if (recipientParty.role === 'STUDENT') {
+      return { required: true, allowed: false };
     }
-    const hasRelationship = await hasValidDoctorPatientRelationship(senderId, recipientParty.userId);
-    return { required: false, allowed: hasRelationship };
+    return { required: false, allowed: true };
   }
 
   if (role === 'STUDENT') {
@@ -204,35 +194,20 @@ export const authorizePaidChatRelationship = async ({ senderId, senderRole, reci
     return { required: false, allowed: true };
   }
 
+  // Employer <-> Worker and Patient <-> Doctor messaging.
+  // Gating requirements based on commission payment, contracts, offers, or bookings
+  // have been removed: authenticated users can start private conversations across roles.
+  // Note: Phone and email details remain guarded separately by canContactWorker.
   if (role === 'EMPLOYER' && recipient.role === 'WORKER') {
-    const workerProfile = recipient.profileId
-      ? { id: recipient.profileId }
-      : await db.workerProfile.findUnique({
-          where: { userId: recipient.userId },
-          select: { id: true }
-        });
-    const allowed = workerProfile
-      ? await canContactWorker(senderId, workerProfile.id, db)
-      : false;
-    return { required: true, allowed };
+    return { required: false, allowed: true };
   }
 
   if (role === 'WORKER' && recipient.role === 'EMPLOYER') {
-    const workerProfile = await db.workerProfile.findUnique({
-      where: { userId: String(senderId) },
-      select: { id: true }
-    });
-    const allowed = workerProfile
-      ? await canContactWorker(recipient.userId, workerProfile.id, db)
-      : false;
-    return { required: true, allowed };
+    return { required: false, allowed: true };
   }
 
-  // Patient -> doctor sends fall through to the default customer treatment
-  // after the recipient-side doctor relationship check below.
   if (recipient.role === 'DOCTOR') {
-    const hasRelationship = await hasValidDoctorPatientRelationship(recipient.userId, senderId);
-    return { required: false, allowed: hasRelationship };
+    return { required: false, allowed: true };
   }
 
   return { required: false, allowed: true };

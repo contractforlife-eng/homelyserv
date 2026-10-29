@@ -159,10 +159,10 @@ const WorkerProfileView = () => {
   };
 
   const handleStartChat = () => {
-    // Save conversation data and navigate to messages
     if (worker) {
+      const targetWorkerId = worker.userId || worker.id;
       const conversationData = {
-        workerId: worker.id || worker.email,
+        workerId: targetWorkerId,
         workerName: worker.fullName,
         workerEmail: worker.email,
         employerId: user?.id || user?.email,
@@ -171,11 +171,21 @@ const WorkerProfileView = () => {
       };
       localStorage.setItem('homelyserv_active_conversation', JSON.stringify(conversationData));
 
-      // Navigate to messages page
+      // Navigate to messages page with state for auto-opening
       if (user?.role === 'EMPLOYER') {
-        navigate('/employer-messages');
+        navigate('/employer-messages', {
+          state: {
+            workerId: targetWorkerId,
+            workerName: worker.fullName
+          }
+        });
       } else {
-        navigate('/messages');
+        navigate('/messages', {
+          state: {
+            recipientId: targetWorkerId,
+            recipientName: worker.fullName
+          }
+        });
       }
     }
     setShowContactOptions(false);
@@ -543,19 +553,14 @@ const WorkerProfileView = () => {
               )}
               <button
                 onClick={handleStartChat}
-                disabled={!contactUnlocked}
-                className={`w-full p-3 border rounded-lg transition flex items-center gap-3 ${
-                  contactUnlocked
-                    ? 'border-gray-200 dark:border-gray-700 hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300'
-                    : 'border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed'
-                }`}
-                title={contactUnlocked ? t('workerProfile.startChat') : t('workerProfile.contactLocked')}
+                className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
+                title={t('workerProfile.startChat')}
               >
-                <MessageCircle size={20} className={contactUnlocked ? 'text-teal-600' : 'text-gray-400'} />
+                <MessageCircle size={20} className="text-teal-600" />
                 <div className="text-left">
-                  <p className={`font-medium ${contactUnlocked ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{t('workerProfile.startChat')}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{t('workerProfile.startChat')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {contactUnlocked ? t('workerProfile.startConversation', { worker: worker.fullName }) : t('workerProfile.contactLocked')}
+                    {t('workerProfile.startConversation', { worker: worker.fullName })}
                   </p>
                 </div>
               </button>
