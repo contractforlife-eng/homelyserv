@@ -9,7 +9,7 @@ import RolePageHeader from '../components/common/RolePageHeader';
 import {
   ArrowLeft, Loader2, MapPin, Briefcase, Star, Calendar, Eye,
   ThumbsUp, XCircle, Send, Crown, Activity, Users, X, CheckCircle,
-  Clock, Building
+  Clock, Building, FileText, Check
 } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
