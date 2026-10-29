@@ -111,6 +111,38 @@ export const generateSignedDocumentUrl = (publicId, resourceType = 'image', expi
 };
 
 /**
+ * Generates an authenticated, signed download URL for private documents using Cloudinary's private_download_url.
+ *
+ * @param {string} publicId
+ * @param {string} resourceType - 'raw' or 'image'
+ * @param {string} format - 'pdf', 'png', 'jpg', etc.
+ * @param {number} expiresInSeconds
+ * @returns {string|null}
+ */
+export const generatePrivateDownloadUrl = (publicId, resourceType = 'raw', format = '', expiresInSeconds = 3600) => {
+  if (!publicId) return null;
+  const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  try {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || cloudinary.config().cloud_name;
+    const apiKey = process.env.CLOUDINARY_API_KEY || cloudinary.config().api_key;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET || cloudinary.config().api_secret;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      return `https://res.cloudinary.com/homelyserv/${resourceType || 'raw'}/authenticated/s--test--/v1/${publicId}`;
+    }
+
+    return cloudinary.utils.private_download_url(publicId, format || '', {
+      resource_type: resourceType || 'raw',
+      type: 'authenticated',
+      expires_at: expiresAt,
+    });
+  } catch (error) {
+    console.error('Failed to generate private download URL:', error);
+    return null;
+  }
+};
+
+/**
  * Deletes a verification document from storage.
  *
  * @param {string} publicId
@@ -132,5 +164,6 @@ export default {
   documentUpload,
   uploadVerificationDocument,
   generateSignedDocumentUrl,
+  generatePrivateDownloadUrl,
   deleteVerificationDocument
 };

@@ -16,8 +16,9 @@ import {
   getJobApplications,
   updateApplicationStatus,
   sendOfferFromApplication,
+  downloadApplicationCv,
 } from '../controllers/applicationController.js';
-import { requireWorker, requireEmployer, optionalAuthenticate } from '../middleware/auth.js';
+import { requireWorker, requireEmployer, optionalAuthenticate, authenticate } from '../middleware/auth.js';
 import { documentUpload } from '../utils/verificationDocumentUpload.js';
 
 const router = express.Router();
@@ -47,6 +48,10 @@ router.post('/:id/apply-public', optionalAuthenticate, uploadCvOptional, applyPu
 // ============================================================
 // WORKER routes
 // ============================================================
+
+// GET /api/jobs/applications/:id/cv — Authenticated CV download for employer or worker
+// (defined before /:id routes so "applications" is not captured as a job id)
+router.get('/applications/:id/cv', authenticate, downloadApplicationCv);
 
 // GET /api/jobs/applications/mine — Worker's own applications
 // (defined before /:id routes so "applications" is not captured as a job id)

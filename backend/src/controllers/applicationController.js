@@ -26,7 +26,12 @@ import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { sendPushToUser } from '../services/fcmService.js';
 import User from '../models/User.js';
 import { getPublicVerification } from '../services/profileVerificationService.js';
-import { uploadVerificationDocument, generateSignedDocumentUrl, deleteVerificationDocument } from '../utils/verificationDocumentUpload.js';
+import {
+  uploadVerificationDocument,
+  generateSignedDocumentUrl,
+  generatePrivateDownloadUrl,
+  deleteVerificationDocument
+} from '../utils/verificationDocumentUpload.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/jwtSecret.js';
@@ -209,17 +214,30 @@ const getRawJobApplicationsMap = async (applicationIds) => {
 };
 
 
+// Helper: safely fix UTF-8 filename encoding if multer parsed non-ASCII as latin1
+const fixMulterEncoding = (filename) => {
+  if (!filename || typeof filename !== 'string') return '';
+  try {
+    const fixed = Buffer.from(filename, 'latin1').toString('utf8');
+    if (fixed && !fixed.includes('\uFFFD') && /[\u0600-\u06FF\u0400-\u04FF\u00C0-\u024F]/.test(fixed)) {
+      return fixed;
+    }
+  } catch {}
+  return filename;
+};
+
 // Helper: process optional CV file upload using the existing Cloudinary upload mechanism
 const processCvUpload = async (file) => {
   if (!file || !file.buffer) return null;
+  const decodedOriginalName = fixMulterEncoding(file.originalname) || file.originalname || 'cv.pdf';
   const uploadResult = await uploadVerificationDocument(file.buffer, {
     mimetype: file.mimetype,
-    originalFilename: file.originalname || 'cv.pdf',
+    originalFilename: decodedOriginalName,
   });
   return {
     cvPublicId: uploadResult.public_id,
     cvResourceType: uploadResult.resource_type || 'image',
-    cvOriginalName: file.originalname || 'CV',
+    cvOriginalName: decodedOriginalName,
   };
 };
 
@@ -697,13 +715,9 @@ export const getMyApplications = async (req, res) => {
       const attendanceDetails = rawDoc.attendanceDetails || null;
 
       let cvUrl = null;
+      const cvOriginalName = fixMulterEncoding(rawDoc.cvOriginalName) || rawDoc.cvOriginalName || null;
       if (rawDoc.cvPublicId) {
-        cvUrl = generateSignedDocumentUrl(
-          rawDoc.cvPublicId,
-          rawDoc.cvResourceType || 'image',
-          3600,
-          rawDoc.cvOriginalName || null
-        );
+        cvUrl = `/api/jobs/applications/${app.id}/cv`;
       }
 
       return {
@@ -711,7 +725,7 @@ export const getMyApplications = async (req, res) => {
         decision,
         attendanceDetails,
         cvUrl,
-        cvOriginalName: rawDoc.cvOriginalName || null,
+        cvOriginalName,
         jobPost: jobPost
           ? {
               id: jobPost.id,
@@ -873,13 +887,9 @@ export const getJobApplications = async (req, res) => {
       const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
       const attendanceDetails = rawDoc.attendanceDetails || null;
       let cvUrl = null;
+      const cvOriginalName = fixMulterEncoding(rawDoc.cvOriginalName) || rawDoc.cvOriginalName || null;
       if (rawDoc.cvPublicId) {
-        cvUrl = generateSignedDocumentUrl(
-          rawDoc.cvPublicId,
-          rawDoc.cvResourceType || 'image',
-          3600,
-          rawDoc.cvOriginalName || null
-        );
+        cvUrl = `/api/jobs/applications/${app.id}/cv`;
       }
 
       return {
@@ -889,7 +899,7 @@ export const getJobApplications = async (req, res) => {
         decision,
         attendanceDetails,
         cvUrl,
-        cvOriginalName: rawDoc.cvOriginalName || null,
+        cvOriginalName,
         coverMessage: app.coverMessage,
         offerId: app.offerId || null,
         createdAt: app.createdAt,
@@ -1441,5 +1451,109 @@ export const sendOfferFromApplication = async (req, res) => {
       return res.status(400).json({ success: false, message: error.message });
     }
     res.status(500).json({ success: false, message: 'Failed to send offer' });
+  }
+};
+
+// ============================================================
+// G) GET /api/jobs/applications/:id/cv — Authenticated CV download endpoint
+// Accessible by:
+//  - The employer who posted the job
+//  - The worker who submitted the application
+// ============================================================
+export const downloadApplicationCv = async (req, res) => {
+  try {
+    const applicationId = String(req.params.id);
+    if (!isValidObjectId(applicationId)) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+    });
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    // Authorization check: must be either the employer or the applicant worker
+    const userId = String(req.userId);
+    const isEmployerOwner = String(application.employerId) === userId;
+    const isWorkerOwner = String(application.workerId) === userId;
+
+    if (!isEmployerOwner && !isWorkerOwner) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Retrieve raw MongoDB document to read cvPublicId, cvResourceType, cvOriginalName
+    const rawResult = await prisma.$runCommandRaw({
+      find: 'job_applications',
+      filter: { _id: { $oid: applicationId } },
+      limit: 1,
+    });
+    const rawDoc = rawResult?.cursor?.firstBatch?.[0];
+    if (!rawDoc || !rawDoc.cvPublicId) {
+      return res.status(404).json({ success: false, message: 'No CV found for this application' });
+    }
+
+    const { cvPublicId, cvResourceType = 'image' } = rawDoc;
+    const rawOriginalName = fixMulterEncoding(rawDoc.cvOriginalName) || rawDoc.cvOriginalName || 'Applicant_CV.pdf';
+
+    // Derive extension and format
+    let ext = (rawOriginalName.split('.').pop() || '').toLowerCase();
+    if (!ext || ext === rawOriginalName.toLowerCase()) {
+      ext = cvResourceType === 'raw' ? 'pdf' : 'jpg';
+    }
+
+    // Format for Cloudinary download
+    const format = ext;
+    const downloadUrl = generatePrivateDownloadUrl(cvPublicId, cvResourceType, format, 3600);
+    if (!downloadUrl) {
+      return res.status(500).json({ success: false, message: 'Failed to generate download URL' });
+    }
+
+    // Fetch from Cloudinary upstream
+    const upstreamRes = await fetch(downloadUrl);
+    if (!upstreamRes.ok) {
+      console.error(`CV upstream fetch failed (${upstreamRes.status}):`, downloadUrl);
+      return res.status(502).json({
+        success: false,
+        message: 'Failed to retrieve document from storage provider'
+      });
+    }
+
+    // Determine correct Content-Type
+    const mimeMap = {
+      pdf: 'application/pdf',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      webp: 'image/webp',
+    };
+    const contentType = mimeMap[ext] || upstreamRes.headers.get('content-type') || 'application/octet-stream';
+
+    // Ensure safe filename with extension
+    let safeFilename = rawOriginalName.replace(/[/\\?%*:|"<>]/g, '_').trim();
+    if (!safeFilename.toLowerCase().endsWith(`.${ext}`)) {
+      safeFilename += `.${ext}`;
+    }
+
+    // RFC 5987 / RFC 6266 Content-Disposition header with UTF-8 encoding support
+    const asciiFallback = safeFilename.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '\\"');
+    const utf8Encoded = encodeURIComponent(safeFilename).replace(/['()]/g, escape).replace(/\*/g, '%2A');
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
+
+    const contentLength = upstreamRes.headers.get('content-length');
+    if (contentLength) {
+      res.setHeader('Content-Length', contentLength);
+    }
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+
+    // Stream response
+    const arrayBuffer = await upstreamRes.arrayBuffer();
+    return res.end(Buffer.from(arrayBuffer));
+  } catch (error) {
+    console.error('Applications: CV download error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error while downloading CV' });
   }
 };

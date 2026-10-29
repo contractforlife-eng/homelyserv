@@ -53,6 +53,47 @@ const EmployerJobApplicants = () => {
   const [interviewNotes, setInterviewNotes] = useState('');
   const [acceptError, setAcceptError] = useState('');
   const [acceptLoading, setAcceptLoading] = useState(false);
+  const [downloadingCvId, setDownloadingCvId] = useState(null);
+  const [cvDownloadError, setCvDownloadError] = useState(null);
+
+  const handleDownloadCv = async (app) => {
+    if (!app || downloadingCvId) return;
+    setDownloadingCvId(app.id);
+    setCvDownloadError(null);
+    try {
+      const response = await jobService.downloadApplicationCv(app.id);
+      const disposition = response.headers?.['content-disposition'] || response.headers?.get?.('content-disposition') || '';
+
+      let filename = app.cvOriginalName || 'Applicant_CV.pdf';
+      const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      const standardMatch = disposition.match(/filename="?([^";]+)"?/i);
+
+      if (utf8Match && utf8Match[1]) {
+        try { filename = decodeURIComponent(utf8Match[1]); } catch {}
+      } else if (standardMatch && standardMatch[1]) {
+        filename = standardMatch[1].trim();
+      }
+
+      const blob = new Blob([response.data], {
+        type: response.headers?.['content-type'] || response.headers?.get?.('content-type') || 'application/pdf',
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Failed to download CV:', err);
+      const message = err.response?.data?.message || t('jobApplicants.cvDownloadError', { defaultValue: 'Failed to download CV. Please try again.' });
+      setCvDownloadError({ appId: app.id, message });
+    } finally {
+      setDownloadingCvId(null);
+    }
+  };
 
   const loadApplicants = useCallback(async () => {
     setLoading(true);
@@ -483,19 +524,27 @@ const EmployerJobApplicants = () => {
 
                           {app.cvUrl && (
                             <div className="mt-2">
-                              <a
-                                href={app.cvUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download={app.cvOriginalName || 'Applicant_CV.pdf'}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800"
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadCv(app)}
+                                disabled={downloadingCvId === app.id}
+                                className="inline-flex items-center whitespace-nowrap gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800 disabled:opacity-50"
                               >
-                                <FileText size={14} />
-                                <span>{t('jobApplicants.viewCv', { defaultValue: 'View Applicant CV' })}</span>
-                                {app.cvOriginalName && (
-                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 max-w-[180px] truncate" title={app.cvOriginalName}>({app.cvOriginalName})</span>
+                                {downloadingCvId === app.id ? (
+                                  <Loader2 size={14} className="animate-spin flex-shrink-0" />
+                                ) : (
+                                  <FileText size={14} className="flex-shrink-0" />
                                 )}
-                              </a>
+                                <span className="whitespace-nowrap">{t('jobApplicants.viewCv', { defaultValue: 'View Applicant CV' })}</span>
+                                {app.cvOriginalName && (
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 max-w-[200px] truncate" title={app.cvOriginalName}>({app.cvOriginalName})</span>
+                                )}
+                              </button>
+                              {cvDownloadError && cvDownloadError.appId === app.id && (
+                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
+                                  {cvDownloadError.message}
+                                </p>
+                              )}
                             </div>
                           )}
 

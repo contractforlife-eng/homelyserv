@@ -112,6 +112,14 @@ export const sendOfferFromApplication = async (applicationId, agreedSalary) => {
   return response.data;
 };
 
+// Download CV file for an application (authenticated)
+export const downloadApplicationCv = async (applicationId) => {
+  const response = await api.get(`/api/jobs/applications/${applicationId}/cv`, {
+    responseType: 'blob',
+  });
+  return response;
+};
+
 const jobService = {
   createJob,
   getJobs,
@@ -128,6 +136,7 @@ const jobService = {
   getJobApplications,
   updateApplicationStatus,
   sendOfferFromApplication,
+  downloadApplicationCv,
 };
 
 export default jobService;
