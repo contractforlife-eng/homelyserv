@@ -18,6 +18,10 @@ import {
   getEffectiveJobStatus,
   isJobWorkerEligible,
 } from '../services/jobLifecycle.js';
+import {
+  isSocialCrawler,
+  renderJobPreviewHtml,
+} from '../utils/jobSocialPreview.js';
 
 const router = express.Router();
 
@@ -342,7 +346,7 @@ const validateJobPayload = (body, { partial = false, existingJob = null } = {}) 
 // Batched lookup of EmployerProfile + User. Never exposes
 // email / phone / security / payment / internal fields.
 // ============================================================
-const safeEmployerInfo = async (employerId) => {
+export const safeEmployerInfo = async (employerId) => {
   try {
     const [user, profile] = await Promise.all([
       prisma.user.findUnique({
@@ -486,6 +490,98 @@ router.get('/', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Jobs: browse error:', error);
     res.status(500).json({ success: false, message: 'Failed to load jobs' });
+  }
+});
+
+// ============================================================
+// GET /api/jobs/public/:id — Public view for shared job links.
+// Accessible to unauthenticated visitors. Returns public job
+// details and safe employer info (display name, city, company).
+// Clearly indicates if the job is closed, expired, or unavailable.
+// If requested by a social crawler (WhatsApp, Facebook, Twitter,
+// etc.) or if text/html is requested, returns rich Open Graph HTML.
+// ============================================================
+router.get('/public/:id', async (req, res) => {
+  try {
+    const userAgent = req.headers['user-agent'] || '';
+    const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
+    const isCrawler = isSocialCrawler(userAgent) || acceptsHtml;
+
+    if (!isValidObjectId(req.params.id)) {
+      if (isCrawler) {
+        const lang = req.query.lang || 'ar';
+        const html = renderJobPreviewHtml({ job: null, employer: null, lang });
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(404).send(html);
+      }
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    const job = await prisma.jobPost.findUnique({ where: { id: String(req.params.id) } });
+
+    if (!job) {
+      if (isCrawler) {
+        const lang = req.query.lang || 'ar';
+        const html = renderJobPreviewHtml({ job: null, employer: null, lang });
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(404).send(html);
+      }
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    const now = new Date();
+    const effectiveStatus = getEffectiveJobStatus(job, now);
+    const eligible = isJobWorkerEligible(job, now);
+
+    const employer = await safeEmployerInfo(job.employerId);
+    const activePremiumIds = await getActivePremiumUserIds([job.employerId]);
+    employer.isPremium = activePremiumIds.has(String(job.employerId));
+
+    if (isCrawler) {
+      const lang = req.query.lang || 'ar';
+      const html = renderJobPreviewHtml({ job, employer, lang });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Vary', 'User-Agent, Accept');
+      // Per release safety: disable CDN and browser caching entirely for the crawler HTML response
+      // to eliminate any risk of edge cache poisoning or cross-contamination between crawlers and visitors.
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      return res.status(200).send(html);
+    }
+
+    res.json({
+      success: true,
+      job: {
+        id: job.id,
+        jobTitle: job.jobTitle,
+        description: job.description,
+        location: job.location,
+        salaryMin: job.salaryMin,
+        salaryMax: job.salaryMax,
+        compensationCurrency: job.compensationCurrency,
+        employmentType: job.employmentType,
+        contractType: job.contractType,
+        workingHoursPerDay: job.workingHoursPerDay,
+        workingDaysPerWeek: job.workingDaysPerWeek,
+        weeklyDaysOff: job.weeklyDaysOff,
+        workStartTime: job.workStartTime,
+        workEndTime: job.workEndTime,
+        employmentStartDate: job.employmentStartDate,
+        deadline: job.deadline,
+        expiresAt: job.expiresAt,
+        requirements: job.requirements || [],
+        benefits: job.benefits || [],
+        isUrgent: job.isUrgent,
+        isFeatured: job.isFeatured,
+        status: effectiveStatus,
+        isAcceptingApplications: eligible,
+        createdAt: job.createdAt,
+        employer,
+      },
+    });
+  } catch (error) {
+    console.error('Jobs: public detail error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load job' });
   }
 });
 

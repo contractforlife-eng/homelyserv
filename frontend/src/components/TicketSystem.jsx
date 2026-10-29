@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
 import { UserDisplayName } from './users';
+import { trustedComplaintAttachments } from '../utils/complaintAttachments';
 
 // ============================================================
 // THEME CONFIG
@@ -254,13 +255,14 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
             const updated = [...prev.attachments];
             const previewIndex = updated.indexOf(previews[i]);
             if (previewIndex !== -1) {
-              updated[previewIndex] = data.url;
+              updated[previewIndex] = { url: data.url, publicId: data.publicId, receipt: data.receipt };
             }
             return { ...prev, attachments: updated };
           });
         }
       } catch (error) {
         console.error('❌ Error uploading attachment:', error);
+        setNewTicket(prev => ({ ...prev, attachments: prev.attachments.filter(value => value !== previews[i]) }));
         setNotification({ type: 'error', text: t('ticketSystem.attachmentUploadFailed') });
       }
     }
@@ -448,7 +450,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 </p>
                 {msg.attachments && msg.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {msg.attachments.map((url, i) => (
+                    {trustedComplaintAttachments(msg.attachments).map((url, i) => (
                       <a
                         key={i}
                         href={url}
@@ -628,9 +630,9 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 />
                 {newTicket.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {newTicket.attachments.map((url, index) => (
+                    {newTicket.attachments.map((attachment, index) => (
                       <div key={index} className="relative">
-                        <img src={url} alt={t('ticketSystem.attachmentAlt', { number: index + 1 })} className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
+                        <img src={typeof attachment === 'string' ? attachment : attachment.url} alt={t('ticketSystem.attachmentAlt', { number: index + 1 })} className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                         <button
                           type="button"
                           onClick={() => removeAttachment(index)}
@@ -902,7 +904,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 </h4>
                 {selected.attachments && selected.attachments.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {selected.attachments.map((url, index) => (
+                    {trustedComplaintAttachments(selected.attachments).map((url, index) => (
                       <a
                         key={index}
                         href={url}

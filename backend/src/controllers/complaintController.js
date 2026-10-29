@@ -26,6 +26,11 @@ import {
   isValidObjectId,
 } from '../utils/staffIdentity.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
+import {
+  authorizeComplaintAttachments,
+  getAuthorizedComplaintAttachmentUrls,
+  validateComplaintAttachments,
+} from '../utils/complaintAttachments.js';
 
 // ============================================================
 // CONSTANTS
@@ -76,8 +81,9 @@ const generateTicketNumber = async () => {
  * Replies are stored as structured records and are visible to
  * all authorized participants (user, support, admin).
  */
-const addComplaintReply = async (complaintId, { authorId, authorName, authorRole, message, attachments = [] }) => {
+const addComplaintReply = async (complaintId, { authorId, authorName, authorRole, message, attachmentAuthorization }) => {
   try {
+    const verifiedAttachments = getAuthorizedComplaintAttachmentUrls(attachmentAuthorization);
     return await prisma.complaintReply.create({
       data: {
         complaintId,
@@ -85,7 +91,7 @@ const addComplaintReply = async (complaintId, { authorId, authorName, authorRole
         authorName,
         authorRole,
         message,
-        attachments: Array.isArray(attachments) ? attachments.filter(Boolean) : [],
+        attachments: verifiedAttachments,
       },
     });
   } catch (error) {
@@ -306,6 +312,10 @@ export const createComplaint = async (req, res) => {
     const validCategory = COMPLAINT_CATEGORIES.includes(category);
     const validPriority = COMPLAINT_PRIORITIES.includes(priority);
 
+    let verifiedAttachments;
+    try { verifiedAttachments = await validateComplaintAttachments(attachments, userId); }
+    catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+
     const ticketNumber = await generateTicketNumber();
 
     const complaint = await prisma.complaint.create({
@@ -317,7 +327,7 @@ export const createComplaint = async (req, res) => {
         category: validCategory ? category : 'Other',
         priority: validPriority ? priority : 'Medium',
         status: 'NEW',
-        attachments: Array.isArray(attachments) ? attachments.filter(Boolean) : [],
+        attachments: verifiedAttachments,
         // Optional Phase 2 linkage: populate only when valid ObjectIds are
         // provided so a dispute ticket traces back to the hire/earning.
         hireId: hireId && /^[0-9a-fA-F]{24}$/.test(String(hireId)) ? String(hireId) : null,
@@ -691,12 +701,15 @@ export const getComplaintById = async (req, res) => {
 export const userReply = async (req, res) => {
   try {
     const { id } = req.params;
-    const { message } = req.body;
+    const { message, attachments = [] } = req.body;
     const userId = String(req.userId);
 
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
+    let attachmentAuthorization;
+    try { attachmentAuthorization = await authorizeComplaintAttachments(attachments, userId); }
+    catch (error) { return res.status(400).json({ success: false, message: error.message }); }
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -749,6 +762,7 @@ export const userReply = async (req, res) => {
       authorName: complaint.User?.fullName || 'User',
       authorRole: req.userRole || 'USER',
       message: message.trim(),
+      attachmentAuthorization,
     });
 
     // Timeline
@@ -1664,12 +1678,15 @@ export const supportReply = async (req, res) => {
     if (!isValidObjectId(id)) {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
-    const { message } = req.body;
+    const { message, attachments = [] } = req.body;
     const supportId = String(req.userId);
 
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
+    let attachmentAuthorization;
+    try { attachmentAuthorization = await authorizeComplaintAttachments(attachments, supportId); }
+    catch (error) { return res.status(400).json({ success: false, message: error.message }); }
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -1720,6 +1737,7 @@ export const supportReply = async (req, res) => {
       authorName: actor.name,
       authorRole: actor.role,
       message: message.trim(),
+      attachmentAuthorization,
     });
 
     // Timeline
@@ -2295,12 +2313,15 @@ export const adminGetComplaint = async (req, res) => {
 export const adminReply = async (req, res) => {
   try {
     const { id } = req.params;
-    const { message } = req.body;
+    const { message, attachments = [] } = req.body;
     const adminId = String(req.userId);
 
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
+    let attachmentAuthorization;
+    try { attachmentAuthorization = await authorizeComplaintAttachments(attachments, adminId); }
+    catch (error) { return res.status(400).json({ success: false, message: error.message }); }
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -2340,6 +2361,7 @@ export const adminReply = async (req, res) => {
       authorName: actor.name,
       authorRole: actor.role,
       message: message.trim(),
+      attachmentAuthorization,
     });
 
     // Timeline
@@ -3650,13 +3672,16 @@ export const supHelpReply = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    const { message } = req.body;
+    const { message, attachments = [] } = req.body;
     const helperId = String(req.userId);
     const isAdmin = req.userRole === 'ADMIN';
 
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
+    let attachmentAuthorization;
+    try { attachmentAuthorization = await authorizeComplaintAttachments(attachments, helperId); }
+    catch (error) { return res.status(400).json({ success: false, message: error.message }); }
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -3707,6 +3732,7 @@ export const supHelpReply = async (req, res) => {
       authorName: actor.name,
       authorRole: actor.role,
       message: message.trim(),
+      attachmentAuthorization,
     });
 
     await addTimeline(id, {

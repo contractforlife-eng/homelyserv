@@ -475,11 +475,7 @@ function App() {
       />
       <Route 
         path="/job/:id" 
-        element={
-          <ProtectedRoute>
-            <JobDetails />
-          </ProtectedRoute>
-        } 
+        element={<JobDetails />}
       />
       <Route 
         path="/help" 

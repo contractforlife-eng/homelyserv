@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
 import { UserAvatar, UserDisplayName } from '../../components/users';
+import { trustedComplaintAttachments } from '../../utils/complaintAttachments';
 
 const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
   const { t: i18nT, i18n } = useTranslation();
@@ -599,7 +600,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                 </p>
                 {msg.attachments && msg.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {msg.attachments.map((url, i) => (
+                    {trustedComplaintAttachments(msg.attachments).map((url, i) => (
                       <a
                         key={i}
                         href={url}
@@ -1030,7 +1031,7 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                 </h4>
                 {selectedComplaint.attachments && selectedComplaint.attachments.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {selectedComplaint.attachments.map((url, index) => (
+                    {trustedComplaintAttachments(selectedComplaint.attachments).map((url, index) => (
                       <a key={index} href={url} target="_blank" rel="noopener noreferrer"
                         className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition">
                         <img src={url} alt={i18nT('supportComplaintsPage.attachmentAlt', { number: index + 1 })} className="w-full h-full object-cover" />

@@ -18,11 +18,39 @@
       "destination": "/download.html"
     },
     {
+      "source": "/job/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Discordbot|Slackbot|vkShare|W3C_Validator|bingbot|Googlebot|Baiduspider).*"
+        }
+      ],
+      "destination": "https://adventurous-grace-production-1b38.up.railway.app/api/jobs/public/:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }
   ],
   "headers": [
+    {
+      "source": "/job/(.*)",
+      "headers": [
+        {
+          "key": "Vary",
+          "value": "User-Agent, Accept"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        }
+      ]
+    },
     {
       "source": "/downloads/android/(.*)\\.apk",
       "headers": [
@@ -75,4 +103,3 @@
     "VITE_API_URL": "https://adventurous-grace-production-1b38.up.railway.app"
   }
 }
-

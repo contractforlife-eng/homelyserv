@@ -575,6 +575,77 @@ export const getMyOffers = async (req, res) => {
       };
     });
 
+    // If caller is a worker, also fetch application invitations and decisions
+    if (!canSendHireOffer(req.userRole)) {
+      try {
+        const workerApps = await prisma.jobApplication.findMany({
+          where: { workerId: String(req.userId) },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (workerApps.length > 0) {
+          const appOids = workerApps.map(a => ({ $oid: String(a.id) }));
+          const rawResult = await prisma.$runCommandRaw({
+            find: 'job_applications',
+            filter: { _id: { $in: appOids } },
+            limit: workerApps.length,
+          });
+          const rawDocs = rawResult?.cursor?.firstBatch || [];
+          const rawMap = new Map();
+          for (const doc of rawDocs) {
+            rawMap.set(String(doc._id?.$oid || doc._id), doc);
+          }
+
+          // Fetch JobPosts and safe employer display names
+          const jobPostIds = [...new Set(workerApps.map(a => String(a.jobPostId)))];
+          const jobPosts = await prisma.jobPost.findMany({
+            where: { id: { in: jobPostIds } },
+            select: { id: true, jobTitle: true, compensationCurrency: true, salaryMin: true, salaryMax: true },
+          });
+          const jobMap = new Map(jobPosts.map(j => [String(j.id), j]));
+
+          const appEmployerIds = [...new Set(workerApps.map(a => String(a.employerId)))];
+          const appEmployers = await prisma.user.findMany({
+            where: { id: { in: appEmployerIds } },
+            select: { id: true, fullName: true, city: true },
+          });
+          const appEmployerMap = new Map(appEmployers.map(u => [String(u.id), u]));
+
+          const applicationInvitations = workerApps.map(app => {
+            const rawDoc = rawMap.get(String(app.id)) || {};
+            const job = jobMap.get(String(app.jobPostId));
+            const employer = appEmployerMap.get(String(app.employerId));
+            const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
+            const attendanceDetails = rawDoc.attendanceDetails || null;
+
+            return {
+              id: `app_${app.id}`,
+              applicationId: app.id,
+              type: 'JOB_APPLICATION_DECISION',
+              status: decision,
+              decision,
+              attendanceDetails,
+              jobTitle: job?.jobTitle || 'Job Application',
+              jobPostId: app.jobPostId,
+              employerId: app.employerId,
+              employerName: employer?.fullName || 'Employer',
+              employerCity: employer?.city || null,
+              salaryMin: job?.salaryMin || null,
+              salaryMax: job?.salaryMax || null,
+              currency: job?.compensationCurrency || 'EGP',
+              createdAt: app.createdAt,
+              updatedAt: app.updatedAt,
+              disclaimer: 'This acceptance is an invitation to attend an interview or appointment, not a guarantee of employment.',
+            };
+          });
+
+          return res.json([...applicationInvitations, ...enrichedOffers]);
+        }
+      } catch (appErr) {
+        console.error('Get offers: application invitations error:', appErr.message);
+      }
+    }
+
     res.json(enrichedOffers);
   } catch (error) {
     console.error('Get offers error:', error);

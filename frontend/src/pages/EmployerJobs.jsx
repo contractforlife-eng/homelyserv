@@ -6,7 +6,8 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
-import { Plus, Eye, Pencil, Pause, Play, XCircle, MapPin, Calendar, Clock, Loader2, Users, RotateCcw } from 'lucide-react';
+import { Plus, Eye, Pencil, Pause, Play, XCircle, MapPin, Calendar, Clock, Loader2, Users, RotateCcw, Share2 } from 'lucide-react';
+import JobShareModal from '../components/JobShareModal';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
@@ -21,6 +22,7 @@ const EmployerJobs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionJobId, setActionJobId] = useState(null);
+  const [sharingJob, setSharingJob] = useState(null);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -302,6 +304,13 @@ const EmployerJobs = () => {
           )}
         </div>
       </div>
+      {sharingJob && (
+        <JobShareModal
+          job={sharingJob}
+          isOpen={Boolean(sharingJob)}
+          onClose={() => setSharingJob(null)}
+        />
+      )}
     </DashboardLayout>
   );
 };

@@ -15,6 +15,7 @@ import {
   ACTIVITY_THROTTLE_MS
 } from '../services/platformDetectionService.js';
 import { authenticate } from '../middleware/auth.js';
+import prisma from '../lib/prisma.js';
 
 const secret = 'admin-platform-test-secret-2026-homelyserv-secure-key';
 process.env.JWT_SECRET = secret;
@@ -129,6 +130,9 @@ test('5. Auth middleware tracks activity on authenticated requests', async () =>
 test('6. GET /api/admin/users returns lastPlatform and lastActiveAt', async () => {
   const originalFind = User.find;
   const originalFindById = User.findById;
+  const originalFindByIdAndUpdate = User.findByIdAndUpdate;
+  const originalSubscriptionFindMany = prisma.subscription.findMany;
+  const originalManualGrantFindMany = prisma.manualPremiumGrant.findMany;
 
   const mockUsers = [
     { _id: '507f1f77bcf86cd799439011', fullName: 'Android User', email: 'android@example.com', role: 'WORKER', lastPlatform: 'android', lastActiveAt: new Date(), lastAppVersion: '1.0.18', toObject() { return { ...this }; } },
@@ -138,6 +142,9 @@ test('6. GET /api/admin/users returns lastPlatform and lastActiveAt', async () =
 
   User.findById = (id) => wrapQuery({ _id: id, role: 'ADMIN', tokenVersion: 0, isSuspended: false });
   User.find = () => wrapQuery(mockUsers);
+  User.findByIdAndUpdate = async (id) => ({ _id: id });
+  prisma.subscription.findMany = async () => [];
+  prisma.manualPremiumGrant.findMany = async () => [];
 
   const app = express();
   app.use(express.json());
@@ -171,6 +178,9 @@ test('6. GET /api/admin/users returns lastPlatform and lastActiveAt', async () =
   } finally {
     User.find = originalFind;
     User.findById = originalFindById;
+    User.findByIdAndUpdate = originalFindByIdAndUpdate;
+    prisma.subscription.findMany = originalSubscriptionFindMany;
+    prisma.manualPremiumGrant.findMany = originalManualGrantFindMany;
     await new Promise((r) => server.close(r));
   }
 });
@@ -225,4 +235,3 @@ test('7. CORS preflight OPTIONS permits X-Client-Platform and X-Client-Version h
     await new Promise((r) => server.close(r));
   }
 });
-

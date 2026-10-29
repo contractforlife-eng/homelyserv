@@ -26,9 +26,90 @@ import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { sendPushToUser } from '../services/fcmService.js';
 import User from '../models/User.js';
 import { getPublicVerification } from '../services/profileVerificationService.js';
+import { uploadVerificationDocument, generateSignedDocumentUrl, deleteVerificationDocument } from '../utils/verificationDocumentUpload.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/jwtSecret.js';
+import { ensureWorkerProfile } from '../services/workerProfileService.js';
+import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
+import { withRegistrationGeography } from '../services/registrationGeographyService.js';
+import { sendVerificationOnRegistration } from '../services/verificationService.js';
+import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
+import { enrichUserResponse } from '../utils/userResponse.js';
+import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { resolveAccountDefaultCurrency } from '../utils/currencyMetadata.js';
+import { detectPlatform, extractAppVersion } from '../services/platformDetectionService.js';
+import { validatePhone } from './authController.js';
 
 const isValidObjectId = (id) => {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
+// Rate limiting for public visitor registrations (in-memory bucket)
+const publicRegisterAttempts = new Map();
+const PUBLIC_REG_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const PUBLIC_REG_MAX_ATTEMPTS = 5;
+
+const isPublicRegisterRateLimited = (ip) => {
+  if (!ip) return false;
+  const now = Date.now();
+  const record = publicRegisterAttempts.get(ip);
+  if (!record || now - record.firstAttemptAt > PUBLIC_REG_WINDOW_MS) {
+    publicRegisterAttempts.set(ip, { count: 1, firstAttemptAt: now });
+    return false;
+  }
+  record.count += 1;
+  return record.count > PUBLIC_REG_MAX_ATTEMPTS;
+};
+
+export const isValidIanaTimeZone = (tz) => {
+  if (!tz || typeof tz !== 'string') return false;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz.trim() });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const isValidCalendarDate = (dateStr) => {
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+};
+
+export const isAppointmentInPast = (dateStr, timeStr, timeZone) => {
+  try {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [hour, minute] = timeStr.split(':').map(Number);
+    let utc = Date.UTC(year, month - 1, day, hour, minute);
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', second: 'numeric',
+      hour12: false
+    });
+    for (let i = 0; i < 3; i++) {
+      const parts = fmt.formatToParts(new Date(utc));
+      const p = {};
+      parts.forEach(x => { p[x.type] = x.value; });
+      const tzYear = Number(p.year);
+      const tzMonth = Number(p.month);
+      const tzDay = Number(p.day);
+      let tzHour = Number(p.hour);
+      if (tzHour === 24) tzHour = 0;
+      const tzMin = Number(p.minute);
+      const asUtc = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMin);
+      const diff = asUtc - Date.UTC(year, month - 1, day, hour, minute);
+      if (diff === 0) break;
+      utc -= diff;
+    }
+    return utc <= Date.now();
+  } catch {
+    return false;
+  }
 };
 
 const MAX_COVER_MESSAGE_LENGTH = 2000;
@@ -89,7 +170,61 @@ const buildSafeEmployerMap = async (employerIds) => {
 };
 
 // ============================================================
-// A) POST /api/jobs/:id/apply — WORKER only
+
+// Helper: Raw Mongo fetch for an application by ID to read decision & attendanceDetails
+const getRawJobApplication = async (applicationId) => {
+  try {
+    const rawResult = await prisma.$runCommandRaw({
+      find: 'job_applications',
+      filter: { _id: { $oid: String(applicationId) } },
+      limit: 1,
+    });
+    return rawResult?.cursor?.firstBatch?.[0] || null;
+  } catch (err) {
+    console.error('Applications: raw find error:', err.message);
+    return null;
+  }
+};
+
+// Helper: Raw Mongo fetch for applications by IDs
+const getRawJobApplicationsMap = async (applicationIds) => {
+  const map = new Map();
+  if (!applicationIds || applicationIds.length === 0) return map;
+  try {
+    const oids = applicationIds.map(id => ({ $oid: String(id) }));
+    const rawResult = await prisma.$runCommandRaw({
+      find: 'job_applications',
+      filter: { _id: { $in: oids } },
+      limit: applicationIds.length,
+    });
+    const docs = rawResult?.cursor?.firstBatch || [];
+    for (const doc of docs) {
+      const id = String(doc._id?.$oid || doc._id);
+      map.set(id, doc);
+    }
+  } catch (err) {
+    console.error('Applications: raw batch find error:', err.message);
+  }
+  return map;
+};
+
+
+// Helper: process optional CV file upload using the existing Cloudinary upload mechanism
+const processCvUpload = async (file) => {
+  if (!file || !file.buffer) return null;
+  const uploadResult = await uploadVerificationDocument(file.buffer, {
+    mimetype: file.mimetype,
+    originalFilename: file.originalname || 'cv.pdf',
+  });
+  return {
+    cvPublicId: uploadResult.public_id,
+    cvResourceType: uploadResult.resource_type || 'image',
+    cvOriginalName: file.originalname || 'CV',
+  };
+};
+
+// ============================================================
+// A) POST /api/jobs/:id/apply — WORKER only (supports optional CV)
 // ============================================================
 export const applyToJob = async (req, res) => {
   try {
@@ -157,6 +292,20 @@ export const applyToJob = async (req, res) => {
       });
     }
 
+    // Optional CV upload
+    let cvData = null;
+    if (req.file) {
+      try {
+        cvData = await processCvUpload(req.file);
+      } catch (uploadError) {
+        console.error('Applications: CV upload failed:', uploadError.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to upload CV. Please ensure the file is a valid PDF or image (max 10MB).',
+        });
+      }
+    }
+
     // employerId always derived from JobPost — never from request body
     const application = await prisma.jobApplication.create({
       data: {
@@ -167,6 +316,25 @@ export const applyToJob = async (req, res) => {
         coverMessage,
       },
     });
+
+    // If CV was uploaded, store CV metadata in raw MongoDB doc
+    if (cvData) {
+      try {
+        await prisma.$runCommandRaw({
+          findAndModify: 'job_applications',
+          query: { _id: { $oid: application.id } },
+          update: {
+            $set: {
+              cvPublicId: cvData.cvPublicId,
+              cvResourceType: cvData.cvResourceType,
+              cvOriginalName: cvData.cvOriginalName,
+            },
+          },
+        });
+      } catch (rawError) {
+        console.error('Applications: CV raw metadata save error:', rawError.message);
+      }
+    }
 
     // Notify the employer
     try {
@@ -219,6 +387,281 @@ export const applyToJob = async (req, res) => {
 };
 
 // ============================================================
+// A2) POST /api/jobs/:id/apply-public — Unauthenticated visitor OR existing worker
+// ============================================================
+export const applyPublicToJob = async (req, res) => {
+  try {
+    const jobPostId = String(req.params.id);
+    if (!isValidObjectId(jobPostId)) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    // Verify job exists and is open
+    const jobPost = await prisma.jobPost.findUnique({
+      where: { id: jobPostId },
+      select: { id: true, employerId: true, status: true, expiresAt: true, deadline: true, jobTitle: true },
+    });
+    if (!jobPost) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    if (jobPost.status !== 'open') {
+      return res.status(400).json({
+        success: false,
+        message: 'This job is no longer accepting applications',
+      });
+    }
+    const now = new Date();
+    if (jobPost.expiresAt && new Date(jobPost.expiresAt).getTime() <= now.getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: 'This job has expired and is no longer accepting applications',
+      });
+    }
+    if (jobPost.deadline && new Date(jobPost.deadline).getTime() <= now.getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: 'The application deadline has passed',
+      });
+    }
+
+    // If caller is already authenticated
+    if (req.userId) {
+      if (req.userRole !== 'WORKER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only workers can apply for jobs',
+        });
+      }
+      return applyToJob(req, res);
+    }
+
+    // Visitor registration & application validation
+    // Rate limit public registration attempts
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip;
+    if (isPublicRegisterRateLimited(clientIp)) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many registration attempts. Please try again later.',
+      });
+    }
+
+    const {
+      email,
+      password,
+      confirmPassword,
+      fullName,
+      phone,
+      countryCode,
+      coverMessage,
+    } = req.body;
+
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'A valid email address is required' });
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
+    if (confirmPassword && confirmPassword !== password) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match' });
+    }
+
+    if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
+      return res.status(400).json({ success: false, message: 'Full name is required' });
+    }
+
+    const phoneError = validatePhone(phone);
+    if (phoneError) {
+      return res.status(400).json({ success: false, message: phoneError });
+    }
+    const trimmedPhone = String(phone).trim();
+
+    if (!countryCode || !String(countryCode).trim()) {
+      return res.status(400).json({ success: false, message: 'Country is required' });
+    }
+
+    const normalizedCountryCode = String(countryCode).trim().toUpperCase();
+    const matchedCountry = getSupportedCountryByCode(normalizedCountryCode);
+    if (!matchedCountry) {
+      return res.status(400).json({ success: false, message: 'Please select a valid supported country' });
+    }
+
+    // Check if account already exists — do NOT silently attach!
+    const existingUser = await User.findOne({ email: trimmedEmail });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        error: 'ACCOUNT_EXISTS',
+        message: 'An account with this email already exists. Please log in to apply.',
+      });
+    }
+
+    // Process optional CV upload
+    let cvData = null;
+    if (req.file) {
+      try {
+        cvData = await processCvUpload(req.file);
+      } catch (uploadError) {
+        console.error('Applications: CV upload failed:', uploadError.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to upload CV. Please ensure the file is a valid PDF or image (max 10MB).',
+        });
+      }
+    }
+
+    // Hash password & create user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = new User(withRegistrationGeography(req, {
+      fullName: fullName.trim(),
+      email: trimmedEmail,
+      password: hashedPassword,
+      role: 'WORKER',
+      phone: trimmedPhone,
+      countryCode: matchedCountry.code,
+      countryName: matchedCountry.name,
+      location: '',
+      desiredJob: 'other',
+      hourlyRate: '0',
+      hourlyRateCurrency: resolveAccountDefaultCurrency({
+        countryCode: matchedCountry.code,
+        countryName: matchedCountry.name,
+      }),
+      profileComplete: false,
+      lastPlatform: detectPlatform(req),
+      lastActiveAt: new Date(),
+      ...(extractAppVersion(req) ? { lastAppVersion: extractAppVersion(req) } : {}),
+    }));
+
+    await user.save();
+
+    // Create canonical WorkerProfile
+    let workerProfile;
+    try {
+      workerProfile = await ensureWorkerProfile(user);
+    } catch (profileErr) {
+      console.error('Applications: ensureWorkerProfile failed after user save:', profileErr.message);
+    }
+
+    // Issue auth token for visitor
+    const token = jwt.sign(
+      { userId: user._id, role: user.role, tokenVersion: user.tokenVersion || 0 },
+      getJwtSecret(),
+      { expiresIn: '30d' }
+    );
+
+    // Send verification email non-blocking
+    try {
+      sendVerificationOnRegistration(user);
+    } catch (verifErr) {
+      console.error('Applications: verification email failed:', verifErr.message);
+    }
+
+    // Create JobApplication
+    let sanitizedCoverMessage = null;
+    if (coverMessage && typeof coverMessage === 'string') {
+      const trimmed = coverMessage.trim();
+      if (trimmed.length > 0) {
+        sanitizedCoverMessage = trimmed.slice(0, MAX_COVER_MESSAGE_LENGTH);
+      }
+    }
+
+    let application = null;
+    try {
+      application = await prisma.jobApplication.create({
+        data: {
+          jobPostId,
+          workerId: String(user._id),
+          workerProfileId: workerProfile?.id || String(user._id),
+          employerId: jobPost.employerId,
+          coverMessage: sanitizedCoverMessage,
+        },
+      });
+    } catch (appCreateErr) {
+      console.error('Applications: JobApplication.create failed after account created:', appCreateErr);
+      if (cvData?.cvPublicId) {
+        deleteVerificationDocument(cvData.cvPublicId, cvData.cvResourceType).catch(() => {});
+      }
+      const userData = sanitizeUserResponse(user.toObject());
+      userData.id = userData._id;
+      delete userData.password;
+      delete userData._id;
+      return res.status(201).json({
+        success: false,
+        error: 'ACCOUNT_CREATED_APPLICATION_FAILED',
+        message: appCreateErr.code === 'P2002'
+          ? 'Account created, but you have already applied to this job.'
+          : 'Your account was created, but we could not submit your application. Please log in to complete your application.',
+        token,
+        user: enrichUserResponse(userData),
+        needsProfileCompletion: true,
+      });
+    }
+
+    // Save CV metadata if uploaded
+    if (cvData) {
+      try {
+        await prisma.$runCommandRaw({
+          findAndModify: 'job_applications',
+          query: { _id: { $oid: application.id } },
+          update: {
+            $set: {
+              cvPublicId: cvData.cvPublicId,
+              cvResourceType: cvData.cvResourceType,
+              cvOriginalName: cvData.cvOriginalName,
+            },
+          },
+        });
+      } catch (rawError) {
+        console.error('Applications: CV raw metadata save error:', rawError.message);
+      }
+    }
+
+    // Notify the employer
+    try {
+      await createNotification(jobPost.employerId, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'New Job Application',
+        message: `${user.fullName} applied to your job (${jobPost.jobTitle})`,
+        entityType: 'JOB_APPLICATION',
+        entityId: application.id,
+        link: '/employer-jobs',
+      });
+    } catch (notifError) {
+      console.error('Applications: employer notification failed:', notifError.message);
+    }
+
+    const userData = sanitizeUserResponse(user.toObject());
+    userData.id = userData._id;
+    delete userData.password;
+    delete userData._id;
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created and application submitted successfully',
+      token,
+      user: enrichUserResponse(userData),
+      application,
+      needsProfileCompletion: true,
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: 'You have already applied to this job',
+      });
+    }
+    console.error('Applications: apply-public error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit application' });
+  }
+};
+
+// ============================================================
 // B) GET /api/jobs/applications/mine — WORKER only
 // ============================================================
 export const getMyApplications = async (req, res) => {
@@ -239,14 +682,31 @@ export const getMyApplications = async (req, res) => {
     });
     const jobPostMap = new Map(jobPosts.map((j) => [String(j.id), j]));
 
-    // Batch fetch safe employer info (one User query + one EmployerProfile query)
+    // Batch fetch safe employer info
     const employerIds = [...new Set(applications.map((a) => String(a.employerId)))];
     const employerMap = await buildSafeEmployerMap(employerIds);
 
+    // Batch fetch raw Mongo docs for decision and attendanceDetails
+    const applicationIds = applications.map(a => String(a.id));
+    const rawDocsMap = await getRawJobApplicationsMap(applicationIds);
+
     const enriched = applications.map((app) => {
       const jobPost = jobPostMap.get(String(app.jobPostId)) || null;
+      const rawDoc = rawDocsMap.get(String(app.id)) || {};
+      const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
+      const attendanceDetails = rawDoc.attendanceDetails || null;
+
+      let cvUrl = null;
+      if (rawDoc.cvPublicId) {
+        cvUrl = generateSignedDocumentUrl(rawDoc.cvPublicId, rawDoc.cvResourceType || 'image');
+      }
+
       return {
         ...app,
+        decision,
+        attendanceDetails,
+        cvUrl,
+        cvOriginalName: rawDoc.cvOriginalName || null,
         jobPost: jobPost
           ? {
               id: jobPost.id,
@@ -393,6 +853,7 @@ export const getJobApplications = async (req, res) => {
     const profileMap = new Map(workerProfiles.map((p) => [String(p.id), p]));
     const userMap = new Map(workerUsers.map((u) => [String(u.id), u]));
     const mongooseUserMap = new Map(mongooseUsers.map((u) => [String(u._id), u]));
+    const rawDocsMap = await getRawJobApplicationsMap(applications.map(a => String(a.id)));
 
     const enriched = applications.map((app) => {
       const profile = profileMap.get(String(app.workerProfileId)) || null;
@@ -403,10 +864,22 @@ export const getJobApplications = async (req, res) => {
       const effectiveActivelyLooking = isAvailable && isPremium && profile?.activelyLooking === true;
       const mongooseUser = mongooseUserMap.get(String(app.workerId));
 
+      const rawDoc = rawDocsMap.get(String(app.id)) || {};
+      const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
+      const attendanceDetails = rawDoc.attendanceDetails || null;
+      let cvUrl = null;
+      if (rawDoc.cvPublicId) {
+        cvUrl = generateSignedDocumentUrl(rawDoc.cvPublicId, rawDoc.cvResourceType || 'image');
+      }
+
       return {
         id: app.id,
         jobPostId: app.jobPostId,
         status: app.status,
+        decision,
+        attendanceDetails,
+        cvUrl,
+        cvOriginalName: rawDoc.cvOriginalName || null,
         coverMessage: app.coverMessage,
         offerId: app.offerId || null,
         createdAt: app.createdAt,
@@ -446,6 +919,10 @@ export const getJobApplications = async (req, res) => {
 
 // ============================================================
 // E) PATCH /api/jobs/applications/:id/status — EMPLOYER owner only
+// Supports:
+// - status: 'accepted' (requires interviewDate, interviewTime, interviewAddress)
+// - status: 'rejected'
+// - status: 'shortlisted' (legacy transition)
 // ============================================================
 export const updateApplicationStatus = async (req, res) => {
   try {
@@ -454,7 +931,7 @@ export const updateApplicationStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
-    const { status } = req.body;
+    const { status, interviewDate, interviewTime, interviewTimeZone, interviewAddress, notes } = req.body;
     if (!status || typeof status !== 'string') {
       return res.status(400).json({ success: false, message: 'status is required' });
     }
@@ -471,7 +948,195 @@ export const updateApplicationStatus = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    // Allowed transitions only
+    // Handle 'accepted' status
+    if (status === 'accepted') {
+      if (!interviewDate || typeof interviewDate !== 'string' || interviewDate.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Interview date is required to accept an application',
+        });
+      }
+      const trimmedDate = interviewDate.trim();
+      if (!isValidCalendarDate(trimmedDate)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Interview date must be a valid calendar date in YYYY-MM-DD format',
+        });
+      }
+
+      if (!interviewTime || typeof interviewTime !== 'string' || interviewTime.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Interview time is required to accept an application',
+        });
+      }
+      const trimmedTime = interviewTime.trim();
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(trimmedTime)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Interview time must be in HH:mm 24-hour format (e.g. 14:30)',
+        });
+      }
+
+      if (!interviewTimeZone || typeof interviewTimeZone !== 'string' || !isValidIanaTimeZone(interviewTimeZone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'A valid IANA time zone is required (e.g. Africa/Cairo, Asia/Riyadh, UTC)',
+        });
+      }
+      const trimmedTimeZone = interviewTimeZone.trim();
+
+      if (isAppointmentInPast(trimmedDate, trimmedTime, trimmedTimeZone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Interview appointment cannot be scheduled in the past',
+        });
+      }
+
+      if (!interviewAddress || typeof interviewAddress !== 'string' || interviewAddress.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Interview address is required to accept an application',
+        });
+      }
+
+      // Ensure application is in an acceptable state
+      if (!['applied', 'shortlisted'].includes(application.status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot accept an application in status "${application.status}"`,
+        });
+      }
+
+      const attendanceDetails = {
+        date: trimmedDate,
+        time: trimmedTime,
+        timeZone: trimmedTimeZone,
+        address: interviewAddress.trim(),
+        notes: (notes && typeof notes === 'string') ? notes.trim() : null,
+        scheduledAt: new Date().toISOString(),
+      };
+
+      // Atomically update MongoDB collection: set decision: 'accepted' & attendanceDetails,
+      // and keep Prisma status as 'shortlisted' so Prisma client enum remains fully valid
+      await prisma.$runCommandRaw({
+        findAndModify: 'job_applications',
+        query: { _id: { $oid: applicationId } },
+        update: {
+          $set: {
+            decision: 'accepted',
+            status: 'shortlisted',
+            attendanceDetails,
+          },
+        },
+      });
+
+      const updated = await prisma.jobApplication.findUnique({
+        where: { id: applicationId },
+      });
+
+      // Notify the worker
+      try {
+        const jobPost = await prisma.jobPost.findUnique({
+          where: { id: application.jobPostId },
+          select: { jobTitle: true },
+        });
+        await createNotification(application.workerId, {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Application Accepted: Interview Scheduled',
+          message: `Your application for "${jobPost?.jobTitle || 'the job'}" was accepted! You are invited for an interview on ${attendanceDetails.date} at ${attendanceDetails.time} (${attendanceDetails.timeZone}).`,
+          entityType: 'JOB_APPLICATION',
+          entityId: application.id,
+          link: '/worker/offers',
+        });
+      } catch (notifError) {
+        console.error('Applications: worker accept notification failed:', notifError.message);
+      }
+
+      if (String(req.userId) !== String(application.workerId)) {
+        sendPushToUser(application.workerId, {
+          title: 'Interview invitation',
+          body: 'Your job application has been accepted with an interview schedule',
+          data: {
+            type: 'APPLICATION_STATUS_UPDATE',
+            entityType: 'JOB_APPLICATION',
+            applicationId: String(application.id),
+            jobPostId: String(application.jobPostId),
+          },
+          channelId: 'jobs_offers',
+        }).catch(() => {});
+      }
+
+      return res.json({
+        success: true,
+        message: 'Application accepted and interview details saved',
+        application: {
+          ...updated,
+          decision: 'accepted',
+          attendanceDetails,
+        },
+      });
+    }
+
+    // Handle 'rejected' status
+    if (status === 'rejected') {
+      await prisma.$runCommandRaw({
+        findAndModify: 'job_applications',
+        query: { _id: { $oid: applicationId } },
+        update: {
+          $set: {
+            decision: 'rejected',
+            status: 'rejected',
+          },
+        },
+      });
+
+      const updated = await prisma.jobApplication.findUnique({
+        where: { id: applicationId },
+      });
+
+      try {
+        const jobPost = await prisma.jobPost.findUnique({
+          where: { id: application.jobPostId },
+          select: { jobTitle: true },
+        });
+        await createNotification(application.workerId, {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Application Update',
+          message: `Your application for "${jobPost?.jobTitle || 'the job'}" was not selected`,
+          entityType: 'JOB_APPLICATION',
+          entityId: application.id,
+          link: '/worker-applications',
+        });
+      } catch (notifError) {
+        console.error('Applications: worker reject notification failed:', notifError.message);
+      }
+
+      if (String(req.userId) !== String(application.workerId)) {
+        sendPushToUser(application.workerId, {
+          title: 'Application update',
+          body: 'There is an update to your job application',
+          data: {
+            type: 'APPLICATION_STATUS_UPDATE',
+            entityType: 'JOB_APPLICATION',
+            applicationId: String(application.id),
+            jobPostId: String(application.jobPostId),
+          },
+          channelId: 'jobs_offers',
+        }).catch(() => {});
+      }
+
+      return res.json({
+        success: true,
+        message: 'Application rejected',
+        application: {
+          ...updated,
+          decision: 'rejected',
+        },
+      });
+    }
+
+    // Allowed standard transitions
     const allowed = EMPLOYER_TRANSITIONS[application.status];
     if (!allowed || !allowed.has(status)) {
       return res.status(400).json({
@@ -485,7 +1150,7 @@ export const updateApplicationStatus = async (req, res) => {
       data: { status },
     });
 
-    // Notify the worker
+    // Notify worker
     try {
       const jobPost = await prisma.jobPost.findUnique({
         where: { id: application.jobPostId },

@@ -16,6 +16,22 @@ import TEACHER_TRANSLATIONS from './teacherTranslations.js';
 import STUDENT_TRANSLATIONS from './studentTranslations.js';
 import { PUBLIC_PROFILE_TRANSLATIONS } from './publicProfileTranslations.js';
 
+import enLocale from '../locales/en/translation.json';
+import arLocale from '../locales/ar/translation.json';
+import frLocale from '../locales/fr/translation.json';
+import ruLocale from '../locales/ru/translation.json';
+import trLocale from '../locales/tr/translation.json';
+import deLocale from '../locales/de/translation.json';
+
+const LOCALE_RESOURCES = {
+  en: enLocale,
+  ar: arLocale,
+  fr: frLocale,
+  ru: ruLocale,
+  tr: trLocale,
+  de: deLocale,
+};
+
 // ---------------------------------------------------------------------------
 // Shared language metadata – used by every language selector in the app.
 // `nativeName` is what appears in the dropdowns (per requirements).
@@ -13564,6 +13580,24 @@ Object.entries(PUBLIC_PROFILE_TRANSLATIONS).forEach(([language, translations]) =
   if (target && target.translation) {
     Object.entries(translations).forEach(([ns, copy]) => {
       target.translation[ns] = { ...target.translation[ns], ...copy };
+    });
+  }
+});
+
+// ============================================================
+// LOCALE FILES (src/locales/*) — all 6 locales
+// Deep merges locale keys so namespaces like jobDetails, jobApply,
+// jobShare, jobApplicants, profileCompletion, etc. resolve accurately.
+// ============================================================
+Object.entries(LOCALE_RESOURCES).forEach(([language, localeData]) => {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target && target.translation && localeData) {
+    Object.entries(localeData).forEach(([key, val]) => {
+      if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        target.translation[key] = { ...target.translation[key], ...val };
+      } else {
+        target.translation[key] = val;
+      }
     });
   }
 });

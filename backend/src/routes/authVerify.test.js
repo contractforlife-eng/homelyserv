@@ -4,6 +4,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import authRouter from './auth.js';
+import { _clearActivityThrottleCache } from '../services/platformDetectionService.js';
 
 const secret = 'auth-verify-test-secret-value-2026';
 const userId = '507f1f77bcf86cd799439011';
@@ -31,6 +32,9 @@ const createUser = ({ tokenVersion = 0, status = 'ACTIVE' } = {}) => ({
 
 const withServer = async ({ currentVersion = 0, user = createUser() } = {}, run) => {
   const originalFindById = User.findById;
+  const originalFindByIdAndUpdate = User.findByIdAndUpdate;
+  _clearActivityThrottleCache();
+  User.findByIdAndUpdate = async (id) => ({ _id: id });
   User.findById = () => ({
     select: async (selection) => {
       if (selection === 'tokenVersion isSuspended') {
@@ -56,6 +60,8 @@ const withServer = async ({ currentVersion = 0, user = createUser() } = {}, run)
     await run(`http://127.0.0.1:${server.address().port}`);
   } finally {
     User.findById = originalFindById;
+    User.findByIdAndUpdate = originalFindByIdAndUpdate;
+    _clearActivityThrottleCache();
     await new Promise((resolve) => server.close(resolve));
   }
 };

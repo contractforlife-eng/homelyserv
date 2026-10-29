@@ -19,6 +19,7 @@ import StudentSidebar from '../student/StudentSidebar';
 import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
 import VerificationBanner from '../VerificationBanner';
+import ProfileCompletionBanner from '../ProfileCompletionBanner';
 import LegalFooter from '../common/LegalFooter';
 import MobileHeader from '../mobile/MobileHeader';
 import MobileDrawerNav from '../mobile/MobileDrawerNav';
@@ -193,6 +194,7 @@ const DashboardLayout = ({
           sidebarCollapsed ? 'lg:ltr:ml-20 lg:rtl:mr-20' : 'lg:ltr:ml-64 lg:rtl:mr-64'
         } ml-0 rtl:mr-0 lg:rtl:ml-0 ${isWorkerEmployer ? 'lg:pt-0 pt-14 lg:pb-0 pb-16' : (isAdmin || isDoctor || isTeacher || isStudent) ? 'lg:pt-0 pt-14' : ''}`}>
           <VerificationBanner />
+          <ProfileCompletionBanner />
           {children}
           <LegalFooter className="px-4 md:px-6" />
         </main>

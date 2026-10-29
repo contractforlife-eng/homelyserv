@@ -10,6 +10,7 @@ import { authenticate } from '../middleware/auth.js';
 import { requireSupport } from '../middleware/supportAuth.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { upload, uploadFromBuffer } from '../utils/cloudinary.js';
+import { createComplaintAttachmentReceipt, persistComplaintAttachmentGrant } from '../utils/complaintAttachments.js';
 import {
   createComplaint,
   getMyComplaints,
@@ -48,6 +49,31 @@ import { reportUser, reportMessage, reportProfile } from '../controllers/reportC
 
 const router = express.Router();
 
+export const createComplaintAttachmentUploadHandler = ({
+  uploadBuffer = uploadFromBuffer,
+  persistGrant = persistComplaintAttachmentGrant,
+  createReceipt = createComplaintAttachmentReceipt,
+} = {}) => async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No attachment uploaded' });
+    const uploaded = await uploadBuffer(req.file.buffer, {
+      folder: 'homelyserv/complaints',
+      transformation: [{ width: 1200, height: 1200, crop: 'limit' }],
+    });
+    await persistGrant({ url: uploaded.secure_url, publicId: uploaded.public_id, userId: req.userId });
+    return res.json({
+      success: true,
+      message: 'Attachment uploaded successfully',
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id,
+      receipt: createReceipt({ url: uploaded.secure_url, publicId: uploaded.public_id, userId: req.userId }),
+    });
+  } catch (error) {
+    console.error('❌ Error uploading complaint attachment:', error?.message || 'upload failed');
+    return res.status(500).json({ success: false, message: 'Failed to upload attachment' });
+  }
+};
+
 const requireAdminForSupportAnalytics = (req, res, next) => {
   if (req.userRole !== 'ADMIN') {
     return res.status(403).json({ success: false, message: 'Admin authorization required' });
@@ -64,35 +90,7 @@ router.post(
   '/complaints/upload',
   authenticate,
   upload.single('attachment'),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No attachment uploaded',
-        });
-      }
-
-      const uploaded = await uploadFromBuffer(req.file.buffer, {
-        folder: 'homelyserv/complaints',
-        transformation: [{ width: 1200, height: 1200, crop: 'limit' }],
-      });
-
-      return res.json({
-        success: true,
-        message: 'Attachment uploaded successfully',
-        url: uploaded.secure_url,
-        publicId: uploaded.public_id,
-      });
-    } catch (error) {
-      console.error('❌ Error uploading complaint attachment:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to upload attachment',
-        error: error.message,
-      });
-    }
-  }
+  createComplaintAttachmentUploadHandler()
 );
 
 // POST /api/complaints - Create a new complaint

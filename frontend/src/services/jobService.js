@@ -22,6 +22,12 @@ export const getJobById = async (jobId) => {
   return response.data;
 };
 
+// Public endpoint for shared job links — works unauthenticated
+export const getPublicJobById = async (jobId) => {
+  const response = await api.get(`/api/jobs/public/${jobId}`);
+  return response.data;
+};
+
 export const getMyJobs = async () => {
   const response = await api.get('/api/jobs/mine');
   return response.data;
@@ -46,9 +52,30 @@ export const repostJob = async (jobId) => {
 // JOB APPLICATIONS — Phase 2 Job Marketplace
 // ============================================================
 
-// Worker applies to a job
-export const applyToJob = async (jobId, coverMessage) => {
+// Worker applies to a job (optionally with CV)
+export const applyToJob = async (jobId, coverMessage, cvFile = null) => {
+  if (cvFile) {
+    const formData = new FormData();
+    if (coverMessage) formData.append('coverMessage', coverMessage);
+    formData.append('cv', cvFile);
+    const response = await api.post(`/api/jobs/${jobId}/apply`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
   const response = await api.post(`/api/jobs/${jobId}/apply`, { coverMessage });
+  return response.data;
+};
+
+// Public visitor registers and applies (optionally with CV)
+export const applyPublicToJob = async (jobId, applicationData) => {
+  if (applicationData instanceof FormData) {
+    const response = await api.post(`/api/jobs/${jobId}/apply-public`, applicationData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+  const response = await api.post(`/api/jobs/${jobId}/apply-public`, applicationData);
   return response.data;
 };
 
@@ -70,9 +97,12 @@ export const getJobApplications = async (jobId) => {
   return response.data;
 };
 
-// Employer updates application status (shortlist/reject)
-export const updateApplicationStatus = async (applicationId, status) => {
-  const response = await api.patch(`/api/jobs/applications/${applicationId}/status`, { status });
+// Employer updates application status (accepted / rejected / shortlisted)
+export const updateApplicationStatus = async (applicationId, statusOrPayload) => {
+  const payload = typeof statusOrPayload === 'string'
+    ? { status: statusOrPayload }
+    : statusOrPayload;
+  const response = await api.patch(`/api/jobs/applications/${applicationId}/status`, payload);
   return response.data;
 };
 
@@ -86,11 +116,13 @@ const jobService = {
   createJob,
   getJobs,
   getJobById,
+  getPublicJobById,
   getMyJobs,
   updateJob,
   updateJobStatus,
   repostJob,
   applyToJob,
+  applyPublicToJob,
   getMyApplications,
   withdrawApplication,
   getJobApplications,

@@ -42,6 +42,18 @@ const EmployerJobApplicants = () => {
   const [offerError, setOfferError] = useState('');
   const [offerLoading, setOfferLoading] = useState(false);
 
+  // Accept & Schedule Interview modal state
+  const [acceptModalApp, setAcceptModalApp] = useState(null);
+  const [interviewDate, setInterviewDate] = useState('');
+  const [interviewTime, setInterviewTime] = useState('');
+  const [interviewTimeZone, setInterviewTimeZone] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo'
+  );
+  const [interviewAddress, setInterviewAddress] = useState('');
+  const [interviewNotes, setInterviewNotes] = useState('');
+  const [acceptError, setAcceptError] = useState('');
+  const [acceptLoading, setAcceptLoading] = useState(false);
+
   const loadApplicants = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -111,6 +123,66 @@ const EmployerJobApplicants = () => {
       alert(err.response?.data?.message || t('employerJobApplicants.actionError'));
     } finally {
       setActionId(null);
+    }
+  };
+
+    const openAcceptModal = (app) => {
+    setAcceptModalApp(app);
+    setInterviewDate('');
+    setInterviewTime('');
+    setInterviewTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo');
+    setInterviewAddress('');
+    setInterviewNotes('');
+    setAcceptError('');
+  };
+
+  const handleAcceptSubmit = async (e) => {
+    e.preventDefault();
+    if (!acceptModalApp) return;
+
+    if (!interviewDate || !interviewTime || !interviewTimeZone || !interviewAddress.trim()) {
+      setAcceptError(t('jobApplicants.acceptMissingFields', { defaultValue: 'Date, time, time zone, and address are required to schedule the interview.' }));
+      return;
+    }
+
+    setAcceptLoading(true);
+    setAcceptError('');
+    try {
+      const data = await jobService.updateApplicationStatus(acceptModalApp.id, {
+        status: 'accepted',
+        interviewDate,
+        interviewTime,
+        interviewTimeZone,
+        interviewAddress: interviewAddress.trim(),
+        notes: interviewNotes.trim() || undefined,
+      });
+
+      if (data?.success) {
+        setApplicants(prev => prev.map(a =>
+          a.id === acceptModalApp.id
+            ? {
+                ...a,
+                status: 'shortlisted',
+                decision: 'accepted',
+                attendanceDetails: data.application?.attendanceDetails || {
+                  date: interviewDate,
+                  time: interviewTime,
+                  timeZone: interviewTimeZone,
+                  address: interviewAddress,
+                  notes: interviewNotes.trim() || undefined,
+                },
+              }
+            : a
+        ));
+        setAcceptModalApp(null);
+      } else {
+        setAcceptError(data?.message || t('employerJobApplicants.actionError'));
+      }
+    } catch (err) {
+      console.error('Accept error:', err);
+      setAcceptError(err.response?.data?.message || t('employerJobApplicants.actionError'));
+    } finally {
+      setAcceptLoading(false);
     }
   };
 
@@ -224,13 +296,33 @@ const EmployerJobApplicants = () => {
     return (
       <div className="flex flex-wrap items-center gap-2">
         {status === 'applied' && (
+          <>
+            <button
+              onClick={() => openAcceptModal(app)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition"
+            >
+              <CheckCircle size={16} />
+              {t('jobApplicants.acceptInterview', { defaultValue: 'Accept & Schedule' })}
+            </button>
+            <button
+              onClick={() => handleShortlist(app)}
+              disabled={actionId === app.id}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition disabled:opacity-50"
+            >
+              {actionId === app.id ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} />}
+              {t('employerJobApplicants.shortlist')}
+            </button>
+          </>
+        )}
+        {status === 'shortlisted' && (
           <button
-            onClick={() => handleShortlist(app)}
-            disabled={actionId === app.id}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
+            onClick={() => openAcceptModal(app)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition"
           >
-            {actionId === app.id ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} />}
-            {t('employerJobApplicants.shortlist')}
+            <CheckCircle size={16} />
+            {app.decision === 'accepted'
+              ? t('jobApplicants.scheduledInterview', { defaultValue: 'Update Interview' })
+              : t('jobApplicants.acceptInterview', { defaultValue: 'Accept & Schedule' })}
           </button>
         )}
         <button
@@ -389,6 +481,40 @@ const EmployerJobApplicants = () => {
                             </div>
                           )}
 
+                          {app.cvUrl && (
+                            <div className="mt-2">
+                              <a
+                                href={app.cvUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800"
+                              >
+                                <FileText size={14} />
+                                <span>{t('jobApplicants.viewCv', { defaultValue: 'View Applicant CV' })}</span>
+                                {app.cvOriginalName && (
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 max-w-[120px] truncate">({app.cvOriginalName})</span>
+                                )}
+                              </a>
+                            </div>
+                          )}
+
+                          {app.decision === 'accepted' && app.attendanceDetails && (
+                            <div className="mt-3 p-3 rounded-lg bg-blue-50/70 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-xs space-y-1">
+                              <span className="font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-1">
+                                <Calendar size={13} />
+                                {t('jobApplicants.scheduledInterview', { defaultValue: 'Interview Scheduled' })}:
+                              </span>
+                              <div className="text-gray-700 dark:text-gray-300">
+                                <span>{app.attendanceDetails.date}</span> at <span>{app.attendanceDetails.time}</span>
+                                {app.attendanceDetails.timeZone ? ` (${app.attendanceDetails.timeZone})` : ''}
+                              </div>
+                              <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <MapPin size={12} className="text-red-500" />
+                                {app.attendanceDetails.address}
+                              </div>
+                            </div>
+                          )}
+
                           {app.coverMessage && (
                             <div className="mt-3">
                               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('employerJobApplicants.coverMessage')}</p>
@@ -417,6 +543,128 @@ const EmployerJobApplicants = () => {
           )}
         </div>
       </div>
+
+
+      {/* Accept & Schedule Interview Modal */}
+      {acceptModalApp && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 max-w-lg w-full max-h-[90dvh] overflow-y-auto border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                {t('jobApplicants.scheduleModalTitle', { defaultValue: 'Accept Applicant & Schedule Interview' })}
+              </h3>
+              <button
+                onClick={() => setAcceptModalApp(null)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAcceptSubmit} className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {t('jobApplicants.scheduleModalDesc', {
+                  defaultValue: 'Please specify the date, time, and address where the worker should attend for the interview.',
+                })}
+              </p>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('jobApplicants.interviewDate', { defaultValue: 'Interview Date *' })}
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('jobApplicants.interviewTime', { defaultValue: 'Interview Time *' })}
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={interviewTime}
+                  onChange={(e) => setInterviewTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('jobApplicants.interviewTimeZone', { defaultValue: 'Interview Time Zone (IANA) *' })}
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Africa/Cairo, Asia/Riyadh, Europe/London"
+                  value={interviewTimeZone}
+                  onChange={(e) => setInterviewTimeZone(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm font-mono"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {t('jobApplicants.timeZoneHint', { defaultValue: 'Defaults to your device time zone. Ensure this matches where the interview takes place.' })}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('jobApplicants.interviewAddress', { defaultValue: 'Attendance Address *' })}
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={t('jobApplicants.addressPlaceholder', { defaultValue: 'e.g. 123 Nile St, Floor 4, Maadi, Cairo' })}
+                  value={interviewAddress}
+                  onChange={(e) => setInterviewAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('jobApplicants.interviewNotes', { defaultValue: 'Additional Instructions (Optional)' })}
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder={t('jobApplicants.notesPlaceholder', { defaultValue: 'Any instructions (e.g. bring ID or certificates)' })}
+                  value={interviewNotes}
+                  onChange={(e) => setInterviewNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm resize-none"
+                />
+              </div>
+
+              {acceptError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400 rounded-lg text-sm">
+                  {acceptError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAcceptModalApp(null)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {t('common.cancel', { defaultValue: 'Cancel' })}
+                </button>
+                <button
+                  type="submit"
+                  disabled={acceptLoading}
+                  className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {acceptLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                  {acceptLoading ? t('common.saving', { defaultValue: 'Saving...' }) : t('jobApplicants.confirmAccept', { defaultValue: 'Accept & Schedule' })}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Send Offer Modal */}
       {offerModalApp && (

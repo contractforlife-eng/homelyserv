@@ -2,8 +2,7 @@
 // ============================================================
 // Local-only migration-safety verification for the Rating Phase 1 schema.
 //
-// Targets a SEPARATE, isolated test database (NOT Production/Atlas). The
-// script refuses to run unless DATABASE_URL points to localhost/127.0.0.1.
+// Targets a separately named, explicitly opted-in isolated test database.
 //
 // NOTE: The local standalone mongod is NOT a replica set, so Prisma's
 // interactive `$transaction` (used by submitRating) cannot run here — that
@@ -18,17 +17,27 @@
 // the index rejects a duplicate insert (E11000), prove opposite-direction
 // coexistence, prove duplicate-legacy detection, then clean up.
 // ============================================================
-import { execSync } from 'child_process';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { ObjectId } from 'bson';
+import { MongoClient, ObjectId } from 'mongodb';
+import {
+  assertDatabaseIsolation,
+  getPrismaPushInvocation,
+  recreateDatabaseIsolationMarker,
+  validateDestructiveTestConfig,
+} from './ratingMigrationSafety.js';
 
-const TEST_DB = process.env.DATABASE_URL;
-if (!/^(mongodb(?:\+srv)?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:[0-9]+)?\//.test(TEST_DB || '')) {
-  console.error('REFUSING: DATABASE_URL must point to localhost for this local-only verification.');
+let testConfig;
+try { testConfig = validateDestructiveTestConfig(); }
+catch (error) {
+  console.error(`REFUSING: ${error.message}`);
   process.exit(3);
 }
+const { connectionString: TEST_DB, databaseName: TEST_DB_NAME, isolationToken: TEST_DB_ISOLATION_TOKEN } = testConfig;
 
 const p = new PrismaClient();
+const mongo = new MongoClient(TEST_DB);
 const log = (...a) => console.log('[verify]', ...a);
 const oid = (hex) => new ObjectId(hex);
 const firstBatch = (res) => res?.cursor?.firstBatch ?? res?.documents ?? [];
@@ -54,42 +63,51 @@ const H_COEX = 'cccccccccccccccccccccccc';
 let pass = true;
 const check = (name, cond) => { if (!cond) pass = false; log('  [%s] %s', cond ? 'PASS' : 'FAIL', name); };
 
-async function pushSchema() {
+async function pushSchema(db) {
+  await assertDatabaseIsolation(db, TEST_DB_ISOLATION_TOKEN);
   log('prisma db push (local test DB) ...');
-  execSync('npx prisma db push --skip-generate --accept-data-loss', {
-    env: { ...process.env, DATABASE_URL: TEST_DB }, stdio: 'inherit',
+  const backendDirectory = fileURLToPath(new URL('..', import.meta.url));
+  const invocation = getPrismaPushInvocation(backendDirectory);
+  execFileSync(invocation.file, invocation.args, {
+    ...invocation.options, env: { ...process.env, DATABASE_URL: TEST_DB }, stdio: 'inherit',
   });
 }
 
 async function main() {
+  await mongo.connect();
+  const db = mongo.db(TEST_DB_NAME);
+  const dropIsolatedDatabase = async () => {
+    await assertDatabaseIsolation(db, TEST_DB_ISOLATION_TOKEN);
+    await p.$runCommandRaw({ dropDatabase: 1 });
+  };
   log('Dropping isolated test DB (clean slate) ...');
-  await p.$runCommandRaw({ dropDatabase: 1 });
+  await dropIsolatedDatabase();
 
-  await pushSchema();
+  // Re-create the guard after the deliberate clean-slate drop so every later
+  // destructive step can independently re-attest the same isolated database.
+  await recreateDatabaseIsolationMarker(db, TEST_DB_ISOLATION_TOKEN);
+  await pushSchema(db);
 
   // ---- Seed WorkerProfile + legacy-shaped Reviews (old model) ----
-  // Seeded via mongosh so _id/userId are REAL BSON ObjectIds exactly like
+  // Seeded via the MongoDB driver so _id/userId are REAL BSON ObjectIds exactly like
   // production Mongoose data. ($runCommandRaw serializes through JSON and
   // coerces ObjectIds to strings, which Prisma cannot read back — the raw
   // wrapper stores strings, not BSON.) Real ObjectIds are required for the
   // Prisma backfill (workerProfile.findUnique) and for the unique-index
   // key comparison to be honest.
-  log('Seeding WorkerProfile + legacy Reviews (BSON-faithful via mongosh) ...');
-  const seedScript = `
-    db.WorkerProfile.insertOne({
-      _id: ObjectId('${WPID}'), userId: ObjectId('${WUID}'), category: 't',
+  log('Seeding WorkerProfile + legacy Reviews (BSON-faithful via MongoDB driver) ...');
+  await db.collection('WorkerProfile').insertOne({
+      _id: oid(WPID), userId: oid(WUID), category: 't',
       experienceYears: 0, expectedSalary: 0, availability: 'available',
       ratingAvg: 0, ratingCount: 0,
-      createdAt: new Date('2025-01-01'), updatedAt: new Date('2025-01-01')
-    });
-    db.Review.insertMany([
-      { hireId: ObjectId('${H_BACK}'), employerId: ObjectId('${EUID}'), workerId: ObjectId('${WPID}'),
+      createdAt: new Date('2025-01-01'), updatedAt: new Date('2025-01-01'),
+  });
+  await db.collection('Review').insertMany([
+      { hireId: oid(H_BACK), employerId: oid(EUID), workerId: oid(WPID),
         rating: 5, comment: 'legacy a', createdAt: new Date('2025-01-01') },
-      { hireId: ObjectId('${H_BACK2}'), employerId: ObjectId('${EUID}'), workerId: ObjectId('${WPID}'),
+      { hireId: oid(H_BACK2), employerId: oid(EUID), workerId: oid(WPID),
         rating: 4, comment: 'legacy b', createdAt: new Date('2025-02-01') }
-    ]);
-  `;
-  execSync(`mongosh "${TEST_DB}" --quiet --eval "${seedScript.replace(/\n/g, ' ')}" --norc`, { stdio: 'inherit' });
+  ]);
   const seededWp = await p.workerProfile.findUnique({ where: { id: WPID } });
   log('  seeded WorkerProfile readable via Prisma: %s', Boolean(seededWp));
   check('seeded WorkerProfile readable via Prisma findUnique', Boolean(seededWp) && String(seededWp.userId) === WUID);
@@ -105,23 +123,20 @@ async function main() {
   // ---- Backfill legacy -> directional ----
   // The isolated local mongod is NOT a replica set (no transactions), so
   // Prisma's typed `update` cannot run here. We inject a native-driver
-  // writer that performs the identical BSON $set update via mongosh —
+  // writer that performs the identical BSON $set update via the MongoDB driver —
   // exactly what the production Mongoose/Atlas write does. The audit + 
   // WorkerProfile resolution still run through the real Prisma client.
   log('Backfill legacy -> directional (apply) ...');
   const applyWrite = async (legacyDoc, workerProfile) => {
-    const script = `
-      db.Review.updateOne(
-        { _id: ObjectId('${toStr(legacyDoc._id)}') },
+    await db.collection('Review').updateOne(
+        { _id: oid(toStr(legacyDoc._id)) },
         { $set: {
-            reviewerUserId: ObjectId('${toStr(legacyDoc.employerId)}'),
-            revieweeUserId: ObjectId('${toStr(workerProfile.userId)}'),
+            reviewerUserId: oid(toStr(legacyDoc.employerId)),
+            revieweeUserId: oid(toStr(workerProfile.userId)),
             direction: 'EMPLOYER_TO_WORKER',
             updatedAt: new Date()
         } }
       );
-    `;
-    execSync(`mongosh "${TEST_DB}" --quiet --eval "${script.replace(/\n/g, ' ')}" --norc`, { stdio: 'inherit' });
   };
   const bf = await backfillLegacyReviews(p, { apply: true, applyWrite });
   log('  applied=%s migrated=%d failed=%d', bf.applied, bf.migrated, bf.failed?.length ?? 0);
@@ -221,19 +236,17 @@ async function main() {
   //   3. re-creating the unique index is properly BLOCKED by the dups
   //      (the production migration would stop here for manual resolution).
   log('Duplicate-legacy detection in pre-index state (index dropped) ...');
+  await assertDatabaseIsolation(db, TEST_DB_ISOLATION_TOKEN);
   await p.$runCommandRaw({
     dropIndexes: 'Review',
     index: 'Review_hireId_reviewerUserId_direction_key',
   });
-  const dupSeedScript = `
-    db.Review.insertMany([
-      { hireId: ObjectId('${H_BACK}'), employerId: ObjectId('${EUID}'), workerId: ObjectId('${WPID}'),
+  await db.collection('Review').insertMany([
+      { hireId: oid(H_BACK), employerId: oid(EUID), workerId: oid(WPID),
         rating: 2, createdAt: new Date('2025-03-01') },
-      { hireId: ObjectId('${H_BACK}'), employerId: ObjectId('${EUID}'), workerId: ObjectId('${WPID}'),
+      { hireId: oid(H_BACK), employerId: oid(EUID), workerId: oid(WPID),
         rating: 1, createdAt: new Date('2025-04-01') }
-    ]);
-  `;
-  execSync(`mongosh "${TEST_DB}" --quiet --eval "${dupSeedScript.replace(/\n/g, ' ')}" --norc`, { stdio: 'inherit' });
+  ]);
   const dupAudit = await auditLegacyReviews(p);
   const dupReported = dupAudit.duplicates.some((d) => toStr(d.hireId) === H_BACK && toStr(d.reviewerUserId) === EUID);
   log('  total=%d legacy=%d duplicateGroups=%d', dupAudit.total, dupAudit.legacyCount, dupAudit.duplicates.length);
@@ -268,13 +281,15 @@ async function main() {
 
   log('=== SUMMARY: %s ===', pass ? 'ALL CHECKS PASSED' : 'SOME CHECKS FAILED');
   log('Cleaning up isolated test DB ...');
-  await p.$runCommandRaw({ dropDatabase: 1 });
+  await dropIsolatedDatabase();
   await p.$disconnect();
+  await mongo.close();
   process.exitCode = pass ? 0 : 1;
 }
 
 main().catch(async (e) => {
-  console.error('VERIFY ERROR:', e);
+  console.error('VERIFY ERROR:', e?.message || 'verification failed');
   try { await p.$disconnect(); } catch {}
+  try { await mongo.close(); } catch {}
   process.exit(1);
 });

@@ -11,6 +11,17 @@ const isValidObjectId = (id) => {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 };
 
+export const optionalAuthenticate = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) return next();
+    next();
+  });
+};
+
 export const authenticate = async (req, res, next) => {
   try {
     // Get authorization header
@@ -277,6 +288,7 @@ export const requireStudent = (req, res, next) => {
 
 export default {
   authenticate,
+  optionalAuthenticate,
   authorize,
   requireAuth,
   requireEmployer,

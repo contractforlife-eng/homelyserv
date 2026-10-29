@@ -29,7 +29,11 @@ import {
   CheckCheck,
   Wallet,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Briefcase,
+  Calendar,
+  Globe,
+  FileText
 } from 'lucide-react';
 import { 
   getConversationId, 
@@ -445,11 +449,12 @@ const WorkerOffers = () => {
       case 'accepted':
         filtered = offers.filter(o => 
           o.status === 'accepted' && 
-          !(o.paymentConfirmed === true && o.paymentVerified === true)
+          (o.type === 'JOB_APPLICATION_DECISION' || !(o.paymentConfirmed === true && o.paymentVerified === true))
         );
         break;
       case 'paid':
         filtered = offers.filter(o => 
+          o.type !== 'JOB_APPLICATION_DECISION' &&
           o.status === 'accepted' && 
           o.paymentConfirmed === true && 
           o.paymentVerified === true
@@ -482,9 +487,10 @@ const WorkerOffers = () => {
     pending: offers.filter(o => o.status === 'pending').length,
     accepted: offers.filter(o => 
       o.status === 'accepted' && 
-      !(o.paymentConfirmed === true && o.paymentVerified === true)
+      (o.type === 'JOB_APPLICATION_DECISION' || !(o.paymentConfirmed === true && o.paymentVerified === true))
     ).length,
     paid: offers.filter(o => 
+      o.type !== 'JOB_APPLICATION_DECISION' &&
       o.status === 'accepted' && 
       o.paymentConfirmed === true && 
       o.paymentVerified === true
@@ -503,9 +509,184 @@ const WorkerOffers = () => {
   ];
 
   // ============================================================
+  // Render Application Decision Card (Job Applications)
+  // ============================================================
+  const renderApplicationCard = (app) => {
+    const isAccepted = app.status === 'accepted';
+    const isRejected = app.status === 'rejected';
+    const isPending = app.status === 'pending';
+
+    const cardStatusColor = isAccepted
+      ? 'bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+      : isRejected
+      ? 'bg-red-50/50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+      : 'bg-amber-50/50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
+
+    const badgeStyle = isAccepted
+      ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800'
+      : isRejected
+      ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800'
+      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+
+    const badgeIcon = isAccepted
+      ? <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
+      : isRejected
+      ? <XCircle size={14} className="text-red-600 dark:text-red-400" />
+      : <Clock size={14} className="text-amber-600 dark:text-amber-400" />;
+
+    const badgeText = isAccepted
+      ? t('workerOffers.interviewInvitation', { defaultValue: 'Interview Invitation' })
+      : isRejected
+      ? t('workerOffers.status.rejected', { defaultValue: 'Not Selected' })
+      : t('workerOffers.status.pending', { defaultValue: 'Pending Review' });
+
+    const attendance = app.attendanceDetails;
+    const isExpanded = expandedOffer === app.id;
+
+    return (
+      <div
+        key={app.id}
+        className={`bg-white dark:bg-gray-800 rounded-xl border ${cardStatusColor} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}
+      >
+        <div className="p-5">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0 text-teal-700 dark:text-teal-300">
+              <Briefcase size={22} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                      {t('workerOffers.jobApplication', { defaultValue: 'Job Application' })}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate text-base mt-1">
+                    {app.jobTitle}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    <Building2 size={14} />
+                    <span>{app.employerName}</span>
+                    {app.employerCity && (
+                      <span className="text-xs text-gray-400">({app.employerCity})</span>
+                    )}
+                  </div>
+                </div>
+
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${badgeStyle} whitespace-nowrap flex-shrink-0`}>
+                  {badgeIcon}
+                  {badgeText}
+                </span>
+              </div>
+
+              {/* Compensation and Date Meta */}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
+                {(app.salaryMin || app.salaryMax) && (
+                  <div className="flex items-center gap-1.5">
+                    <DollarSign size={14} className="text-gray-400 dark:text-gray-500" />
+                    <span>
+                      {app.salaryMin && app.salaryMax ? `${app.salaryMin} - ${app.salaryMax}` : (app.salaryMin || app.salaryMax)}{' '}
+                      {app.currency}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5">
+                  <Clock size={14} className="text-gray-400 dark:text-gray-500" />
+                  <span>{formatDate(app.createdAt || app.updatedAt)}</span>
+                </div>
+              </div>
+
+              {/* Accepted Application: Interview Details Card */}
+              {isAccepted && attendance && (
+                <div className="mt-4 p-4 rounded-xl bg-blue-50/80 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 space-y-3">
+                  <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-semibold text-sm">
+                    <Calendar size={16} />
+                    <span>{t('workerOffers.interviewDetailsTitle', { defaultValue: 'Interview & Attendance Details' })}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block">{t('workerOffers.interviewDate', { defaultValue: 'Date' })}</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{attendance.date}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block">{t('workerOffers.interviewTime', { defaultValue: 'Time' })}</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
+                        {attendance.time} {attendance.timeZone ? `(${attendance.timeZone})` : ''}
+                      </span>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500 dark:text-gray-400 block">{t('workerOffers.interviewAddress', { defaultValue: 'Attendance Address' })}</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200 flex items-center gap-1 mt-0.5">
+                        <MapPin size={13} className="text-red-500 flex-shrink-0" />
+                        {attendance.address}
+                      </span>
+                    </div>
+                    {attendance.notes && (
+                      <div className="sm:col-span-2 mt-1">
+                        <span className="text-gray-500 dark:text-gray-400 block">{t('workerOffers.instructions', { defaultValue: 'Instructions' })}</span>
+                        <p className="text-gray-700 dark:text-gray-300 italic whitespace-pre-wrap">{attendance.notes}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-blue-200/60 dark:border-blue-700/60 flex items-start gap-2 text-[11px] text-blue-800 dark:text-blue-300">
+                    <AlertCircle size={14} className="flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                    <p className="leading-relaxed">
+                      {app.disclaimer || t('workerOffers.invitationDisclaimer', {
+                        defaultValue: 'Please note: This acceptance is an invitation to attend an interview or appointment, not a guarantee of employment.',
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Rejected Application Notice */}
+              {isRejected && (
+                <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                  {t('workerOffers.applicationNotSelected', {
+                    defaultValue: 'Thank you for applying. The employer decided not to proceed with this application.',
+                  })}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                {app.jobPostId && (
+                  <button
+                    onClick={() => navigate(`/job/${app.jobPostId}`)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    <Eye size={14} />
+                    {t('workerOffers.viewJobPost', { defaultValue: 'View Job' })}
+                  </button>
+                )}
+                {app.employerId && (
+                  <button
+                    onClick={() => navigate('/worker-messages', { state: { employerId: app.employerId } })}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white transition"
+                  >
+                    <MessageSquare size={14} />
+                    {t('workerOffers.messageEmployer', { defaultValue: 'Message Employer' })}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ============================================================
   // Render Offer Card
   // ============================================================
   const renderOfferCard = (offer) => {
+  if (offer.type === 'JOB_APPLICATION_DECISION') {
+    return renderApplicationCard(offer);
+  }
+
   const statusColor = getStatusColor(offer.status);
   const statusIcon = getStatusIcon(offer.status);
 
