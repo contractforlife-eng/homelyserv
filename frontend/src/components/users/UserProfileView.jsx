@@ -50,6 +50,7 @@ import {
 import api from '../../utils/api';
 import { formatExperienceDisplay } from '../../utils/experienceDisplay';
 import { ensureConversationExists } from '../../utils/chatService';
+import { JOB_OPTIONS } from '../../constants/jobOptions';
 import VerifiedBadge from '../verification/VerifiedBadge';
 import TrustVerificationSection from '../verification/TrustVerificationSection';
 import DoctorProfileDetails from '../doctor/DoctorProfileDetails';
@@ -647,6 +648,23 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                        ? t.status.suspended
                        : t.status.active}
                    </span>
+                   {isAdmin && profileUser.role === 'WORKER' && (() => {
+                     const rawJob = profileUser.desiredJob || profileUser.WorkerProfile?.category || profileUser.profession || '';
+                     if (!rawJob || !rawJob.trim()) return null;
+                     const canonical = JOB_OPTIONS.find(j => j.value === rawJob);
+                     let label = '';
+                     if (canonical) {
+                       label = i18nT(`employerSearch.jobs.${canonical.value}`, { defaultValue: canonical.label });
+                     } else {
+                       label = rawJob;
+                     }
+                     return (
+                       <span className="inline-flex items-center gap-1 rounded-full bg-white/20 text-white px-2.5 py-1 text-xs font-medium max-w-full break-words">
+                         <Briefcase size={12} className="shrink-0" />
+                         <span className="truncate max-w-[200px] sm:max-w-xs" title={label}>{label}</span>
+                       </span>
+                     );
+                   })()}
                 </div>
                 <p className="text-white/80 mt-1">{profileUser.email}</p>
                 {profileUser.isSuspended && profileUser.suspensionReason && (
