@@ -86,7 +86,12 @@
     "notesPlaceholder": "Any instructions (e.g. bring ID or certificates)",
     "confirmAccept": "Accept & Schedule",
     "acceptMissingFields": "Date, time, and address are required to schedule the interview.",
-    "title": "Job Applicants"
+    "title": "Job Applicants",
+    "cvDownloadError": "Failed to download CV. Please try again.",
+    "cvAuthExpired": "Your session has expired. Please log in again to view the CV.",
+    "cvFileNotFound": "The CV document was not found or has been removed.",
+    "cvNoViewer": "No compatible app found to open this document. Please install a viewer (e.g. PDF reader).",
+    "cvAccessDenied": "Access denied. You do not have permission to view this CV."
   },
   "profileCompletion": {
     "bannerTitle": "Complete your worker profile",

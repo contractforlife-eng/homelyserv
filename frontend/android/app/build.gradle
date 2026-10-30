@@ -38,8 +38,8 @@ android {
         applicationId "com.homelyserv.app"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 39
-        versionName "1.0.38"
+        versionCode 40
+        versionName "1.0.39"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.apk'

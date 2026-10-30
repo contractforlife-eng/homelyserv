@@ -86,7 +86,12 @@
     "notesPlaceholder": "Instructions (ex: apporter une pièce d’identité)",
     "confirmAccept": "Accepter et planifier",
     "acceptMissingFields": "La date, l’heure et l’adresse sont obligatoires.",
-    "title": "Candidats à l’emploi"
+    "title": "Candidats à l’emploi",
+    "cvDownloadError": "Échec du téléchargement du CV. Veuillez réessayer.",
+    "cvAuthExpired": "Votre session a expiré. Veuillez vous reconnecter pour consulter le CV.",
+    "cvFileNotFound": "Le document de CV est introuvable ou a été supprimé.",
+    "cvNoViewer": "Aucune application compatible trouvée pour ouvrir ce document (ex. lecteur PDF).",
+    "cvAccessDenied": "Accès refusé. Vous n'avez pas l'autorisation de consulter ce CV."
   },
   "profileCompletion": {
     "bannerTitle": "Complétez votre profil professionnel",

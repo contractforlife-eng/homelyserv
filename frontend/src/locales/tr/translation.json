@@ -86,7 +86,12 @@
     "notesPlaceholder": "Herhangi bir talimat (örneğin kimlik belgesi getirin)",
     "confirmAccept": "Kabul Et ve Planla",
     "acceptMissingFields": "Mülakat planlamak için tarih, saat ve adres zorunludur.",
-    "title": "İş Başvuranları"
+    "title": "İş Başvuranları",
+    "cvDownloadError": "Özgeçmiş indirilemedi. Lütfen tekrar deneyin.",
+    "cvAuthExpired": "Oturumunuzun süresi doldu. Özgeçmişi görüntülemek için lütfen tekrar giriş yapın.",
+    "cvFileNotFound": "Özgeçmiş belgesi bulunamadı veya silinmiş.",
+    "cvNoViewer": "Bu belgeyi açmak için uyumlu bir uygulama bulunamadı (örn. PDF okuyucu).",
+    "cvAccessDenied": "Erişim reddedildi. Bu özgeçmişi görüntüleme izniniz yok."
   },
   "profileCompletion": {
     "bannerTitle": "Çalışan profilinizi tamamlayın",

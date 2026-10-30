@@ -16,6 +16,8 @@ import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 import { formatCurrencyAmount, getAccountCurrency, getStoredCurrency } from '../utils/currencyPresentation';
 import { UserDisplayName } from '../components/users';
 import VerifiedBadge from '../components/verification/VerifiedBadge';
+import { Capacitor } from '@capacitor/core';
+import { openBase64File } from '../native/fileOpener';
 
 const STATUS_STYLES = {
   applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -74,21 +76,58 @@ const EmployerJobApplicants = () => {
         filename = standardMatch[1].trim();
       }
 
-      const blob = new Blob([response.data], {
-        type: response.headers?.['content-type'] || response.headers?.get?.('content-type') || 'application/pdf',
-      });
+      const contentType = response.headers?.['content-type'] || response.headers?.get?.('content-type') || 'application/pdf';
+      const blob = new Blob([response.data], { type: contentType });
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const isAndroidNative = Capacitor.getPlatform() === 'android';
+      if (isAndroidNative) {
+        // Native Android: convert Blob to base64 and open safely via native FileProvider intent
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result || '';
+            const base64 = typeof result === 'string' && result.includes(',')
+              ? result.split(',')[1]
+              : result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+
+        await openBase64File({
+          base64Data,
+          filename,
+          mimeType: contentType,
+        });
+      } else {
+        // Web: use object URL and browser anchor download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
     } catch (err) {
       console.error('Failed to download CV:', err);
-      const message = err.response?.data?.message || t('jobApplicants.cvDownloadError', { defaultValue: 'Failed to download CV. Please try again.' });
+      let message = t('jobApplicants.cvDownloadError', { defaultValue: 'Failed to download CV. Please try again.' });
+      
+      const status = err.response?.status;
+      if (status === 401) {
+        message = t('jobApplicants.cvAuthExpired', { defaultValue: 'Your session has expired. Please log in again to view the CV.' });
+      } else if (status === 403) {
+        message = t('jobApplicants.cvAccessDenied', { defaultValue: 'Access denied. You do not have permission to view this CV.' });
+      } else if (status === 404) {
+        message = t('jobApplicants.cvFileNotFound', { defaultValue: 'The CV document was not found or has been removed.' });
+      } else if (err.code === 'NO_VIEWER' || err.message?.includes('NO_VIEWER')) {
+        message = t('jobApplicants.cvNoViewer', { defaultValue: 'No compatible app found to open this document. Please install a viewer (e.g. PDF reader).' });
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      
       setCvDownloadError({ appId: app.id, message });
     } finally {
       setDownloadingCvId(null);

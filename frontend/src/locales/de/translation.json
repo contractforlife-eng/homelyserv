@@ -86,7 +86,12 @@
     "notesPlaceholder": "Hinweise (z.B. Ausweis mitbringen)",
     "confirmAccept": "Akzeptieren & Planen",
     "acceptMissingFields": "Datum, Uhrzeit und Adresse sind erforderlich.",
-    "title": "Bewerber"
+    "title": "Bewerber",
+    "cvDownloadError": "Fehler beim Herunterladen des Lebenslaufs. Bitte versuchen Sie es erneut.",
+    "cvAuthExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um den Lebenslauf anzuzeigen.",
+    "cvFileNotFound": "Der Lebenslauf wurde nicht gefunden oder wurde gelöscht.",
+    "cvNoViewer": "Keine kompatible App zum Öffnen dieses Dokuments gefunden (z. B. PDF-Reader).",
+    "cvAccessDenied": "Zugriff verweigert. Sie haben keine Berechtigung, diesen Lebenslauf anzuzeigen."
   },
   "profileCompletion": {
     "bannerTitle": "Vervollständigen Sie Ihr Profil",
