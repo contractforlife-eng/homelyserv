@@ -1523,6 +1523,8 @@ export const downloadApplicationCv = async (req, res) => {
     // Determine correct Content-Type
     const mimeMap = {
       pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       png: 'image/png',
       jpg: 'image/jpeg',
       jpeg: 'image/jpeg',

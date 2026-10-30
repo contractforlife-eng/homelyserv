@@ -91,7 +91,13 @@
     "cvAuthExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um den Lebenslauf anzuzeigen.",
     "cvFileNotFound": "Der Lebenslauf wurde nicht gefunden oder wurde gelöscht.",
     "cvNoViewer": "Keine kompatible App zum Öffnen dieses Dokuments gefunden (z. B. PDF-Reader).",
-    "cvAccessDenied": "Zugriff verweigert. Sie haben keine Berechtigung, diesen Lebenslauf anzuzeigen."
+    "cvAccessDenied": "Zugriff verweigert. Sie haben keine Berechtigung, diesen Lebenslauf anzuzeigen.",
+    "downloadCv": "Lebenslauf herunterladen",
+    "cvSavedSuccess": "Lebenslauf erfolgreich unter Downloads gespeichert ({{filename}})",
+    "openCv": "Datei öffnen",
+    "openingCv": "Wird geöffnet...",
+    "cvSaveCancelled": "Der Download wurde abgebrochen.",
+    "cvSavedCannotOpen": "Der Lebenslauf wurde unter Downloads gespeichert, konnte jedoch mangels kompatibler App nicht geöffnet werden."
   },
   "profileCompletion": {
     "bannerTitle": "Vervollständigen Sie Ihr Profil",

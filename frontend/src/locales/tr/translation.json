@@ -91,7 +91,13 @@
     "cvAuthExpired": "Oturumunuzun süresi doldu. Özgeçmişi görüntülemek için lütfen tekrar giriş yapın.",
     "cvFileNotFound": "Özgeçmiş belgesi bulunamadı veya silinmiş.",
     "cvNoViewer": "Bu belgeyi açmak için uyumlu bir uygulama bulunamadı (örn. PDF okuyucu).",
-    "cvAccessDenied": "Erişim reddedildi. Bu özgeçmişi görüntüleme izniniz yok."
+    "cvAccessDenied": "Erişim reddedildi. Bu özgeçmişi görüntüleme izniniz yok.",
+    "downloadCv": "Özgeçmişi İndir",
+    "cvSavedSuccess": "Özgeçmiş İndirilenler klasörüne başarıyla kaydedildi ({{filename}})",
+    "openCv": "Dosyayı aç",
+    "openingCv": "Açılıyor...",
+    "cvSaveCancelled": "İndirme iptal edildi.",
+    "cvSavedCannotOpen": "Özgeçmiş İndirilenler klasörüne kaydedildi, ancak dosyayı açabilecek uyumlu bir uygulama bulunamadı."
   },
   "profileCompletion": {
     "bannerTitle": "Çalışan profilinizi tamamlayın",

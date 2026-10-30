@@ -91,7 +91,13 @@
     "cvAuthExpired": "Your session has expired. Please log in again to view the CV.",
     "cvFileNotFound": "The CV document was not found or has been removed.",
     "cvNoViewer": "No compatible app found to open this document. Please install a viewer (e.g. PDF reader).",
-    "cvAccessDenied": "Access denied. You do not have permission to view this CV."
+    "cvAccessDenied": "Access denied. You do not have permission to view this CV.",
+    "downloadCv": "Download CV",
+    "cvSavedSuccess": "CV saved successfully to Downloads ({{filename}})",
+    "openCv": "Open file",
+    "openingCv": "Opening...",
+    "cvSaveCancelled": "Download was cancelled.",
+    "cvSavedCannotOpen": "CV was saved successfully to Downloads, but no viewer app could open it."
   },
   "profileCompletion": {
     "bannerTitle": "Complete your worker profile",

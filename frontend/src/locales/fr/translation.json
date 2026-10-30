@@ -91,7 +91,13 @@
     "cvAuthExpired": "Votre session a expiré. Veuillez vous reconnecter pour consulter le CV.",
     "cvFileNotFound": "Le document de CV est introuvable ou a été supprimé.",
     "cvNoViewer": "Aucune application compatible trouvée pour ouvrir ce document (ex. lecteur PDF).",
-    "cvAccessDenied": "Accès refusé. Vous n'avez pas l'autorisation de consulter ce CV."
+    "cvAccessDenied": "Accès refusé. Vous n'avez pas l'autorisation de consulter ce CV.",
+    "downloadCv": "Télécharger le CV",
+    "cvSavedSuccess": "CV enregistré avec succès dans Téléchargements ({{filename}})",
+    "openCv": "Ouvrir le fichier",
+    "openingCv": "Ouverture...",
+    "cvSaveCancelled": "Le téléchargement a été annulé.",
+    "cvSavedCannotOpen": "Le CV a été enregistré dans Téléchargements, mais aucune application compatible n'a pu l'ouvrir."
   },
   "profileCompletion": {
     "bannerTitle": "Complétez votre profil professionnel",

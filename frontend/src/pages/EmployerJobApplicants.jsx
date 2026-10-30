@@ -17,7 +17,8 @@ import { formatCurrencyAmount, getAccountCurrency, getStoredCurrency } from '../
 import { UserDisplayName } from '../components/users';
 import VerifiedBadge from '../components/verification/VerifiedBadge';
 import { Capacitor } from '@capacitor/core';
-import { openBase64File } from '../native/fileOpener';
+import { downloadFile, openFile } from '../native/fileOpener';
+import { Download, ExternalLink } from 'lucide-react';
 
 const STATUS_STYLES = {
   applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -57,11 +58,14 @@ const EmployerJobApplicants = () => {
   const [acceptLoading, setAcceptLoading] = useState(false);
   const [downloadingCvId, setDownloadingCvId] = useState(null);
   const [cvDownloadError, setCvDownloadError] = useState(null);
+  const [cvDownloadSuccess, setCvDownloadSuccess] = useState(null);
+  const [openingCvId, setOpeningCvId] = useState(null);
 
   const handleDownloadCv = async (app) => {
     if (!app || downloadingCvId) return;
     setDownloadingCvId(app.id);
     setCvDownloadError(null);
+    setCvDownloadSuccess(null);
     try {
       const response = await jobService.downloadApplicationCv(app.id);
       const disposition = response.headers?.['content-disposition'] || response.headers?.get?.('content-disposition') || '';
@@ -81,7 +85,7 @@ const EmployerJobApplicants = () => {
 
       const isAndroidNative = Capacitor.getPlatform() === 'android';
       if (isAndroidNative) {
-        // Native Android: convert Blob to base64 and open safely via native FileProvider intent
+        // Native Android: convert Blob to base64 and permanently save to Downloads
         const base64Data = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -95,10 +99,18 @@ const EmployerJobApplicants = () => {
           reader.readAsDataURL(blob);
         });
 
-        await openBase64File({
+        const downloadResult = await downloadFile({
           base64Data,
           filename,
           mimeType: contentType,
+        });
+
+        setCvDownloadSuccess({
+          appId: app.id,
+          filename: downloadResult?.filename || filename,
+          uri: downloadResult?.uri || null,
+          mimeType: downloadResult?.mimeType || contentType,
+          base64Data,
         });
       } else {
         // Web: use object URL and browser anchor download
@@ -110,11 +122,15 @@ const EmployerJobApplicants = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        setCvDownloadSuccess({
+          appId: app.id,
+          filename,
+        });
       }
     } catch (err) {
       console.error('Failed to download CV:', err);
       let message = t('jobApplicants.cvDownloadError', { defaultValue: 'Failed to download CV. Please try again.' });
-      
+
       const status = err.response?.status;
       if (status === 401) {
         message = t('jobApplicants.cvAuthExpired', { defaultValue: 'Your session has expired. Please log in again to view the CV.' });
@@ -122,15 +138,38 @@ const EmployerJobApplicants = () => {
         message = t('jobApplicants.cvAccessDenied', { defaultValue: 'Access denied. You do not have permission to view this CV.' });
       } else if (status === 404) {
         message = t('jobApplicants.cvFileNotFound', { defaultValue: 'The CV document was not found or has been removed.' });
-      } else if (err.code === 'NO_VIEWER' || err.message?.includes('NO_VIEWER')) {
-        message = t('jobApplicants.cvNoViewer', { defaultValue: 'No compatible app found to open this document. Please install a viewer (e.g. PDF reader).' });
+      } else if (err.code === 'CANCELLED' || err.message?.includes('CANCELLED')) {
+        message = t('jobApplicants.cvSaveCancelled', { defaultValue: 'Download was cancelled.' });
       } else if (err.response?.data?.message) {
         message = err.response.data.message;
       }
-      
+
       setCvDownloadError({ appId: app.id, message });
     } finally {
       setDownloadingCvId(null);
+    }
+  };
+
+  const handleOpenCv = async (savedInfo) => {
+    if (!savedInfo || openingCvId) return;
+    setOpeningCvId(savedInfo.appId);
+    setCvDownloadError(null);
+    try {
+      await openFile({
+        uri: savedInfo.uri,
+        base64Data: savedInfo.base64Data,
+        filename: savedInfo.filename,
+        mimeType: savedInfo.mimeType,
+      });
+    } catch (openErr) {
+      console.error('Failed to open saved CV:', openErr);
+      const isNoViewer = openErr.code === 'NO_VIEWER' || openErr.message?.includes('NO_VIEWER');
+      const msg = isNoViewer
+        ? t('jobApplicants.cvSavedCannotOpen', { defaultValue: 'CV was saved successfully to Downloads, but no viewer app could open it.' })
+        : t('jobApplicants.cvNoViewer', { defaultValue: 'No compatible app found to open this document. Please install a viewer (e.g. PDF reader).' });
+      setCvDownloadError({ appId: savedInfo.appId, message: msg });
+    } finally {
+      setOpeningCvId(null);
     }
   };
 
@@ -562,25 +601,53 @@ const EmployerJobApplicants = () => {
                           )}
 
                           {app.cvUrl && (
-                            <div className="mt-2">
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadCv(app)}
-                                disabled={downloadingCvId === app.id}
-                                className="inline-flex items-center whitespace-nowrap gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800 disabled:opacity-50"
-                              >
-                                {downloadingCvId === app.id ? (
-                                  <Loader2 size={14} className="animate-spin flex-shrink-0" />
-                                ) : (
-                                  <FileText size={14} className="flex-shrink-0" />
+                            <div className="mt-2 max-w-full">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadCv(app)}
+                                  disabled={downloadingCvId === app.id}
+                                  className="inline-flex items-center min-w-0 max-w-full gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800 disabled:opacity-50"
+                                >
+                                  {downloadingCvId === app.id ? (
+                                    <Loader2 size={14} className="animate-spin flex-shrink-0" />
+                                  ) : (
+                                    <Download size={14} className="flex-shrink-0" />
+                                  )}
+                                  <span className="whitespace-nowrap flex-shrink-0">{t('jobApplicants.downloadCv', { defaultValue: 'Download CV' })}</span>
+                                  {app.cvOriginalName && (
+                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[140px] sm:max-w-[200px]" title={app.cvOriginalName}>({app.cvOriginalName})</span>
+                                  )}
+                                </button>
+
+                                {cvDownloadSuccess && cvDownloadSuccess.appId === app.id && cvDownloadSuccess.uri && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenCv(cvDownloadSuccess)}
+                                    disabled={openingCvId === app.id}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition border border-teal-200 dark:border-teal-700 disabled:opacity-50"
+                                  >
+                                    {openingCvId === app.id ? (
+                                      <Loader2 size={13} className="animate-spin flex-shrink-0" />
+                                    ) : (
+                                      <ExternalLink size={13} className="flex-shrink-0" />
+                                    )}
+                                    <span>{t('jobApplicants.openCv', { defaultValue: 'Open file' })}</span>
+                                  </button>
                                 )}
-                                <span className="whitespace-nowrap">{t('jobApplicants.viewCv', { defaultValue: 'View Applicant CV' })}</span>
-                                {app.cvOriginalName && (
-                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 max-w-[200px] truncate" title={app.cvOriginalName}>({app.cvOriginalName})</span>
-                                )}
-                              </button>
+                              </div>
+
+                              {cvDownloadSuccess && cvDownloadSuccess.appId === app.id && (
+                                <p className="text-[11px] text-green-600 dark:text-green-400 mt-1 break-words">
+                                  {t('jobApplicants.cvSavedSuccess', {
+                                    filename: cvDownloadSuccess.filename,
+                                    defaultValue: `CV saved successfully (\${cvDownloadSuccess.filename})`
+                                  })}
+                                </p>
+                              )}
+
                               {cvDownloadError && cvDownloadError.appId === app.id && (
-                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
+                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 break-words">
                                   {cvDownloadError.message}
                                 </p>
                               )}
