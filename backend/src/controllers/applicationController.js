@@ -42,6 +42,7 @@ import { sendVerificationOnRegistration } from '../services/verificationService.
 import { sanitizeUserResponse } from '../utils/safeUserResponse.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
+import { resolveWorkerProfession } from '../services/jobLabelResolver.js';
 import { resolveAccountDefaultCurrency } from '../utils/currencyMetadata.js';
 import { detectPlatform, extractAppVersion } from '../services/platformDetectionService.js';
 import { validatePhone } from './authController.js';
@@ -65,6 +66,10 @@ const isPublicRegisterRateLimited = (ip) => {
   }
   record.count += 1;
   return record.count > PUBLIC_REG_MAX_ATTEMPTS;
+};
+
+export const _resetPublicRegisterRateLimit = () => {
+  publicRegisterAttempts.clear();
 };
 
 export const isValidIanaTimeZone = (tz) => {
@@ -532,7 +537,7 @@ export const applyPublicToJob = async (req, res) => {
       countryCode: matchedCountry.code,
       countryName: matchedCountry.name,
       location: '',
-      desiredJob: 'other',
+      desiredJob: resolveWorkerProfession(jobPost.jobTitle),
       hourlyRate: '0',
       hourlyRateCurrency: resolveAccountDefaultCurrency({
         countryCode: matchedCountry.code,

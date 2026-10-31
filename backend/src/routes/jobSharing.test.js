@@ -8,6 +8,7 @@ import {
   isValidIanaTimeZone,
   isValidCalendarDate,
   isAppointmentInPast,
+  _resetPublicRegisterRateLimit,
 } from '../controllers/applicationController.js';
 
 process.env.JWT_SECRET = 'job-sharing-test-jwt-secret-2026';
@@ -457,5 +458,124 @@ test('GET /api/jobs/applications/mine enforces worker role and returns worker ap
     prisma.user.findMany = originalFindManyUsers;
     prisma.employerProfile.findMany = originalFindManyEmployers;
     prisma.$runCommandRaw = originalRunCommandRaw;
+  }
+});
+
+test('POST /api/jobs/:id/apply-public inherits job profession for newly registered worker', async () => {
+  _resetPublicRegisterRateLimit?.();
+  const originalJobFindUnique = prisma.jobPost.findUnique;
+  const originalUserFindOne = User.findOne;
+  const originalUserSave = User.prototype.save;
+  const originalWorkerProfileFindUnique = prisma.workerProfile.findUnique;
+  const originalWorkerProfileCreate = prisma.workerProfile.create;
+  const originalJobAppCreate = prisma.jobApplication.create;
+
+  let savedUserData = null;
+  let createdWorkerProfileData = null;
+
+  User.findOne = async () => null; // visitor is new
+  User.prototype.save = async function () {
+    savedUserData = this.toObject();
+    return this;
+  };
+
+  prisma.workerProfile.findUnique = async () => null;
+  prisma.workerProfile.create = async ({ data }) => {
+    createdWorkerProfileData = data;
+    return { id: '507f1f77bcf86cd799439077', ...data };
+  };
+
+  prisma.jobApplication.create = async ({ data }) => ({
+    id: '507f1f77bcf86cd799439088',
+    ...data,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  try {
+    await withServer(async (base) => {
+      // 1. Canonical predefined title: "Nanny" -> maps to canonical "nanny"
+      prisma.jobPost.findUnique = async () => ({
+        id: '507f1f77bcf86cd799439011',
+        employerId: '507f1f77bcf86cd799439013',
+        status: 'open',
+        jobTitle: 'Nanny',
+        expiresAt: new Date(Date.now() + 86400000)
+      });
+
+      let res = await fetch(`${base}/api/jobs/507f1f77bcf86cd799439011/apply-public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: 'New Nanny Applicant',
+          email: 'newnanny@example.com',
+          phone: '+201012345678',
+          password: 'Password123!',
+          countryCode: 'EG'
+        })
+      });
+      assert.equal(res.status, 201);
+      assert.equal(savedUserData.desiredJob, 'nanny');
+      assert.equal(createdWorkerProfileData.category, 'nanny');
+
+      // 2. Custom job title: "Senior Pool Cleaner & Technician" -> preserves custom string
+      savedUserData = null;
+      createdWorkerProfileData = null;
+      prisma.jobPost.findUnique = async () => ({
+        id: '507f1f77bcf86cd799439011',
+        employerId: '507f1f77bcf86cd799439013',
+        status: 'open',
+        jobTitle: 'Senior Pool Cleaner & Technician',
+        expiresAt: new Date(Date.now() + 86400000)
+      });
+
+      res = await fetch(`${base}/api/jobs/507f1f77bcf86cd799439011/apply-public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: 'New Custom Specialist',
+          email: 'custom@example.com',
+          phone: '+201012345679',
+          password: 'Password123!',
+          countryCode: 'EG'
+        })
+      });
+      assert.equal(res.status, 201);
+      assert.equal(savedUserData.desiredJob, 'Senior Pool Cleaner & Technician');
+      assert.equal(createdWorkerProfileData.category, 'Senior Pool Cleaner & Technician');
+
+      // 3. Legacy / empty jobTitle -> safe fallback to 'other'
+      savedUserData = null;
+      createdWorkerProfileData = null;
+      prisma.jobPost.findUnique = async () => ({
+        id: '507f1f77bcf86cd799439011',
+        employerId: '507f1f77bcf86cd799439013',
+        status: 'open',
+        jobTitle: '',
+        expiresAt: new Date(Date.now() + 86400000)
+      });
+
+      res = await fetch(`${base}/api/jobs/507f1f77bcf86cd799439011/apply-public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: 'Fallback Applicant',
+          email: 'fallback@example.com',
+          phone: '+201012345680',
+          password: 'Password123!',
+          countryCode: 'EG'
+        })
+      });
+      assert.equal(res.status, 201);
+      assert.equal(savedUserData.desiredJob, 'other');
+      assert.equal(createdWorkerProfileData.category, 'other');
+    });
+  } finally {
+    prisma.jobPost.findUnique = originalJobFindUnique;
+    User.findOne = originalUserFindOne;
+    User.prototype.save = originalUserSave;
+    prisma.workerProfile.findUnique = originalWorkerProfileFindUnique;
+    prisma.workerProfile.create = originalWorkerProfileCreate;
+    prisma.jobApplication.create = originalJobAppCreate;
   }
 });

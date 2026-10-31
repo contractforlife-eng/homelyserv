@@ -90,8 +90,38 @@ for (const labels of Object.values(JOB_LABELS_BY_LOCALE)) {
 }
 
 export const resolveCanonicalJobLabel = (input) => {
+  if (typeof input !== 'string') return null;
+
+  // Direct check for canonical key (case-insensitive, spaces/hyphens as underscores)
+  const keyCandidate = input.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (CANONICAL_WORKER_JOBS.includes(keyCandidate)) {
+    return keyCandidate;
+  }
+
   const normalized = normalizeJobLabel(input);
   return normalized ? LABEL_TO_CANONICAL.get(normalized) || null : null;
+};
+
+/**
+ * Resolves a worker's profession string from a job title.
+ * 1. Checks if it matches a canonical predefined job (key or localized label).
+ *    If so, returns the canonical job key.
+ * 2. If it is a non-empty custom string, returns the trimmed string (capped at 100 chars).
+ * 3. If missing, null, or empty, returns 'other'.
+ *
+ * @param {string} [jobTitle]
+ * @returns {string}
+ */
+export const resolveWorkerProfession = (jobTitle) => {
+  if (typeof jobTitle !== 'string') return 'other';
+
+  const trimmed = jobTitle.trim();
+  if (!trimmed) return 'other';
+
+  const canonical = resolveCanonicalJobLabel(trimmed);
+  if (canonical) return canonical;
+
+  return trimmed.slice(0, 100);
 };
 
 export { normalizeJobLabel };
