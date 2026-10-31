@@ -10,19 +10,19 @@ import { classifyDevice } from '../utils/deviceType';
 import { trackOperationalAnalytics } from '../utils/operationalAnalytics';
 import { API_BASE } from '../config/api';
 
-const RELEASE_MANIFEST_URL = '/downloads/android/1.0.40-41/release.json';
-const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.40/HomelyServ.apk';
+const RELEASE_MANIFEST_URL = '/downloads/android/1.0.41-42/release.json';
+const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.41/HomelyServ.apk';
 const FALLBACK_RELEASE = {
   appName: 'HomelyServ',
-  versionName: '1.0.40',
-  versionCode: 41,
-  releaseDate: '2026-10-30',
-  sizeBytes: 14427953,
+  versionName: '1.0.41',
+  versionCode: 42,
+  releaseDate: '2026-10-31',
+  sizeBytes: 14428933,
   minAndroid: 'Android 7.0',
   minSdk: 24,
   targetSdk: 36,
   packageName: 'com.homelyserv.app',
-  sha256: '1432677DB6D25909DE7905C02FF0FDED5866F48381C6D12205E7ACF7E6B2422E',
+  sha256: '430F56FC059D07A8DF0F39683149058D163B118D2F9CD51483F7FD50D9D14799',
   signingCertificateSha256: 'b52c2b1a9d4510993219b60b138530583e4ca29274cc32690f44f2f233674c50',
   downloadUrl: FALLBACK_DOWNLOAD_URL
 };
