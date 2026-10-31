@@ -5,17 +5,31 @@ let initialized = false;
 let disabled = false;
 let disableReason = null;
 
-function parseServiceAccount(raw) {
+export function parseServiceAccount(raw) {
   if (!raw || typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   if (!trimmed) return null;
+
+  // 1. Try direct JSON parsing
   try {
     const parsed = JSON.parse(trimmed);
-    if (!parsed.type || !parsed.project_id || !parsed.private_key) return null;
-    return parsed;
+    if (parsed.type && parsed.project_id && parsed.private_key) return parsed;
   } catch {
-    return null;
+    // Fall through to Base64 attempt
   }
+
+  // 2. Try Base64 decoding if input does not start with JSON object syntax
+  try {
+    const decoded = Buffer.from(trimmed, 'base64').toString('utf8').trim();
+    if (decoded.startsWith('{') && decoded.endsWith('}')) {
+      const parsed = JSON.parse(decoded);
+      if (parsed.type && parsed.project_id && parsed.private_key) return parsed;
+    }
+  } catch {
+    // Invalid Base64 or decoded content is not valid JSON
+  }
+
+  return null;
 }
 
 export function getMessaging() {
@@ -24,6 +38,9 @@ export function getMessaging() {
 }
 
 export function isFcmDisabled() {
+  if (process.env.FCM_DISABLE === 'true' || process.env.FCM_DISABLE === '1') {
+    return true;
+  }
   return disabled;
 }
 

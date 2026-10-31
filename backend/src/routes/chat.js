@@ -20,7 +20,7 @@ import { authorizePaidChatRelationship, resolveUserParty } from '../services/pay
 import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { emitToUser } from '../lib/socket.js';
-import { sendPushToUser } from '../services/fcmService.js';
+
 import { getBlockRelationship } from '../services/userBlockService.js';
 import {
   getUserIdentity,
@@ -439,19 +439,7 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
 
     res.status(201).json(formatted);
 
-    if (String(senderId) !== String(recipientId)) {
-      sendPushToUser(String(recipientId), {
-        title: 'New message',
-        body: 'You have a new message on HomelyServ',
-        data: {
-          type: 'NEW_MESSAGE',
-          entityType: 'MESSAGE',
-          conversationId,
-          senderId: String(senderId),
-        },
-        channelId: 'messages',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
 
     return;
   } catch (error) {

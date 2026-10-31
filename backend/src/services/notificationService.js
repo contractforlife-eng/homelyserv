@@ -7,6 +7,7 @@
 import prisma from '../lib/prisma.js';
 import { emitToUser } from '../lib/socket.js';
 import User from '../models/User.js';
+import { enqueuePushOutbox } from './pushOutboxService.js';
 
 // ============================================================
 // NOTIFICATION TYPES
@@ -147,6 +148,11 @@ export const createNotification = async (userId, {
         createdAt: notification.createdAt,
       });
     }
+
+    // Enqueue for durable push delivery (never blocks caller response)
+    enqueuePushOutbox(userId, notification).catch((pushErr) => {
+      console.error('⚠️ Failed to enqueue push notification:', pushErr.message);
+    });
 
     return notification;
   } catch (error) {

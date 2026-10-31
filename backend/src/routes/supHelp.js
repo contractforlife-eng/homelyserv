@@ -14,7 +14,6 @@ import { ensureConversationMetadata, canAccessConversation, touchConversation, g
 import { getUserIdentity, getUserIdentities, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { emitToUser } from '../lib/socket.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
-import { sendPushToUser } from '../services/fcmService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import {
   supHelpListComplaints,
@@ -630,19 +629,7 @@ router.post('/messages', async (req, res) => {
 
     res.status(201).json(formatted);
 
-    if (String(senderId) !== String(recipientId)) {
-      sendPushToUser(String(recipientId), {
-        title: 'New message',
-        body: 'You have a new message on HomelyServ',
-        data: {
-          type: 'NEW_MESSAGE',
-          entityType: 'MESSAGE',
-          conversationId,
-          senderId,
-        },
-        channelId: 'messages',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
 
     return;
   } catch (error) {

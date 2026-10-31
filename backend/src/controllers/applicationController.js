@@ -23,7 +23,7 @@ import {
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { createOffer, validateOfferMonetaryInput } from '../services/offerService.js';
 import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
-import { sendPushToUser } from '../services/fcmService.js';
+
 import User from '../models/User.js';
 import { getPublicVerification } from '../services/profileVerificationService.js';
 import {
@@ -378,19 +378,7 @@ export const applyToJob = async (req, res) => {
       application,
     });
 
-    if (String(req.userId) !== String(jobPost.employerId)) {
-      sendPushToUser(jobPost.employerId, {
-        title: 'New application',
-        body: 'You have a new job application on HomelyServ',
-        data: {
-          type: 'NEW_APPLICATION',
-          entityType: 'JOB_APPLICATION',
-          applicationId: String(application.id),
-          jobPostId: String(jobPost.id),
-        },
-        channelId: 'jobs_offers',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     // Duplicate application — rely on @@unique([jobPostId, workerId])
     if (error.code === 'P2002') {
@@ -1073,19 +1061,7 @@ export const updateApplicationStatus = async (req, res) => {
         console.error('Applications: worker accept notification failed:', notifError.message);
       }
 
-      if (String(req.userId) !== String(application.workerId)) {
-        sendPushToUser(application.workerId, {
-          title: 'Interview invitation',
-          body: 'Your job application has been accepted with an interview schedule',
-          data: {
-            type: 'APPLICATION_STATUS_UPDATE',
-            entityType: 'JOB_APPLICATION',
-            applicationId: String(application.id),
-            jobPostId: String(application.jobPostId),
-          },
-          channelId: 'jobs_offers',
-        }).catch(() => {});
-      }
+      // Push notification is automatically delivered via PushOutbox linked to createNotification above.
 
       return res.json({
         success: true,
@@ -1132,19 +1108,7 @@ export const updateApplicationStatus = async (req, res) => {
         console.error('Applications: worker reject notification failed:', notifError.message);
       }
 
-      if (String(req.userId) !== String(application.workerId)) {
-        sendPushToUser(application.workerId, {
-          title: 'Application update',
-          body: 'There is an update to your job application',
-          data: {
-            type: 'APPLICATION_STATUS_UPDATE',
-            entityType: 'JOB_APPLICATION',
-            applicationId: String(application.id),
-            jobPostId: String(application.jobPostId),
-          },
-          channelId: 'jobs_offers',
-        }).catch(() => {});
-      }
+      // Push notification is automatically delivered via PushOutbox linked to createNotification above.
 
       return res.json({
         success: true,
@@ -1191,19 +1155,7 @@ export const updateApplicationStatus = async (req, res) => {
 
     res.json({ success: true, message: `Application ${status}`, application: updated });
 
-    if (String(req.userId) !== String(application.workerId)) {
-      sendPushToUser(application.workerId, {
-        title: 'Application update',
-        body: 'There is an update to your job application',
-        data: {
-          type: 'APPLICATION_STATUS_UPDATE',
-          entityType: 'JOB_APPLICATION',
-          applicationId: String(application.id),
-          jobPostId: String(application.jobPostId),
-        },
-        channelId: 'jobs_offers',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     console.error('Applications: status error:', error);
     res.status(500).json({ success: false, message: 'Failed to update application status' });
@@ -1433,18 +1385,7 @@ export const sendOfferFromApplication = async (req, res) => {
       offerId: offer.id,
     });
 
-    if (String(req.userId) !== String(workerProfile.userId)) {
-      sendPushToUser(workerProfile.userId, {
-        title: 'New job offer',
-        body: 'You have received a new offer on HomelyServ',
-        data: {
-          type: 'NEW_OFFER',
-          entityType: 'OFFER',
-          offerId: String(offer.id),
-        },
-        channelId: 'jobs_offers',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     console.error('Applications: send offer error:', error);
     if (error?.statusCode === 400) {

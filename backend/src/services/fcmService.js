@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma.js';
 import User from '../models/User.js';
 import { getMessaging, isFcmDisabled } from './fcmInit.js';
+import { enqueuePushOutbox } from './pushOutboxService.js';
 
 const VALID_CHANNEL_IDS = new Set([
   'messages',

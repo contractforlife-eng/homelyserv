@@ -9,7 +9,6 @@ import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { recordHireCommissionExpense } from '../services/hireCommissionExpenseService.js';
 import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService.js';
-import { sendPushToUser } from '../services/fcmService.js';
 import { notifyAdminsForPaymentReview } from '../services/paymentReviewAlertService.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
@@ -612,33 +611,7 @@ const updateHireAfterPayment = async (hireId, captureId, payment) => {
       console.error('⚠️ Could not resolve worker for payment notification:', workerLookupError.message);
     }
 
-    if (hire.employerId) {
-      sendPushToUser(hire.employerId, {
-        title: 'Payment confirmed',
-        body: 'Your HomelyServ payment has been confirmed',
-        data: {
-          type: 'PAYMENT_SUCCESS',
-          entityType: 'PAYMENT',
-          hireId: String(hire.id),
-          purpose: 'COMMISSION',
-        },
-        channelId: 'payments',
-      }).catch(() => {});
-    }
-
-    if (workerProfile?.userId) {
-      sendPushToUser(workerProfile.userId, {
-        title: 'Payment confirmed',
-        body: 'Payment has been confirmed for your HomelyServ hire',
-        data: {
-          type: 'PAYMENT_SUCCESS',
-          entityType: 'HIRE',
-          hireId: String(hire.id),
-          purpose: 'COMMISSION',
-        },
-        channelId: 'payments',
-      }).catch(() => {});
-    }
+    // Push notifications are automatically delivered via PushOutbox linked to createNotification above.
 
     return true;
 

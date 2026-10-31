@@ -14,7 +14,7 @@ import { createOffer } from '../services/offerService.js';
 import { ensureEmployeeForHire } from '../services/employeeService.js';
 import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
-import { sendPushToUser } from '../services/fcmService.js';
+
 import { HIRE_USER_SELECT, projectHireUser } from '../utils/hireUserProjection.js';
 import { UNRESOLVED_PAYMENT_STATUSES, isTerminatedHire } from '../services/hireHideEligibility.js';
 
@@ -188,18 +188,7 @@ export const sendOffer = async (req, res) => {
 
     res.status(201).json({ success: true, message: 'Offer sent successfully', offer });
 
-    if (String(req.userId) !== String(workerProfile.userId)) {
-      sendPushToUser(workerProfile.userId, {
-        title: 'New job offer',
-        body: 'You have received a new offer on HomelyServ',
-        data: {
-          type: 'NEW_OFFER',
-          entityType: 'OFFER',
-          offerId: String(offer.id),
-        },
-        channelId: 'jobs_offers',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     console.error('Hire error:', error);
     if (error?.statusCode === 400) {
@@ -332,26 +321,15 @@ export const respondToOffer = async (req, res) => {
       }
 
       await createNotification(
-        workerProfile.userId,
+        offer.employerId,
         'offer',
         'Offer Accepted',
-        `You accepted the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
+        `${workerProfile.fullName || 'Worker'} accepted your offer for ${offer.jobTitle}`
       );
 
       res.json({ message: 'Offer accepted, Hire created', offer: acceptance.offer, hire: acceptance.hire });
 
-      if (String(req.userId) !== String(offer.employerId)) {
-        sendPushToUser(offer.employerId, {
-          title: 'Offer accepted',
-          body: 'Your offer has been accepted on HomelyServ',
-          data: {
-            type: 'OFFER_ACCEPTED',
-            entityType: 'OFFER',
-            offerId: String(offer.id),
-          },
-          channelId: 'jobs_offers',
-        }).catch(() => {});
-      }
+      // Push notification is automatically delivered via PushOutbox linked to createNotification above.
       return;
     }
 
@@ -369,26 +347,15 @@ export const respondToOffer = async (req, res) => {
 
     const updatedOffer = await prisma.offer.findUnique({ where: { id: offer.id } });
     await createNotification(
-      workerProfile.userId,
+      offer.employerId,
       'offer',
       'Offer Rejected',
-      `You rejected the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
+      `${workerProfile.fullName || 'Worker'} declined your offer for ${offer.jobTitle}`
     );
 
     res.json({ message: 'Offer rejected', offer: updatedOffer });
 
-    if (String(req.userId) !== String(offer.employerId)) {
-      sendPushToUser(offer.employerId, {
-        title: 'Offer update',
-        body: 'Your offer has been declined on HomelyServ',
-        data: {
-          type: 'OFFER_REJECTED',
-          entityType: 'OFFER',
-          offerId: String(offer.id),
-        },
-        channelId: 'jobs_offers',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     console.error('Respond to offer error:', error);
     if (res.headersSent) return;
@@ -690,20 +657,25 @@ export const updateHireStatus = async (req, res) => {
       where: { id: hireId },
       data: { status },
     });
-    res.json({ message: 'Hire status updated successfully', hire: updatedHire });
-
-    if (String(req.userId) !== String(hire.workerId)) {
-      sendPushToUser(hire.workerId, {
-        title: 'Hire update',
-        body: 'There is an update to your HomelyServ hire',
-        data: {
-          type: 'HIRE_STATUS_UPDATE',
-          entityType: 'HIRE',
-          hireId: String(hire.id),
-        },
-        channelId: 'hire',
+    
+    const workerProfileRec = await prisma.workerProfile.findUnique({
+      where: { id: hire.workerId },
+      select: { userId: true },
+    });
+    if (workerProfileRec?.userId) {
+      await notificationServiceCreate(workerProfileRec.userId, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Hire Status Updated',
+        message: 'There is an update to your hire status: ' + status,
+        entityType: 'HIRE',
+        entityId: String(hire.id),
+        link: '/my-hires',
       }).catch(() => {});
     }
+
+    res.json({ message: 'Hire status updated successfully', hire: updatedHire });
+
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     console.error('Update hire status error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -936,18 +908,7 @@ export const updateOfferStatus = async (req, res) => {
 
     res.json({ message: 'Offer status updated', offer: updatedOffer });
 
-    if (String(req.userId) !== String(offer.employerId)) {
-      sendPushToUser(offer.employerId, {
-        title: 'Offer update',
-        body: 'There is an update to your job offer',
-        data: {
-          type: 'OFFER_STATUS_UPDATE',
-          entityType: 'OFFER',
-          offerId: String(offer.id),
-        },
-        channelId: 'jobs_offers',
-      }).catch(() => {});
-    }
+    // Push notification is automatically delivered via PushOutbox linked to createNotification above.
   } catch (error) {
     console.error('Update offer status error:', error);
     res.status(500).json({ message: 'Server error' });

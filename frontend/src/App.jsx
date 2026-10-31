@@ -170,6 +170,7 @@ import { useAuth } from './context/AuthContext';
 import useAuthStore from './store/authStore';
 import { useTranslation } from 'react-i18next';
 import { initializePushNotifications, setupPushListeners, getPendingPushAction, clearPendingPushAction } from './utils/pushNotifications';
+import { getEntityRoute } from './utils/notificationService';
 
 // Messages Redirect Component
 const MessagesRedirect = () => {
@@ -372,35 +373,18 @@ function App() {
           navigate('/admin/messages', { state: { conversationId: action.conversationId } });
         } else if (role === 'SUPPORT') {
           navigate('/support-dashboard', { state: { conversationId: action.conversationId } });
+        } else if (role === 'DOCTOR') {
+          navigate('/doctor-dashboard', { state: { conversationId: action.conversationId } });
+        } else if (role === 'TEACHER') {
+          navigate('/teacher-messages', { state: { conversationId: action.conversationId } });
+        } else if (role === 'STUDENT') {
+          navigate('/student-messages', { state: { conversationId: action.conversationId } });
         }
-      } else if (action.type === 'NEW_OFFER') {
-        if (role === 'WORKER') {
-          navigate('/worker/offers');
-        } else if (role === 'EMPLOYER') {
-          navigate('/employer-jobs');
-        }
-      } else if (action.type === 'NEW_APPLICATION') {
-        if (role === 'EMPLOYER') {
-          navigate('/employer-jobs');
-        }
-      } else if (action.type === 'APPLICATION_STATUS_UPDATE') {
-        if (role === 'WORKER') {
-          navigate('/worker-jobs');
-        }
-      } else if (action.type === 'OFFER_ACCEPTED' || action.type === 'OFFER_REJECTED' || action.type === 'OFFER_STATUS_UPDATE') {
-        if (role === 'WORKER') {
-          navigate('/worker/offers');
-        } else if (role === 'EMPLOYER') {
-          navigate('/employer-jobs');
-        }
-      } else if (action.type === 'HIRE_STATUS_UPDATE') {
-        navigate('/my-hires');
-      } else if (action.type === 'PAYMENT_SUCCESS') {
-        if (role === 'EMPLOYER') {
-          navigate('/employer-payments');
-        } else {
-          navigate('/my-hires');
-        }
+      } else if (action.link && action.link !== '/') {
+        navigate(action.link);
+      } else {
+        const targetRoute = getEntityRoute(action);
+        navigate(targetRoute);
       }
 
       clearPendingPushAction();

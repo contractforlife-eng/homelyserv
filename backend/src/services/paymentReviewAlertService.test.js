@@ -52,20 +52,22 @@ test('Admin counter uses only canonical review-required fields', () => {
   });
 });
 
-test('Admin review delivery targets Admin users only and sends one in-app/push pair per Admin', async () => {
+test('Admin review delivery targets Admin users only and enqueues exactly one central notification per Admin', async () => {
   const notifications = [];
-  const pushes = [];
   const result = await notifyAdminsForPaymentReview(payment, {
     findAdmins: async () => [{ _id: 'admin-1' }, { _id: 'admin-2' }],
-    createNotification: async (userId, payload) => notifications.push({ userId, payload }),
-    sendPushToUser: async (userId, payload) => pushes.push({ userId, payload }),
+    createNotification: async (userId, payload) => {
+      notifications.push({ userId, payload });
+      return { id: `notif-${userId}`, ...payload };
+    },
   });
 
   assert.equal(result.notified, 2);
   assert.deepEqual(notifications.map((item) => item.userId), ['admin-1', 'admin-2']);
-  assert.deepEqual(pushes.map((item) => item.userId), ['admin-1', 'admin-2']);
-  assert.equal(pushes[0].payload.channelId, 'payments');
-  assert.equal(pushes[0].payload.title, 'Payment Requires Review');
+  assert.equal(notifications.length, 2);
+  assert.equal(notifications[0].payload.type, ADMIN_PAYMENT_REVIEW_NOTIFICATION_TYPE);
+  assert.equal(notifications[0].payload.title, 'Payment Requires Review');
+  assert.equal(notifications[0].payload.link, '/admin/payments');
 });
 
 test('non-review states do not deliver Admin alerts', async () => {

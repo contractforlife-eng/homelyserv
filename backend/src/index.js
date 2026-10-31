@@ -64,6 +64,7 @@ import { verifyGuestConversation, verifyStaffToken } from './services/publicSupp
 import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
 import { startTeacherLessonReminderWorker } from './services/teacherLessonReminderService.js';
 import { startFamilyTrackingRetentionWorker } from './services/familyTrackingService.js';
+import { startPushOutboxWorker } from './services/pushOutboxService.js';
 import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './services/socketAuthService.js';
 import './config.js'; // Running your base configuration routines
 import { initializeFcm } from './services/fcmInit.js';
@@ -255,6 +256,7 @@ mongoose.connect(MONGODB_URI)
     startPublicSupportExpiryWorker();
     startTeacherLessonReminderWorker();
     startFamilyTrackingRetentionWorker();
+    startPushOutboxWorker();
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);

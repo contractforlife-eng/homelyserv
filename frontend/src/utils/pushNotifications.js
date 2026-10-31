@@ -28,6 +28,17 @@ async function ensureChannels() {
   channelsCreated = true;
 }
 
+export async function checkPushPermissionStatus() {
+  if (!Capacitor.isNativePlatform()) return 'granted';
+  try {
+    const status = await PushNotifications.checkPermissions();
+    return status.receive;
+  } catch (err) {
+    console.warn('[Push] Failed to check permissions:', err);
+    return 'denied';
+  }
+}
+
 async function checkAndRequestPermission() {
   let status = await PushNotifications.checkPermissions();
   if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale') {
@@ -65,64 +76,20 @@ export function clearPendingPushAction() {
 
 function handlePushAction(notification) {
   const data = notification.data || {};
-  if (data.type === 'NEW_MESSAGE' && data.conversationId) {
-    pendingPushAction = {
-      conversationId: String(data.conversationId),
-      senderId: data.senderId ? String(data.senderId) : null,
-    };
-    console.log('[Push] NEW_MESSAGE tap pending:', pendingPushAction.conversationId);
-  } else if (data.type === 'NEW_OFFER' && data.offerId) {
-    pendingPushAction = {
-      type: 'NEW_OFFER',
-      offerId: String(data.offerId),
-    };
-    console.log('[Push] NEW_OFFER tap pending:', pendingPushAction.offerId);
-  } else if (data.type === 'NEW_APPLICATION' && data.applicationId) {
-    pendingPushAction = {
-      type: 'NEW_APPLICATION',
-      applicationId: String(data.applicationId),
-      jobPostId: data.jobPostId ? String(data.jobPostId) : null,
-    };
-    console.log('[Push] NEW_APPLICATION tap pending:', pendingPushAction.applicationId);
-  } else if (data.type === 'APPLICATION_STATUS_UPDATE' && data.applicationId) {
-    pendingPushAction = {
-      type: 'APPLICATION_STATUS_UPDATE',
-      applicationId: String(data.applicationId),
-      jobPostId: data.jobPostId ? String(data.jobPostId) : null,
-    };
-    console.log('[Push] APPLICATION_STATUS_UPDATE tap pending:', pendingPushAction.applicationId);
-  } else if (data.type === 'OFFER_ACCEPTED' && data.offerId) {
-    pendingPushAction = {
-      type: 'OFFER_ACCEPTED',
-      offerId: String(data.offerId),
-    };
-    console.log('[Push] OFFER_ACCEPTED tap pending:', pendingPushAction.offerId);
-  } else if (data.type === 'OFFER_REJECTED' && data.offerId) {
-    pendingPushAction = {
-      type: 'OFFER_REJECTED',
-      offerId: String(data.offerId),
-    };
-    console.log('[Push] OFFER_REJECTED tap pending:', pendingPushAction.offerId);
-  } else if (data.type === 'OFFER_STATUS_UPDATE' && data.offerId) {
-    pendingPushAction = {
-      type: 'OFFER_STATUS_UPDATE',
-      offerId: String(data.offerId),
-    };
-    console.log('[Push] OFFER_STATUS_UPDATE tap pending:', pendingPushAction.offerId);
-  } else if (data.type === 'HIRE_STATUS_UPDATE' && data.hireId) {
-    pendingPushAction = {
-      type: 'HIRE_STATUS_UPDATE',
-      hireId: String(data.hireId),
-    };
-    console.log('[Push] HIRE_STATUS_UPDATE tap pending:', pendingPushAction.hireId);
-  } else if (data.type === 'PAYMENT_SUCCESS' && data.hireId) {
-    pendingPushAction = {
-      type: 'PAYMENT_SUCCESS',
-      hireId: String(data.hireId),
-    };
-    console.log('[Push] PAYMENT_SUCCESS tap pending:', pendingPushAction.hireId);
-  } else {
-    console.log('[Push] Action performed:', notification.actionId, notification);
+  pendingPushAction = {
+    ...data,
+    type: data.type || 'SYSTEM',
+    entityType: data.entityType || null,
+    entityId: data.entityId || null,
+    link: data.link || null,
+    conversationId: data.conversationId || (data.entityType === 'MESSAGE' ? data.entityId : null),
+    offerId: data.offerId || (data.entityType === 'OFFER' ? data.entityId : null),
+    applicationId: data.applicationId || (data.entityType === 'JOB_APPLICATION' ? data.entityId : null),
+    hireId: data.hireId || (data.entityType === 'HIRE' ? data.entityId : null),
+  };
+  console.log('[Push] Push action parsed and pending:', pendingPushAction);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('push-action', { detail: pendingPushAction }));
   }
 }
 
