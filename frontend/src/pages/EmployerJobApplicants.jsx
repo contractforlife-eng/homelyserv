@@ -623,11 +623,12 @@ const EmployerJobApplicants = () => {
                 return (
                   <div
                     key={app.id}
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5"
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5 flex flex-col gap-4"
                   >
-                    <div className="flex flex-col md:flex-row justify-between gap-4">
-                      <div className="flex gap-4 min-w-0 flex-1">
-                        <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                    {/* Top Section: Avatar, Details, and compact View Profile button */}
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4 w-full">
+                      <div className="flex items-start gap-3.5 min-w-0 flex-1 w-full">
+                        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
                           {worker.profileImage ? (
                             <img src={worker.profileImage} alt={worker.fullName || t('employerJobApplicants.applicant')} className="w-full h-full object-cover" />
                           ) : (
@@ -666,34 +667,36 @@ const EmployerJobApplicants = () => {
                             )}
                           </div>
 
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500 dark:text-gray-400 mt-1.5">
                             {worker.city && (
                               <span className="inline-flex items-center gap-1">
-                                <MapPin size={14} /> {worker.city}
+                                <MapPin size={14} className="flex-shrink-0" /> <span>{worker.city}</span>
                               </span>
                             )}
                             {worker.desiredJob && (
                               <span className="inline-flex items-center gap-1">
-                                <Briefcase size={14} /> {worker.desiredJob}
+                                <Briefcase size={14} className="flex-shrink-0" /> <span>{worker.desiredJob}</span>
                               </span>
                             )}
                             {worker.experienceYears != null && (
                               <span className="inline-flex items-center gap-1">
-                                <Star size={14} className="text-yellow-500" /> {worker.experienceYears} {t('employerJobApplicants.years')}
+                                <Star size={14} className="text-yellow-500 flex-shrink-0" /> <span>{worker.experienceYears} {t('employerJobApplicants.years')}</span>
                               </span>
                             )}
-                            <span>
-                              {t('employerJobApplicants.expectedSalary')}: <span className="font-medium text-gray-700 dark:text-gray-300">{formatSalary(worker.expectedSalary)}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span>{t('employerJobApplicants.expectedSalary')}:</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">{formatSalary(worker.expectedSalary)}</span>
                             </span>
                             <span className="inline-flex items-center gap-1">
-                              <Calendar size={14} /> {t('employerJobApplicants.appliedOn')}: {formatDate(app.createdAt)}
+                              <Calendar size={14} className="flex-shrink-0" />
+                              <span>{t('employerJobApplicants.appliedOn')}: {formatDate(app.createdAt)}</span>
                             </span>
                           </div>
 
                           {worker.skills && worker.skills.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {worker.skills.slice(0, 5).map((skill, idx) => (
-                                <span key={idx} className="px-2 py-0.5 bg-teal-50 dark:bg-teal-900/30 text-teal-700 text-xs rounded-full">
+                                <span key={idx} className="px-2 py-0.5 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-xs rounded-full">
                                   {skill}
                                 </span>
                               ))}
@@ -704,153 +707,172 @@ const EmployerJobApplicants = () => {
                               )}
                             </div>
                           )}
+                        </div>
+                      </div>
 
-                          {app.cvUrl && (
-                            <div className="mt-2 max-w-full">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownloadCv(app)}
-                                  disabled={downloadingCvId === app.id}
-                                  className="inline-flex items-center min-w-0 max-w-full gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800 disabled:opacity-50"
-                                >
-                                  {downloadingCvId === app.id ? (
-                                    <Loader2 size={14} className="animate-spin flex-shrink-0" />
-                                  ) : (
-                                    <Download size={14} className="flex-shrink-0" />
-                                  )}
-                                  <span className="whitespace-nowrap flex-shrink-0">{t('jobApplicants.downloadCv', { defaultValue: 'Download CV' })}</span>
-                                  {app.cvOriginalName && (
-                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[140px] sm:max-w-[200px]" title={app.cvOriginalName}>({app.cvOriginalName})</span>
-                                  )}
-                                </button>
+                      {/* Compact View Profile button in the top right */}
+                      <button
+                        type="button"
+                        onClick={() => viewProfile(app)}
+                        className="self-end sm:self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition flex-shrink-0"
+                      >
+                        <Eye size={15} /> <span>{t('employerJobApplicants.viewProfile')}</span>
+                      </button>
+                    </div>
 
-                                {cvDownloadSuccess && cvDownloadSuccess.appId === app.id && cvDownloadSuccess.uri && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenCv(cvDownloadSuccess)}
-                                    disabled={openingCvId === app.id}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition border border-teal-200 dark:border-teal-700 disabled:opacity-50"
-                                  >
-                                    {openingCvId === app.id ? (
-                                      <Loader2 size={13} className="animate-spin flex-shrink-0" />
-                                    ) : (
-                                      <ExternalLink size={13} className="flex-shrink-0" />
-                                    )}
-                                    <span>{t('jobApplicants.openCv', { defaultValue: 'Open file' })}</span>
-                                  </button>
+                    {/* Middle Section: Full-width CV, Interview, Required Actions, Cover Message */}
+                    <div className="w-full space-y-3 pt-1">
+                      {/* CV Download Bar */}
+                      {app.cvUrl && (
+                        <div className="w-full">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadCv(app)}
+                              disabled={downloadingCvId === app.id}
+                              className="inline-flex items-center min-w-0 max-w-full gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800 disabled:opacity-50"
+                            >
+                              {downloadingCvId === app.id ? (
+                                <Loader2 size={14} className="animate-spin flex-shrink-0" />
+                              ) : (
+                                <Download size={14} className="flex-shrink-0" />
+                              )}
+                              <span className="whitespace-nowrap flex-shrink-0">{t('jobApplicants.downloadCv', { defaultValue: 'Download CV' })}</span>
+                              {app.cvOriginalName && (
+                                <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[150px] sm:max-w-[280px]" title={app.cvOriginalName}>
+                                  ({app.cvOriginalName})
+                                </span>
+                              )}
+                            </button>
+
+                            {cvDownloadSuccess && cvDownloadSuccess.appId === app.id && cvDownloadSuccess.uri && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCv(cvDownloadSuccess)}
+                                disabled={openingCvId === app.id}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition border border-teal-200 dark:border-teal-700 disabled:opacity-50"
+                              >
+                                {openingCvId === app.id ? (
+                                  <Loader2 size={13} className="animate-spin flex-shrink-0" />
+                                ) : (
+                                  <ExternalLink size={13} className="flex-shrink-0" />
                                 )}
-                              </div>
+                                <span>{t('jobApplicants.openCv', { defaultValue: 'Open file' })}</span>
+                              </button>
+                            )}
+                          </div>
 
-                              {cvDownloadSuccess && cvDownloadSuccess.appId === app.id && (
-                                <p className="text-[11px] text-green-600 dark:text-green-400 mt-1 break-words">
-                                  {t('jobApplicants.cvSavedSuccess', {
-                                    filename: cvDownloadSuccess.filename,
-                                    defaultValue: `CV saved successfully (\${cvDownloadSuccess.filename})`
-                                  })}
-                                </p>
-                              )}
-
-                              {cvDownloadError && cvDownloadError.appId === app.id && (
-                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 break-words">
-                                  {cvDownloadError.message}
-                                </p>
-                              )}
-                            </div>
+                          {cvDownloadSuccess && cvDownloadSuccess.appId === app.id && (
+                            <p className="text-[11px] text-green-600 dark:text-green-400 mt-1 break-words">
+                              {t('jobApplicants.cvSavedSuccess', {
+                                filename: cvDownloadSuccess.filename,
+                                defaultValue: `CV saved successfully (${cvDownloadSuccess.filename})`
+                              })}
+                            </p>
                           )}
 
-                          {app.decision === 'accepted' && app.attendanceDetails && (
-                            <div className="mt-3 p-3 rounded-lg bg-blue-50/70 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-xs space-y-1">
-                              <span className="font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-1">
-                                <Calendar size={13} />
-                                {t('jobApplicants.scheduledInterview', { defaultValue: 'Interview Scheduled' })}:
-                              </span>
-                              <div className="text-gray-700 dark:text-gray-300">
-                                <span>{app.attendanceDetails.date}</span> at <span>{app.attendanceDetails.time}</span>
-                                {app.attendanceDetails.timeZone ? ` (${app.attendanceDetails.timeZone})` : ''}
-                              </div>
-                              <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                <MapPin size={12} className="text-red-500" />
-                                {app.attendanceDetails.address}
-                              </div>
+                          {cvDownloadError && cvDownloadError.appId === app.id && (
+                            <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 break-words">
+                              {cvDownloadError.message}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Scheduled Interview Details */}
+                      {app.decision === 'accepted' && app.attendanceDetails && (
+                        <div className="w-full p-3.5 rounded-lg bg-blue-50/70 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-xs space-y-1.5">
+                          <span className="font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-1.5 text-xs sm:text-sm">
+                            <Calendar size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            {t('jobApplicants.scheduledInterview', { defaultValue: 'Interview Scheduled' })}:
+                          </span>
+                          <div className="text-gray-700 dark:text-gray-300 font-medium">
+                            <span>{app.attendanceDetails.date}</span> at <span>{app.attendanceDetails.time}</span>
+                            {app.attendanceDetails.timeZone ? ` (${app.attendanceDetails.timeZone})` : ''}
+                          </div>
+                          <div className="text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+                            <MapPin size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
+                            <span className="break-words leading-relaxed">{app.attendanceDetails.address}</span>
+                          </div>
+                          {app.attendanceDetails.notes && (
+                            <div className="pt-1 text-gray-500 dark:text-gray-400 border-t border-blue-100 dark:border-blue-800/50 break-words leading-relaxed">
+                              {app.attendanceDetails.notes}
                             </div>
                           )}
+                        </div>
+                      )}
 
-                          {/* Saved Required Actions */}
-                          {app.requiredActions && app.requiredActions.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              <span className="text-xs font-semibold text-teal-800 dark:text-teal-300 flex items-center gap-1 uppercase tracking-wider">
-                                <ListChecks size={14} className="text-teal-600 dark:text-teal-400" />
-                                {t('requiredActions.sectionTitle', { defaultValue: 'Required Actions' })} ({app.requiredActions.length})
-                              </span>
-                              <div className="space-y-2">
-                                {app.requiredActions.map((action, idx) => (
-                                  <div
-                                    key={action.id || idx}
-                                    className="p-3 rounded-lg bg-teal-50/60 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/60 text-xs space-y-1.5"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                                        {action.title}
-                                      </span>
-                                      <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                                        {formatDate(action.createdAt)}
-                                      </span>
-                                    </div>
-                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                                      {action.instructions}
-                                    </p>
-                                    {(action.organizationName || action.address || action.appointmentDate) && (
-                                      <div className="pt-1.5 border-t border-teal-200/50 dark:border-teal-800/40 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-gray-600 dark:text-gray-400">
-                                        {action.organizationName && (
-                                          <div className="flex items-center gap-1">
-                                            <Building size={12} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
-                                            <span>{action.organizationName}</span>
-                                          </div>
-                                        )}
-                                        {action.address && (
-                                          <div className="flex items-center gap-1">
-                                            <MapPin size={12} className="text-red-500 flex-shrink-0" />
-                                            <span>{action.address}</span>
-                                          </div>
-                                        )}
-                                        {action.appointmentDate && action.appointmentTime && (
-                                          <div className="sm:col-span-2 flex items-center gap-1 font-medium text-teal-800 dark:text-teal-300">
-                                            <Calendar size={12} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
-                                            <span>
-                                              {action.appointmentDate} at {action.appointmentTime}
-                                              {action.timeZone ? ` (${action.timeZone})` : ''}
-                                            </span>
-                                          </div>
-                                        )}
+                      {/* Saved Required Actions */}
+                      {app.requiredActions && app.requiredActions.length > 0 && (
+                        <div className="w-full space-y-2">
+                          <span className="text-xs font-semibold text-teal-800 dark:text-teal-300 flex items-center gap-1.5 uppercase tracking-wider">
+                            <ListChecks size={14} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                            {t('requiredActions.sectionTitle', { defaultValue: 'Required Actions' })} ({app.requiredActions.length})
+                          </span>
+                          <div className="space-y-2">
+                            {app.requiredActions.map((action, idx) => (
+                              <div
+                                key={action.id || idx}
+                                className="p-3.5 rounded-lg bg-teal-50/60 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/60 text-xs space-y-2"
+                              >
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm break-words">
+                                    {action.title}
+                                  </span>
+                                  <span className="text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                    {formatDate(action.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+                                  {action.instructions}
+                                </p>
+                                {(action.organizationName || action.address || action.appointmentDate) && (
+                                  <div className="pt-2 border-t border-teal-200/50 dark:border-teal-800/40 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+                                    {action.organizationName && (
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <Building size={13} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                        <span className="break-words truncate">{action.organizationName}</span>
+                                      </div>
+                                    )}
+                                    {action.address && (
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <MapPin size={13} className="text-red-500 flex-shrink-0" />
+                                        <span className="break-words truncate">{action.address}</span>
+                                      </div>
+                                    )}
+                                    {action.appointmentDate && action.appointmentTime && (
+                                      <div className="sm:col-span-2 flex items-center gap-1.5 font-medium text-teal-800 dark:text-teal-300 flex-wrap">
+                                        <Calendar size={13} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                        <span>
+                                          {action.appointmentDate} at {action.appointmentTime}
+                                          {action.timeZone ? ` (${action.timeZone})` : ''}
+                                        </span>
                                       </div>
                                     )}
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            </div>
-                          )}
-
-                          {app.coverMessage && (
-                            <div className="mt-3">
-                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('employerJobApplicants.coverMessage')}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">{app.coverMessage}</p>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="flex flex-col items-start md:items-end gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => viewProfile(app)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
-                        >
-                          <Eye size={16} /> {t('employerJobApplicants.viewProfile')}
-                        </button>
-                        <div className="mt-1">
-                          {renderActions(app)}
+                      {/* Cover Message */}
+                      {app.coverMessage && (
+                        <div className="w-full pt-1">
+                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                            {t('employerJobApplicants.coverMessage')}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                            {app.coverMessage}
+                          </p>
                         </div>
-                      </div>
+                      )}
+                    </div>
+
+                    {/* Footer Row: Actions cleanly separated below the card details */}
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700/80 w-full flex flex-wrap items-center justify-start gap-2">
+                      {renderActions(app)}
                     </div>
                   </div>
                 );
