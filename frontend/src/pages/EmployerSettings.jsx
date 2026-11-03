@@ -9,6 +9,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import BiometricUnlockSettings from '../components/security/BiometricUnlockSettings';
 import TrackingConsentSettings from '../components/TrackingConsentSettings';
+import AppVersionBadge from '../components/common/AppVersionBadge';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import api from '../utils/api';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
@@ -801,6 +802,8 @@ const EmployerSettings = () => {
                   </div>
                   <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
                 </button>
+
+                <AppVersionBadge />
               </div>
             </div>
 

@@ -73,6 +73,8 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
         { id: 'complaints', label: t('workerSidebar.complaints'), icon: AlertTriangle, path: '/worker-complaints', badgeKey: 'complaints' },
         { id: 'payment', label: t('workerSidebar.payment'), icon: CreditCard, path: '/worker-payment', badgeKey: 'payments' },
         { id: 'premium', label: t('workerSidebar.premium'), icon: Crown, path: '/subscription', isPremiumBadge: true },
+        { id: 'settings', label: t('workerSidebar.settings') || 'Settings', icon: Settings, path: '/worker-settings' },
+        { id: 'help', label: t('workerSidebar.help') || 'Help & Support', icon: HelpCircle, path: '/help' },
       ];
 
     case 'EMPLOYER':
@@ -90,6 +92,8 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
         { id: 'complaints', label: t('employerSidebar.complaints'), icon: AlertTriangle, path: '/employer-complaints', badgeKey: 'complaints' },
         { id: 'payment', label: t('employerSidebar.payment'), icon: CreditCard, path: '/employer-payments', badgeKey: 'payments' },
         { id: 'premium', label: t('employerSidebar.premium'), icon: Crown, path: '/subscription', isPremiumBadge: true },
+        { id: 'settings', label: t('employerSidebar.settings') || 'Settings', icon: Settings, path: '/employer-settings' },
+        { id: 'help', label: t('employerSidebar.help') || 'Help & Support', icon: HelpCircle, path: '/help' },
       ];
 
     case 'ADMIN': {

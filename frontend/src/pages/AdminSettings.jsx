@@ -6,6 +6,7 @@ import useThemeStore from '../store/themeStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import BiometricUnlockSettings from '../components/security/BiometricUnlockSettings';
+import AppVersionBadge from '../components/common/AppVersionBadge';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
@@ -833,6 +834,8 @@ const AdminSettings = () => {
             )}
           </button>
         </div>
+
+        <AppVersionBadge className="mt-6" />
       </div>
 
       {/* Password Change Modal */}

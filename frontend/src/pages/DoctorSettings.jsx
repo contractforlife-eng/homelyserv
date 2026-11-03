@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import useThemeStore from '../store/themeStore';
+import AppVersionBadge from '../components/common/AppVersionBadge';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 import api from '../utils/api';
 import {
@@ -238,6 +239,8 @@ const DoctorSettings = () => {
             })}
           </div>
         </section>
+
+        <AppVersionBadge />
       </div>
     </DashboardLayout>
   );

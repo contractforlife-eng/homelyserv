@@ -202,5 +202,11 @@
     "manageApplicantsSubtitle": "Überprüfen Sie Kandidaten, die sich auf Ihre Stellenausschreibung beworben haben.",
     "applicationStatus": "Ihr Bewerbungsstatus",
     "cvFileHint": "PDF, JPG, PNG oder WebP (max. 10 MB)"
+  },
+  "appVersion": {
+    "title": "App-Version",
+    "environmentNative": "Installierte mobile App",
+    "versionLabel": "Version",
+    "buildLabel": "Build"
   }
 }

@@ -5,6 +5,7 @@ import useAuthStore from '../../store/authStore';
 import useThemeStore from '../../store/themeStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import BiometricUnlockSettings from '../../components/security/BiometricUnlockSettings';
+import AppVersionBadge from '../../components/common/AppVersionBadge';
 import ActionMenuPortal from '../../components/common/ActionMenuPortal';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../../i18n';
@@ -396,6 +397,8 @@ const SupportSettings = ({ isSupHelp = false }) => {
             </div>
           </div>
         </div>
+
+        <AppVersionBadge className="mt-6" />
       </div>
 
       {/* Profile Edit Modal — SUP-ADMIN/ADMIN only (SUP-HELP manages profile on /sup-help/profile) */}

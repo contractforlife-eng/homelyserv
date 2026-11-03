@@ -202,5 +202,11 @@
     "manageApplicantsSubtitle": "Consultez les candidats ayant postulé à votre offre d’emploi.",
     "applicationStatus": "Statut de votre candidature",
     "cvFileHint": "PDF, JPG, PNG ou WebP (max 10 Mo)"
+  },
+  "appVersion": {
+    "title": "Version de l’application",
+    "environmentNative": "Application mobile installée",
+    "versionLabel": "Version",
+    "buildLabel": "Build"
   }
 }

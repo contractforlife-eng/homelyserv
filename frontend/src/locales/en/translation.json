@@ -202,5 +202,11 @@
     "manageApplicantsSubtitle": "Review candidates who have applied to your job posting.",
     "applicationStatus": "Your Application Status",
     "cvFileHint": "PDF, JPG, PNG or WebP (max 10MB)"
+  },
+  "appVersion": {
+    "title": "App Version",
+    "environmentNative": "Installed mobile app",
+    "versionLabel": "Version",
+    "buildLabel": "Build"
   }
 }

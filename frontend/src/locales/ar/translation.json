@@ -202,5 +202,11 @@
     "manageApplicantsSubtitle": "مراجعة المتقدمين الذين أرسلوا طلباتهم لإعلانك الوظيفي.",
     "applicationStatus": "حالة طلب التقديم الخاص بك",
     "cvFileHint": "ملف PDF أو JPG أو PNG أو WebP (بحد أقصى 10 ميجابايت)"
+  },
+  "appVersion": {
+    "title": "إصدار التطبيق",
+    "environmentNative": "تطبيق الهاتف المثبت",
+    "versionLabel": "الإصدار",
+    "buildLabel": "البناء"
   }
 }

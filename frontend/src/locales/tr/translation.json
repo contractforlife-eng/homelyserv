@@ -202,5 +202,11 @@
     "manageApplicantsSubtitle": "İş ilanınıza başvuran adayları inceleyin.",
     "applicationStatus": "Başvuru Durumunuz",
     "cvFileHint": "PDF, JPG, PNG veya WebP (maks. 10MB)"
+  },
+  "appVersion": {
+    "title": "Uygulama Sürümü",
+    "environmentNative": "Yüklü mobil uygulama",
+    "versionLabel": "Sürüm",
+    "buildLabel": "Derleme"
   }
 }

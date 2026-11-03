@@ -13584,6 +13584,52 @@ Object.entries(PUBLIC_PROFILE_TRANSLATIONS).forEach(([language, translations]) =
   }
 });
 
+const APP_VERSION_COPY = {
+  en: {
+    title: 'App Version',
+    environmentNative: 'Installed mobile app',
+    versionLabel: 'Version',
+    buildLabel: 'Build'
+  },
+  ar: {
+    title: 'إصدار التطبيق',
+    environmentNative: 'تطبيق الهاتف المثبت',
+    versionLabel: 'الإصدار',
+    buildLabel: 'البناء'
+  },
+  fr: {
+    title: 'Version de l’application',
+    environmentNative: 'Application mobile installée',
+    versionLabel: 'Version',
+    buildLabel: 'Build'
+  },
+  ru: {
+    title: 'Версия приложения',
+    environmentNative: 'Установленное мобильное приложение',
+    versionLabel: 'Версия',
+    buildLabel: 'Сборка'
+  },
+  tr: {
+    title: 'Uygulama Sürümü',
+    environmentNative: 'Yüklü mobil uygulama',
+    versionLabel: 'Sürüm',
+    buildLabel: 'Derleme'
+  },
+  de: {
+    title: 'App-Version',
+    environmentNative: 'Installierte mobile App',
+    versionLabel: 'Version',
+    buildLabel: 'Build'
+  }
+};
+
+for (const [code, copy] of Object.entries(APP_VERSION_COPY)) {
+  const target = { en, ar, fr, ru, tr, de }[code];
+  if (target && target.translation) {
+    target.translation.appVersion = copy;
+  }
+}
+
 // ============================================================
 // LOCALE FILES (src/locales/*) — all 6 locales
 // Deep merges locale keys so namespaces like jobDetails, jobApply,

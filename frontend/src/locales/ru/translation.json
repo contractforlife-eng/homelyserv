@@ -202,5 +202,11 @@
     "manageApplicantsSubtitle": "Просмотр кандидатов, откликнувшихся на вашу вакансию.",
     "applicationStatus": "Статус вашей заявки",
     "cvFileHint": "PDF, JPG, PNG или WebP (макс. 10 МБ)"
+  },
+  "appVersion": {
+    "title": "Версия приложения",
+    "environmentNative": "Установленное мобильное приложение",
+    "versionLabel": "Версия",
+    "buildLabel": "Сборка"
   }
 }
