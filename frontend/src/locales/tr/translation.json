@@ -208,5 +208,29 @@
     "environmentNative": "Yüklü mobil uygulama",
     "versionLabel": "Sürüm",
     "buildLabel": "Derleme"
+  },
+  "requiredActions": {
+    "sectionTitle": "Gerekli İşlemler",
+    "addActionButton": "Gerekli İşlem Ekle",
+    "modalTitle": "Gerekli İşlem Ekle",
+    "modalDesc": "Adaya takip talimatları verin (ör. sağlık muayenesi, beceri testi veya evrak hazırlığı). Bu işlem başvuru durumunu değiştirmez.",
+    "actionTitleLabel": "İşlem Başlığı *",
+    "actionTitlePlaceholder": "ör. Sağlık Muayenesini Tamamlayın",
+    "instructionsLabel": "Talimatlar ve Detaylar *",
+    "instructionsPlaceholder": "Çalışanın ne yapması gerektiğini, gerekli testleri veya belgeleri yazın.",
+    "orgNameLabel": "Kurum / Yer Adı (İsteğe bağlı)",
+    "orgNamePlaceholder": "ör. El-Nur Tıp Merkezi",
+    "addressLabel": "Adres (İsteğe bağlı)",
+    "addressPlaceholder": "ör. El-Cumhuriyet Cad. No: 15",
+    "appointmentScheduleTitle": "Randevu Bilgisi (İsteğe bağlı)",
+    "appointmentDate": "Randevu Tarihi",
+    "appointmentTime": "Randevu Saati",
+    "timeZoneLabel": "Saat Dilimi",
+    "titleRequired": "İşlem başlığı zorunludur.",
+    "instructionsRequired": "Talimatlar zorunludur.",
+    "appointmentIncomplete": "Randevu belirtirken tarih, saat ve saat dilimi birlikte girilmelidir.",
+    "addSuccess": "Gerekli işlem başarıyla kaydedildi ve çalışana bildirildi!",
+    "addFailed": "Gerekli işlem kaydedilemedi. Lütfen tekrar deneyin.",
+    "submitButton": "Kaydet ve Çalışana Bildir"
   }
 }

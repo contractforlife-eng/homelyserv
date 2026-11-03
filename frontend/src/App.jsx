@@ -382,6 +382,12 @@ function App() {
         }
       } else if (action.link && action.link !== '/') {
         navigate(action.link);
+      } else if (action.applicationId || (action.entityType === 'JOB_APPLICATION' && action.entityId)) {
+        const appId = action.applicationId || action.entityId;
+        const target = action.actionId
+          ? `/worker/offers?applicationId=${appId}&actionId=${action.actionId}`
+          : `/worker/offers?applicationId=${appId}`;
+        navigate(target);
       } else {
         const targetRoute = getEntityRoute(action);
         navigate(targetRoute);

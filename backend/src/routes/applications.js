@@ -17,6 +17,8 @@ import {
   updateApplicationStatus,
   sendOfferFromApplication,
   downloadApplicationCv,
+  addRequiredAction,
+  getApplicationRequiredActions,
 } from '../controllers/applicationController.js';
 import { requireWorker, requireEmployer, optionalAuthenticate, authenticate } from '../middleware/auth.js';
 import { documentUpload } from '../utils/verificationDocumentUpload.js';
@@ -53,6 +55,9 @@ router.post('/:id/apply-public', optionalAuthenticate, uploadCvOptional, applyPu
 // (defined before /:id routes so "applications" is not captured as a job id)
 router.get('/applications/:id/cv', authenticate, downloadApplicationCv);
 
+// GET /api/jobs/applications/:id/required-actions — Authenticated employer owner or worker owner or admin
+router.get('/applications/:id/required-actions', authenticate, getApplicationRequiredActions);
+
 // GET /api/jobs/applications/mine — Worker's own applications
 // (defined before /:id routes so "applications" is not captured as a job id)
 router.get('/applications/mine', requireWorker, getMyApplications);
@@ -75,5 +80,8 @@ router.patch('/applications/:id/status', requireEmployer, updateApplicationStatu
 
 // POST /api/jobs/applications/:id/send-offer — Employer owner only
 router.post('/applications/:id/send-offer', requireEmployer, sendOfferFromApplication);
+
+// POST /api/jobs/applications/:id/required-actions — Employer owner only
+router.post('/applications/:id/required-actions', requireEmployer, addRequiredAction);
 
 export default router;

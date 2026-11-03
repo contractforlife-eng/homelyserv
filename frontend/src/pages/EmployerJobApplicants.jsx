@@ -9,7 +9,7 @@ import RolePageHeader from '../components/common/RolePageHeader';
 import {
   ArrowLeft, Loader2, MapPin, Briefcase, Star, Calendar, Eye,
   ThumbsUp, XCircle, Send, Crown, Activity, Users, X, CheckCircle,
-  Clock, Building, FileText, Check
+  Clock, Building, FileText, Check, ListChecks, Plus
 } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
@@ -60,6 +60,97 @@ const EmployerJobApplicants = () => {
   const [cvDownloadError, setCvDownloadError] = useState(null);
   const [cvDownloadSuccess, setCvDownloadSuccess] = useState(null);
   const [openingCvId, setOpeningCvId] = useState(null);
+
+  // Required Action modal state
+  const [actionModalApp, setActionModalApp] = useState(null);
+  const [actionTitle, setActionTitle] = useState('');
+  const [actionInstructions, setActionInstructions] = useState('');
+  const [actionOrgName, setActionOrgName] = useState('');
+  const [actionAddress, setActionAddress] = useState('');
+  const [actionDate, setActionDate] = useState('');
+  const [actionTime, setActionTime] = useState('');
+  const [actionTimeZone, setActionTimeZone] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo'
+  );
+  const [actionIdempotencyKey, setActionIdempotencyKey] = useState('');
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [actionSuccessMsg, setActionSuccessMsg] = useState('');
+
+  const openActionModal = (app) => {
+    setActionModalApp(app);
+    setActionTitle('');
+    setActionInstructions('');
+    setActionOrgName('');
+    setActionAddress('');
+    setActionDate('');
+    setActionTime('');
+    setActionTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo');
+    setActionIdempotencyKey(`client_${app.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+    setActionError('');
+    setActionSuccessMsg('');
+  };
+
+  const handleActionSubmit = async (e) => {
+    e.preventDefault();
+    if (!actionModalApp || actionSubmitting) return;
+
+    if (!actionTitle.trim()) {
+      setActionError(t('requiredActions.titleRequired', { defaultValue: 'Action title is required.' }));
+      return;
+    }
+    if (!actionInstructions.trim()) {
+      setActionError(t('requiredActions.instructionsRequired', { defaultValue: 'Instructions are required.' }));
+      return;
+    }
+
+    if ((actionDate || actionTime) && (!actionDate || !actionTime || !actionTimeZone)) {
+      setActionError(t('requiredActions.appointmentIncomplete', { defaultValue: 'When specifying an appointment, date, time, and timezone are all required.' }));
+      return;
+    }
+
+    setActionSubmitting(true);
+    setActionError('');
+    setActionSuccessMsg('');
+
+    try {
+      const payload = {
+        title: actionTitle.trim(),
+        instructions: actionInstructions.trim(),
+        organizationName: actionOrgName.trim() || undefined,
+        address: actionAddress.trim() || undefined,
+        appointmentDate: actionDate.trim() || undefined,
+        appointmentTime: actionTime.trim() || undefined,
+        timeZone: actionTimeZone.trim() || undefined,
+        idempotencyKey: actionIdempotencyKey || `client_${actionModalApp.id}_${Date.now()}`,
+      };
+
+      const result = await jobService.addRequiredAction(actionModalApp.id, payload);
+      if (result?.success) {
+        setApplicants(prev => prev.map(a => {
+          if (a.id === actionModalApp.id) {
+            return {
+              ...a,
+              requiredActions: result.requiredActions || [...(a.requiredActions || []), result.action],
+            };
+          }
+          return a;
+        }));
+        setActionSuccessMsg(t('requiredActions.addSuccess', { defaultValue: 'Required action added successfully!' }));
+        setTimeout(() => {
+          setActionModalApp(null);
+          setActionSuccessMsg('');
+        }, 1200);
+      } else {
+        setActionError(result?.message || t('requiredActions.addFailed', { defaultValue: 'Failed to add required action.' }));
+      }
+    } catch (err) {
+      console.error('Failed to add required action:', err);
+      setActionError(err.response?.data?.message || t('requiredActions.addFailed', { defaultValue: 'Failed to add required action.' }));
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
 
   const handleDownloadCv = async (app) => {
     if (!app || downloadingCvId) return;
@@ -390,9 +481,17 @@ const EmployerJobApplicants = () => {
 
     if (status === 'offer_sent') {
       return (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ${STATUS_STYLES.offer_sent}`}>
-          <CheckCircle size={16} /> {t('employerJobApplicants.offerSent')}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ${STATUS_STYLES.offer_sent}`}>
+            <CheckCircle size={16} /> {t('employerJobApplicants.offerSent')}
+          </span>
+          <button
+            onClick={() => openActionModal(app)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition"
+          >
+            <Plus size={16} /> {t('requiredActions.addActionButton', { defaultValue: 'Add Required Action' })}
+          </button>
+        </div>
       );
     }
 
@@ -457,6 +556,12 @@ const EmployerJobApplicants = () => {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-teal-600 text-white hover:bg-teal-700 transition"
         >
           <Send size={16} /> {t('employerJobApplicants.sendOffer')}
+        </button>
+        <button
+          onClick={() => openActionModal(app)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition"
+        >
+          <Plus size={16} /> {t('requiredActions.addActionButton', { defaultValue: 'Add Required Action' })}
         </button>
       </div>
     );
@@ -671,6 +776,61 @@ const EmployerJobApplicants = () => {
                             </div>
                           )}
 
+                          {/* Saved Required Actions */}
+                          {app.requiredActions && app.requiredActions.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <span className="text-xs font-semibold text-teal-800 dark:text-teal-300 flex items-center gap-1 uppercase tracking-wider">
+                                <ListChecks size={14} className="text-teal-600 dark:text-teal-400" />
+                                {t('requiredActions.sectionTitle', { defaultValue: 'Required Actions' })} ({app.requiredActions.length})
+                              </span>
+                              <div className="space-y-2">
+                                {app.requiredActions.map((action, idx) => (
+                                  <div
+                                    key={action.id || idx}
+                                    className="p-3 rounded-lg bg-teal-50/60 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/60 text-xs space-y-1.5"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                                        {action.title}
+                                      </span>
+                                      <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                        {formatDate(action.createdAt)}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                      {action.instructions}
+                                    </p>
+                                    {(action.organizationName || action.address || action.appointmentDate) && (
+                                      <div className="pt-1.5 border-t border-teal-200/50 dark:border-teal-800/40 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+                                        {action.organizationName && (
+                                          <div className="flex items-center gap-1">
+                                            <Building size={12} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                            <span>{action.organizationName}</span>
+                                          </div>
+                                        )}
+                                        {action.address && (
+                                          <div className="flex items-center gap-1">
+                                            <MapPin size={12} className="text-red-500 flex-shrink-0" />
+                                            <span>{action.address}</span>
+                                          </div>
+                                        )}
+                                        {action.appointmentDate && action.appointmentTime && (
+                                          <div className="sm:col-span-2 flex items-center gap-1 font-medium text-teal-800 dark:text-teal-300">
+                                            <Calendar size={12} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                            <span>
+                                              {action.appointmentDate} at {action.appointmentTime}
+                                              {action.timeZone ? ` (${action.timeZone})` : ''}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {app.coverMessage && (
                             <div className="mt-3">
                               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('employerJobApplicants.coverMessage')}</p>
@@ -815,6 +975,181 @@ const EmployerJobApplicants = () => {
                 >
                   {acceptLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                   {acceptLoading ? t('common.saving', { defaultValue: 'Saving...' }) : t('jobApplicants.confirmAccept', { defaultValue: 'Accept & Schedule' })}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Required Action Modal */}
+      {actionModalApp && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 max-w-lg w-full max-h-[90dvh] overflow-y-auto border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center text-teal-700 dark:text-teal-300">
+                  <ListChecks size={18} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                  {t('requiredActions.modalTitle', { defaultValue: 'Add Required Action' })}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActionModalApp(null)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+              {t('requiredActions.modalDesc', {
+                defaultValue: 'Instruct the applicant to complete a follow-up step (e.g. medical examination, skills test, or document preparation). This does not change the application status.',
+              })}
+            </p>
+
+            <form onSubmit={handleActionSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('requiredActions.actionTitleLabel', { defaultValue: 'Action Title *' })}
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={200}
+                  placeholder={t('requiredActions.actionTitlePlaceholder', { defaultValue: 'e.g. Complete Medical Examination' })}
+                  value={actionTitle}
+                  onChange={(e) => setActionTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                  {t('requiredActions.instructionsLabel', { defaultValue: 'Instructions & Details *' })}
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  maxLength={2000}
+                  placeholder={t('requiredActions.instructionsPlaceholder', { defaultValue: 'Describe what the worker needs to do, tests required, documents to bring, etc.' })}
+                  value={actionInstructions}
+                  onChange={(e) => setActionInstructions(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    {t('requiredActions.orgNameLabel', { defaultValue: 'Organization / Place (Optional)' })}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={200}
+                    placeholder={t('requiredActions.orgNamePlaceholder', { defaultValue: 'e.g. Al-Nour Medical Center' })}
+                    value={actionOrgName}
+                    onChange={(e) => setActionOrgName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                    {t('requiredActions.addressLabel', { defaultValue: 'Address (Optional)' })}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={300}
+                    placeholder={t('requiredActions.addressPlaceholder', { defaultValue: 'e.g. 15 El-Gomhoureya St' })}
+                    value={actionAddress}
+                    onChange={(e) => setActionAddress(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <Calendar size={14} className="text-teal-600 dark:text-teal-400" />
+                  <span>{t('requiredActions.appointmentScheduleTitle', { defaultValue: 'Appointment Schedule (Optional)' })}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('requiredActions.appointmentDate', { defaultValue: 'Appointment Date' })}
+                    </label>
+                    <input
+                      type="date"
+                      value={actionDate}
+                      onChange={(e) => setActionDate(e.target.value)}
+                      className="w-full px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('requiredActions.appointmentTime', { defaultValue: 'Appointment Time' })}
+                    </label>
+                    <input
+                      type="time"
+                      value={actionTime}
+                      onChange={(e) => setActionTime(e.target.value)}
+                      className="w-full px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('requiredActions.timeZoneLabel', { defaultValue: 'Explicit Timezone' })}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Africa/Cairo, Asia/Riyadh, UTC"
+                    value={actionTimeZone}
+                    onChange={(e) => setActionTimeZone(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {actionError && (
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400 text-xs">
+                  {actionError}
+                </div>
+              )}
+
+              {actionSuccessMsg && (
+                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 text-green-700 dark:text-green-400 text-xs flex items-center gap-2">
+                  <CheckCircle size={15} />
+                  <span>{actionSuccessMsg}</span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActionModalApp(null)}
+                  disabled={actionSubmitting}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition text-sm disabled:opacity-50"
+                >
+                  {t('common.cancel', { defaultValue: 'Cancel' })}
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionSubmitting}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition text-sm disabled:opacity-50"
+                >
+                  {actionSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                  <span>
+                    {actionSubmitting
+                      ? t('common.saving', { defaultValue: 'Saving...' })
+                      : t('requiredActions.submitButton', { defaultValue: 'Save & Notify Worker' })}
+                  </span>
                 </button>
               </div>
             </form>

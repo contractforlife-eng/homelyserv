@@ -8,7 +8,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import {
   Briefcase, MapPin, Calendar, Loader2, Eye, XCircle, Building,
-  FileText, CheckCircle
+  FileText, CheckCircle, ListChecks
 } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
@@ -216,6 +216,19 @@ const WorkerApplications = () => {
                             <Calendar size={14} /> {t('workerApplications.appliedOn')}: {formatDate(app.createdAt)}
                           </span>
                         </div>
+
+                        {app.requiredActions && app.requiredActions.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/worker/offers?applicationId=${app.id}`)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition border border-teal-200 dark:border-teal-800"
+                            >
+                              <ListChecks size={14} className="text-teal-600 dark:text-teal-400" />
+                              <span>{t('requiredActions.sectionTitle', { defaultValue: 'Required Actions from Employer' })} ({app.requiredActions.length})</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">

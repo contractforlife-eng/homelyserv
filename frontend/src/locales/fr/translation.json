@@ -208,5 +208,29 @@
     "environmentNative": "Application mobile installée",
     "versionLabel": "Version",
     "buildLabel": "Build"
+  },
+  "requiredActions": {
+    "sectionTitle": "Actions requises",
+    "addActionButton": "Ajouter une action requise",
+    "modalTitle": "Ajouter une action requise",
+    "modalDesc": "Donnez au candidat des instructions de suivi (ex. examen médical, test de compétences ou documents). Cela ne modifie pas le statut de la candidature.",
+    "actionTitleLabel": "Titre de l'action *",
+    "actionTitlePlaceholder": "ex. Passer la visite médicale",
+    "instructionsLabel": "Instructions et détails *",
+    "instructionsPlaceholder": "Décrivez ce que le travailleur doit faire, les tests requis, les documents à apporter, etc.",
+    "orgNameLabel": "Organisation / Lieu (Facultatif)",
+    "orgNamePlaceholder": "ex. Centre médical Al-Nour",
+    "addressLabel": "Adresse (Facultatif)",
+    "addressPlaceholder": "ex. 15 rue El-Gomhoureya",
+    "appointmentScheduleTitle": "Rendez-vous fixé (Facultatif)",
+    "appointmentDate": "Date du rendez-vous",
+    "appointmentTime": "Heure du rendez-vous",
+    "timeZoneLabel": "Fuseau horaire explicite",
+    "titleRequired": "Le titre de l'action est requis.",
+    "instructionsRequired": "Les instructions sont requises.",
+    "appointmentIncomplete": "Lors de la planification d'un rendez-vous, la date, l'heure et le fuseau horaire sont tous requis.",
+    "addSuccess": "Action requise enregistrée et travailleur notifié avec succès !",
+    "addFailed": "Échec de l'enregistrement de l'action requise. Veuillez réessayer.",
+    "submitButton": "Enregistrer et notifier le travailleur"
   }
 }

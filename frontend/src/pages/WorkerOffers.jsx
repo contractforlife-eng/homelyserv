@@ -1,7 +1,7 @@
 // src/pages/WorkerOffers.jsx - FIXED: Shows "Paid" status when payment is completed
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import { formatCompensationAmount } from '../utils/compensationDisplay';
@@ -33,7 +33,8 @@ import {
   Briefcase,
   Calendar,
   Globe,
-  FileText
+  FileText,
+  ListChecks,
 } from 'lucide-react';
 import { 
   getConversationId, 
@@ -49,6 +50,7 @@ import { getRatingStatus, submitRating, getMyHires } from '../services/hireServi
 // ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -59,6 +61,7 @@ const WorkerOffers = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOffer, setExpandedOffer] = useState(null);
+  const [highlightedActionId, setHighlightedActionId] = useState(null);
   const [processingOffer, setProcessingOffer] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -263,6 +266,44 @@ const WorkerOffers = () => {
       clearInterval(interval);
     };
   }, [authUser]);
+
+  // Handle deep-link / push-action query params: ?applicationId=...&actionId=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const targetAppId = params.get('applicationId');
+    const targetActionId = params.get('actionId');
+
+    if (targetAppId) {
+      // Find matching offer or application invitation
+      const matched = offers.find(o =>
+        String(o.id) === targetAppId ||
+        String(o.applicationId) === targetAppId ||
+        String(o.id) === `app_${targetAppId}`
+      );
+      if (matched) {
+        // Automatically switch to the tab containing this application if outside the active tab
+        if (matched.status === 'accepted') {
+          setActiveTab('accepted');
+        } else if (matched.status === 'pending') {
+          setActiveTab('pending');
+        } else if (matched.status === 'rejected') {
+          setActiveTab('rejected');
+        }
+
+        setExpandedOffer(matched.id);
+        if (targetActionId) {
+          setHighlightedActionId(targetActionId);
+        }
+        // Scroll target card into view
+        setTimeout(() => {
+          const el = document.getElementById(`offer-${matched.id}`) || document.getElementById(`action-${targetActionId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+      }
+    }
+  }, [location.search, offers]);
 
   // ============================================================
   // Accept Offer Handler
@@ -541,11 +582,13 @@ const WorkerOffers = () => {
       : t('workerOffers.status.pending', { defaultValue: 'Pending Review' });
 
     const attendance = app.attendanceDetails;
+    const requiredActions = Array.isArray(app.requiredActions) ? app.requiredActions : [];
     const isExpanded = expandedOffer === app.id;
 
     return (
       <div
         key={app.id}
+        id={`offer-${app.id}`}
         className={`bg-white dark:bg-gray-800 rounded-xl border ${cardStatusColor} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}
       >
         <div className="p-5">
@@ -648,6 +691,71 @@ const WorkerOffers = () => {
                   {t('workerOffers.applicationNotSelected', {
                     defaultValue: 'Thank you for applying. The employer decided not to proceed with this application.',
                   })}
+                </div>
+              )}
+
+              {/* Required Actions from Employer */}
+              {requiredActions.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-800 dark:text-teal-300 uppercase tracking-wider">
+                    <ListChecks size={15} className="text-teal-600 dark:text-teal-400" />
+                    <span>{t('requiredActions.sectionTitle', { defaultValue: 'Required Actions from Employer' })} ({requiredActions.length})</span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {requiredActions.map((action, idx) => {
+                      const isHighlighted = highlightedActionId === action.id;
+                      return (
+                        <div
+                          key={action.id || idx}
+                          id={`action-${action.id}`}
+                          className={`p-4 rounded-xl border transition-all ${
+                            isHighlighted
+                              ? 'bg-teal-50 dark:bg-teal-900/40 border-teal-500 ring-2 ring-teal-400/50 shadow-sm'
+                              : 'bg-white dark:bg-gray-900/60 border-teal-200/80 dark:border-teal-800/60'
+                          } text-xs space-y-2`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                              {action.title}
+                            </h4>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                              {formatDate(action.createdAt)}
+                            </span>
+                          </div>
+
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed text-xs">
+                            {action.instructions}
+                          </p>
+
+                          {(action.organizationName || action.address || action.appointmentDate) && (
+                            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+                              {action.organizationName && (
+                                <div className="flex items-center gap-1">
+                                  <Building2 size={13} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                  <span className="font-medium text-gray-800 dark:text-gray-200">{action.organizationName}</span>
+                                </div>
+                              )}
+                              {action.address && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin size={13} className="text-red-500 flex-shrink-0" />
+                                  <span>{action.address}</span>
+                                </div>
+                              )}
+                              {action.appointmentDate && action.appointmentTime && (
+                                <div className="sm:col-span-2 flex items-center gap-1 font-semibold text-teal-800 dark:text-teal-300">
+                                  <Calendar size={13} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                  <span>
+                                    {t('requiredActions.appointmentScheduleTitle', { defaultValue: 'Appointment' })}: {action.appointmentDate} at {action.appointmentTime}
+                                    {action.timeZone ? ` (${action.timeZone})` : ''}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

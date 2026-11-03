@@ -20,6 +20,7 @@ import {
   createNotification,
   NOTIFICATION_TYPES,
 } from '../services/notificationService.js';
+import { enqueuePushOutbox } from '../services/pushOutboxService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { createOffer, validateOfferMonetaryInput } from '../services/offerService.js';
 import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
@@ -46,6 +47,7 @@ import { resolveWorkerProfession } from '../services/jobLabelResolver.js';
 import { resolveAccountDefaultCurrency } from '../utils/currencyMetadata.js';
 import { detectPlatform, extractAppVersion } from '../services/platformDetectionService.js';
 import { validatePhone } from './authController.js';
+import crypto from 'crypto';
 
 const isValidObjectId = (id) => {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -706,6 +708,7 @@ export const getMyApplications = async (req, res) => {
       const rawDoc = rawDocsMap.get(String(app.id)) || {};
       const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
       const attendanceDetails = rawDoc.attendanceDetails || null;
+      const requiredActions = Array.isArray(rawDoc.requiredActions) ? rawDoc.requiredActions : [];
 
       let cvUrl = null;
       const cvOriginalName = fixMulterEncoding(rawDoc.cvOriginalName) || rawDoc.cvOriginalName || null;
@@ -717,6 +720,7 @@ export const getMyApplications = async (req, res) => {
         ...app,
         decision,
         attendanceDetails,
+        requiredActions,
         cvUrl,
         cvOriginalName,
         jobPost: jobPost
@@ -879,6 +883,7 @@ export const getJobApplications = async (req, res) => {
       const rawDoc = rawDocsMap.get(String(app.id)) || {};
       const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
       const attendanceDetails = rawDoc.attendanceDetails || null;
+      const requiredActions = Array.isArray(rawDoc.requiredActions) ? rawDoc.requiredActions : [];
       let cvUrl = null;
       const cvOriginalName = fixMulterEncoding(rawDoc.cvOriginalName) || rawDoc.cvOriginalName || null;
       if (rawDoc.cvPublicId) {
@@ -891,6 +896,7 @@ export const getJobApplications = async (req, res) => {
         status: app.status,
         decision,
         attendanceDetails,
+        requiredActions,
         cvUrl,
         cvOriginalName,
         coverMessage: app.coverMessage,
@@ -1503,5 +1509,328 @@ export const downloadApplicationCv = async (req, res) => {
   } catch (error) {
     console.error('Applications: CV download error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error while downloading CV' });
+  }
+};
+
+// ============================================================
+// H) REQUIRED ACTIONS FOR JOB APPLICANTS
+// Allows an employer to give follow-up instructions (e.g. medical exam,
+// skills test, onboarding step) to a specific applicant without modifying
+// application status (does not approve, reject, hire, or change status).
+// Both employer owner and applicant worker can view saved actions.
+// ============================================================
+
+export const addRequiredAction = async (req, res) => {
+  try {
+    const applicationId = String(req.params.id);
+    if (!isValidObjectId(applicationId)) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    const {
+      title,
+      instructions,
+      organizationName,
+      address,
+      appointmentDate,
+      appointmentTime,
+      timeZone,
+      idempotencyKey,
+    } = req.body || {};
+
+    // 1. Validation: Title (required, 1-200 chars)
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ success: false, message: 'Action title is required' });
+    }
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length > 200) {
+      return res.status(400).json({ success: false, message: 'Action title must not exceed 200 characters' });
+    }
+
+    // 2. Validation: Instructions (required, 1-2000 chars)
+    if (!instructions || typeof instructions !== 'string' || instructions.trim().length === 0) {
+      return res.status(400).json({ success: false, message: 'Instructions are required' });
+    }
+    const trimmedInstructions = instructions.trim();
+    if (trimmedInstructions.length > 2000) {
+      return res.status(400).json({ success: false, message: 'Instructions must not exceed 2000 characters' });
+    }
+
+    // 3. Validation: Optional fields
+    const trimmedOrgName = (organizationName && typeof organizationName === 'string') ? organizationName.trim().slice(0, 200) : null;
+    const trimmedAddress = (address && typeof address === 'string') ? address.trim().slice(0, 300) : null;
+
+    let trimmedDate = null;
+    let trimmedTime = null;
+    let trimmedTimeZone = null;
+
+    if (appointmentDate || appointmentTime || timeZone) {
+      if (appointmentDate) {
+        if (typeof appointmentDate !== 'string' || !isValidCalendarDate(appointmentDate.trim())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Appointment date must be a valid calendar date in YYYY-MM-DD format',
+          });
+        }
+        trimmedDate = appointmentDate.trim();
+      }
+
+      if (appointmentTime) {
+        if (typeof appointmentTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(appointmentTime.trim())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Appointment time must be in HH:mm 24-hour format (e.g. 14:30)',
+          });
+        }
+        trimmedTime = appointmentTime.trim();
+      }
+
+      if (timeZone) {
+        if (typeof timeZone !== 'string' || !isValidIanaTimeZone(timeZone.trim())) {
+          return res.status(400).json({
+            success: false,
+            message: 'A valid IANA time zone is required (e.g. Africa/Cairo, UTC)',
+          });
+        }
+        trimmedTimeZone = timeZone.trim();
+      }
+
+      // If appointmentDate or appointmentTime is specified, both date and time should be present with timeZone
+      if ((trimmedDate || trimmedTime) && (!trimmedDate || !trimmedTime || !trimmedTimeZone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'When scheduling an appointment, date, time, and explicit timezone are all required',
+        });
+      }
+    }
+
+    // 4. Verify application existence & employer ownership against stored job and application relationship
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+      select: {
+        id: true,
+        employerId: true,
+        workerId: true,
+        jobPostId: true,
+        status: true,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    // Verify ownership: authenticated user must be the employer who created the application record,
+    // AND the employer who owns the underlying job post.
+    const jobPost = await prisma.jobPost.findUnique({
+      where: { id: application.jobPostId },
+      select: { id: true, employerId: true, jobTitle: true },
+    });
+
+    if (!jobPost) {
+      return res.status(404).json({ success: false, message: 'Job post not found' });
+    }
+
+    if (String(application.employerId) !== String(req.userId) || String(jobPost.employerId) !== String(req.userId)) {
+      return res.status(403).json({ success: false, message: 'Access denied: only the employer who owns this job can add required actions' });
+    }
+
+    // 5. Build action content hash to detect key reuse with different content
+    const contentPayload = {
+      title: trimmedTitle,
+      instructions: trimmedInstructions,
+      organizationName: trimmedOrgName,
+      address: trimmedAddress,
+      appointmentDate: trimmedDate,
+      appointmentTime: trimmedTime,
+      timeZone: trimmedTimeZone,
+    };
+    const contentHash = crypto.createHash('sha256').update(JSON.stringify(contentPayload)).digest('hex').slice(0, 32);
+
+    const cleanIdempotencyKey = (idempotencyKey && typeof idempotencyKey === 'string') ? idempotencyKey.trim() : null;
+
+    // Check if an action with this idempotencyKey already exists
+    if (cleanIdempotencyKey) {
+      const rawDoc = await getRawJobApplication(applicationId);
+      const existingActions = Array.isArray(rawDoc?.requiredActions) ? rawDoc.requiredActions : [];
+      const existingMatch = existingActions.find(a => a.idempotencyKey === cleanIdempotencyKey);
+      if (existingMatch) {
+        if (existingMatch.contentHash && existingMatch.contentHash !== contentHash) {
+          return res.status(409).json({
+            success: false,
+            message: 'Idempotency key already used with different action content',
+          });
+        }
+        return res.status(200).json({
+          success: true,
+          message: 'Required action already recorded',
+          action: existingMatch,
+          requiredActions: existingActions,
+        });
+      }
+    }
+
+    // 6. Build new action object
+    const actionId = `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const actionDoc = {
+      id: actionId,
+      title: trimmedTitle,
+      instructions: trimmedInstructions,
+      organizationName: trimmedOrgName,
+      address: trimmedAddress,
+      appointmentDate: trimmedDate,
+      appointmentTime: trimmedTime,
+      timeZone: trimmedTimeZone,
+      createdAt: new Date().toISOString(),
+      createdBy: String(req.userId),
+      contentHash,
+      notificationHandedOff: false,
+      ...(cleanIdempotencyKey ? { idempotencyKey: cleanIdempotencyKey } : {}),
+    };
+
+    // 7. Atomic conditional write: append ONLY if idempotencyKey does NOT exist
+    const atomicQuery = {
+      _id: { $oid: applicationId },
+    };
+    if (cleanIdempotencyKey) {
+      atomicQuery['requiredActions.idempotencyKey'] = { $ne: cleanIdempotencyKey };
+    }
+
+    const atomicResult = await prisma.$runCommandRaw({
+      findAndModify: 'job_applications',
+      query: atomicQuery,
+      update: {
+        $push: { requiredActions: actionDoc },
+      },
+      new: true,
+    });
+
+    if (cleanIdempotencyKey && (!atomicResult || !atomicResult.value)) {
+      // Another concurrent request wrote this idempotencyKey first.
+      const freshDoc = await getRawJobApplication(applicationId);
+      const freshActions = Array.isArray(freshDoc?.requiredActions) ? freshDoc.requiredActions : [];
+      const winner = freshActions.find(a => a.idempotencyKey === cleanIdempotencyKey);
+      if (winner) {
+        if (winner.contentHash && winner.contentHash !== contentHash) {
+          return res.status(409).json({
+            success: false,
+            message: 'Idempotency key already used with different action content',
+          });
+        }
+        return res.status(200).json({
+          success: true,
+          message: 'Required action already recorded',
+          action: winner,
+          requiredActions: freshActions,
+        });
+      }
+    }
+
+    // 8. Hand off notification to the notification pipeline
+    const actionEventKey = `job_app_action:${application.id}:${actionDoc.id}`;
+    try {
+      const notif = await createNotification(application.workerId, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Action Required for Job Application',
+        message: `New required action for your job application${jobPost?.jobTitle ? `: ${jobPost.jobTitle}` : ''}`,
+        entityType: 'JOB_APPLICATION',
+        entityId: application.id,
+        link: `/worker/offers?applicationId=${application.id}&actionId=${actionDoc.id}`,
+        eventKey: actionEventKey,
+        enqueuePush: false, // Handled explicitly below to ensure handoff atomicity
+        data: {
+          applicationId: application.id,
+          actionId: actionDoc.id,
+          jobPostId: application.jobPostId,
+        },
+      });
+
+      if (notif) {
+        // Confirm outbox handoff before marking notificationHandedOff: true
+        try {
+          await enqueuePushOutbox(application.workerId, notif);
+          actionDoc.notificationHandedOff = true;
+          actionDoc.notificationId = notif.id;
+          // Atomically flag notificationHandedOff on the action item
+          await prisma.$runCommandRaw({
+            update: 'job_applications',
+            updates: [
+              {
+                q: {
+                  _id: { $oid: applicationId },
+                  'requiredActions.id': actionDoc.id,
+                },
+                u: {
+                  $set: {
+                    'requiredActions.$.notificationHandedOff': true,
+                    'requiredActions.$.notificationId': notif.id,
+                    'requiredActions.$.notificationHandedOffAt': new Date().toISOString(),
+                  },
+                },
+              },
+            ],
+          });
+        } catch (pushErr) {
+          console.warn('Applications: push outbox enqueue deferred to reconciliation worker:', pushErr.message);
+        }
+      }
+    } catch (notifErr) {
+      console.error('Applications: required action notification handoff deferred to reconciliation worker:', notifErr.message);
+    }
+
+    const currentDoc = await getRawJobApplication(applicationId);
+    const updatedActions = Array.isArray(currentDoc?.requiredActions) ? currentDoc.requiredActions : [actionDoc];
+
+    return res.status(201).json({
+      success: true,
+      message: 'Required action added successfully',
+      action: actionDoc,
+      requiredActions: updatedActions,
+    });
+  } catch (error) {
+    console.error('Applications: add required action error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to add required action' });
+  }
+};
+
+export const getApplicationRequiredActions = async (req, res) => {
+  try {
+    const applicationId = String(req.params.id);
+    if (!isValidObjectId(applicationId)) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+      select: {
+        id: true,
+        employerId: true,
+        workerId: true,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    // Authorization: employer owner, applicant worker, or ADMIN
+    const isEmployerOwner = String(application.employerId) === String(req.userId);
+    const isWorkerOwner = String(application.workerId) === String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN' || req.userRole === 'SUPPORT';
+
+    if (!isEmployerOwner && !isWorkerOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const rawDoc = await getRawJobApplication(applicationId);
+    const requiredActions = Array.isArray(rawDoc?.requiredActions) ? rawDoc.requiredActions : [];
+
+    return res.json({
+      success: true,
+      requiredActions,
+    });
+  } catch (error) {
+    console.error('Applications: get required actions error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load required actions' });
   }
 };

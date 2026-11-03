@@ -188,6 +188,10 @@ export const getEntityRoute = (notification) => {
       return `/my-hires`;
     case 'OFFER':
       return `/worker/offers`;
+    case 'JOB_APPLICATION':
+      return notification.data?.actionId
+        ? `/worker/offers?applicationId=${entityId}&actionId=${notification.data.actionId}`
+        : `/worker/offers?applicationId=${entityId}`;
     default:
       // Fallback based on type
       if (type === NOTIFICATION_TYPES.NEW_MESSAGE) return '/messages';

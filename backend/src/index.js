@@ -65,6 +65,8 @@ import { startPublicSupportExpiryWorker } from './services/publicSupportExpirySe
 import { startTeacherLessonReminderWorker } from './services/teacherLessonReminderService.js';
 import { startFamilyTrackingRetentionWorker } from './services/familyTrackingService.js';
 import { startPushOutboxWorker } from './services/pushOutboxService.js';
+import { startActionNotificationReconciliationWorker } from './services/actionNotificationReconciliationService.js';
+import { ensureNotificationIndexes } from './services/notificationService.js';
 import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './services/socketAuthService.js';
 import './config.js'; // Running your base configuration routines
 import { initializeFcm } from './services/fcmInit.js';
@@ -250,13 +252,20 @@ io.use(createSocketAuthMiddleware());
 const MONGODB_URI = process.env.DATABASE_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv';
 
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB connected successfully');
     console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
+    try {
+      await ensureNotificationIndexes();
+      console.log('✅ Notification indexes verified');
+    } catch (idxErr) {
+      console.error('❌ Failed to verify Notification indexes on startup:', idxErr.message);
+    }
     startPublicSupportExpiryWorker();
     startTeacherLessonReminderWorker();
     startFamilyTrackingRetentionWorker();
     startPushOutboxWorker();
+    startActionNotificationReconciliationWorker();
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);

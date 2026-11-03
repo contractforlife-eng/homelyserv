@@ -208,5 +208,29 @@
     "environmentNative": "Installierte mobile App",
     "versionLabel": "Version",
     "buildLabel": "Build"
+  },
+  "requiredActions": {
+    "sectionTitle": "Erforderliche Maßnahmen",
+    "addActionButton": "Erforderliche Maßnahme hinzufügen",
+    "modalTitle": "Erforderliche Maßnahme hinzufügen",
+    "modalDesc": "Geben Sie dem Bewerber Anweisungen für Folgeschritte (z. B. ärztliche Untersuchung, Fähigkeitstest oder Unterlagen). Dies ändert den Bewerbungsstatus nicht.",
+    "actionTitleLabel": "Titel der Maßnahme *",
+    "actionTitlePlaceholder": "z. B. Ärztliche Untersuchung abschließen",
+    "instructionsLabel": "Anweisungen und Details *",
+    "instructionsPlaceholder": "Beschreiben Sie, was die Arbeitskraft tun muss, erforderliche Tests, mitzubringende Dokumente usw.",
+    "orgNameLabel": "Organisation / Ort (Optional)",
+    "orgNamePlaceholder": "z. B. Al-Nour Ärztezentrum",
+    "addressLabel": "Adresse (Optional)",
+    "addressPlaceholder": "z. B. El-Gomhoureya-Str. 15",
+    "appointmentScheduleTitle": "Terminvereinbarung (Optional)",
+    "appointmentDate": "Termindatum",
+    "appointmentTime": "Terminzeit",
+    "timeZoneLabel": "Zeitzone",
+    "titleRequired": "Titel der Maßnahme ist erforderlich.",
+    "instructionsRequired": "Anweisungen sind erforderlich.",
+    "appointmentIncomplete": "Bei der Terminangabe müssen Datum, Uhrzeit und Zeitzone angegeben werden.",
+    "addSuccess": "Erforderliche Maßnahme gespeichert und Arbeitskraft benachrichtigt!",
+    "addFailed": "Fehler beim Speichern der Maßnahme. Bitte erneut versuchen.",
+    "submitButton": "Speichern & Arbeitskraft benachrichtigen"
   }
 }

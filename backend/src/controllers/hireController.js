@@ -584,6 +584,7 @@ export const getMyOffers = async (req, res) => {
             const employer = appEmployerMap.get(String(app.employerId));
             const decision = rawDoc.decision || (app.status === 'rejected' ? 'rejected' : (app.status === 'shortlisted' ? 'accepted' : app.status));
             const attendanceDetails = rawDoc.attendanceDetails || null;
+            const requiredActions = Array.isArray(rawDoc.requiredActions) ? rawDoc.requiredActions : [];
 
             return {
               id: `app_${app.id}`,
@@ -592,6 +593,7 @@ export const getMyOffers = async (req, res) => {
               status: decision,
               decision,
               attendanceDetails,
+              requiredActions,
               jobTitle: job?.jobTitle || 'Job Application',
               jobPostId: app.jobPostId,
               employerId: app.employerId,

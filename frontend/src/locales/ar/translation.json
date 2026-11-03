@@ -208,5 +208,29 @@
     "environmentNative": "تطبيق الهاتف المثبت",
     "versionLabel": "الإصدار",
     "buildLabel": "البناء"
+  },
+  "requiredActions": {
+    "sectionTitle": "الإجراءات المطلوبة",
+    "addActionButton": "إضافة إجراء مطلوب",
+    "modalTitle": "إضافة إجراء مطلوب",
+    "modalDesc": "وجّه المتقدم لإجراء خطوة متابعة (مثل الكشف الطبي أو اختبار المهارات أو تجهيز وثائق). هذا الإجراء لا يغير حالة طلب التقديم.",
+    "actionTitleLabel": "عنوان الإجراء *",
+    "actionTitlePlaceholder": "مثال: إجراء الفحص الطبي الشامل",
+    "instructionsLabel": "التعليمات والتفاصيل *",
+    "instructionsPlaceholder": "اكتب ما يتعين على العامل القيام به، الفحوصات المطلوبة، الأوراق المطلوبة، إلخ.",
+    "orgNameLabel": "اسم المنشأة / المكان (اختياري)",
+    "orgNamePlaceholder": "مثال: مجمع النور الطبي",
+    "addressLabel": "العنوان (اختياري)",
+    "addressPlaceholder": "مثال: 15 شارع الجمهورية",
+    "appointmentScheduleTitle": "الموعد المحدد (اختياري)",
+    "appointmentDate": "تاريخ الموعد",
+    "appointmentTime": "وقت الموعد",
+    "timeZoneLabel": "المنطقة الزمنية المحددة",
+    "titleRequired": "عنوان الإجراء مطلوب.",
+    "instructionsRequired": "التعليمات والتفاصيل مطلوبة.",
+    "appointmentIncomplete": "عند تحديد موعد، يجب توفير التاريخ والوقت والمنطقة الزمنية معاً.",
+    "addSuccess": "تم حفظ الإجراء المطلوب وإشعار العامل بنجاح!",
+    "addFailed": "فشل حفظ الإجراء المطلوب. يرجى المحاولة مرة أخرى.",
+    "submitButton": "حفظ وإشعار العامل"
   }
 }

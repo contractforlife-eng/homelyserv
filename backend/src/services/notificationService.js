@@ -105,6 +105,8 @@ export const createNotification = async (userId, {
   icon = null,
   link = null,
   data = {},
+  eventKey = null,
+  enqueuePush = true,
 }) => {
   try {
     if (!userId) {
@@ -113,23 +115,81 @@ export const createNotification = async (userId, {
     }
 
     const defaults = TYPE_DEFAULTS[type] || { icon: '🔔', priority: PRIORITIES.NORMAL };
+    let notification;
 
-    const notification = await prisma.notification.create({
-      data: {
-        userId,
-        type: type || NOTIFICATION_TYPES.SYSTEM,
-        title: title || 'Notification',
-        message: message || title || 'You have a new notification',
-        entityType: entityType || null,
-        entityId: entityId || null,
-        priority: priority || defaults.priority || PRIORITIES.NORMAL,
-        isRead: false,
-        readAt: null,
-        data: data || {},
-        icon: icon || defaults.icon || '🔔',
-        link: link || '/',
-      },
-    });
+    if (eventKey && typeof eventKey === 'string' && eventKey.trim()) {
+      const cleanEventKey = eventKey.trim();
+
+      // Guard: Ensure unique index is ready before attempting event-key dispatch
+      if (process.env.NODE_ENV !== 'test') {
+        await ensureNotificationIndexes();
+      }
+
+      const rawRes = await prisma.$runCommandRaw({
+        findAndModify: 'Notification',
+        query: { eventKey: cleanEventKey },
+        update: {
+          $setOnInsert: {
+            userId: { $oid: String(userId) },
+            type: type || NOTIFICATION_TYPES.SYSTEM,
+            title: title || 'Notification',
+            message: message || title || 'You have a new notification',
+            entityType: entityType || null,
+            entityId: entityId || null,
+            priority: priority || defaults.priority || PRIORITIES.NORMAL,
+            isRead: false,
+            readAt: null,
+            data: data || {},
+            icon: icon || defaults.icon || '🔔',
+            link: link || '/',
+            eventKey: cleanEventKey,
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+        new: true,
+      });
+
+      const doc = rawRes?.value;
+      if (doc) {
+        notification = {
+          id: String(doc._id?.$oid || doc._id),
+          userId: String(doc.userId?.$oid || doc.userId),
+          type: doc.type,
+          title: doc.title,
+          message: doc.message,
+          entityType: doc.entityType,
+          entityId: doc.entityId,
+          priority: doc.priority,
+          isRead: Boolean(doc.isRead),
+          readAt: doc.readAt ? (doc.readAt.$date ? new Date(doc.readAt.$date) : new Date(doc.readAt)) : null,
+          data: doc.data || {},
+          icon: doc.icon,
+          link: doc.link,
+          eventKey: doc.eventKey,
+          createdAt: doc.createdAt ? (doc.createdAt.$date ? new Date(doc.createdAt.$date) : new Date(doc.createdAt)) : new Date(),
+        };
+      }
+    }
+
+    if (!notification) {
+      notification = await prisma.notification.create({
+        data: {
+          userId,
+          type: type || NOTIFICATION_TYPES.SYSTEM,
+          title: title || 'Notification',
+          message: message || title || 'You have a new notification',
+          entityType: entityType || null,
+          entityId: entityId || null,
+          priority: priority || defaults.priority || PRIORITIES.NORMAL,
+          isRead: false,
+          readAt: null,
+          data: data || {},
+          icon: icon || defaults.icon || '🔔',
+          link: link || '/',
+        },
+      });
+    }
 
     // Emit realtime event to the user's socket room
     const shouldDeliver = await shouldNotifyUser(userId);
@@ -149,10 +209,12 @@ export const createNotification = async (userId, {
       });
     }
 
-    // Enqueue for durable push delivery (never blocks caller response)
-    enqueuePushOutbox(userId, notification).catch((pushErr) => {
-      console.error('⚠️ Failed to enqueue push notification:', pushErr.message);
-    });
+    // Enqueue for durable push delivery (never blocks caller response) unless caller manages outbox
+    if (enqueuePush) {
+      enqueuePushOutbox(userId, notification).catch((pushErr) => {
+        console.error('⚠️ Failed to enqueue push notification:', pushErr.message);
+      });
+    }
 
     return notification;
   } catch (error) {
@@ -257,6 +319,42 @@ export const clearAllNotifications = async (userId) => {
   }
 };
 
+let indexReadyPromise = null;
+let isIndexReady = false;
+
+/**
+ * Ensures required indexes exist on the Notification collection reproducibly.
+ * Uses MongoDB createIndexes command with sparse: true for eventKey.
+ * Safe to execute on every server startup / deployment (idempotent no-op if already present).
+ */
+export const ensureNotificationIndexes = async (prismaClient = prisma) => {
+  if (isIndexReady) return true;
+  if (!indexReadyPromise) {
+    indexReadyPromise = (async () => {
+      try {
+        await prismaClient.$runCommandRaw({
+          createIndexes: 'Notification',
+          indexes: [
+            {
+              key: { eventKey: 1 },
+              name: 'Notification_eventKey_unique',
+              unique: true,
+              sparse: true,
+            },
+          ],
+        });
+        isIndexReady = true;
+        return true;
+      } catch (err) {
+        indexReadyPromise = null; // allow retry on subsequent attempts
+        console.error('❌ NotificationService: CRITICAL - Failed to initialize Notification unique eventKey index:', err.message);
+        throw err;
+      }
+    })();
+  }
+  return indexReadyPromise;
+};
+
 export default {
   createNotification,
   createManyNotifications,
@@ -266,6 +364,7 @@ export default {
   getUnreadCount,
   deleteNotification,
   clearAllNotifications,
+  ensureNotificationIndexes,
   NOTIFICATION_TYPES,
   PRIORITIES,
 };

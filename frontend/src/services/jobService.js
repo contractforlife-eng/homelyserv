@@ -120,6 +120,18 @@ export const downloadApplicationCv = async (applicationId) => {
   return response;
 };
 
+// Employer adds a required action for an applicant
+export const addRequiredAction = async (applicationId, actionData) => {
+  const response = await api.post(`/api/jobs/applications/${applicationId}/required-actions`, actionData);
+  return response.data;
+};
+
+// Get required actions for an application
+export const getRequiredActions = async (applicationId) => {
+  const response = await api.get(`/api/jobs/applications/${applicationId}/required-actions`);
+  return response.data;
+};
+
 const jobService = {
   createJob,
   getJobs,
@@ -137,6 +149,8 @@ const jobService = {
   updateApplicationStatus,
   sendOfferFromApplication,
   downloadApplicationCv,
+  addRequiredAction,
+  getRequiredActions,
 };
 
 export default jobService;

@@ -208,5 +208,29 @@
     "environmentNative": "Installed mobile app",
     "versionLabel": "Version",
     "buildLabel": "Build"
+  },
+  "requiredActions": {
+    "sectionTitle": "Required Actions",
+    "addActionButton": "Add Required Action",
+    "modalTitle": "Add Required Action",
+    "modalDesc": "Instruct the applicant to complete a follow-up step (e.g. medical examination, skills test, or document preparation). This does not change the application status.",
+    "actionTitleLabel": "Action Title *",
+    "actionTitlePlaceholder": "e.g. Complete Medical Examination",
+    "instructionsLabel": "Instructions & Details *",
+    "instructionsPlaceholder": "Describe what the worker needs to do, tests required, documents to bring, etc.",
+    "orgNameLabel": "Organization / Place (Optional)",
+    "orgNamePlaceholder": "e.g. Al-Nour Medical Center",
+    "addressLabel": "Address (Optional)",
+    "addressPlaceholder": "e.g. 15 El-Gomhoureya St",
+    "appointmentScheduleTitle": "Appointment Schedule (Optional)",
+    "appointmentDate": "Appointment Date",
+    "appointmentTime": "Appointment Time",
+    "timeZoneLabel": "Explicit Timezone",
+    "titleRequired": "Action title is required.",
+    "instructionsRequired": "Instructions are required.",
+    "appointmentIncomplete": "When specifying an appointment, date, time, and timezone are all required.",
+    "addSuccess": "Required action added successfully!",
+    "addFailed": "Failed to add required action. Please try again.",
+    "submitButton": "Save & Notify Worker"
   }
 }
