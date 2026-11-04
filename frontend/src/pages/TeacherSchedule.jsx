@@ -54,7 +54,7 @@ import {
   Upload,
   Trash2
 } from 'lucide-react';
-import { triggerFileDownload, formatFileSize } from '../utils/fileDownload';
+import { triggerFileDownload, formatFileSize, DownloadError } from '../utils/fileDownload';
 
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -198,13 +198,16 @@ const TeacherSchedule = () => {
       const res = await api.get(`/api/teachers/lessons/${lessonId}/materials/${materialId}/download`);
 
       if (res?.data?.downloadUrl) {
-        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf');
+        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf', { expectedType: 'pdf' });
       } else {
         setMaterialError(t('teacherSchedule.materials.downloadError') || 'Failed to generate download link.');
       }
     } catch (err) {
       console.error('Error downloading lesson material:', err);
-      const msg = err.response?.data?.message || t('teacherSchedule.materials.downloadError') || 'Failed to generate download link.';
+      let msg = err.response?.data?.message || t('teacherSchedule.materials.downloadError') || 'Failed to generate download link.';
+      if (err instanceof DownloadError) {
+        msg = err.message;
+      }
       setMaterialError(msg);
     } finally {
       setMaterialDownloadingId(null);

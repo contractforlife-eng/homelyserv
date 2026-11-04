@@ -34,7 +34,7 @@ import {
   FileText,
   Download
 } from 'lucide-react';
-import { triggerFileDownload, formatFileSize } from '../utils/fileDownload';
+import { triggerFileDownload, formatFileSize, DownloadError } from '../utils/fileDownload';
 
 const TeacherCourses = () => {
   const { t, i18n } = useTranslation();
@@ -422,13 +422,17 @@ const TeacherCourses = () => {
       setMaterialDownloadingId(materialId);
       const res = await api.get(`/api/teachers/courses/${materialsModalCourse._id}/materials/${materialId}/download`);
       if (res.data?.success && res.data.downloadUrl) {
-        await triggerFileDownload(res.data.downloadUrl, originalFilename || res.data.material?.originalFilename || 'material.pdf');
+        await triggerFileDownload(res.data.downloadUrl, originalFilename || res.data.material?.originalFilename || 'material.pdf', { expectedType: 'pdf' });
       } else {
         setMaterialError(res.data?.message || t('teacherCourses.materials.downloadError') || 'Failed to generate download link.');
       }
     } catch (err) {
       console.error('Error downloading course material:', err);
-      setMaterialError(err.response?.data?.message || t('teacherCourses.materials.downloadError') || 'Failed to generate download link.');
+      let msg = err.response?.data?.message || t('teacherCourses.materials.downloadError') || 'Failed to generate download link.';
+      if (err instanceof DownloadError) {
+        msg = err.message;
+      }
+      setMaterialError(msg);
     } finally {
       setMaterialDownloadingId(null);
     }

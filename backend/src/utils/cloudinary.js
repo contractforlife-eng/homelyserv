@@ -13,7 +13,7 @@ const configureCloudinary = () => {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    api_secret: process.env.CLOUDINARY_API_SECRET
   });
   cloudinaryConfigured = true;
   return true;
@@ -58,12 +58,13 @@ const upload = multer({
 
 const uploadFromBuffer = (fileBuffer, options = {}) => {
   assertCloudinaryConfigured();
+  const hasPathQualifiedPublicId = String(options.public_id || '').includes('/');
+  const uploadOptions = options.folder || hasPathQualifiedPublicId
+    ? options
+    : { folder: 'homelyserv', ...options };
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'homelyserv',
-        ...options
-      },
+      uploadOptions,
       (error, result) => {
         if (error) {
           return reject(error);

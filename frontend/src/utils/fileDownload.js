@@ -29,9 +29,10 @@ export const formatFileSize = (bytes) => {
  *
  * @param {string} url - Short-lived signed download URL
  * @param {string} fallbackFilename - Expected original filename (e.g. "syllabus.pdf")
+ * @param {{ expectedType?: 'pdf' }} options - Optional content validation
  * @returns {Promise<void>}
  */
-export const triggerFileDownload = async (url, fallbackFilename = 'material.pdf') => {
+export const triggerFileDownload = async (url, fallbackFilename = 'material.pdf', { expectedType } = {}) => {
   if (!url) {
     throw new Error('Download URL is missing or invalid');
   }
@@ -50,9 +51,21 @@ export const triggerFileDownload = async (url, fallbackFilename = 'material.pdf'
   try {
     const res = await fetch(url, { method: 'GET' });
     if (!res.ok) {
-      throw new Error(`Failed to fetch file (HTTP ${res.status})`);
+      throw new DownloadError(`Failed to download ${safeFilename} (HTTP ${res.status})`);
     }
     const blob = await res.blob();
+
+    if (expectedType === 'pdf') {
+      if (blob.size === 0) {
+        throw new DownloadError(`Empty content downloaded for ${safeFilename}`);
+      }
+
+      const signature = await blob.slice(0, 5).text();
+      if (signature !== '%PDF-') {
+        throw new DownloadError(`Downloaded content for ${safeFilename} is not a valid PDF (missing %PDF- header).`);
+      }
+    }
+
     const objectUrl = window.URL.createObjectURL(blob);
 
     const link = document.createElement('a');
@@ -67,6 +80,14 @@ export const triggerFileDownload = async (url, fallbackFilename = 'material.pdf'
       window.URL.revokeObjectURL(objectUrl);
     }, 10000);
   } catch (err) {
+    if (err instanceof DownloadError) throw err;
+
+    if (expectedType === 'pdf') {
+      throw new DownloadError(
+        'The secure PDF download could not be read (network or CORS error). Please refresh and try again.'
+      );
+    }
+
     // If fetch failed (e.g. cross-origin blocking or network error), fallback to direct link click
     console.warn('Direct blob fetch failed, falling back to direct navigation:', err);
     const link = document.createElement('a');
@@ -81,7 +102,15 @@ export const triggerFileDownload = async (url, fallbackFilename = 'material.pdf'
   }
 };
 
+export class DownloadError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'DownloadError';
+  }
+}
+
 export default {
   formatFileSize,
-  triggerFileDownload
+  triggerFileDownload,
+  DownloadError
 };

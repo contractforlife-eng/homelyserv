@@ -105,9 +105,12 @@ export const uploadMaterialDocument = async (fileBuffer, { entityType = 'course'
     type: 'authenticated'
   });
 
+  // Persist Cloudinary's authoritative stored public_id and asset version.
+  // Cloudinary is the source of truth for where the asset actually lives;
+  // do NOT overwrite result.public_id with a locally generated name.
   return {
     ...result,
-    public_id: publicId,
+    public_id: result.public_id,
     resource_type: 'raw'
   };
 };

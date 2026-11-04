@@ -13,6 +13,7 @@
 // ============================================================
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { Writable } from 'node:stream';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import {
@@ -29,6 +30,7 @@ import User from '../models/User.js';
 import teachersRouter from './teachers.js';
 import studentsRouter from './students.js';
 import coursesRouter from './courses.js';
+import { cloudinary } from '../utils/cloudinary.js';
 
 const secret = 'materials-test-secret-2026-homelyserv-secure-jwt';
 process.env.JWT_SECRET = secret;
@@ -109,6 +111,19 @@ test('2. Teacher course materials upload, ownership isolation, and deletion', as
   });
 
   const origCourseFindOne = Course.findOne;
+  const originalUploadStream = cloudinary.uploader.upload_stream;
+  const originalDestroy = cloudinary.uploader.destroy;
+  cloudinary.uploader.upload_stream = (options, callback) => new Writable({
+    write(_chunk, _encoding, done) { done(); },
+    final(done) {
+      callback(null, {
+        public_id: options.public_id,
+        secure_url: `https://res.cloudinary.com/test/raw/authenticated/${options.public_id}`,
+      });
+      done();
+    },
+  });
+  cloudinary.uploader.destroy = async () => ({ result: 'ok' });
   Course.findOne = (query) => {
     for (const c of mockCourses.values()) {
       const matchId = !query._id || String(c._id) === String(query._id);
@@ -198,6 +213,8 @@ test('2. Teacher course materials upload, ownership isolation, and deletion', as
     server.close();
     User.findById = origUserFindById;
     Course.findOne = origCourseFindOne;
+    cloudinary.uploader.upload_stream = originalUploadStream;
+    cloudinary.uploader.destroy = originalDestroy;
   }
 });
 

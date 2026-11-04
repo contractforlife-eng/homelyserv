@@ -33,7 +33,7 @@ import {
   Edit3,
   Download
 } from 'lucide-react';
-import { triggerFileDownload, formatFileSize } from '../utils/fileDownload';
+import { triggerFileDownload, formatFileSize, DownloadError } from '../utils/fileDownload';
 
 const StudentLessons = () => {
   const { t } = useTranslation();
@@ -68,13 +68,16 @@ const StudentLessons = () => {
       const lessonId = selectedLesson.id || selectedLesson._id;
       const res = await api.get(`/api/students/lessons/${lessonId}/materials/${materialId}/download`);
       if (res?.data?.downloadUrl) {
-        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf');
+        await triggerFileDownload(res.data.downloadUrl, originalFilename || 'material.pdf', { expectedType: 'pdf' });
       } else {
         setMaterialDownloadError(t('studentLessons.downloadError') || 'Failed to generate download link.');
       }
     } catch (err) {
       console.error('Error downloading lesson material:', err);
-      const msg = err.response?.data?.message || t('studentLessons.downloadError') || 'Failed to generate download link.';
+      let msg = err.response?.data?.message || t('studentLessons.downloadError') || 'Failed to generate download link.';
+      if (err instanceof DownloadError) {
+        msg = err.message;
+      }
       setMaterialDownloadError(msg);
     } finally {
       setDownloadingMaterialId(null);
