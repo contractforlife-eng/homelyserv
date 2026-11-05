@@ -1,9 +1,10 @@
 // src/App.jsx - FULLY UPDATED WITH PROPER MESSAGE ROUTING
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import AnimatedIntro from './components/intro/AnimatedIntro';
 import BiometricLockGate from './components/security/BiometricLockGate';
+import { setupAndroidBackButton } from './utils/androidBackNavigation';
 
 // Public Pages
 import Home from './pages/Home';
@@ -336,9 +337,39 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const { isAuthenticated, loading, user, markStartupReady } = useAuth();
   const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
   const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
+
+  // Keep live references for Android hardware back button handler
+  const locationRef = useRef(location);
+  const authRef = useRef({ isAuthenticated, role: user?.role });
+  const i18nRef = useRef(i18n.language);
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  useEffect(() => {
+    authRef.current = { isAuthenticated, role: user?.role };
+  }, [isAuthenticated, user?.role]);
+
+  useEffect(() => {
+    i18nRef.current = i18n.language;
+  }, [i18n.language]);
+
+  useEffect(() => {
+    const unregisterBack = setupAndroidBackButton({
+      navigate,
+      locationRef,
+      authRef,
+      i18nRef,
+    });
+    return () => {
+      unregisterBack();
+    };
+  }, [navigate]);
 
   const [showIntro, setShowIntro] = useState(() => Capacitor.isNativePlatform());
 
