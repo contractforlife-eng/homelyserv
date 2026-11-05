@@ -46,7 +46,9 @@ const conversationSchema = new mongoose.Schema(
     closedBy: { type: String, default: null },
     // Last activity for sorting.
     lastMessageAt: { type: Date, default: Date.now },
-    lastMessagePreview: { type: String, default: '' }
+    lastMessagePreview: { type: String, default: '' },
+    marketplaceListingId: { type: String, default: null, index: true },
+    marketplaceListingTitle: { type: String, default: null, maxlength: 120 }
   },
   { timestamps: true }
 );

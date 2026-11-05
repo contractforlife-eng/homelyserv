@@ -28,7 +28,8 @@ import {
   X,
   GraduationCap,
   AlertTriangle,
-  Search as SearchIcon
+  Search as SearchIcon,
+  ShoppingBag
 } from 'lucide-react';
 
 const TeacherSidebar = ({
@@ -121,6 +122,13 @@ const TeacherSidebar = ({
       icon: Users,
       path: '/teacher-employees',
       active: location.pathname === '/teacher-employees'
+    },
+    {
+      id: 'marketplace',
+      label: t('marketplace.nav') || 'Used Marketplace',
+      icon: ShoppingBag,
+      path: '/marketplace',
+      active: location.pathname.startsWith('/marketplace')
     },
     {
       id: 'students',

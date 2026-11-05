@@ -15,6 +15,7 @@ import DOCTOR_ACCOUNTS_TRANSLATIONS, { DOCTOR_ACCOUNTS_NAV_TRANSLATIONS } from '
 import TEACHER_TRANSLATIONS from './teacherTranslations.js';
 import STUDENT_TRANSLATIONS from './studentTranslations.js';
 import { PUBLIC_PROFILE_TRANSLATIONS } from './publicProfileTranslations.js';
+import MARKETPLACE_TRANSLATIONS from './marketplaceTranslations.js';
 
 import enLocale from '../locales/en/translation.json';
 import arLocale from '../locales/ar/translation.json';
@@ -13647,6 +13648,11 @@ Object.entries(LOCALE_RESOURCES).forEach(([language, localeData]) => {
     });
   }
 });
+
+for (const [language, copy] of Object.entries(MARKETPLACE_TRANSLATIONS)) {
+  const target = { en, ar, fr, ru, tr, de }[language];
+  if (target?.translation) target.translation.marketplace = copy;
+}
 
 const resources = {
   en,

@@ -292,7 +292,8 @@ const TeacherMessages = () => {
         'TEACHER',
         selectedConv.otherUserId,
         selectedConv.otherUserName,
-        draft
+        draft,
+        selectedConv.id
       );
       if (result?.message) {
         setMessages((current) =>

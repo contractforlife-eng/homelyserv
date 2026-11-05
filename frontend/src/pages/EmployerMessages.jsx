@@ -81,7 +81,7 @@ const EmployerMessages = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
-  
+
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
@@ -193,10 +193,10 @@ const EmployerMessages = () => {
       return;
     }
     if (!authUser) return;
-    
+
     const userId = authUser.id;
     if (!userId) return;
-    
+
     (async () => {
       const userConversations = await getUserConversations(userId);
       console.log('🔄 Refresh load - employer conversations:', userConversations);
@@ -438,7 +438,7 @@ const EmployerMessages = () => {
       setMessages(conversationMessages);
       setMessagesLoading(false);
     }
-    
+
     const userId = authUser?.id;
     if (userId) {
       try {
@@ -699,7 +699,8 @@ const EmployerMessages = () => {
         'EMPLOYER',
         selectedConv.otherUserId,
         selectedConv.otherUserName,
-        draft
+        draft,
+        selectedConv.id
       );
     } catch (error) {
       sendError = error;
@@ -759,8 +760,8 @@ const EmployerMessages = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
+                    <img
+                      src={userProfileImage}
                       alt={authUser.fullName || t('employerMessages.employer')}
                       className="w-full h-full object-cover"
                     />
@@ -1006,9 +1007,9 @@ const EmployerMessages = () => {
                       ) : (
                         messages.map((msg, index) => {
                           const isEmployer = msg.senderRole === 'EMPLOYER';
-                          const showAvatar = index === 0 || 
+                          const showAvatar = index === 0 ||
                             (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
-                          
+
                           return (
                             <div
                               key={msg.id || index}

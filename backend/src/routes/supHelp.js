@@ -347,13 +347,15 @@ router.get('/messages', async (req, res) => {
       ? {
           $or: [
             { type: 'INTERNAL', $or: [{ staffIds: userId }, { participantIds: userId }] },
-            { type: 'SUPPORT' }
+            { type: 'SUPPORT' },
+            { marketplaceListingId: { $ne: null }, participantIds: userId }
           ]
         }
       : {
           $or: [
             { type: 'INTERNAL', $or: [{ staffIds: userId }, { participantIds: userId }] },
-            { type: 'SUPPORT', $or: [{ supportAgentId: userId }, { participantIds: userId }, { staffIds: userId }] }
+            { type: 'SUPPORT', $or: [{ supportAgentId: userId }, { participantIds: userId }, { staffIds: userId }] },
+            { marketplaceListingId: { $ne: null }, participantIds: userId }
           ]
         };
 
@@ -393,7 +395,10 @@ router.get('/messages', async (req, res) => {
     const otherUserIds = [];
     for (const conv of conversationsMeta) {
       let otherId = null;
-      if (conv.type === 'INTERNAL') {
+      if (conv.marketplaceListingId) {
+        const otherParticipant = conv.participantIds?.find(id => String(id) !== String(userId));
+        otherId = otherParticipant ? String(otherParticipant) : null;
+      } else if (conv.type === 'INTERNAL') {
         const otherStaff = conv.staffIds?.find(id => String(id) !== String(userId));
         otherId = otherStaff ? String(otherStaff) : null;
       } else if (conv.type === 'SUPPORT') {
@@ -424,7 +429,10 @@ router.get('/messages', async (req, res) => {
     const conversations = [];
     for (const conv of conversationsMeta) {
       let otherUserId = null;
-      if (conv.type === 'INTERNAL') {
+      if (conv.marketplaceListingId) {
+        const otherParticipant = conv.participantIds?.find(id => String(id) !== String(userId));
+        otherUserId = otherParticipant ? String(otherParticipant) : null;
+      } else if (conv.type === 'INTERNAL') {
         const otherStaff = conv.staffIds?.find(id => String(id) !== String(userId));
         otherUserId = otherStaff ? String(otherStaff) : null;
       } else if (conv.type === 'SUPPORT') {
@@ -493,13 +501,15 @@ router.get('/messages/:conversationId', async (req, res) => {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    // Strictly forbid PRIVATE conversations
-    if (conv.type === 'PRIVATE') {
+    // Strictly forbid non-marketplace PRIVATE conversations
+    if (conv.type === 'PRIVATE' && !conv.marketplaceListingId) {
       return res.status(403).json({ error: 'Not authorized to access private conversations' });
     }
 
     let isAuthorized = false;
-    if (conv.type === 'INTERNAL') {
+    if (conv.marketplaceListingId) {
+      isAuthorized = conv.participantIds?.includes(userId);
+    } else if (conv.type === 'INTERNAL') {
       isAuthorized = conv.staffIds?.includes(userId) || userRole === 'ADMIN';
     } else if (conv.type === 'SUPPORT') {
       isAuthorized = conv.participantIds?.includes(userId) || conv.supportAgentId === userId || userRole === 'ADMIN';
@@ -549,13 +559,15 @@ router.post('/messages', async (req, res) => {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    // Strictly forbid sending to PRIVATE conversations
-    if (conv.type === 'PRIVATE') {
+    // Strictly forbid sending to non-marketplace PRIVATE conversations
+    if (conv.type === 'PRIVATE' && !conv.marketplaceListingId) {
       return res.status(403).json({ error: 'Not authorized to send to private conversations' });
     }
 
     let isAuthorized = false;
-    if (conv.type === 'INTERNAL') {
+    if (conv.marketplaceListingId) {
+      isAuthorized = conv.participantIds?.includes(senderId) && conv.participantIds?.includes(String(recipientId));
+    } else if (conv.type === 'INTERNAL') {
       isAuthorized = conv.staffIds?.includes(senderId) && conv.staffIds?.includes(String(recipientId));
     } else if (conv.type === 'SUPPORT') {
       isAuthorized = (conv.participantIds?.includes(senderId) || conv.supportAgentId === senderId) &&

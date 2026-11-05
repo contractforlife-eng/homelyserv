@@ -2,7 +2,7 @@
 // Layout mirrors the Admin Messages page (green Support theme).
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import api from '../../utils/api';
@@ -55,8 +55,9 @@ const SUPPORT_TAB_META = {
 const SupportMessages = () => {
   const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const requestedConversationId = searchParams.get('conversationId');
+  const requestedConversationId = searchParams.get('conversationId') || location.state?.conversationId;
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -586,7 +587,8 @@ const emitTypingEvent = (isTyping) => {
         'SUPPORT',
         selectedConv.otherUserId,
         selectedConv.otherUserName,
-        draft
+        draft,
+        selectedConv.id
       );
     } catch (error) {
       console.error('Failed to send message:', error);

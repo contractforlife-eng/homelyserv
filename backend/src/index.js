@@ -53,6 +53,8 @@ import employeeRoutes from './routes/employees.js';
 import medicalRoutes from './routes/medical.js';
 import doctorSearchRoutes from './routes/doctorSearch.js';
 import publicProfilesRoutes from './routes/publicProfiles.js';
+import marketplaceRoutes from './routes/marketplace.js';
+import { ensureMarketplaceIndexes } from './models/MarketplaceListing.js';
 import { requireAdmin } from './middleware/auth.js';
 import { getHomelyMindIntegrationSecret } from './config/homelyMindIntegration.js';
 import { setIo } from './lib/socket.js';
@@ -125,7 +127,7 @@ const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // Check if origin is allowed
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed instanceof RegExp) {
@@ -133,10 +135,10 @@ const corsOptions = {
       }
       return allowed === origin;
     });
-    
+
     // Check for ngrok subdomains
     const isNgrok = /^https:\/\/.*\.ngrok-free\.dev$/.test(origin);
-    
+
     if (isAllowed || isNgrok) {
       callback(null, true);
     } else {
@@ -171,7 +173,7 @@ app.options('*', cors(corsOptions));
 // Additional CORS headers middleware (fallback)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  
+
   if (origin) {
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed instanceof RegExp) {
@@ -179,9 +181,9 @@ app.use((req, res, next) => {
       }
       return allowed === origin;
     });
-    
+
     const isNgrok = /^https:\/\/.*\.ngrok-free\.dev$/.test(origin);
-    
+
     if (isAllowed || isNgrok) {
       res.header('Access-Control-Allow-Origin', origin);
       res.header('Access-Control-Allow-Credentials', 'true');
@@ -189,12 +191,12 @@ app.use((req, res, next) => {
       res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Guest-Token, X-Client-Platform, X-Client-Version, Accept, Origin');
     }
   }
-  
+
   // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-  
+
   next();
 });
 
@@ -224,16 +226,16 @@ const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      
+
       const isAllowed = allowedOrigins.some(allowed => {
         if (allowed instanceof RegExp) {
           return allowed.test(origin);
         }
         return allowed === origin;
       });
-      
+
       const isNgrok = /^https:\/\/.*\.ngrok-free\.dev$/.test(origin);
-      
+
       if (isAllowed || isNgrok) {
         callback(null, true);
       } else {
@@ -261,6 +263,12 @@ mongoose.connect(MONGODB_URI)
     } catch (idxErr) {
       console.error('❌ Failed to verify Notification indexes on startup:', idxErr.message);
     }
+    try {
+      await ensureMarketplaceIndexes();
+      console.log('✅ Marketplace indexes verified');
+    } catch (idxErr) {
+      console.error('❌ Failed to verify Marketplace indexes on startup:', idxErr.message);
+    }
     startPublicSupportExpiryWorker();
     startTeacherLessonReminderWorker();
     startFamilyTrackingRetentionWorker();
@@ -279,8 +287,8 @@ import prisma from "./lib/prisma.js";
 // ============================================================
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     message: 'HomelyServ API is running',
     mongoDB: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
@@ -309,10 +317,10 @@ app.get('/api/debug/all-users', requireAdmin, async (req, res) => {
   try {
     const User = (await import('./models/User.js')).default;
     const users = await User.find({});
-    
+
     console.log(`🔍 Found ${users.length} users in database`);
     users.forEach(u => console.log(`- ${u.email}`));
-    
+
     res.json({
       success: true,
       count: users.length,
@@ -326,9 +334,9 @@ app.get('/api/debug/all-users', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Debug error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
@@ -342,16 +350,16 @@ app.get('/api/debug/user-count', requireAdmin, async (req, res) => {
     const User = (await import('./models/User.js')).default;
     const count = await User.countDocuments();
     const allUsers = await User.find({}).select('email fullName role createdAt');
-    
+
     res.json({
       success: true,
       totalUsers: count,
       users: allUsers
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
@@ -366,9 +374,9 @@ app.get('/api/users/all', requireAdmin, async (req, res) => {
     const users = await User.find({})
       .select('-password')
       .sort({ createdAt: -1 });
-    
+
     console.log(`📊 API: Found ${users.length} users (no filters)`);
-    
+
     res.json({
       success: true,
       count: users.length,
@@ -376,9 +384,9 @@ app.get('/api/users/all', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error in /api/users/all:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
@@ -429,6 +437,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/medical', medicalRoutes);
 app.use('/api/doctor-search', doctorSearchRoutes);
 app.use('/api/public', publicProfilesRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
@@ -438,7 +447,7 @@ setIo(io);
 
 io.on('connection', (socket) => {
   console.log('🔌 User connected:', socket.id);
-  
+
   joinAuthenticatedUserRoom(socket);
 
   // PRESENCE-ONLY: track authenticated socket presence (additive, no chat changes)
@@ -479,12 +488,12 @@ io.on('connection', (socket) => {
       console.log(`🔔 User ${socket.id} joined notification room: user_${userId}`);
     }
   });
-  
+
   socket.on('leave_room', (roomId) => {
     socket.leave(roomId);
     console.log(`📤 User ${socket.id} left room: ${roomId}`);
   });
-  
+
   // Persisted chat sends are accepted only through authenticated
   // POST /api/chat/send, where the paid Employer/Worker relationship is
   // enforced. Keep the former unauthenticated client relay disabled so it
@@ -517,7 +526,7 @@ io.on('connection', (socket) => {
     }
     acknowledge({ ok: true });
   });
-  
+
   socket.on('typing:start', async ({ conversationId, recipientId }) => {
     const senderId = socket.user?.userId;
     if (!senderId || !conversationId || !recipientId) return;
@@ -585,7 +594,7 @@ io.on('connection', (socket) => {
       return;
     }
   });
-  
+
   socket.on('disconnect', () => {
     console.log('🔌 User disconnected:', socket.id);
 
@@ -615,9 +624,9 @@ io.on('connection', (socket) => {
 // 404 Handler
 // ============================================================
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: 'Route not found' 
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
   });
 });
 
@@ -626,8 +635,8 @@ app.use((req, res) => {
 // ============================================================
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.stack);
-  res.status(500).json({ 
-    success: false, 
+  res.status(500).json({
+    success: false,
     message: 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });

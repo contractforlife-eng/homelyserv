@@ -45,7 +45,8 @@ import {
   Tag,
   Stethoscope,
   MapPinned,
-  School
+  School,
+  ShoppingBag
 } from 'lucide-react';
 import { isCurrentRootAdmin } from '../utils/rootAdminIdentity.js';
 
@@ -65,6 +66,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
         { id: 'dashboard', label: t('workerSidebar.dashboard'), icon: Home, path: '/worker-dashboard' },
         { id: 'myChildren', label: t('workerSidebar.myChildren') || t('parentStudents.pageTitle') || 'My Children', icon: GraduationCap, path: '/parent-students' },
         { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs', matchPrefixPath: '/job/' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
         { id: 'myApplications', label: t('workerSidebar.myApplications'), icon: ClipboardList, path: '/worker-applications' },
         { id: 'profile', label: t('workerSidebar.myProfile'), icon: User, path: '/worker-profile' },
@@ -85,6 +87,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
         { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
         { id: 'postJob', label: t('employerSidebar.postJob'), icon: PlusCircle, path: '/employer-post-job' },
         { id: 'myJobs', label: t('employerSidebar.myJobs'), icon: ClipboardList, path: '/employer-jobs', matchPrefixPath: '/job/' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'profile', label: t('employerSidebar.myProfile'), icon: User, path: '/employer-profile' },
         { id: 'hires', label: t('employerSidebar.myHires'), icon: FileCheck, path: '/my-hires', badgeKey: 'hires' },
         { id: 'search', label: t('employerSidebar.searchWorkers'), icon: Search, path: '/employer-search' },
@@ -117,6 +120,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       items.push(
         { id: 'complaints', label: t('adminSidebar.complaints'), icon: FileText, path: '/admin/complaints', badgeKey: 'complaints' },
         { id: 'reports', label: t('adminSidebar.reports'), icon: BarChart3, path: '/admin/reports' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'messages', label: t('adminSidebar.messages'), icon: MessageCircle, path: '/admin/messages', badgeKey: 'messages' },
         { id: 'live-support', label: t('publicSupport.liveSupport'), icon: Headphones, path: '/admin/live-support' },
         { id: 'hires', label: t('adminSidebar.hires'), icon: Briefcase, path: '/admin/hires', badgeKey: 'hires' },
@@ -130,6 +134,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('doctorNav.dashboard') || 'Dashboard', icon: Home, path: '/doctor-dashboard' },
         { id: 'myProfile', label: t('doctorNav.myProfile') || 'My Profile', icon: User, path: '/doctor-profile' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'messages', label: t('doctorNav.messages') || 'Messages', icon: MessageCircle, path: '/doctor-messages' },
         { id: 'complaints', label: t('doctorNav.complaints') || 'Complaints', icon: AlertTriangle, path: '/doctor-complaints' },
         { id: 'searchWorkers', label: t('doctorNav.searchWorkers') || 'Search Workers', icon: Search, path: '/search-workers' },
@@ -153,6 +158,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('teacherNav.dashboard') || 'Dashboard', icon: Home, path: '/teacher-dashboard' },
         { id: 'myProfile', label: t('teacherNav.myProfile') || 'My Profile', icon: User, path: '/teacher-profile' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'medicalProfile', label: t('teacherNav.medicalProfile') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
         { id: 'messages', label: t('teacherNav.messages') || 'Messages', icon: MessageCircle, path: '/teacher-messages' },
         { id: 'complaints', label: t('teacherNav.complaints') || 'Complaints', icon: AlertTriangle, path: '/teacher-complaints' },
@@ -177,6 +183,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('studentNav.dashboard') || 'Dashboard', icon: Home, path: '/student-dashboard' },
         { id: 'myProfile', label: t('studentNav.myProfile') || 'My Profile', icon: User, path: '/student-profile' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'myTeacher', label: t('studentNav.myTeacher') || 'My Teacher', icon: GraduationCap, path: '/student-teacher' },
         { id: 'lessons', label: t('studentNav.lessons') || 'Lessons', icon: BookOpen, path: '/student-lessons' },
         { id: 'courses', label: t('studentNav.courses') || 'Recorded Courses', icon: Video, path: '/student-courses' },
@@ -197,6 +204,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: tSup.dashboard || 'Dashboard', icon: Home, path: '/support-dashboard' },
         { id: 'users', label: tSup.users || 'Users', icon: Users, path: '/support-users', badgeKey: 'users' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'complaints', label: tSup.complaints || 'Complaints', icon: FileText, path: '/support-complaints', badgeKey: 'complaints' },
         { id: 'messages', label: tSup.messages || 'Messages', icon: MessageCircle, path: '/support-messages', badgeKey: 'messages' },
         { id: 'live-support', label: t('publicSupport.liveSupport') || 'Live Support', icon: Headphones, path: '/support-live-support' },
@@ -211,6 +219,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('supHelpNavigation.dashboard') || tSup.dashboard || 'Dashboard', icon: Home, path: '/sup-help' },
         { id: 'users', label: t('supHelpNavigation.users') || tSup.users || 'Users', icon: Users, path: '/sup-help/users' },
+        { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'messages', label: tSup.messages || 'Messages', icon: MessageCircle, path: '/sup-help/messages' },
         { id: 'complaints', label: tSup.complaints || 'Complaints', icon: FileText, path: '/sup-help/complaints' },
         { id: 'live-support', label: t('publicSupport.liveSupport') || 'Live Support', icon: Headphones, path: '/sup-help/live-support' },

@@ -13,6 +13,7 @@ import { Capacitor } from '@capacitor/core';
 import MobileLoginView from '../components/mobile/MobileLoginView';
 import { trackOperationalAnalytics } from '../utils/operationalAnalytics';
 import PageMetadata from '../components/PageMetadata';
+import { consumeMarketplaceReturnPath } from '../utils/safeReturnPath';
 
 function Login() {
   const navigate = useNavigate();
@@ -86,6 +87,11 @@ function Login() {
   }, []);
 
   const redirectUser = (user) => {
+    const returnTo = consumeMarketplaceReturnPath();
+    if (returnTo) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
     const role = user?.role?.toUpperCase();
 
     if (role === 'ADMIN') {

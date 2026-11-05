@@ -26,7 +26,8 @@ import {
   ClipboardList,
   Users,
   Heart,
-  GraduationCap
+  GraduationCap,
+  ShoppingBag
 } from 'lucide-react';
 const EmployerSidebar = ({
   language,
@@ -60,6 +61,7 @@ const EmployerSidebar = ({
     { id: 'profile', label: t('employerSidebar.myProfile'), icon: User, path: '/employer-profile' },
     { id: 'hires', label: t('employerSidebar.myHires'), icon: FileCheck, path: '/my-hires' },
     { id: 'search', label: t('employerSidebar.searchWorkers'), icon: Search, path: '/employer-search' },
+    { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace' },
     { id: 'messages', label: t('employerSidebar.messages'), icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t('employerSidebar.complaints'), icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t('employerSidebar.payment'), icon: CreditCard, path: '/employer-payments' },
@@ -92,13 +94,13 @@ const EmployerSidebar = ({
   return (
     <>
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={toggleMobileMenu}
         />
       )}
 
-      <aside 
+      <aside
         className={`fixed top-0 left-0 rtl:right-0 rtl:left-auto h-full bg-white dark:bg-gray-800 border-r rtl:border-l rtl:border-r-0 border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0'}`}
@@ -137,8 +139,8 @@ const EmployerSidebar = ({
               <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-[#F5C542] to-[#D4A820] shadow-[0_0_8px_rgba(245,197,66,0.70),0_0_16px_rgba(245,197,66,0.35)] flex-shrink-0">
                 <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
                   {getProfileImage() ? (
-                    <img 
-                      src={getProfileImage()} 
+                    <img
+                      src={getProfileImage()}
                       alt={authUser?.fullName || t('employerSidebar.employer')}
                       className="w-full h-full object-cover"
                     />
@@ -150,8 +152,8 @@ const EmployerSidebar = ({
             ) : (
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {getProfileImage() ? (
-                  <img 
-                    src={getProfileImage()} 
+                  <img
+                    src={getProfileImage()}
                     alt={authUser?.fullName || t('employerSidebar.employer')}
                     className="w-full h-full object-cover"
                   />

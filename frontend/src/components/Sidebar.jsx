@@ -28,10 +28,11 @@ import {
   X,
   Crown,
   Search,
-  FileCheck
+  FileCheck,
+  ShoppingBag
 } from 'lucide-react';
 
-const Sidebar = ({ 
+const Sidebar = ({
   collapsed = false,
   toggleCollapse,
   mobileOpen = false,
@@ -61,6 +62,7 @@ const Sidebar = ({
           { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/worker-dashboard' },
           { id: 'profile', label: t('profile'), icon: User, path: '/worker-profile' },
           { id: 'offers', label: t('offers'), icon: Briefcase, path: '/worker/offers' },
+          { id: 'marketplace', label: t('marketplace.nav') || 'Used Marketplace', icon: ShoppingBag, path: '/marketplace' },
           { id: 'my-hires', label: t('myHires'), icon: FileText, path: '/my-hires' },
           { id: 'messages', label: t('messages'), icon: MessageCircle, path: '/worker-messages' },
           { id: 'complaints', label: t('complaints'), icon: AlertTriangle, path: '/worker-complaints' },
@@ -74,6 +76,7 @@ const Sidebar = ({
           { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/employer-dashboard' },
           { id: 'search', label: t('search'), icon: Search, path: '/employer-search' },
           { id: 'hires', label: t('myHires'), icon: FileCheck, path: '/my-hires' },
+          { id: 'marketplace', label: t('marketplace.nav') || 'Used Marketplace', icon: ShoppingBag, path: '/marketplace' },
           { id: 'messages', label: t('messages'), icon: MessageCircle, path: '/employer-messages' },
           { id: 'payments', label: t('payments'), icon: DollarSign, path: '/employer-payments' },
           { id: 'complaints', label: t('complaints'), icon: AlertTriangle, path: '/employer-complaints' },
@@ -86,6 +89,7 @@ const Sidebar = ({
           { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/admin' },
           { id: 'users', label: t('users'), icon: Users, path: '/admin/users' },
           { id: 'hires', label: t('bookings'), icon: FileText, path: '/admin/hires' },
+          { id: 'marketplace', label: t('marketplace.nav') || 'Used Marketplace', icon: ShoppingBag, path: '/marketplace' },
           { id: 'payments', label: t('payments'), icon: DollarSign, path: '/admin/payments' },
           { id: 'complaints', label: t('complaints'), icon: AlertTriangle, path: '/admin/complaints' },
           { id: 'reports', label: t('reports'), icon: BarChart3, path: '/admin/reports' },
@@ -126,13 +130,13 @@ const Sidebar = ({
     <>
       {/* Mobile Overlay */}
       {mobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={toggleMobile}
         />
       )}
 
-      <aside 
+      <aside
         className={`fixed top-0 left-0 rtl:right-0 rtl:left-auto h-full bg-white border-r rtl:border-l rtl:border-r-0 border-gray-200 z-50 transition-all duration-300 ${
           collapsed ? 'w-20' : 'w-64'
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0'}`}
@@ -171,9 +175,9 @@ const Sidebar = ({
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full ${styles.bg} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {user?.profileImage ? (
-                <img 
-                  src={user.profileImage} 
-                  alt={user.fullName || user.name || 'User'} 
+                <img
+                  src={user.profileImage}
+                  alt={user.fullName || user.name || 'User'}
                   className="w-full h-full object-cover"
                 />
               ) : (

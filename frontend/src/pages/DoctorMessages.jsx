@@ -276,7 +276,8 @@ const DoctorMessages = () => {
         'DOCTOR',
         selectedConv.otherUserId,
         selectedConv.otherUserName,
-        draft
+        draft,
+        selectedConv.id
       );
       if (result?.message) {
         setMessages((current) => reconcileOptimisticMessage(current, optimistic.id, result.message));

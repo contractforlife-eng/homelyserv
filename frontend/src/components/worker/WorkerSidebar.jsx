@@ -24,17 +24,18 @@ import {
   CreditCard,
   ClipboardList,
   Heart,
-  GraduationCap
+  GraduationCap,
+  ShoppingBag
 } from 'lucide-react';
 
-const WorkerSidebar = ({ 
-  language, 
-  sidebarCollapsed, 
-  toggleSidebar, 
-  mobileMenuOpen, 
-  toggleMobileMenu, 
-  authUser, 
-  handleLogout 
+const WorkerSidebar = ({
+  language,
+  sidebarCollapsed,
+  toggleSidebar,
+  mobileMenuOpen,
+  toggleMobileMenu,
+  authUser,
+  handleLogout
 }) => {
   const location = useLocation();
   // Unified sidebar activity counters (single shared request)
@@ -56,6 +57,7 @@ const WorkerSidebar = ({
     { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs' },
     { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
     { id: 'myApplications', label: t('workerSidebar.myApplications'), icon: ClipboardList, path: '/worker-applications' },
+    { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace' },
     { id: 'profile', label: t('workerSidebar.myProfile'), icon: User, path: '/worker-profile' },
     { id: 'offers', label: t('workerSidebar.myOffers'), icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t('workerSidebar.messages'), icon: MessageCircle, path: '/worker-messages' },
@@ -90,13 +92,13 @@ const WorkerSidebar = ({
   return (
     <>
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={toggleMobileMenu}
         />
       )}
 
-      <aside 
+      <aside
         className={`fixed top-0 left-0 rtl:right-0 rtl:left-auto h-full bg-white dark:bg-gray-800 border-r rtl:border-l rtl:border-r-0 border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0'}`}
@@ -137,8 +139,8 @@ const WorkerSidebar = ({
               <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-[#F5C542] to-[#D4A820] shadow-[0_0_8px_rgba(245,197,66,0.70),0_0_16px_rgba(245,197,66,0.35)] flex-shrink-0">
                 <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center">
                   {getProfileImage() ? (
-                    <img 
-                      src={getProfileImage()} 
+                    <img
+                      src={getProfileImage()}
                       alt={authUser?.fullName || t('workerSidebar.worker')}
                       className="w-full h-full object-cover"
                     />
@@ -150,8 +152,8 @@ const WorkerSidebar = ({
             ) : (
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {getProfileImage() ? (
-                  <img 
-                    src={getProfileImage()} 
+                  <img
+                    src={getProfileImage()}
                     alt={authUser?.fullName || t('workerSidebar.worker')}
                     className="w-full h-full object-cover"
                   />

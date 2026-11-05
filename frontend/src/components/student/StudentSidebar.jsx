@@ -40,7 +40,8 @@ import {
   Sparkles,
   Search,
   AlertTriangle,
-  MapPinned
+  MapPinned,
+  ShoppingBag
 } from 'lucide-react';
 
 const StudentSidebar = ({
@@ -159,6 +160,13 @@ const StudentSidebar = ({
       icon: MapPinned,
       path: '/student-family-tracking',
       active: location.pathname === '/student-family-tracking'
+    },
+    {
+      id: 'marketplace',
+      label: t('marketplace.nav') || 'Used Marketplace',
+      icon: ShoppingBag,
+      path: '/marketplace',
+      active: location.pathname.startsWith('/marketplace')
     },
     {
       id: 'help',

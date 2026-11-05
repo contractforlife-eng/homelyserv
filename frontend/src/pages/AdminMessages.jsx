@@ -633,9 +633,21 @@ const AdminMessages = () => {
     if (!authUser || !dataLoaded || autoOpenDoneRef.current) return;
 
     const targetUserId = location.state?.targetUserId;
-    if (!targetUserId) return;
+    const targetConvId = location.state?.conversationId;
+
+    if (!targetUserId && !targetConvId) return;
 
     autoOpenDoneRef.current = true;
+
+    if (targetConvId) {
+      const existing = (conversations || []).find((c) => String(c.id) === String(targetConvId));
+      if (existing) {
+        setSelectedConversation(existing);
+        return;
+      }
+    }
+
+    if (!targetUserId) return;
 
     api.get(`/api/admin/users/${targetUserId}`).then((response) => {
       const role = response.data?.user?.role;
@@ -704,7 +716,8 @@ const AdminMessages = () => {
         'ADMIN',
         recipientId,
         recipientName,
-        draft
+        draft,
+        selectedConversation.id
       );
 
       if (result) {

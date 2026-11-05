@@ -14,6 +14,7 @@
 import express from 'express';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
+import MarketplaceListing from '../models/MarketplaceListing.js';
 import { authenticate } from '../middleware/auth.js';
 import { getOnlineUserIds, getAuthorizedObserverIds } from '../lib/presence.js';
 import { authorizePaidChatRelationship, resolveUserParty } from '../services/paymentAuthService.js';
@@ -33,6 +34,55 @@ const router = express.Router();
 const getConversationId = (user1Id, user2Id) => {
   const ids = [String(user1Id), String(user2Id)].sort();
   return `conv_${ids.join('_')}`;
+};
+
+const resolveAuthorizedMarketplaceConversation = async ({ conversationId, senderId, recipientId }) => {
+  const targetId = String(conversationId || '');
+  if (!targetId || !targetId.startsWith('conv_market_')) {
+    return null;
+  }
+
+  const sid = String(senderId);
+  const rid = String(recipientId);
+  if (!sid || !rid || sid === rid) {
+    return null;
+  }
+
+  const marketplaceConversation = await Conversation.findOne({
+    conversationId: targetId,
+    marketplaceListingId: { $ne: null },
+    participantIds: { $all: [sid, rid] }
+  });
+
+  if (!marketplaceConversation?.marketplaceListingId) {
+    return null;
+  }
+
+  const participants = (marketplaceConversation.participantIds || []).map(String);
+  if (participants.length !== 2 || !participants.includes(sid) || !participants.includes(rid)) {
+    return null;
+  }
+
+  const listing = await MarketplaceListing.findOne({
+    _id: marketplaceConversation.marketplaceListingId,
+    deletedAt: null,
+    status: { $ne: 'HIDDEN' }
+  });
+
+  if (!listing) {
+    return null;
+  }
+
+  const sellerId = String(listing.ownerId || '');
+  if (!participants.includes(sellerId)) {
+    return null;
+  }
+
+  return {
+    conversation: marketplaceConversation,
+    listing,
+    sellerId
+  };
 };
 
 const checkPaidChatRelationship = async (req, res, next) => {
@@ -78,14 +128,35 @@ const checkPaidChatRelationship = async (req, res, next) => {
       recipientId = canonicalRecipientId;
     }
 
-    const authorization = await authorizePaidChatRelationship({
-      senderId,
-      senderRole,
-      recipientId
-    });
+    const targetConversationId = req.body?.conversationId || req.query?.conversationId;
+    const isMarketplaceTarget = targetConversationId != null && String(targetConversationId).startsWith('conv_market_');
+    let isAuthorizedMarketplaceChat = false;
 
-    if (authorization.required && !authorization.allowed) {
-      return res.status(403).json({ error: 'Payment required to contact this worker.' });
+    if (isMarketplaceTarget) {
+      const resolvedMarketplace = await resolveAuthorizedMarketplaceConversation({
+        conversationId: targetConversationId,
+        senderId,
+        recipientId
+      });
+
+      if (!resolvedMarketplace) {
+        return res.status(403).json({ error: 'Not authorized to send to this marketplace conversation' });
+      }
+
+      isAuthorizedMarketplaceChat = true;
+      req.marketplaceContext = resolvedMarketplace;
+    }
+
+    if (!isAuthorizedMarketplaceChat) {
+      const authorization = await authorizePaidChatRelationship({
+        senderId,
+        senderRole,
+        recipientId
+      });
+
+      if (authorization.required && !authorization.allowed) {
+        return res.status(403).json({ error: 'Payment required to contact this worker.' });
+      }
     }
 
     const blockRelationship = await getBlockRelationship(senderId, recipientId);
@@ -290,14 +361,41 @@ const touchConversation = async (conversationId, text) => {
 // ============================================================
 router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) => {
   try {
-    const { recipientId, text } = req.body;
+    const { recipientId, text, conversationId: requestedConversationId } = req.body;
     const senderId = req.userId;
 
     if (!senderId || !recipientId || !text || !text.trim()) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const conversationId = getConversationId(senderId, recipientId);
+    const canonicalOrdinaryConversationId = getConversationId(senderId, recipientId);
+    let conversationId;
+    let isAuthorizedMarketplaceConversation = false;
+
+    if (requestedConversationId) {
+      const requestedId = String(requestedConversationId);
+      if (requestedId.startsWith('conv_market_')) {
+        const marketplaceContext = req.marketplaceContext || await resolveAuthorizedMarketplaceConversation({
+          conversationId: requestedId,
+          senderId,
+          recipientId
+        });
+
+        if (!marketplaceContext) {
+          return res.status(403).json({ error: 'Not authorized to send to this marketplace conversation' });
+        }
+
+        conversationId = requestedId;
+        isAuthorizedMarketplaceConversation = true;
+      } else {
+        if (requestedId !== canonicalOrdinaryConversationId) {
+          return res.status(403).json({ error: 'Invalid conversation ID for this recipient' });
+        }
+        conversationId = canonicalOrdinaryConversationId;
+      }
+    } else {
+      conversationId = canonicalOrdinaryConversationId;
+    }
 
     // ============================================================
     // DYNAMIC STAFF IDENTITY: the sender's name/role ALWAYS come
@@ -343,7 +441,7 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     // Support may reply only within an existing conversation that already
     // authorizes the agent. Admins retain the ability to initiate staff chat.
     // Support Helpers must use the dedicated /api/sup-help/messages flow.
-    if (senderRoleUpper === 'SUPPORT_HELPER') {
+    if (senderRoleUpper === 'SUPPORT_HELPER' && !isAuthorizedMarketplaceConversation) {
       return res.status(403).json({ error: 'Support Helpers must use the dedicated /api/sup-help/messages flow' });
     }
     if (senderRoleUpper === 'SUPPORT') {
@@ -372,6 +470,12 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     }
 
     // Ensure conversation metadata exists
+    if (isAuthorizedMarketplaceConversation) {
+      conversationType = 'PRIVATE';
+      supportAgentId = null;
+      staffIds = [];
+    }
+
     await ensureConversationMetadata(conversationId, {
       type: conversationType,
       participantIds: [String(senderId), String(recipientId)],
@@ -588,32 +692,44 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
     for (const conv of conversationsMeta) {
       const lastMsg = lastMessageMap.get(conv.conversationId);
 
-      if (!lastMsg) continue;
+      let otherUserId;
+      let otherUserName;
+      let otherUserRole;
 
-      // Determine the "other user" (not the current user)
-      let otherUser;
-      const isSender = String(lastMsg.senderId) === userId;
-      otherUser = isSender
-        ? { id: lastMsg.recipientId, name: lastMsg.recipientName, role: lastMsg.recipientRole || 'USER' }
-        : { id: lastMsg.senderId, name: lastMsg.senderName, role: lastMsg.senderRole };
+      if (lastMsg) {
+        const isSender = String(lastMsg.senderId) === userId;
+        otherUserId = String(isSender ? lastMsg.recipientId : lastMsg.senderId);
+        otherUserName = isSender ? lastMsg.recipientName : lastMsg.senderName;
+        otherUserRole = isSender ? (lastMsg.recipientRole || 'USER') : lastMsg.senderRole;
+      } else {
+        const otherParticipant = (conv.participantIds || []).find((id) => String(id) !== userId)
+          || (conv.staffIds || []).find((id) => String(id) !== userId)
+          || (conv.supportAgentId && String(conv.supportAgentId) !== userId ? conv.supportAgentId : null);
+        if (!otherParticipant) continue;
+        otherUserId = String(otherParticipant);
+        otherUserName = conv.marketplaceListingTitle ? ('(' + conv.marketplaceListingTitle + ') Seller') : 'User';
+        otherUserRole = 'USER';
+      }
 
       const unread = unreadMap.get(conv.conversationId) || 0;
 
       conversations.push({
         id: conv.conversationId,
         type: conv.type,
-        otherUserId: String(otherUser.id),
-        otherUserName: otherUser.name,
-        otherUserRole: otherUser.role,
-        lastMessage: lastMsg.text,
-        lastMessageTime: lastMsg.createdAt,
-        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        otherUserId,
+        otherUserName,
+        otherUserRole,
+        lastMessage: lastMsg ? lastMsg.text : (conv.marketplaceListingTitle || ''),
+        lastMessageTime: lastMsg ? lastMsg.createdAt : conv.createdAt,
+        time: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
         unread,
-        role: otherUser.role,
+        role: otherUserRole,
         avatar: null,
-        updatedAt: conv.lastMessageAt || lastMsg.createdAt,
+        updatedAt: conv.lastMessageAt || (lastMsg ? lastMsg.createdAt : conv.createdAt),
         escalated: conv.type === 'ESCALATED',
-        complaintId: conv.complaintId || null
+        complaintId: conv.complaintId || null,
+        marketplaceListingId: conv.marketplaceListingId || null,
+        marketplaceListingTitle: conv.marketplaceListingTitle || null
       });
     }
 
@@ -704,11 +820,11 @@ router.get('/unread/:userId', authenticate, async (req, res) => {
 // ============================================================
 router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, async (req, res) => {
   try {
-    const { 
-      user1Id, 
-      user1Name, 
+    const {
+      user1Id,
+      user1Name,
       user1Role,
-      user2Id, 
+      user2Id,
       user2Name,
       user2Role
     } = req.body;
@@ -830,8 +946,8 @@ router.delete('/conversations/:conversationId', authenticate, requireConversatio
     if (req.userRole === 'SUPPORT') {
       return res.status(403).json({ success: false, message: 'Support agents cannot delete conversation history' });
     }
-    await Message.deleteMany({ 
-      conversationId: req.params.conversationId 
+    await Message.deleteMany({
+      conversationId: req.params.conversationId
     });
     await Conversation.deleteOne({
       conversationId: req.params.conversationId

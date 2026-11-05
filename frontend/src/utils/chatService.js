@@ -70,7 +70,7 @@ export const markOptimisticMessageFailed = (messages, optimisticId) => messages.
     : item
 );
 
-export const sendMessage = async (senderId, senderName, senderRole, recipientId, recipientName, text) => {
+export const sendMessage = async (senderId, senderName, senderRole, recipientId, recipientName, text, conversationId = null) => {
   if (!senderId || !recipientId || !text || !text.trim()) {
     console.log('Missing required fields');
     return null;
@@ -88,6 +88,10 @@ export const sendMessage = async (senderId, senderName, senderRole, recipientId,
     recipientName,
     text: text.trim()
   };
+
+  if (conversationId) {
+    requestBody.conversationId = String(conversationId);
+  }
 
   const response = await api.post('/api/chat/send', requestBody);
 
@@ -331,7 +335,7 @@ export const getAllConversations = () => {
 /**
  * Shared display name formatter for all chat UI.
  * Delegates to the centralized userDisplay utility.
- * 
+ *
  * @param {string} name - The user's raw name
  * @param {string} role - The user's role (ADMIN, EMPLOYER, WORKER, SUPPORT, USER)
  * @returns {string} The formatted display name

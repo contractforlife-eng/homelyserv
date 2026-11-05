@@ -22,6 +22,8 @@ import DeleteAccount from './pages/DeleteAccount';
 import SocialOnboarding from './pages/SocialOnboarding';
 import DoctorPublicProfile from './pages/DoctorPublicProfile';
 import TeacherPublicProfile from './pages/TeacherPublicProfile';
+import Marketplace from './pages/Marketplace';
+import { storeMarketplaceReturnPath } from './utils/safeReturnPath';
 
 // Common Protected Pages
 import MyHires from './pages/MyHires';
@@ -177,18 +179,18 @@ const MessagesRedirect = () => {
   const { t } = useTranslation();
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-  
+
   React.useEffect(() => {
     if (loading) return;
-    
+
     if (!isAuthenticated) {
       navigate('/login', { replace: true });
       return;
     }
-    
+
     // If user is null (during checkAuth), wait for user to be populated
     if (!user) return;
-    
+
     const role = user.role?.toUpperCase();
     if (role === 'DOCTOR') {
       navigate('/doctor-dashboard', { replace: true });
@@ -276,7 +278,8 @@ const HomeRedirect = () => {
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { t } = useTranslation();
   const { user, isAuthenticated, loading } = useAuth();
-  
+  const protectedLocation = useLocation();
+
   // While authentication validation is in progress, render the loading UI
   if (loading) {
     return (
@@ -288,8 +291,12 @@ const ProtectedRoute = ({ children, requiredRole }) => {
       </div>
     );
   }
-  
+
   if (!isAuthenticated || !user) {
+    if (protectedLocation.pathname.startsWith('/marketplace/')) {
+      const returnTo = storeMarketplaceReturnPath(`${protectedLocation.pathname}${protectedLocation.search}${protectedLocation.hash}`);
+      return <Navigate to="/register" state={{ returnTo }} replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
@@ -306,7 +313,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
       ) {
         return children;
       }
-     
+
      if (userRole === 'DOCTOR') {
        return <Navigate to="/doctor-dashboard" replace />;
      } else if (userRole === 'TEACHER') {
@@ -322,7 +329,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
      }
      return <Navigate to="/login" replace />;
    }
-  
+
   return children;
 };
 
@@ -437,193 +444,198 @@ function App() {
       <Route path="/doctor/:id" element={<DoctorPublicProfile />} />
       <Route path="/tr/:id" element={<TeacherPublicProfile />} />
       <Route path="/teacher/:id" element={<TeacherPublicProfile />} />
+      <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+      <Route path="/marketplace/new" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+      <Route path="/marketplace/mine" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+      <Route path="/marketplace/:id" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+      <Route path="/marketplace/:id/edit" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
 
       {/* ========== COMMON PROTECTED ROUTES ========== */}
-      
-      <Route 
-        path="/my-hires" 
+
+      <Route
+        path="/my-hires"
         element={
           <ProtectedRoute>
             <MyHires />
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
       {/* Messages Redirect */}
-      <Route 
-        path="/messages" 
-        element={<MessagesRedirect />} 
+      <Route
+        path="/messages"
+        element={<MessagesRedirect />}
       />
-      
-      <Route 
-        path="/notifications" 
+
+      <Route
+        path="/notifications"
         element={
           <ProtectedRoute>
             <Notifications />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/job/:id" 
+      <Route
+        path="/job/:id"
         element={<JobDetails />}
       />
-      <Route 
-        path="/help" 
-        element={<Help />} 
+      <Route
+        path="/help"
+        element={<Help />}
       />
-      <Route 
-        path="/medical-profile" 
+      <Route
+        path="/medical-profile"
         element={
           <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'TEACHER', 'STUDENT']}>
             <MedicalProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/my-prescriptions" 
+      <Route
+        path="/my-prescriptions"
         element={
           <ProtectedRoute>
             <PatientPrescriptions />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/my-prescriptions/:prescriptionId/print" 
+      <Route
+        path="/my-prescriptions/:prescriptionId/print"
         element={
           <ProtectedRoute>
             <PrintablePrescription role="patient" />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ========== DOCTOR ROUTES ========== */}
-      <Route 
-        path="/doctor-dashboard" 
+      <Route
+        path="/doctor-dashboard"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-profile" 
+      <Route
+        path="/doctor-profile"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-clinics" 
+      <Route
+        path="/doctor-clinics"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorClinics />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-schedule" 
+      <Route
+        path="/doctor-schedule"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorSchedule />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-appointments" 
+      <Route
+        path="/doctor-appointments"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorAppointments />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-patients" 
+      <Route
+        path="/doctor-patients"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorPatients />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-cms/accounts" 
+      <Route
+        path="/doctor-cms/accounts"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorAccounts />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-patients/:patientId" 
+      <Route
+        path="/doctor-patients/:patientId"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorPatientDetails />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-patients/:patientId/consultations" 
+      <Route
+        path="/doctor-patients/:patientId/consultations"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorConsultations />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-patients/:patientId/consultations/:consultationId/prescriptions" 
+      <Route
+        path="/doctor-patients/:patientId/consultations/:consultationId/prescriptions"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorPrescriptions />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-patients/:patientId/consultations/:consultationId/prescriptions/:prescriptionId/print" 
+      <Route
+        path="/doctor-patients/:patientId/consultations/:consultationId/prescriptions/:prescriptionId/print"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <PrintablePrescription role="doctor" />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-center" 
+      <Route
+        path="/doctor-center"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorCenter />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-messages" 
+      <Route
+        path="/doctor-messages"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorMessages />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-settings" 
+      <Route
+        path="/doctor-settings"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-help" 
+      <Route
+        path="/doctor-help"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorHelp />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor-complaints" 
+      <Route
+        path="/doctor-complaints"
         element={
           <ProtectedRoute requiredRole="DOCTOR">
             <DoctorComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* Doctor Employees: own employees + salary editing */}
@@ -664,93 +676,93 @@ function App() {
         }
       />
       {/* ========== TEACHER ROUTES ========== */}
-      <Route 
-        path="/teacher-dashboard" 
+      <Route
+        path="/teacher-dashboard"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-profile" 
+      <Route
+        path="/teacher-profile"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-students" 
+      <Route
+        path="/teacher-students"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherStudents />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-groups" 
+      <Route
+        path="/teacher-groups"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherGroups />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-lessons" 
+      <Route
+        path="/teacher-lessons"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherLessons />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-schedule" 
+      <Route
+        path="/teacher-schedule"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherSchedule />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-messages" 
+      <Route
+        path="/teacher-messages"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherMessages />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-accounts" 
+      <Route
+        path="/teacher-accounts"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherAccounts />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-progress" 
+      <Route
+        path="/teacher-progress"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherProgress />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-promotion-history" 
+      <Route
+        path="/teacher-promotion-history"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherPromotionHistory />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/teacher-complaints" 
+      <Route
+        path="/teacher-complaints"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/teacher-courses"
@@ -763,13 +775,13 @@ function App() {
       {/* Teacher Help: dedicated Teacher page. The Worker Help page at /help
           is untouched, mirroring the existing /doctor-help and /student-help
           role-specific routes. */}
-      <Route 
-        path="/teacher-help" 
+      <Route
+        path="/teacher-help"
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherHelp />
           </ProtectedRoute>
-        } 
+        }
       />
       {/* ========== SEARCH WORKERS (TEACHER + DOCTOR) ========== */}
       {/* One shared, read-only worker directory. The backend worker-search
@@ -786,37 +798,37 @@ function App() {
       />
 
       {/* ========== STUDENT ROUTES ========== */}
-      <Route 
-        path="/student-dashboard" 
+      <Route
+        path="/student-dashboard"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-profile" 
+      <Route
+        path="/student-profile"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-teacher" 
+      <Route
+        path="/student-teacher"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentMyTeacher />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-lessons" 
+      <Route
+        path="/student-lessons"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentLessons />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/student-courses"
@@ -827,60 +839,60 @@ function App() {
         }
       />
       <Route
-        path="/student-bookings" 
+        path="/student-bookings"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentMyBookings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-schedule" 
+      <Route
+        path="/student-schedule"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentSchedule />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-progress" 
+      <Route
+        path="/student-progress"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentProgress />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-find-teacher" 
+      <Route
+        path="/student-find-teacher"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentFindTeacher />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-messages" 
+      <Route
+        path="/student-messages"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentMessages />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-help" 
+      <Route
+        path="/student-help"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentHelp />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/student-complaints" 
+      <Route
+        path="/student-complaints"
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ========== DOCTOR — CLINIC MANAGEMENT SYSTEM (CMS) ========== */}
@@ -1045,111 +1057,111 @@ function App() {
       />
 
       {/* ========== WORKER ROUTES ========== */}
-      <Route 
-        path="/worker-dashboard" 
+      <Route
+        path="/worker-dashboard"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker/offers" 
+      <Route
+        path="/worker/offers"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerOffers />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-offers" 
+      <Route
+        path="/worker-offers"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerOffers />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-profile" 
+      <Route
+        path="/worker-profile"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-complaints" 
+      <Route
+        path="/worker-complaints"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-messages" 
+      <Route
+        path="/worker-messages"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerMessages />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-settings" 
+      <Route
+        path="/worker-settings"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-payment" 
+      <Route
+        path="/worker-payment"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerPayment />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-jobs" 
+      <Route
+        path="/worker-jobs"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerJobs />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/worker-applications" 
+      <Route
+        path="/worker-applications"
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerApplications />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ========== EMPLOYER ROUTES ========== */}
-      <Route 
-        path="/employer-dashboard" 
+      <Route
+        path="/employer-dashboard"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-family" 
+      <Route
+        path="/employer-family"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerFamily />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/parent-students" 
+      <Route
+        path="/parent-students"
         element={
           <ProtectedRoute requiredRole={['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER']}>
             <ParentStudents />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/parent-students/:studentId/tracking"
@@ -1171,85 +1183,85 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route 
-        path="/employer-search" 
+      <Route
+        path="/employer-search"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerSearch />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-pending" 
+      <Route
+        path="/employer-pending"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerPending />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-past" 
+      <Route
+        path="/employer-past"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerPast />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-payments" 
+      <Route
+        path="/employer-payments"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerPayments />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-profile" 
+      <Route
+        path="/employer-profile"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-complaints" 
+      <Route
+        path="/employer-complaints"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-messages" 
+      <Route
+        path="/employer-messages"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerMessages />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-settings" 
+      <Route
+        path="/employer-settings"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/payment-options" 
+      <Route
+        path="/payment-options"
         element={
           <ProtectedRoute requiredRole={['EMPLOYER', 'TEACHER', 'DOCTOR']}>
             <PaymentOptions />
           </ProtectedRoute>
-        }  
+        }
       />
-      <Route 
-        path="/worker-profile-view" 
+      <Route
+        path="/worker-profile-view"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <WorkerProfileView />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/employer-profile-view/:userId"
@@ -1259,47 +1271,47 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route 
-        path="/employer-create-offer" 
+      <Route
+        path="/employer-create-offer"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerCreateOffer />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-post-job" 
+      <Route
+        path="/employer-post-job"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerPostJob />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-jobs" 
+      <Route
+        path="/employer-jobs"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerJobs />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/employer-jobs/:id/applicants" 
+      <Route
+        path="/employer-jobs/:id/applicants"
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerJobApplicants />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ========== SUBSCRIPTION ROUTE ========== */}
-      <Route 
-        path="/subscription" 
+      <Route
+        path="/subscription"
         element={
           <ProtectedRoute>
             <Subscription />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ========== PAYPAL CALLBACK ROUTES ========== */}
@@ -1310,37 +1322,37 @@ function App() {
       <Route path="/payment-cancel" element={<PaymentCancel />} />
 
       {/* ========== ADMIN ROUTES ========== */}
-      <Route 
-        path="/admin" 
+      <Route
+        path="/admin"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/users" 
+      <Route
+        path="/admin/users"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminUsers />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/users/:id" 
+      <Route
+        path="/admin/users/:id"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminUserProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/payments" 
+      <Route
+        path="/admin/payments"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminPayments />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/admin/registration-geography"
@@ -1366,29 +1378,29 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route 
-        path="/admin/complaints" 
+      <Route
+        path="/admin/complaints"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/reports" 
+      <Route
+        path="/admin/reports"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminReports />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/messages" 
+      <Route
+        path="/admin/messages"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminMessages />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/admin/settings"
@@ -1424,61 +1436,61 @@ function App() {
       />
 
       {/* ========== SUPPORT ROUTES ========== */}
-      <Route 
-        path="/support-dashboard" 
+      <Route
+        path="/support-dashboard"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/support-profile" 
+      <Route
+        path="/support-profile"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/support-users" 
+      <Route
+        path="/support-users"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportUsers />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/support/users/:id" 
+      <Route
+        path="/support/users/:id"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportUserProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/support-messages" 
+      <Route
+        path="/support-messages"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportMessages />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/support-settings" 
+      <Route
+        path="/support-settings"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/support-complaints" 
+      <Route
+        path="/support-complaints"
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportComplaints />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/support-live-support"

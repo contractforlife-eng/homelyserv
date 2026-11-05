@@ -27,7 +27,8 @@ import {
   MessageCircle,
   AlertTriangle,
   Search as SearchIcon,
-  GraduationCap
+  GraduationCap,
+  ShoppingBag
 } from 'lucide-react';
 
 const DoctorSidebar = ({
@@ -114,6 +115,13 @@ const DoctorSidebar = ({
           label: t('doctorCms.employeesTitle') || 'Employees',
           icon: Users,
           path: '/doctor-employees'
+        },
+        {
+          id: 'marketplace',
+          label: t('marketplace.nav') || 'Used Marketplace',
+          icon: ShoppingBag,
+          path: '/marketplace',
+          matchPrefix: true
         }
       ]
     },

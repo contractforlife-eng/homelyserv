@@ -243,10 +243,10 @@ const WorkerMessages = () => {
       return;
     }
     if (!authUser) return;
-    
+
     const userId = authUser.id;
     if (!userId) return;
-    
+
     (async () => {
       const userConversations = await getUserConversations(userId);
       console.log('🔄 Refresh load - worker conversations:', userConversations);
@@ -405,7 +405,7 @@ const WorkerMessages = () => {
       setMessages(conversationMessages);
       setMessagesLoading(false);
     }
-    
+
     const userId = authUser?.id;
     if (userId) {
       try {
@@ -655,7 +655,8 @@ const WorkerMessages = () => {
         'WORKER',
         selectedConv.otherUserId,
         selectedConv.otherUserName,
-        draft
+        draft,
+        selectedConv.id
       );
     } catch (error) {
       sendError = error;
@@ -684,21 +685,21 @@ const WorkerMessages = () => {
 
   const handleManualRefresh = async () => {
     if (isRefreshing) return;
-    
+
     setIsRefreshing(true);
-    
+
     if (authUser) {
       const userId = authUser.id;
       const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
-      
+
       if (selectedConversationId) {
         const updatedMessages = await getConversationMessages(selectedConversationId);
         setMessages(updatedMessages);
         await markMessagesAsRead(selectedConversationId, userId);
       }
     }
-    
+
     setIsRefreshing(false);
   };
 
@@ -719,8 +720,8 @@ const WorkerMessages = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
+                    <img
+                      src={userProfileImage}
                       alt={authUser.fullName || t('workerMessages.worker')}
                       className="w-full h-full object-cover"
                     />
@@ -961,9 +962,9 @@ const WorkerMessages = () => {
                       ) : (
                         messages.map((msg, index) => {
                           const isWorker = msg.senderRole === 'WORKER';
-                          const showAvatar = index === 0 || 
+                          const showAvatar = index === 0 ||
                             (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
-                          
+
                           return (
                             <div
                               key={msg.id || index}

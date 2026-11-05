@@ -17,6 +17,7 @@ import api from '../utils/api';
 import useAuthStore from '../store/authStore';
 import LegalFooter from '../components/common/LegalFooter';
 import { useTranslation } from 'react-i18next';
+import { consumeMarketplaceReturnPath } from '../utils/safeReturnPath';
 
 function VerifyEmail() {
   const { t } = useTranslation();
@@ -26,6 +27,16 @@ function VerifyEmail() {
 
   const [state, setState] = useState(token ? 'landing' : 'failed'); // landing | loading | success | failed | expired | already_verified
   const [error, setError] = useState('');
+
+  const continueAfterVerification = () => {
+    const returnTo = consumeMarketplaceReturnPath();
+    if (returnTo) return navigate(returnTo, { replace: true });
+    const role = useAuthStore.getState().user?.role?.toUpperCase();
+    if (role === 'EMPLOYER') return navigate('/employer-dashboard');
+    if (role === 'WORKER') return navigate('/worker-dashboard');
+    if (role === 'ADMIN') return navigate('/admin');
+    return navigate('/login');
+  };
 
   // Guard to prevent duplicate verification requests (React StrictMode safety)
   const verificationStartedRef = useRef(false);
@@ -156,14 +167,7 @@ function VerifyEmail() {
               {t('emailVerifiedDesc')}
             </p>
             <button
-              onClick={() => {
-                const user = useAuthStore.getState().user;
-                const role = user?.role?.toUpperCase();
-                if (role === 'EMPLOYER') navigate('/employer-dashboard');
-                else if (role === 'WORKER') navigate('/worker-dashboard');
-                else if (role === 'ADMIN') navigate('/admin');
-                else navigate('/login');
-              }}
+              onClick={continueAfterVerification}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm"
             >
               {t('continueToDashboard')} <ArrowRight size={16} sm:size={18} />
@@ -185,14 +189,7 @@ function VerifyEmail() {
               {t('alreadyVerifiedDesc')}
             </p>
             <button
-              onClick={() => {
-                const user = useAuthStore.getState().user;
-                const role = user?.role?.toUpperCase();
-                if (role === 'EMPLOYER') navigate('/employer-dashboard');
-                else if (role === 'WORKER') navigate('/worker-dashboard');
-                else if (role === 'ADMIN') navigate('/admin');
-                else navigate('/login');
-              }}
+              onClick={continueAfterVerification}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm"
             >
               {t('continueToDashboard')} <ArrowRight size={16} sm:size={18} />

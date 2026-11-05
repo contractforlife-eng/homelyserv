@@ -10,6 +10,7 @@ import { JOB_OPTIONS } from '../constants/jobOptions';
 import { TUTOR_SPECIALIZATIONS } from '../constants/tutorSpecializations';
 import { DOCTOR_SPECIALTIES } from '../constants/doctorSpecialties';
 import { trackTikTokCompleteRegistration } from '../utils/tiktokPixel';
+import { consumeMarketplaceReturnPath } from '../utils/safeReturnPath';
 
 const SocialOnboarding = () => {
   const { t } = useTranslation();
@@ -134,7 +135,10 @@ const SocialOnboarding = () => {
         const tikTokQueued = trackTikTokCompleteRegistration();
         if (tikTokQueued) tikTokRegistrationTrackedRef.current = true;
       }
-      if (response.data.user.role?.toUpperCase() === 'EMPLOYER') {
+      const returnTo = consumeMarketplaceReturnPath();
+      if (returnTo) {
+        navigate(returnTo, { replace: true });
+      } else if (response.data.user.role?.toUpperCase() === 'EMPLOYER') {
         navigate('/employer-dashboard', { replace: true });
       } else {
         navigate('/worker-dashboard', { replace: true });
