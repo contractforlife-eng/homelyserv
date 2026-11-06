@@ -10,7 +10,7 @@ import cors from 'cors';
 import http from 'http';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
-import { corsOptions, corsFallbackMiddleware } from './config/cors.js';
+import { allowedOrigins, corsOptions, corsFallbackMiddleware } from './config/cors.js';
 
 // Route Imports Grouped Safely
 import authRoutes from './routes/auth.js';
