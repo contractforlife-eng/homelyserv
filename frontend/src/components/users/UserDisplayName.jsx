@@ -5,6 +5,7 @@
 // Staff names use font-semibold with a subtle lighter role suffix.
 // Other roles use default styling.
 import React from 'react';
+import { STAFF_NAME_CLASS } from '../../utils/staffIdentityPolicy';
 import { useTranslation } from 'react-i18next';
 import {
   getFirstDisplayName,
@@ -47,7 +48,7 @@ const UserDisplayName = ({
       <span
         className={`${truncate ? 'truncate' : 'whitespace-normal break-words'} ${sizeClasses[size] || sizeClasses.md} ${
           staff
-            ? 'font-semibold tracking-normal leading-tight text-red-600 dark:text-red-400'
+            ? STAFF_NAME_CLASS
             : premiumCustomer
               ? 'font-bold text-purple-600 dark:text-purple-400'
             : defaultNameClassName

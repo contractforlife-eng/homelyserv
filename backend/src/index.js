@@ -54,6 +54,8 @@ import medicalRoutes from './routes/medical.js';
 import doctorSearchRoutes from './routes/doctorSearch.js';
 import publicProfilesRoutes from './routes/publicProfiles.js';
 import marketplaceRoutes from './routes/marketplace.js';
+import wallRoutes from './routes/wall.js';
+import { startWallNotificationWorker } from './services/wallNotificationService.js';
 import { ensureMarketplaceIndexes } from './models/MarketplaceListing.js';
 import { requireAdmin } from './middleware/auth.js';
 import { getHomelyMindIntegrationSecret } from './config/homelyMindIntegration.js';
@@ -274,6 +276,7 @@ mongoose.connect(MONGODB_URI)
     startFamilyTrackingRetentionWorker();
     startPushOutboxWorker();
     startActionNotificationReconciliationWorker();
+    startWallNotificationWorker();
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
@@ -438,6 +441,7 @@ app.use('/api/medical', medicalRoutes);
 app.use('/api/doctor-search', doctorSearchRoutes);
 app.use('/api/public', publicProfilesRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/wall', wallRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers

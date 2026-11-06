@@ -49,6 +49,7 @@ const SupportSidebar = ({
 
   const defaultMenuItems = activeRole === 'SUPPORT_HELPER' ? [
     { id: 'dashboard', label: i18nT('supHelpNavigation.dashboard') || t.dashboard, icon: Home, path: '/sup-help' },
+    { id: 'wall', label: i18nT('wall.nav') || 'HomelyServ Wall', icon: MessageCircle, path: '/wall' },
     { id: 'users', label: t.users, icon: Users, path: '/sup-help/users' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/sup-help/messages' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/sup-help/complaints' },
@@ -58,6 +59,7 @@ const SupportSidebar = ({
     { id: 'settings', label: t.settings, icon: Settings, path: '/sup-help/settings' },
   ] : [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },
+    { id: 'wall', label: i18nT('wall.nav') || 'HomelyServ Wall', icon: MessageCircle, path: '/wall' },
     { id: 'users', label: t.users, icon: Users, path: '/support-users' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/support-complaints' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },

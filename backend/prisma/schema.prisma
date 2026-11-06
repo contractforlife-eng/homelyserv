@@ -931,6 +931,12 @@ model Complaint {
   hireId          String?   @db.ObjectId
   workerEarningId String?   @db.ObjectId
 
+  // ---- Public Wall reports, optional for existing complaints ----
+  wallContentId   String? @db.ObjectId
+  wallPostId      String? @db.ObjectId
+  wallContentType String?
+  wallSnapshot    Json?
+
   // ---- Structured reporting context (additive; optional for legacy complaints) ----
   reportedUserId  String? @db.ObjectId
   messageId       String? @db.ObjectId

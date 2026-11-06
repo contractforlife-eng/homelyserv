@@ -78,6 +78,13 @@ const StudentSidebar = ({
       active: location.pathname === '/student-dashboard'
     },
     {
+      id: 'wall',
+      label: t('wall.nav') || 'HomelyServ Wall',
+      icon: MessageCircle,
+      path: '/wall',
+      active: location.pathname.startsWith('/wall')
+    },
+    {
       id: 'myProfile',
       label: t('studentNav.myProfile') || 'My Profile',
       icon: User,

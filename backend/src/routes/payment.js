@@ -12,6 +12,8 @@ import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService
 import { notifyAdminsForPaymentReview } from '../services/paymentReviewAlertService.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
+import { dinarPurchase } from '../config/wall.js';
+import { fulfillDinarPayment } from '../services/wallService.js';
 import CourseEnrollment from '../models/CourseEnrollment.js';
 import { fulfillCoursePayment } from '../services/courseFulfillmentService.js';
 import {
@@ -97,7 +99,7 @@ const authenticatedUserOwnsPayment = async (req, payment) => {
   const authenticatedUserId = req.userId == null ? '' : String(req.userId);
   if (!authenticatedUserId || !payment) return false;
 
-  if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION || payment.purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+  if (payment.purpose === PAYMENT_PURPOSES.DINAR_PURCHASE || payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION || payment.purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
     return payment.userId != null && String(payment.userId) === authenticatedUserId;
   }
 
@@ -838,6 +840,8 @@ const completePaymentTransaction = async (payment, captureRef) => {
       } catch (notifyError) {
         console.error('⚠️ Could not send course enrollment notification:', notifyError.message);
       }
+    } else if (payment.purpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+      await fulfillDinarPayment({ ...payment, status: 'completed' });
     } else {
       // COMMISSION (default for hire-linked payments) — never grants Premium.
       console.log(`💳 COMMISSION payment ${payment.transactionId} completed — hire update only, NO premium granted`);
@@ -887,11 +891,14 @@ router.get('/providers', authenticate, async (req, res) => {
     const purpose = typeof req.query.purpose === 'string'
       ? req.query.purpose.trim().toUpperCase()
       : '';
-    if (![PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COURSE_PURCHASE].includes(purpose)) {
+    if (![PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COURSE_PURCHASE, PAYMENT_PURPOSES.DINAR_PURCHASE].includes(purpose)) {
       return res.status(400).json({ success: false, error: 'Unsupported capability purpose' });
     }
     let currency;
-    if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+    if (purpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+      dinarPurchase(req.query.dinarQuantity);
+      currency = 'EGP';
+    } else if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       const selectedPlan = getSubscriptionPlan(req.query.plan);
       if (!selectedPlan) return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
       const user = await prisma.user.findUnique({
@@ -993,6 +1000,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     let purpose;
     if (requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       purpose = PAYMENT_PURPOSES.SUBSCRIPTION;
+    } else if (requestedPurpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+      purpose = PAYMENT_PURPOSES.DINAR_PURCHASE;
     } else if (requestedPurpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
       purpose = PAYMENT_PURPOSES.COURSE_PURCHASE;
     } else {
@@ -1006,7 +1015,12 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     let subscriptionSnapshot = null;
     let courseSnapshot = null;
 
-    if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+    if (purpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+      const purchase = dinarPurchase(req.body.dinarQuantity);
+      amount = purchase.amount;
+      transactionCurrency = purchase.currency;
+      courseSnapshot = { dinarQuantity: purchase.quantity };
+    } else if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       // SERVER-SIDE PLAN AUTHORITY: the client selects only a stable plan id.
       // Price, duration, currency and purchaser role are derived here.
       const normalizedRequestedPlan = normalizeSubscriptionPlanId(requestedPlan);
@@ -1432,7 +1446,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           payment = existingPayment;
         }
       }
-    } else if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
+    } else if ([PAYMENT_PURPOSES.COURSE_PURCHASE, PAYMENT_PURPOSES.DINAR_PURCHASE].includes(purpose)) {
       payment = await prisma.payment.create({
         data: {
           orderId,
@@ -1442,7 +1456,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           paymentMethod: selectedPaymentMethod,
           providerAmount: providerEvidence.amount,
           providerCurrency: providerEvidence.currency,
-          purpose: PAYMENT_PURPOSES.COURSE_PURCHASE,
+          purpose,
           status: 'pending',
           userEmail: userEmail || req.user?.email || 'student@example.com',
           userId: String(req.userId),
@@ -2664,6 +2678,15 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId,
     return { error: 'USD bank transfer is not currently configured', status: 503 };
   }
 
+  if (purpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+    const purchase = dinarPurchase(req.body?.dinarQuantity || req.query?.dinarQuantity);
+    const fxEvidence = await resolveBankTransferUsdSettlement({ canonicalAmount: purchase.amount, canonicalCurrency: 'EGP' });
+    return { bankConfig, amount: Number(fxEvidence.settlementAmount), transactionCurrency: BANK_TRANSFER_CURRENCY,
+      canonicalAmount: fxEvidence.canonicalAmount, canonicalCurrency: fxEvidence.canonicalCurrency,
+      fxEvidence, hireId: null, workerId: null, offerId: null, courseId: null,
+      snapshot: { dinarQuantity: purchase.quantity } };
+  }
+
   if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
     const selectedPlan = getSubscriptionPlan(requestedPlan);
     if (!selectedPlan) return { error: 'Unsupported subscription plan', status: 400 };
@@ -2808,7 +2831,7 @@ const resolveBankTransferDetails = async ({ req, purpose, requestedPlan, hireId,
 router.post('/bank-transfer/create', authenticate, async (req, res) => {
   try {
     const purpose = String(req.body.purpose || '').trim().toUpperCase();
-    if (![PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.COURSE_PURCHASE].includes(purpose)) {
+    if (![PAYMENT_PURPOSES.SUBSCRIPTION, PAYMENT_PURPOSES.COMMISSION, PAYMENT_PURPOSES.COURSE_PURCHASE, PAYMENT_PURPOSES.DINAR_PURCHASE].includes(purpose)) {
       return res.status(400).json({ success: false, error: 'Unsupported payment purpose' });
     }
 
@@ -2823,7 +2846,7 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
 
     const attemptKey = normalizeBankTransferAttemptKey(req.body.attemptKey)
       || `server-${crypto.randomUUID()}`;
-    const planId = purpose === PAYMENT_PURPOSES.SUBSCRIPTION ? details.snapshot?.plan : '';
+    const planId = purpose === PAYMENT_PURPOSES.DINAR_PURCHASE ? String(details.snapshot.dinarQuantity) : purpose === PAYMENT_PURPOSES.SUBSCRIPTION ? details.snapshot?.plan : '';
     const deterministicOrderId = buildBankTransferOrderId({
       userId: req.userId,
       purpose,
@@ -2848,6 +2871,7 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
     });
     const existing = existingMatches
       .filter((candidate) => {
+        if (purpose === PAYMENT_PURPOSES.DINAR_PURCHASE) return candidate.metadata?.dinarQuantity === details.snapshot.dinarQuantity;
         if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) return candidate.metadata?.plan === details.snapshot?.plan;
         if (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE) return String(candidate.metadata?.courseId || '') === String(details.courseId || '');
         return true;
@@ -2909,6 +2933,7 @@ router.post('/bank-transfer/create', authenticate, async (req, res) => {
       const concurrent = await prisma.payment.findUnique({ where: { orderId: deterministicOrderId } });
       if (!isActionableBankTransfer(concurrent)
         || concurrent.purpose !== purpose
+        || (purpose === PAYMENT_PURPOSES.DINAR_PURCHASE && concurrent.metadata?.dinarQuantity !== details.snapshot.dinarQuantity)
         || (purpose === PAYMENT_PURPOSES.SUBSCRIPTION && concurrent.metadata?.plan !== details.snapshot?.plan)
         || (purpose === PAYMENT_PURPOSES.COURSE_PURCHASE && String(concurrent.metadata?.courseId || '') !== String(details.courseId || ''))
         || (purpose === PAYMENT_PURPOSES.COMMISSION && String(concurrent.hireId || '') !== String(details.hireId || ''))) {
@@ -3013,6 +3038,13 @@ const resolveManualPaymentDetails = async ({ req, purpose, requestedPlan, hireId
     : manualConfig.instapay.configured;
   if (!providerConfigured) {
     return { error: 'Manual payment method is not currently configured', status: 503 };
+  }
+
+  if (purpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+    const purchase = dinarPurchase(req.body?.dinarQuantity);
+    return { manualConfig, selectedPaymentMethod, amount: purchase.amount, transactionCurrency: 'EGP',
+      hireId: null, workerId: null, offerId: null, subscriptionSnapshot: null,
+      courseSnapshot: { dinarQuantity: purchase.quantity } };
   }
 
   if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
@@ -3168,6 +3200,8 @@ router.get('/manual/instructions', authenticate, async (req, res) => {
     let purpose = PAYMENT_PURPOSES.COMMISSION;
     if (requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       purpose = PAYMENT_PURPOSES.SUBSCRIPTION;
+    } else if (requestedPurpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+      purpose = PAYMENT_PURPOSES.DINAR_PURCHASE;
     } else if (requestedPurpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
       purpose = PAYMENT_PURPOSES.COURSE_PURCHASE;
     }
@@ -3219,6 +3253,8 @@ router.post('/manual/submit', authenticate, proofUpload.single('proof'), async (
     let purpose = PAYMENT_PURPOSES.COMMISSION;
     if (requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       purpose = PAYMENT_PURPOSES.SUBSCRIPTION;
+    } else if (requestedPurpose === PAYMENT_PURPOSES.DINAR_PURCHASE) {
+      purpose = PAYMENT_PURPOSES.DINAR_PURCHASE;
     } else if (requestedPurpose === PAYMENT_PURPOSES.COURSE_PURCHASE) {
       purpose = PAYMENT_PURPOSES.COURSE_PURCHASE;
     }

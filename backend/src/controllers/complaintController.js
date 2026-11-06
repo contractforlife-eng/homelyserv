@@ -66,7 +66,7 @@ export const COMPLAINT_PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
  * Generate a persistent sequential ticket number: HS-2026-000001
  * Uses the TicketCounter model to guarantee uniqueness per year.
  */
-const generateTicketNumber = async () => {
+export const generateTicketNumber = async () => {
   const year = new Date().getFullYear();
   const counter = await prisma.ticketCounter.upsert({
     where: { year },
@@ -267,6 +267,13 @@ export const serializeComplaint = (complaint, {
             }
           : null,
   };
+
+  if (includeInternal && complaint.wallContentId) {
+    base.wallContentId = complaint.wallContentId;
+    base.wallPostId = complaint.wallPostId || null;
+    base.wallContentType = complaint.wallContentType || null;
+    base.wallSnapshot = complaint.wallSnapshot || null;
+  }
 
   if (includeInternal && complaint.reportedUserId && String(complaint.subject || '').startsWith('[Suspension Request]')) {
     base.reviewType = 'USER_SUSPENSION';

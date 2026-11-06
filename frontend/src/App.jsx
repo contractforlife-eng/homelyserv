@@ -24,6 +24,8 @@ import SocialOnboarding from './pages/SocialOnboarding';
 import DoctorPublicProfile from './pages/DoctorPublicProfile';
 import TeacherPublicProfile from './pages/TeacherPublicProfile';
 import Marketplace from './pages/Marketplace';
+import Wall from './pages/Wall';
+import WallIncomingGifts from './components/WallIncomingGifts';
 import { storeMarketplaceReturnPath } from './utils/safeReturnPath';
 
 // Common Protected Pages
@@ -455,6 +457,7 @@ function App() {
     <>
       {showIntro && <AnimatedIntro />}
       <BiometricLockGate />
+      <WallIncomingGifts />
       <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
       <Route path="/" element={<HomeRedirect />} />
@@ -475,6 +478,7 @@ function App() {
       <Route path="/doctor/:id" element={<DoctorPublicProfile />} />
       <Route path="/tr/:id" element={<TeacherPublicProfile />} />
       <Route path="/teacher/:id" element={<TeacherPublicProfile />} />
+      <Route path="/wall" element={<ProtectedRoute><Wall /></ProtectedRoute>} />
       <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
       <Route path="/marketplace/new" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
       <Route path="/marketplace/mine" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />

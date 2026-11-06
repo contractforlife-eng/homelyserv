@@ -73,6 +73,13 @@ const TeacherSidebar = ({
       active: location.pathname === '/teacher-dashboard'
     },
     {
+      id: 'wall',
+      label: t('wall.nav') || 'HomelyServ Wall',
+      icon: MessageCircle,
+      path: '/wall',
+      active: location.pathname.startsWith('/wall')
+    },
+    {
       id: 'myProfile',
       label: t('teacherNav.myProfile') || 'My Profile',
       icon: User,

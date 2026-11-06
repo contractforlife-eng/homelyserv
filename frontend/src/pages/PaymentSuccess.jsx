@@ -28,6 +28,7 @@ const PaymentSuccess = () => {
 
   // Determine where to redirect based on payment source
   const determineDestination = () => {
+    if (localStorage.getItem('homelyserv_dinar_paypal_order')) return '/wall';
     // Check if this was a subscription payment
     const pendingPayment = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || 'null');
     const orderId = localStorage.getItem('homelyserv_paypal_order_id');

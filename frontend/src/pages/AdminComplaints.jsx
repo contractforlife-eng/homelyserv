@@ -1,4 +1,5 @@
 // src/pages/AdminComplaints.jsx - PRODUCTION COMPLAINT MANAGEMENT
+import WallComplaintContext from '../components/WallComplaintContext';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -203,15 +204,16 @@ const AdminComplaints = () => {
   // DEEP LINK - Auto-open complaint from ?id= query param
   // (e.g. navigating from Admin Dashboard "Needs Attention" cards)
   // ============================================================
+  useEffect(() => { autoOpenedRef.current = false; }, [complaintIdFromUrl]);
   useEffect(() => {
     if (!complaintIdFromUrl || autoOpenedRef.current) return;
-    if (loading || complaints.length === 0) return;
+    if (loading) return;
     const found =
       complaints.find((c) => c.id === complaintIdFromUrl) ||
       complaints.find((c) => c.ticketNumber === complaintIdFromUrl);
-    if (found) {
+    if (found || /^[a-f\d]{24}$/i.test(complaintIdFromUrl)) {
       autoOpenedRef.current = true;
-      handleViewDetails(found);
+      handleViewDetails(found || { id: complaintIdFromUrl });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [complaints, loading, complaintIdFromUrl]);
@@ -815,7 +817,8 @@ const AdminComplaints = () => {
                 </div>
               )}
 
-              {!isSuspensionReview && (selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
+              <WallComplaintContext complaint={selectedComplaint} />
+              {!isSuspensionReview && !selectedComplaint.wallContentId && (selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
                   <h4 className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-200">{i18nT('messagesReporting.reportMessage')}</h4>
                   <div className="space-y-1 text-xs text-amber-900 dark:text-amber-100">

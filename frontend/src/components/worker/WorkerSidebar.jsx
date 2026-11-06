@@ -53,6 +53,7 @@ const WorkerSidebar = ({
 
   const menuItems = [
     { id: 'dashboard', label: t('workerSidebar.dashboard'), icon: Home, path: '/worker-dashboard' },
+    { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall' },
     { id: 'myChildren', label: t('workerSidebar.myChildren') || 'My Children', icon: GraduationCap, path: '/parent-students' },
     { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs' },
     { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },

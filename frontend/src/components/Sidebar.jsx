@@ -60,6 +60,7 @@ const Sidebar = ({
       case 'WORKER':
         return [
           { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/worker-dashboard' },
+          { id: 'wall', label: t('wall.nav') || 'HomelyServ Wall', icon: MessageCircle, path: '/wall' },
           { id: 'profile', label: t('profile'), icon: User, path: '/worker-profile' },
           { id: 'offers', label: t('offers'), icon: Briefcase, path: '/worker/offers' },
           { id: 'marketplace', label: t('marketplace.nav') || 'Used Marketplace', icon: ShoppingBag, path: '/marketplace' },
@@ -74,6 +75,7 @@ const Sidebar = ({
       case 'EMPLOYER':
         return [
           { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/employer-dashboard' },
+          { id: 'wall', label: t('wall.nav') || 'HomelyServ Wall', icon: MessageCircle, path: '/wall' },
           { id: 'search', label: t('search'), icon: Search, path: '/employer-search' },
           { id: 'hires', label: t('myHires'), icon: FileCheck, path: '/my-hires' },
           { id: 'marketplace', label: t('marketplace.nav') || 'Used Marketplace', icon: ShoppingBag, path: '/marketplace' },
@@ -87,6 +89,7 @@ const Sidebar = ({
       case 'ADMIN':
         return [
           { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/admin' },
+          { id: 'wall', label: t('wall.nav') || 'HomelyServ Wall', icon: MessageCircle, path: '/wall' },
           { id: 'users', label: t('users'), icon: Users, path: '/admin/users' },
           { id: 'hires', label: t('bookings'), icon: FileText, path: '/admin/hires' },
           { id: 'marketplace', label: t('marketplace.nav') || 'Used Marketplace', icon: ShoppingBag, path: '/marketplace' },

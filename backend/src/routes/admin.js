@@ -2173,7 +2173,7 @@ router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, a
 
     const isBankTransfer = payment.paymentMethod === BANK_TRANSFER_PROVIDER;
     if (isBankTransfer) {
-      if (payment.currency !== BANK_TRANSFER_CURRENCY || !['SUBSCRIPTION', 'COMMISSION', 'COURSE_PURCHASE'].includes(payment.purpose)) {
+      if (payment.currency !== BANK_TRANSFER_CURRENCY || !['SUBSCRIPTION', 'COMMISSION', 'COURSE_PURCHASE', 'DINAR_PURCHASE'].includes(payment.purpose)) {
         return res.status(400).json({ success: false, error: 'Only valid USD bank-transfer payments can be confirmed' });
       }
       if (!Number.isFinite(Number(payment.amount)) || Number(payment.amount) <= 0) {

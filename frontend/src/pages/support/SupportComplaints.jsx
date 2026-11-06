@@ -1,4 +1,5 @@
 // Support Complaints Page - Production complaint workflow management
+import WallComplaintContext from '../../components/WallComplaintContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -1004,7 +1005,8 @@ const SupportComplaints = ({ isSupHelp: propIsSupHelp }) => {
                 </div>
               </div>
 
-              {(selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
+              <WallComplaintContext complaint={selectedComplaint} />
+              {!selectedComplaint.wallContentId && (selectedComplaint.reportedUserId || selectedComplaint.conversationId || selectedComplaint.messageId) && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
                   <h4 className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-200">{i18nT('messagesReporting.reportMessage')}</h4>
                   <div className="space-y-1 text-xs text-amber-900 dark:text-amber-100">

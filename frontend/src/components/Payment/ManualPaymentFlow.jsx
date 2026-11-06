@@ -19,7 +19,7 @@ const MANUAL_PROOF_MAX_SIZE_MB = 5;
 const MANUAL_PROOF_MAX_SIZE_BYTES = MANUAL_PROOF_MAX_SIZE_MB * 1024 * 1024;
 const MANUAL_PROOF_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, courseId, onSubmitted, onCancel }) => {
+const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, courseId, dinarQuantity, onSubmitted, onCancel }) => {
   const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
   const [creationError, setCreationError] = useState(null);
@@ -48,6 +48,7 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, courseId, onS
       const payload = {
         paymentMethod,
         purpose,
+        ...(dinarQuantity ? { dinarQuantity } : {}),
         ...(plan ? { plan } : {}),
         ...(hireId ? { hireId } : {}),
         ...(courseId ? { courseId } : {}),
@@ -120,6 +121,7 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, courseId, onS
       if (plan) formData.append('plan', plan);
       if (hireId) formData.append('hireId', hireId);
       if (courseId) formData.append('courseId', courseId);
+      if (dinarQuantity) formData.append('dinarQuantity', dinarQuantity);
       formData.append('manualPaymentReference', manualPayment.payment.manualPaymentReference);
       formData.append('externalTransactionReference', trimmedRef);
       formData.append('proof', proofFile);

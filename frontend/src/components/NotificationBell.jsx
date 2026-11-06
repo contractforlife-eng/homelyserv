@@ -29,28 +29,36 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef(null);
   const bellRef = useRef(null);
+  const loadVersion = useRef(0);
+  const knownIds = useRef(new Set());
 
   // Load notifications
   const loadNotifications = async () => {
     if (!userId) return;
     
+    const version = ++loadVersion.current;
     setIsLoading(true);
     try {
       const result = await getNotifications({ limit: 20 });
       const unread = await getUnreadCount();
       
+      if (version !== loadVersion.current) return;
+      (result.notifications || []).forEach(n => knownIds.current.add(n.id));
       setNotifications(result.notifications || []);
       setUnreadCount(unread);
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {
-      setIsLoading(false);
+      if (version === loadVersion.current) setIsLoading(false);
     }
   };
 
   // Load on mount and when userId changes
   useEffect(() => {
+    loadVersion.current += 1; knownIds.current.clear();
+    setNotifications([]); setUnreadCount(0);
     loadNotifications();
+    return () => { loadVersion.current += 1; };
   }, [userId]);
 
   // Listen for new notification events
@@ -86,7 +94,12 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
   useEffect(() => {
     if (!userId) return;
     const unsubscribe = onSocketEvent(userId, 'notification:new', (payload) => {
-      console.log('🔔 Realtime notification received:', payload);
+      if (!payload?.id) return;
+      loadVersion.current += 1;
+      const known = knownIds.current.has(payload.id);
+      knownIds.current.add(payload.id);
+      setNotifications(previous => [{ ...payload, read: payload.isRead === true, time: payload.createdAt }, ...previous.filter(n => n.id !== payload.id)].slice(0, 20));
+      if (!known && payload.isRead !== true) setUnreadCount(count => count + 1);
       loadNotifications();
     });
     return unsubscribe;

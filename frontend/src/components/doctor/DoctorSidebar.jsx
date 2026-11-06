@@ -79,6 +79,13 @@ const DoctorSidebar = ({
           path: '/doctor-dashboard'
         },
         {
+          id: 'wall',
+          label: t('wall.nav') || 'HomelyServ Wall',
+          icon: MessageCircle,
+          path: '/wall',
+          matchPrefix: true
+        },
+        {
           id: 'myProfile',
           label: t('doctorNav.myProfile') || 'My Profile',
           icon: User,

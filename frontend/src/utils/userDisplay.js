@@ -7,6 +7,8 @@
 // Database roles remain unchanged: ADMIN, SUPPORT, EMPLOYER, WORKER
 // ============================================================
 import i18n from '../i18n';
+import { STAFF_ROLES, isStaffRole, getStaffIdentityTitle } from './staffIdentityPolicy.js';
+export { isStaffRole, getStaffIdentityTitle } from './staffIdentityPolicy.js';
 
 // ============================================================
 // ROLE LABELS
@@ -58,15 +60,6 @@ const ROLE_BADGE_CLASSES = {
 // Offical staff - Admin, Support & support-helper tier.
 // SUPPORT_HELPER is display/identity staff only (see backend staffIdentity.js);
 // it is intentionally absent from authorization STAFF_ROLES sets.
-const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUP_ADMIN', 'SUPPORT_HELPER'];
-
-const STAFF_IDENTITY_TITLES = {
-  ADMIN: 'Co-Admin',
-  SUPPORT: 'Sup-Admin',
-  SUP_ADMIN: 'Sup-Admin',
-  SUPPORT_HELPER: 'Sup-Help'
-};
-
 // ============================================================
 // HELPERS
 // ============================================================
@@ -105,7 +98,7 @@ export const getDisplayName = (user) => {
   const rawName = user.fullName || user.name || getUserFallback();
   const role = (user.role || '').toUpperCase();
 
-  if (STAFF_ROLES.includes(role)) {
+  if (isStaffRole(role)) {
     const compactName = getFirstDisplayName(rawName);
     return `${compactName} (${getStaffIdentityTitle(role)})`;
   }
@@ -158,10 +151,7 @@ export const getRoleLabel = (role) => {
  * Get the language-invariant title used only as part of a staff identity.
  * Normal role fields and badges must continue to use getRoleLabel().
  */
-export const getStaffIdentityTitle = (role) => {
-  const normalized = (role || '').toUpperCase();
-  return STAFF_IDENTITY_TITLES[normalized] || '';
-};
+
 
 /**
  * Get the Tailwind color name for a role.
@@ -195,10 +185,7 @@ export const getRoleBadgeClasses = (role) => {
  * @param {string} role - Database role
  * @returns {boolean}
  */
-export const isStaffRole = (role) => {
-  const normalized = (role || '').toUpperCase();
-  return STAFF_ROLES.includes(normalized);
-};
+
 
 /**
  * Whether an identity should receive the active-Premium name treatment.

@@ -64,6 +64,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
     case 'WORKER':
       return [
         { id: 'dashboard', label: t('workerSidebar.dashboard'), icon: Home, path: '/worker-dashboard' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'myChildren', label: t('workerSidebar.myChildren') || t('parentStudents.pageTitle') || 'My Children', icon: GraduationCap, path: '/parent-students' },
         { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs', matchPrefixPath: '/job/' },
         { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
@@ -82,6 +83,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
     case 'EMPLOYER':
       return [
         { id: 'dashboard', label: t('employerSidebar.dashboard'), icon: Home, path: '/employer-dashboard' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'myFamily', label: t('employerSidebar.myFamily'), icon: Users, path: '/employer-family' },
         { id: 'myChildren', label: t('employerSidebar.myChildren') || t('parentStudents.pageTitle') || 'My Children', icon: GraduationCap, path: '/parent-students' },
         { id: 'medicalProfile', label: t('medicalProfile.pageTitle') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
@@ -102,6 +104,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
     case 'ADMIN': {
       const items = [
         { id: 'dashboard', label: t('adminSidebar.dashboard'), icon: Home, path: '/admin' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'users', label: t('adminSidebar.users'), icon: Users, path: '/admin/users', badgeKey: 'users' },
         { id: 'registration-geography', label: t('adminSidebar.registrationGeography'), icon: Globe, path: '/admin/registration-geography' },
         { id: 'payments', label: t('adminSidebar.payments'), icon: CreditCard, path: '/admin/payments', badgeKey: 'payments' },
@@ -134,6 +137,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('doctorNav.dashboard') || 'Dashboard', icon: Home, path: '/doctor-dashboard' },
         { id: 'myProfile', label: t('doctorNav.myProfile') || 'My Profile', icon: User, path: '/doctor-profile' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'messages', label: t('doctorNav.messages') || 'Messages', icon: MessageCircle, path: '/doctor-messages' },
         { id: 'complaints', label: t('doctorNav.complaints') || 'Complaints', icon: AlertTriangle, path: '/doctor-complaints' },
@@ -158,6 +162,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('teacherNav.dashboard') || 'Dashboard', icon: Home, path: '/teacher-dashboard' },
         { id: 'myProfile', label: t('teacherNav.myProfile') || 'My Profile', icon: User, path: '/teacher-profile' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'medicalProfile', label: t('teacherNav.medicalProfile') || 'My Medical Profile', icon: Heart, path: '/medical-profile' },
         { id: 'messages', label: t('teacherNav.messages') || 'Messages', icon: MessageCircle, path: '/teacher-messages' },
@@ -183,6 +188,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       return [
         { id: 'dashboard', label: t('studentNav.dashboard') || 'Dashboard', icon: Home, path: '/student-dashboard' },
         { id: 'myProfile', label: t('studentNav.myProfile') || 'My Profile', icon: User, path: '/student-profile' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'myTeacher', label: t('studentNav.myTeacher') || 'My Teacher', icon: GraduationCap, path: '/student-teacher' },
         { id: 'lessons', label: t('studentNav.lessons') || 'Lessons', icon: BookOpen, path: '/student-lessons' },
@@ -203,6 +209,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       const tSup = t('supportNavigation', { returnObjects: true }) || {};
       return [
         { id: 'dashboard', label: tSup.dashboard || 'Dashboard', icon: Home, path: '/support-dashboard' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'users', label: tSup.users || 'Users', icon: Users, path: '/support-users', badgeKey: 'users' },
         { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'complaints', label: tSup.complaints || 'Complaints', icon: FileText, path: '/support-complaints', badgeKey: 'complaints' },
@@ -218,6 +225,7 @@ export const getCanonicalNavItems = (role, t, options = {}) => {
       const tSup = t('supportNavigation', { returnObjects: true }) || {};
       return [
         { id: 'dashboard', label: t('supHelpNavigation.dashboard') || tSup.dashboard || 'Dashboard', icon: Home, path: '/sup-help' },
+        { id: 'wall', label: t('wall.nav'), icon: MessageCircle, path: '/wall', matchPrefix: true },
         { id: 'users', label: t('supHelpNavigation.users') || tSup.users || 'Users', icon: Users, path: '/sup-help/users' },
         { id: 'marketplace', label: t('marketplace.nav'), icon: ShoppingBag, path: '/marketplace', matchPrefix: true },
         { id: 'messages', label: tSup.messages || 'Messages', icon: MessageCircle, path: '/sup-help/messages' },
