@@ -13625,10 +13625,68 @@ const APP_VERSION_COPY = {
   }
 };
 
+const APP_UPDATE_COPY = {
+  en: {
+    title: 'Update available',
+    description: 'A new version of HomelyServ is available. Update now to enjoy the latest features, wall improvements, and fixes.',
+    installedLabel: 'Installed',
+    latestLabel: 'Latest',
+    downloadUpdate: 'Download update',
+    later: 'Later'
+  },
+  ar: {
+    title: 'تحديث جديد متاح',
+    description: 'يتوفر إصدار جديد من HomelyServ. قم بالتحديث الآن للاستمتاع بأحدث الميزات وتحسينات الحائط والإصلاحات.',
+    installedLabel: 'المثبت',
+    latestLabel: 'الأحدث',
+    downloadUpdate: 'تحميل التحديث',
+    later: 'لاحقاً'
+  },
+  fr: {
+    title: 'Mise à jour disponible',
+    description: 'Une nouvelle version de HomelyServ est disponible. Mettez à jour maintenant pour profiter des dernières fonctionnalités et améliorations.',
+    installedLabel: 'Installée',
+    latestLabel: 'Dernière',
+    downloadUpdate: 'Télécharger la mise à jour',
+    later: 'Plus tard'
+  },
+  ru: {
+    title: 'Доступно обновление',
+    description: 'Доступна новая версия HomelyServ. Обновите приложение сейчас, чтобы получить новейшие функции и улучшения.',
+    installedLabel: 'Установленная',
+    latestLabel: 'Новая',
+    downloadUpdate: 'Скачать обновление',
+    later: 'Позже'
+  },
+  tr: {
+    title: 'Güncelleme mevcut',
+    description: 'HomelyServ için yeni bir sürüm mevcut. En son özellikleri ve iyileştirmeleri almak için şimdi güncelleyin.',
+    installedLabel: 'Yüklü',
+    latestLabel: 'En yeni',
+    downloadUpdate: 'Güncellemeyi indir',
+    later: 'Daha sonra'
+  },
+  de: {
+    title: 'Update verfügbar',
+    description: 'Eine neue Version von HomelyServ ist verfügbar. Aktualisieren Sie jetzt für die neuesten Funktionen und Verbesserungen.',
+    installedLabel: 'Installiert',
+    latestLabel: 'Neueste',
+    downloadUpdate: 'Update herunterladen',
+    later: 'Später'
+  }
+};
+
 for (const [code, copy] of Object.entries(APP_VERSION_COPY)) {
   const target = { en, ar, fr, ru, tr, de }[code];
   if (target && target.translation) {
     target.translation.appVersion = copy;
+  }
+}
+
+for (const [code, copy] of Object.entries(APP_UPDATE_COPY)) {
+  const target = { en, ar, fr, ru, tr, de }[code];
+  if (target && target.translation) {
+    target.translation.appUpdate = copy;
   }
 }
 

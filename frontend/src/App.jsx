@@ -26,6 +26,7 @@ import TeacherPublicProfile from './pages/TeacherPublicProfile';
 import Marketplace from './pages/Marketplace';
 import Wall from './pages/Wall';
 import WallIncomingGifts from './components/WallIncomingGifts';
+import AndroidUpdatePrompt from './components/common/AndroidUpdatePrompt';
 import { storeMarketplaceReturnPath } from './utils/safeReturnPath';
 
 // Common Protected Pages
@@ -457,6 +458,7 @@ function App() {
     <>
       {showIntro && <AnimatedIntro />}
       <BiometricLockGate />
+      <AndroidUpdatePrompt />
       <WallIncomingGifts />
       <Routes>
       {/* ========== PUBLIC ROUTES ========== */}

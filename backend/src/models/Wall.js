@@ -4,8 +4,10 @@ const model = (name, schema) => mongoose.models[name] || mongoose.model(name, sc
 const content = new Schema({
   authorId: { type: String, required: true, index: true },
   postId: { type: Schema.Types.ObjectId, default: null },
+  clientMutationId: { type: String, default: null },
+  payloadHash: { type: String, default: null },
   text: { type: String, maxlength: 15000, default: '' },
-  image: { url: String, publicId: String },
+  image: { url: String, publicId: String, hash: String },
   hidden: { type: Boolean, default: false },
   deleted: { type: Boolean, default: false },
   notificationRecipientId: { type: String, default: null },
@@ -13,6 +15,15 @@ const content = new Schema({
 }, { timestamps: true, collection: 'wall_content' });
 content.index({ postId: 1, hidden: 1, deleted: 1, _id: -1 });
 content.index({ notificationRecipientId: 1, notificationHandedOff: 1 });
+content.index(
+  { authorId: 1, clientMutationId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      clientMutationId: { $type: 'string', $gt: '' }
+    }
+  }
+);
 export const WallContent = model('WallContent', content);
 const lotSchema = new Schema({
   lotId: { type: String, required: true },
@@ -58,7 +69,14 @@ entry.index({ postId: 1, type: 1 });
 entry.index({ recipientId: 1, type: 1, animationSeenAt: 1, _id: 1 });
 entry.index({ type: 1, notificationHandedOff: 1, _id: 1 });
 export const WallEntry = model('WallEntry', entry);
-const like = new Schema({ userId: String, postId: Schema.Types.ObjectId }, { collection: 'wall_likes' });
+const like = new Schema(
+  {
+    userId: { type: String, required: true },
+    postId: { type: Schema.Types.ObjectId, required: true },
+    version: { type: Number, default: 0 }
+  },
+  { collection: 'wall_likes' }
+);
 like.index({ userId: 1, postId: 1 }, { unique: true });
 export const WallLike = model('WallLike', like);
 const report = new Schema({ userId: String, contentId: Schema.Types.ObjectId, reason: String,

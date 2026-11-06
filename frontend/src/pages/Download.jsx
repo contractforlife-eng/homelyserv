@@ -10,7 +10,7 @@ import { classifyDevice } from '../utils/deviceType';
 import { trackOperationalAnalytics } from '../utils/operationalAnalytics';
 import { API_BASE } from '../config/api';
 
-const RELEASE_MANIFEST_URL = '/downloads/android/1.0.44-45/release.json';
+const RELEASE_MANIFEST_URL = '/downloads/android/release.json';
 const FALLBACK_DOWNLOAD_URL = 'https://github.com/contractforlife-eng/homelyserv/releases/download/v1.0.44/HomelyServ.apk';
 const FALLBACK_RELEASE = {
   appName: 'HomelyServ',

@@ -11,6 +11,15 @@ import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import { countries } from '../utils/countries';
 import { wallIdentity, wallIdentityStyle, wallAuthorIdentityStyle } from '../utils/wallIdentity';
+import {
+  applyOptimisticLike,
+  reconcileLikeFailure,
+  mergeFeedWithOptimisticLikes,
+  addPendingComment,
+  replacePendingComment,
+  markCommentFailed,
+  removePendingComment,
+} from '../utils/wallFeedbackState';
 import WallDinarHistory from '../components/WallDinarHistory';
 import WallAvatar from '../components/WallAvatar';
 import { getStaffIdentityTitle } from '../utils/staffIdentityPolicy';
@@ -23,7 +32,7 @@ const button = 'rounded-xl px-4 py-2 font-medium disabled:opacity-50 focus-visib
 const card = 'rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800';
 const field = 'w-full rounded-xl border border-gray-300 bg-transparent p-3 dark:border-gray-600';
 
-function Composer({ parentId, onDone, primary, act, busy }) {
+function Composer({ parentId, onDone, onSubmitComment, primary, act, busy }) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
@@ -34,16 +43,38 @@ function Composer({ parentId, onDone, primary, act, busy }) {
     const url = URL.createObjectURL(image); setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [image]);
-  return <form className="space-y-3" onSubmit={e => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if ((!text.trim() && !image) || text.trim().split(/\s+/u).length > 500 || (parentId && text.trim() && image)) return;
+    if (image && (image.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(image.type))) return;
+
+    if (parentId && typeof onSubmitComment === 'function') {
+      const currentText = text;
+      const currentImage = image;
+      const currentPreview = preview;
+      setText('');
+      setImage(null);
+      setPreview('');
+      if (input.current) input.current.value = '';
+      await onSubmitComment(parentId, currentText, currentImage, currentPreview);
+      return;
+    }
+
     act(async () => {
-      if ((!text.trim() && !image) || text.trim().split(/\s+/u).length > 500 || (parentId && text.trim() && image)) throw new Error('INVALID_CONTENT');
-      if (image && (image.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(image.type))) throw new Error('INVALID_CONTENT');
-      const data = new FormData(); data.append('text', text); if (image) data.append('image', image);
-      await api.post(parentId ? `/api/wall/posts/${parentId}/comments` : '/api/wall/posts', data, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setText(''); setImage(null); if (input.current) input.current.value = ''; await onDone();
+      const data = new FormData();
+      data.append('text', text);
+      if (image) data.append('image', image);
+      await api.post('/api/wall/posts', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setText('');
+      setImage(null);
+      setPreview('');
+      if (input.current) input.current.value = '';
+      await onDone();
     });
-  }}>
+  };
+
+  return <form className="space-y-3" onSubmit={handleSubmit}>
     <textarea aria-label={t(parentId ? 'wall.commentHint' : 'wall.write')} placeholder={t(parentId ? 'wall.commentHint' : 'wall.write')} className={field} maxLength={15000} rows={parentId ? 2 : 3} value={text} onChange={e => setText(e.target.value)} disabled={busy || (!!parentId && !!image)} />
     {preview && <div className="relative w-fit"><img src={preview} alt="" className="max-h-56 rounded-xl" /><button type="button" aria-label={t('wall.delete')} className="absolute end-1 top-1 rounded-full bg-white p-1 text-black" onClick={() => setImage(null)}><X size={18} /></button></div>}
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -89,8 +120,14 @@ export default function Wall() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [likePending, setLikePending] = useState({});
+  const likeSeqMap = useRef(new Map());
+  const likeQueueRef = useRef(new Map()); // postId -> Promise queue for coalescing rapid clicks
+  const [commentsLoading, setCommentsLoading] = useState({});
   const inFlight = useRef(false);
   const giftAttempt = useRef(null);
+  const isSendingGiftRef = useRef(false);
+  const [isSendingGift, setIsSendingGift] = useState(false);
   const bankAttempt = useRef(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [reason, setReason] = useState('');
@@ -102,7 +139,12 @@ export default function Wall() {
       try { const focused = await api.get(`/api/wall/posts/${focusedPost}`); if (focused.data.post && (wallView === 'public' || String(focused.data.post.author?.id) === currentUserId)) feed.data.posts.unshift(focused.data.post); } catch {}
     }
     if (generation !== feedGeneration.current) return;
-    setPosts(old => before ? [...old, ...feed.data.posts] : feed.data.posts); setNext(feed.data.next); setStore(wallet.data);
+    setPosts(old => {
+      const mergedIncoming = mergeFeedWithOptimisticLikes(old, feed.data.posts, likeSeqMap.current);
+      return before ? [...old, ...mergedIncoming] : mergedIncoming;
+    });
+    setNext(feed.data.next);
+    setStore(wallet.data);
   }, [focusedPost, wallView, currentUserId]);
   const act = useCallback(async fn => {
     if (inFlight.current) return;
@@ -131,17 +173,215 @@ export default function Wall() {
     window.addEventListener('wall:gift:completed', received);
     return () => window.removeEventListener('wall:gift:completed', received);
   }, [load, t]);
-  async function sendGift() {
-    const result = await api.post(`/api/wall/posts/${target.id}/gifts`, { giftId: selected.id, flag }, { headers: { 'Idempotency-Key': giftAttempt.current } });
-    setPanel(null);
-    if (result.data.reused) { await load(); return; }
-    window.dispatchEvent(new CustomEvent('wall:gift:sent', { detail: { eventId: result.data.receipt?.eventId || giftAttempt.current, postId: target.id,
-      id: selected.id, emoji: selected.id === 'flag' ? flagEmoji(flag) : selected.emoji,
-      recipient: target.author.displayName, color: wallIdentity(target.author.role).color, outgoing: true } }));
+  async function toggleLike(post) {
+    const postId = String(post.id);
+    const previousLiked = post.liked;
+    const currentSeq = likeSeqMap.current.get(postId) || 0;
+
+    // 1. Immediate optimistic UI feedback
+    const { updatedPosts, newLiked, targetSeq } = applyOptimisticLike(posts, postId, currentSeq);
+    likeSeqMap.current.set(postId, targetSeq);
+    setPosts(updatedPosts);
+    setLikePending(prev => ({ ...prev, [postId]: true }));
+
+    // 2. Coalesced serialized queue per post: requests execute strictly in order
+    const previousTask = likeQueueRef.current.get(postId) || Promise.resolve();
+    const currentTask = previousTask.then(async () => {
+      // Check if user has toggled again while queued; only sync latest intent
+      const activeSeq = likeSeqMap.current.get(postId);
+      try {
+        const res = await api.put(`/api/wall/posts/${postId}/like`, { liked: newLiked });
+        // If server returns latest state and sequence matches active, reconcile cleanly
+        if (activeSeq === targetSeq && res.data && typeof res.data.liked === 'boolean') {
+          setPosts(current => current.map(p => {
+            if (p.id !== postId) return p;
+            return { ...p, liked: res.data.liked };
+          }));
+        }
+      } catch (err) {
+        // Roll back if this response matches the user's latest sequence
+        setPosts(current => reconcileLikeFailure(current, postId, targetSeq, previousLiked));
+        setError(t('wall.error'));
+      } finally {
+        if (likeSeqMap.current.get(postId) === targetSeq) {
+          likeSeqMap.current.delete(postId);
+          setLikePending(prev => {
+            const next = { ...prev };
+            delete next[postId];
+            return next;
+          });
+        }
+      }
+    });
+
+    likeQueueRef.current.set(postId, currentTask.catch(() => {}));
   }
+
+  async function sendGift() {
+    if (isSendingGiftRef.current || !selected || !target) return;
+    isSendingGiftRef.current = true;
+    setIsSendingGift(true);
+    setError('');
+
+    if (!giftAttempt.current) {
+      giftAttempt.current = requestKey();
+    }
+    const attemptKey = giftAttempt.current;
+    const targetPost = target;
+    const selectedGift = selected;
+    const selectedFlag = flag;
+
+    try {
+      const result = await api.post(
+        `/api/wall/posts/${targetPost.id}/gifts`,
+        { giftId: selectedGift.id, flag: selectedFlag },
+        { headers: { 'Idempotency-Key': attemptKey } }
+      );
+
+      // Successfully sent or reused: update local store balance directly
+      if (typeof result.data.balance === 'number') {
+        setStore(prev => ({ ...prev, balance: result.data.balance }));
+      } else {
+        setStore(prev => ({ ...prev, balance: Math.max(0, prev.balance - selectedGift.price) }));
+      }
+
+      // Update post gift counter optimistically without full feed reload only if not already counted (not reused)
+      if (!result.data.reused) {
+        setPosts(prev => prev.map(p => p.id === targetPost.id ? { ...p, gifts: (p.gifts || 0) + 1 } : p));
+      }
+
+      setPanel(null);
+      giftAttempt.current = null; // Clear key on completed transaction
+
+      // Trigger animation event for gift queue only if this was an initial delivery, not a duplicate retry replay
+      if (!result.data.reused) {
+        window.dispatchEvent(new CustomEvent('wall:gift:sent', {
+          detail: {
+            eventId: result.data.receipt?.eventId || attemptKey,
+            postId: targetPost.id,
+            id: selectedGift.id,
+            emoji: selectedGift.id === 'flag' ? flagEmoji(selectedFlag) : selectedGift.emoji,
+            recipient: targetPost.author.displayName,
+            color: wallIdentity(targetPost.author.role).color,
+            outgoing: true,
+          }
+        }));
+      }
+    } catch (err) {
+      const code = err.response?.data?.code || err.message;
+      setError(t(code === 'INSUFFICIENT_BALANCE' ? 'wall.insufficient' : 'wall.error'));
+      // Keep same giftAttempt.current so user retry of ambiguous network error is safe and idempotent
+    } finally {
+      isSendingGiftRef.current = false;
+      setIsSendingGift(false);
+    }
+  }
+
   async function loadComments(postId, before = '') {
-    const result = await api.get(`/api/wall/posts/${postId}/comments`, { params: before ? { before } : {} });
-    setComments(old => ({ ...old, [postId]: { ...result.data, comments: before ? [...old[postId].comments, ...result.data.comments] : result.data.comments } }));
+    setCommentsLoading(prev => ({ ...prev, [postId]: true }));
+    try {
+      const result = await api.get(`/api/wall/posts/${postId}/comments`, { params: before ? { before } : {} });
+      setComments(old => ({
+        ...old,
+        [postId]: {
+          ...result.data,
+          comments: before ? [...(old[postId]?.comments || []), ...result.data.comments] : result.data.comments
+        }
+      }));
+    } catch {
+      setError(t('wall.error'));
+    } finally {
+      setCommentsLoading(prev => ({ ...prev, [postId]: false }));
+    }
+  }
+
+  async function submitComment(postId, text, image, previewUrl) {
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const clientMutationId = requestKey();
+
+    // 1. Immediate pending comment in state with real user identity
+    const pendingComment = {
+      id: tempId,
+      postId,
+      text,
+      image: previewUrl ? previewUrl : null,
+      _previewUrl: previewUrl,
+      author: {
+        id: currentUserId,
+        displayName: user?.fullName || 'You',
+        role: user?.role || 'USER',
+        isPremium: user?.isPremium === true,
+        isVerified: user?.isVerified === true,
+        crown: store.crown || { gifts: 0, gems: 0, level: 0 },
+      },
+      createdAt: new Date().toISOString(),
+      _pending: true,
+      _clientMutationId: clientMutationId,
+    };
+
+    setComments(prev => addPendingComment(prev, postId, pendingComment));
+    // Immediately increment post comments counter
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: (p.comments || 0) + 1 } : p));
+
+    // 2. Dispatch server creation with Idempotency-Key
+    try {
+      const data = new FormData();
+      if (text) data.append('text', text);
+      if (image) data.append('image', image);
+      data.append('clientMutationId', clientMutationId);
+
+      const res = await api.post(`/api/wall/posts/${postId}/comments`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Idempotency-Key': clientMutationId,
+        }
+      });
+
+      const serverComment = res.data.content;
+      setComments(prev => replacePendingComment(prev, postId, tempId, serverComment));
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    } catch (err) {
+      setComments(prev => markCommentFailed(prev, postId, tempId, t('wall.error')));
+      // Rollback post comments counter
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: Math.max(0, (p.comments || 1) - 1) } : p));
+      setError(t('wall.error'));
+    }
+  }
+
+  async function retryFailedComment(postId, failedComment) {
+    const tempId = failedComment.id;
+    const clientMutationId = failedComment._clientMutationId || requestKey();
+
+    // Reset failed state
+    setComments(prev => ({
+      ...prev,
+      [postId]: {
+        ...prev[postId],
+        comments: prev[postId].comments.map(c => c.id === tempId ? { ...c, _failed: false, _error: null } : c),
+      }
+    }));
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: (p.comments || 0) + 1 } : p));
+
+    try {
+      const data = new FormData();
+      if (failedComment.text) data.append('text', failedComment.text);
+      data.append('clientMutationId', clientMutationId);
+
+      const res = await api.post(`/api/wall/posts/${postId}/comments`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Idempotency-Key': clientMutationId,
+        }
+      });
+
+      const serverComment = res.data.content;
+      setComments(prev => replacePendingComment(prev, postId, tempId, serverComment));
+      if (failedComment._previewUrl) URL.revokeObjectURL(failedComment._previewUrl);
+    } catch (err) {
+      setComments(prev => markCommentFailed(prev, postId, tempId, t('wall.error')));
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: Math.max(0, (p.comments || 1) - 1) } : p));
+      setError(t('wall.error'));
+    }
   }
   const identity = author => <span className="inline-flex items-center gap-3" style={wallAuthorIdentityStyle(author?.role)}>
     <WallAvatar author={author} />
@@ -191,14 +431,58 @@ export default function Wall() {
         {post.text && <p className="whitespace-pre-wrap break-words">{post.text}</p>}
         {post.image && <img src={post.image} alt="" loading="lazy" className="max-h-[550px] w-full rounded-xl object-contain" />}
         <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-          <button disabled={busy} aria-pressed={post.liked} className={`${button} wall-author-action inline-flex items-center gap-2 ${post.liked ? 'text-red-600' : ''}`} onClick={() => act(async () => { await api.put(`/api/wall/posts/${post.id}/like`, { liked: !post.liked }); await load(); })}><Heart size={18} fill={post.liked ? 'currentColor' : 'none'} />{t('wall.like')} {post.likes}</button>
-          <button disabled={busy} className={`${button} wall-author-action inline-flex items-center gap-2`} onClick={() => act(() => loadComments(post.id))}><MessageCircle size={18} />{t('wall.comment')} {post.comments}</button>
-          <button data-wall-gift-post={post.id} ref={element => { if (element) giftCounters.current.set(post.id, element); else giftCounters.current.delete(post.id); }} disabled={busy || own(post)} onAnimationEnd={() => setCounterPop(null)} className={`${button} wall-author-action inline-flex items-center gap-2 ${counterPop === post.id ? 'wall-counter-pop' : ''}`} onClick={() => { setTarget(post); setSelected(null); setPanel('gifts'); }}><Gift size={18} />{t('wall.gift')} {post.gifts}</button>
+          <button
+            aria-pressed={post.liked}
+            disabled={likePending[post.id]}
+            className={`${button} wall-author-action inline-flex items-center gap-2 transition-transform active:scale-95 ${post.liked ? 'text-red-600 font-bold' : ''}`}
+            onClick={() => toggleLike(post)}
+          >
+            <Heart size={18} fill={post.liked ? 'currentColor' : 'none'} className={post.liked ? 'animate-in zoom-in-50 duration-150' : ''} />
+            {t('wall.like')} {post.likes}
+          </button>
+          <button
+            className={`${button} wall-author-action inline-flex items-center gap-2`}
+            onClick={() => loadComments(post.id)}
+          >
+            <MessageCircle size={18} />
+            {t('wall.comment')} {post.comments}
+            {commentsLoading[post.id] && <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />}
+          </button>
+          <button data-wall-gift-post={post.id} ref={element => { if (element) giftCounters.current.set(post.id, element); else giftCounters.current.delete(post.id); }} disabled={own(post)} onAnimationEnd={() => setCounterPop(null)} className={`${button} wall-author-action inline-flex items-center gap-2 ${counterPop === post.id ? 'wall-counter-pop' : ''}`} onClick={() => { setTarget(post); setSelected(null); setPanel('gifts'); }}><Gift size={18} />{t('wall.gift')} {post.gifts}</button>
         </div>
         {comments[post.id] && <section className="space-y-3 border-t pt-3">
-          <Composer parentId={post.id} primary={primary} act={act} busy={busy} onDone={async () => { await loadComments(post.id); await load(); }} />
-          {comments[post.id].comments.map(c => <div key={c.id} style={wallAuthorIdentityStyle(c.author?.role)} className={`wall-person-card space-y-2 rounded-xl bg-gray-50 p-3 dark:bg-gray-900 ${c.author?.isPremium ? 'wall-premium-comment' : ''}`}><div className="wall-person-header flex flex-wrap justify-between gap-2">{identity(c.author)}{c.author?.isPremium && <span className="wall-premium-label"><Crown size={13} />{t('wall.premiumComment')}</span>}{actions(c)}</div>{c.text && <p className="whitespace-pre-wrap break-words">{c.text}</p>}{c.image && <img src={c.image} alt="" loading="lazy" className="max-h-60 rounded-lg" />}</div>)}
-          {comments[post.id].next && <button disabled={busy} className={button} onClick={() => act(() => loadComments(post.id, comments[post.id].next))}>{t('wall.more')}</button>}
+          <Composer parentId={post.id} primary={primary} act={act} busy={busy} onSubmitComment={submitComment} onDone={async () => { await loadComments(post.id); }} />
+          {comments[post.id].comments.map(c => (
+            <div
+              key={c.id}
+              style={wallAuthorIdentityStyle(c.author?.role)}
+              className={`wall-person-card space-y-2 rounded-xl bg-gray-50 p-3 dark:bg-gray-900 transition-opacity ${c._pending ? 'opacity-70 border border-dashed border-gray-300 dark:border-gray-600' : ''} ${c.author?.isPremium ? 'wall-premium-comment' : ''}`}
+            >
+              <div className="wall-person-header flex flex-wrap justify-between gap-2">
+                {identity(c.author)}
+                <div className="flex items-center gap-2">
+                  {c._pending && <span className="text-xs text-amber-600 dark:text-amber-400 font-medium animate-pulse">{t('wall.working')}</span>}
+                  {c._failed && (
+                    <div className="flex items-center gap-1.5 text-xs text-red-600">
+                      <span>⚠️ {c._error || t('wall.error')}</span>
+                      <button type="button" className="underline font-bold" onClick={() => retryFailedComment(post.id, c)}>
+                        {t('wall.retry') || 'Retry'}
+                      </button>
+                      <span>·</span>
+                      <button type="button" className="text-gray-400 hover:text-gray-600" onClick={() => setComments(prev => removePendingComment(prev, post.id, c.id))}>
+                        {t('wall.delete')}
+                      </button>
+                    </div>
+                  )}
+                  {c.author?.isPremium && <span className="wall-premium-label"><Crown size={13} />{t('wall.premiumComment')}</span>}
+                  {!c._pending && actions(c)}
+                </div>
+              </div>
+              {c.text && <p className="whitespace-pre-wrap break-words">{c.text}</p>}
+              {c.image && <img src={typeof c.image === 'string' ? c.image : c.image.url} alt="" loading="lazy" className="max-h-60 rounded-lg" />}
+            </div>
+          ))}
+          {comments[post.id].next && <button disabled={commentsLoading[post.id]} className={button} onClick={() => loadComments(post.id, comments[post.id].next)}>{t('wall.more')}</button>}
         </section>}
       </article>)}
       {next && <button disabled={busy} className={`${button} ${primary}`} onClick={() => act(() => load(next))}>{t('wall.more')}</button>}
@@ -209,9 +493,9 @@ export default function Wall() {
           {error && <p role="alert" className="text-red-600">{error}</p>}
           {confirmDelete && <><h2>{t('wall.delete')}?</h2><button disabled={busy} className={`${button} ${primary}`} onClick={() => act(async () => { await api.delete(`/api/wall/content/${confirmDelete}`); setConfirmDelete(null); setComments({}); await load(); })}>{t('wall.confirm')}</button></>}
           {reportTarget && <form className="space-y-3" onSubmit={e => { e.preventDefault(); act(async () => { const result = await api.post(`/api/wall/content/${reportTarget}/report`, { reason }); setReportTarget(null); setNotice(t(result.data.pending ? 'wall.reportQueued' : 'wall.reportInComplaints')); }); }}><h2>{t('wall.report')}</h2><textarea required maxLength={1000} aria-label={t('wall.reason')} placeholder={t('wall.reason')} className={field} value={reason} onChange={e => setReason(e.target.value)} /><button disabled={busy} className={`${button} ${primary}`}>{t('wall.submit')}</button></form>}
-          {panel === 'gifts' && <><h2 className="text-xl font-bold">{t('wall.gift')}</h2><p>{t('wall.balance')}: {store.balance}</p><div className="wall-gift-picker grid grid-cols-2 gap-3 sm:grid-cols-3">{store.gifts.map(g => <button key={g.id} aria-pressed={selected?.id === g.id} disabled={busy} className={`rounded-xl border p-3 ${selected?.id === g.id ? 'border-amber-500 bg-amber-50 text-gray-900' : ''}`} onClick={() => { setSelected(g); giftAttempt.current = requestKey(); }}><span className="block text-4xl">{g.emoji}</span><span className="block text-sm">{t(`wall.${giftKey(g.id)}`)}</span><b>{g.price.toLocaleString(i18n.language)} ◈</b><span className="block text-xs text-gray-500">{(g.price / 10).toLocaleString(i18n.language, { style: 'currency', currency: 'EGP' })}</span></button>)}</div>
-            {selected?.id === 'flag' && <select aria-label={t('wall.flag')} className={field} value={flag} onChange={e => { setFlag(e.target.value); giftAttempt.current = requestKey(); }}>{countries.map(c => <option key={c.code} value={c.code}>{flagEmoji(c.code)} {c.name}</option>)}</select>}
-            {selected && <><p>{t('wall.confirmGift', { gift: t(`wall.${giftKey(selected.id)}`), price: selected.price })}</p><button disabled={busy} className={`${button} ${primary}`} onClick={() => act(sendGift)}>{t('wall.confirm')}</button></>}
+          {panel === 'gifts' && <><h2 className="text-xl font-bold">{t('wall.gift')}</h2><p>{t('wall.balance')}: {store.balance}</p><div className="wall-gift-picker grid grid-cols-2 gap-3 sm:grid-cols-3">{store.gifts.map(g => <button key={g.id} aria-pressed={selected?.id === g.id} disabled={busy || isSendingGift} className={`rounded-xl border p-3 ${selected?.id === g.id ? 'border-amber-500 bg-amber-50 text-gray-900' : ''}`} onClick={() => { setSelected(g); giftAttempt.current = requestKey(); }}><span className="block text-4xl">{g.emoji}</span><span className="block text-sm">{t(`wall.${giftKey(g.id)}`)}</span><b>{g.price.toLocaleString(i18n.language)} ◈</b><span className="block text-xs text-gray-500">{(g.price / 10).toLocaleString(i18n.language, { style: 'currency', currency: 'EGP' })}</span></button>)}</div>
+            {selected?.id === 'flag' && <select aria-label={t('wall.flag')} disabled={busy || isSendingGift} className={field} value={flag} onChange={e => { setFlag(e.target.value); giftAttempt.current = requestKey(); }}>{countries.map(c => <option key={c.code} value={c.code}>{flagEmoji(c.code)} {c.name}</option>)}</select>}
+            {selected && <><p>{t('wall.confirmGift', { gift: t(`wall.${giftKey(selected.id)}`), price: selected.price })}</p><button disabled={busy || isSendingGift} className={`${button} ${primary} inline-flex items-center gap-2`} onClick={sendGift}>{isSendingGift && <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}{t(isSendingGift ? 'wall.working' : 'wall.confirm')}</button></>}
             <p className="text-xs text-gray-500">{t('wall.appreciation')}</p></>}
           {panel === 'store' && (() => {
             const parsedQty = Number(quantity);

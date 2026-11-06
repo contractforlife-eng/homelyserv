@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import crypto from 'node:crypto';
 import { authenticate } from '../middleware/auth.js';
 import { WallContent, WallWallet, WallEntry, WallLike, WallReport, WallBlock, WallSettings } from '../models/Wall.js';
 import { wallGifts, sweepWalletExpirations } from '../services/wallService.js';
@@ -42,7 +43,10 @@ async function serialize(rows, userId) {
   const authorIds = [...new Set(rows.map(row => row.authorId))];
   const [authors, wallets, likes, gifts, comments, roles] = await Promise.all([
     resolveMarketplaceSellerSummaries(authorIds), WallWallet.find({ _id: { $in: authorIds } }).lean(),
-    WallLike.aggregate([{ $match: { postId: { $in: ids } } }, { $group: { _id: '$postId', count: { $sum: 1 }, mine: { $max: { $cond: [{ $eq: ['$userId', userId] }, 1, 0] } } } }]),
+    WallLike.aggregate([
+      { $match: { postId: { $in: ids } } },
+      { $group: { _id: '$postId', count: { $sum: 1 }, mine: { $max: { $cond: [{ $eq: ['$userId', userId] }, 1, 0] } } } }
+    ]),
     WallEntry.aggregate([{ $match: { postId: { $in: ids }, type: 'GIFT' } }, { $group: { _id: '$postId', count: { $sum: 1 } } }]),
     WallContent.aggregate([{ $match: { postId: { $in: ids }, hidden: false, deleted: false } }, { $group: { _id: '$postId', count: { $sum: 1 } } }]),
     User.find({ _id: { $in: authorIds.filter(v => /^[a-f\d]{24}$/i.test(v)) } }).select('_id role profileImage').lean(),
@@ -179,6 +183,38 @@ async function createContent(req, res) {
   const text = validateWallText(req.body.text, !!req.file);
   // A comment is either text OR one image, as specified.
   if (parent && text && req.file) fail('TEXT_OR_IMAGE');
+
+  // Compute canonical payload fingerprint
+  const incomingParentId = parent ? String(parent._id) : '';
+  const incomingImageHash = req.file ? crypto.createHash('sha256').update(req.file.buffer).digest('hex') : '';
+  const canonicalPayload = `${incomingParentId}:${String(text || '').trim()}:${incomingImageHash}`;
+  const payloadHash = crypto.createHash('sha256').update(canonicalPayload).digest('hex');
+
+  // Idempotency support for retries
+  const rawMutationId = req.get('Idempotency-Key') || req.body.clientMutationId;
+  const clientMutationId = (typeof rawMutationId === 'string' && /^[a-z\d_-]{8,100}$/i.test(rawMutationId))
+    ? rawMutationId.trim()
+    : null;
+
+  if (clientMutationId) {
+    const existing = await WallContent.findOne({ authorId: String(req.userId), clientMutationId }).lean();
+    if (existing) {
+      // Validate that mutation key reuse matches the canonical payload fingerprint
+      const existingParent = existing.postId ? String(existing.postId) : '';
+      const existingImageHash = existing.image?.hash || '';
+      const existingCanonical = `${existingParent}:${String(existing.text || '').trim()}:${existingImageHash}`;
+      const existingPayloadHash = existing.payloadHash || crypto.createHash('sha256').update(existingCanonical).digest('hex');
+
+      if (existingPayloadHash !== payloadHash) {
+        fail('MUTATION_KEY_CONFLICT', 409);
+      }
+      return res.status(200).json({
+        reused: true,
+        content: (await serialize([existing], String(req.userId)))[0]
+      });
+    }
+  }
+
   if (req.file) {
     if (detectMarketplaceImageType(req.file.buffer) !== req.file.mimetype) fail('INVALID_IMAGE');
     try { uploaded = await uploadFromBuffer(req.file.buffer, { folder: 'homelyserv/wall', resource_type: 'image', transformation: [{ width: 1600, height: 1600, crop: 'limit' }] }); }
@@ -187,11 +223,34 @@ async function createContent(req, res) {
   }
   try {
     const item = await WallContent.create({ authorId: String(req.userId), postId: parent?._id || null, text,
+      clientMutationId,
+      payloadHash,
       notificationRecipientId: parent && parent.authorId !== String(req.userId) ? parent.authorId : null,
-      ...(uploaded ? { image: { url: uploaded.secure_url, publicId: uploaded.public_id } } : {}) });
+      ...(uploaded ? { image: { url: uploaded.secure_url, publicId: uploaded.public_id, hash: incomingImageHash } } : {}) });
     if (parent) reconcileWallNotifications().catch(() => {});
     res.status(201).json({ content: (await serialize([item.toObject()], String(req.userId)))[0] });
-  } catch (error) { if (uploaded) await deleteMarketplaceImage(uploaded.public_id).catch(() => {}); throw error; }
+  } catch (error) {
+    if (error.code === 11000 && clientMutationId) {
+      if (uploaded) await deleteMarketplaceImage(uploaded.public_id).catch(() => {});
+      const existing = await WallContent.findOne({ authorId: String(req.userId), clientMutationId }).lean();
+      if (existing) {
+        const existingParent = existing.postId ? String(existing.postId) : '';
+        const existingImageHash = existing.image?.hash || '';
+        const existingCanonical = `${existingParent}:${String(existing.text || '').trim()}:${existingImageHash}`;
+        const existingPayloadHash = existing.payloadHash || crypto.createHash('sha256').update(existingCanonical).digest('hex');
+
+        if (existingPayloadHash !== payloadHash) {
+          fail('MUTATION_KEY_CONFLICT', 409);
+        }
+        return res.status(200).json({
+          reused: true,
+          content: (await serialize([existing], String(req.userId)))[0]
+        });
+      }
+    }
+    if (uploaded) await deleteMarketplaceImage(uploaded.public_id).catch(() => {});
+    throw error;
+  }
 }
 router.post('/posts', upload, wrap(createContent));
 router.post('/posts/:id/comments', upload, wrap(createContent));
@@ -199,11 +258,44 @@ router.put('/posts/:id/like', wrap(async (req, res) => {
   const post = await visible(req, req.params.id);
   if (post.postId) fail('INVALID_POST');
   if (typeof req.body.liked !== 'boolean') fail('INVALID_LIKE');
-  const filter = { postId: post._id, userId: String(req.userId) };
-  if (req.body.liked) {
-    try { await WallLike.updateOne(filter, { $setOnInsert: filter }, { upsert: true }); } catch (error) { if (error.code !== 11000) throw error; }
-  } else await WallLike.deleteOne(filter);
-  res.json({ success: true });
+  const userId = String(req.userId);
+  const postId = post._id;
+  const filter = { postId, userId };
+
+  // Server-managed compare-and-set revision model
+  const existing = await WallLike.findOne(filter).lean();
+  const currentVersion = existing?.version || 0;
+  const targetLiked = req.body.liked;
+
+  if (targetLiked) {
+    if (!existing) {
+      try {
+        await WallLike.create({ userId, postId, version: 1 });
+      } catch (err) {
+        if (err.code === 11000) {
+          // Record was inserted concurrently: update version
+          await WallLike.updateOne(filter, { $inc: { version: 1 } });
+        } else throw err;
+      }
+    } else {
+      await WallLike.updateOne(filter, { $inc: { version: 1 } });
+    }
+  } else {
+    if (existing) {
+      // CAS deletion: delete only if version matches what we observed
+      const deleted = await WallLike.deleteOne({ postId, userId, version: currentVersion });
+      if (deleted.deletedCount === 0) {
+        // Concurrent update occurred in the meantime; re-evaluate
+        const latest = await WallLike.findOne(filter).lean();
+        if (latest) {
+          await WallLike.deleteOne({ postId, userId, version: latest.version });
+        }
+      }
+    }
+  }
+
+  const finalRecord = await WallLike.findOne(filter).lean();
+  res.json({ success: true, liked: !!finalRecord, version: finalRecord?.version || 0 });
 }));
 router.post('/posts/:id/gifts', wrap(async (req, res) => {
   const userId = String(req.userId);
@@ -286,7 +378,9 @@ router.post('/posts/:id/gifts', wrap(async (req, res) => {
     emitToUser(entry.recipientId, 'wall:gift', receipt);
     reconcileWallNotifications().catch(() => {});
   }
-  res.json({ success: true, reused, receipt });
+  const currentWallet = await WallWallet.findById(userId).lean();
+  const spendable = currentWallet ? getSpendableBalance(currentWallet, new Date()) : 0;
+  res.json({ success: true, reused, receipt, balance: spendable });
 }));
 router.delete('/content/:id', wrap(async (req, res) => {
   const content = await WallContent.findById(id(req.params.id));
