@@ -57,6 +57,7 @@ import publicProfilesRoutes from './routes/publicProfiles.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import wallRoutes from './routes/wall.js';
 import { startWallNotificationWorker } from './services/wallNotificationService.js';
+import { startWallExpiryWorker } from './services/wallExpiryWorker.js';
 import { ensureMarketplaceIndexes } from './models/MarketplaceListing.js';
 import { requireAdmin } from './middleware/auth.js';
 import { getHomelyMindIntegrationSecret } from './config/homelyMindIntegration.js';
@@ -194,6 +195,7 @@ mongoose.connect(MONGODB_URI)
     startPushOutboxWorker();
     startActionNotificationReconciliationWorker();
     startWallNotificationWorker();
+    startWallExpiryWorker();
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);

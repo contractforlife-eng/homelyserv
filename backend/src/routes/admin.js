@@ -47,6 +47,7 @@ import {
   updateDoctorVerification,
   getDoctorVerificationDocument
 } from '../controllers/doctorVerificationController.js';
+import { getMemberWallWallet, adjustMemberWalletByAdmin } from '../services/wallService.js';
 
 const router = express.Router();
 
@@ -201,10 +202,11 @@ router.get('/users/:id', async (req, res) => {
       verification
     };
     const enrichedUser = await attachTeacherStudentView(baseUser);
+    const wallWallet = await getMemberWallWallet(user._id).catch(() => null);
 
     res.json({
       success: true,
-      user: enrichedUser
+      user: { ...enrichedUser, wallWallet }
     });
   } catch (error) {
     console.error('Get user error:', error);
@@ -2449,5 +2451,60 @@ router.get('/accounting', listAccountingEntries);
 router.post('/accounting', createAccountingEntry);
 router.patch('/accounting/:id', updateAccountingEntry);
 router.delete('/accounting/:id', deleteAccountingEntry);
+
+
+// ============================================================
+// CO-ADMIN DINAR WALLET MANAGEMENT
+// Strictly role-checked for ADMIN (Co-Admin). Never open to Support/Helper.
+// ============================================================
+router.get('/users/:id/wall-wallet', async (req, res) => {
+  try {
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Co-Admin authorization required' });
+    }
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    const userExists = await User.exists({ _id: req.params.id });
+    if (!userExists) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const wallet = await getMemberWallWallet(req.params.id);
+    return res.json({ success: true, wallet });
+  } catch (error) {
+    console.error('Get member wall wallet error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to get wallet' });
+  }
+});
+
+router.post('/users/:id/wall-wallet/adjust', async (req, res) => {
+  try {
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Co-Admin authorization required' });
+    }
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    const user = await User.findById(req.params.id).select('_id fullName email role');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const idempotencyKey = req.get('Idempotency-Key') || req.body.idempotencyKey;
+    const result = await adjustMemberWalletByAdmin({
+      adminId: req.userId,
+      adminRole: req.userRole,
+      targetUserId: req.params.id,
+      action: req.body.action,
+      quantity: req.body.quantity,
+      reason: req.body.reason,
+      idempotencyKey,
+    });
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Adjust member wall wallet error:', error);
+    const status = error.status || (error.message === 'INSUFFICIENT_BALANCE' ? 409 : 500);
+    return res.status(status).json({ success: false, code: error.message, message: error.message });
+  }
+});
 
 export default router;

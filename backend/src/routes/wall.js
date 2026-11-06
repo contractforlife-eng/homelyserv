@@ -2,7 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { authenticate } from '../middleware/auth.js';
 import { WallContent, WallWallet, WallEntry, WallLike, WallReport, WallBlock, WallSettings } from '../models/Wall.js';
-import { wallGifts } from '../services/wallService.js';
+import { wallGifts, sweepWalletExpirations } from '../services/wallService.js';
+import { ensureWalletLotsReconstructed } from '../services/wallLotReconstruction.js';
+import { getSpendableBalance, getUpcomingExpiringLots, planLotDeduction, sweepExpiredLots } from '../utils/dinarExpiry.js';
 import { buildWallFeedFilter } from '../utils/wallFeed.js';
 import { wallCrown, validateWallText, MIN_WALL_GIFT_PRICE, DEFAULT_WALL_GIFTS } from '../config/wall.js';
 import { marketplaceImageUpload, detectMarketplaceImageType, deleteMarketplaceImage } from '../utils/marketplaceImageUpload.js';
@@ -56,27 +58,87 @@ async function serialize(rows, userId) {
   });
 }
 router.get('/store', wrap(async (req, res) => {
+  const now = new Date();
   const wallet = await WallWallet.findById(String(req.userId)).lean();
-  res.json({ gifts: await wallGifts(), balance: wallet?.balance || 0, crown: wallCrown(wallet?.receivedGifts || 0), dinarPriceEGP: 0.1 });
+  const balance = getSpendableBalance(wallet, now);
+  const upcomingExpiring = getUpcomingExpiringLots(wallet, now);
+  res.json({
+    gifts: await wallGifts(),
+    balance,
+    upcomingExpiring,
+    crown: wallCrown(wallet?.receivedGifts || 0),
+    dinarPriceEGP: 0.1,
+    validityNotice: 'Purchased dinars are valid for one calendar month from the payment date.',
+  });
 }));
 router.get('/history', wrap(async (req, res) => {
   const userId = String(req.userId);
+  const now = new Date();
+
+  // Trigger lazy sweep of any newly expired lots for this user if needed
+  const preCheckWallet = await WallWallet.findById(userId).lean();
+  if (preCheckWallet?.lots && Array.isArray(preCheckWallet.lots)) {
+    const sweep = sweepExpiredLots(preCheckWallet.lots, now);
+    if (sweep.hasExpiredLots) {
+      await sweepWalletExpirations(userId, now).catch(() => {});
+    }
+  }
+
   const filter = { $or: [{ userId }, { recipientId: userId }] };
   if (req.query.before) filter._id = { $lt: new mongoose.Types.ObjectId(id(req.query.before)) };
   const [rows, totals, wallet] = await Promise.all([
     WallEntry.find(filter).sort({ _id: -1 }).limit(21).lean(),
     WallEntry.aggregate([{ $match: { $or: [{ userId }, { recipientId: userId }] } }, { $group: { _id: null,
       purchased: { $sum: { $cond: [{ $eq: ['$type', 'PURCHASE'] }, '$quantity', 0] } },
+      granted: { $sum: { $cond: [{ $and: [{ $eq: ['$type', 'ADMIN_GRANT'] }, { $eq: ['$userId', userId] }] }, '$quantity', 0] } },
+      deducted: { $sum: { $cond: [{ $and: [{ $eq: ['$type', 'ADMIN_DEDUCTION'] }, { $eq: ['$userId', userId] }] }, '$quantity', 0] } },
+      expired: { $sum: { $cond: [{ $and: [{ $eq: ['$type', 'EXPIRED'] }, { $eq: ['$userId', userId] }] }, '$quantity', 0] } },
       spent: { $sum: { $cond: [{ $and: [{ $eq: ['$type', 'GIFT'] }, { $eq: ['$userId', userId] }] }, '$quantity', 0] } },
       received: { $sum: { $cond: [{ $eq: ['$recipientId', userId] }, 1, 0] } } } }]),
     WallWallet.findById(userId).lean(),
   ]);
   const peers = await User.find({ _id: { $in: [...new Set(rows.flatMap(e => [e.userId, e.recipientId]).filter(v => /^[a-f\d]{24}$/i.test(v || '')))] } }).select('_id fullName').lean();
-  const entries = rows.slice(0, 20).map(e => ({ _id: e._id, type: e.type, userId: e.userId, recipientId: e.recipientId,
-    quantity: e.quantity, giftId: e.giftId, giftEmoji: e.giftEmoji || DEFAULT_WALL_GIFTS.find(g => g.id === e.giftId)?.emoji,
+  const entries = rows.slice(0, 20).map(e => ({
+    _id: e._id,
+    type: e.type,
+    userId: e.userId,
+    recipientId: e.recipientId,
+    quantity: e.quantity,
+    giftId: e.giftId,
+    giftEmoji: e.giftEmoji || DEFAULT_WALL_GIFTS.find(g => g.id === e.giftId)?.emoji,
     peerName: peers.find(p => String(p._id) === (e.recipientId === userId ? e.userId : e.recipientId))?.fullName || '',
-    createdAt: e.createdAt, postId: e.postId }));
-  res.json({ entries, summary: { balance: wallet?.balance || 0, purchased: totals[0]?.purchased || 0, spent: totals[0]?.spent || 0, received: totals[0]?.received || 0 }, next: rows.length > 20 ? String(rows[19]._id) : null });
+    createdAt: e.createdAt,
+    postId: e.postId,
+    lotId: e.lotId,
+    expiresAt: e.expiresAt,
+    reason: e.reason,
+    actorRole: e.actorRole,
+  }));
+  const balance = getSpendableBalance(wallet, now);
+  const upcomingExpiring = getUpcomingExpiringLots(wallet, now);
+  res.json({
+    entries,
+    lots: (wallet?.lots || []).map(l => ({
+      lotId: l.lotId,
+      type: l.type,
+      originalQuantity: l.originalQuantity,
+      remainingQuantity: l.remainingQuantity,
+      acquiredAt: l.acquiredAt,
+      expiresAt: l.expiresAt,
+      isExpired: l.expiresAt ? new Date(l.expiresAt).getTime() <= now.getTime() : false,
+    })),
+    summary: {
+      balance,
+      purchased: totals[0]?.purchased || 0,
+      granted: totals[0]?.granted || 0,
+      deducted: totals[0]?.deducted || 0,
+      expired: totals[0]?.expired || 0,
+      spent: totals[0]?.spent || 0,
+      received: totals[0]?.received || 0,
+      upcomingExpiring,
+    },
+    next: rows.length > 20 ? String(rows[19]._id) : null,
+  });
 }));
 router.get('/gifts/inbox', wrap(async (req, res) => {
   const filter = { recipientId: String(req.userId), type: 'GIFT', animationSeenAt: null };
@@ -166,8 +228,46 @@ router.post('/posts/:id/gifts', wrap(async (req, res) => {
       const post = await visible(req, postId, session);
       if (post.postId) fail('INVALID_POST');
       if (post.authorId === userId) fail('SELF_GIFT');
-      const debit = await WallWallet.updateOne({ _id: userId, balance: { $gte: gift.price } }, { $inc: { balance: -gift.price } }, { session });
-      if (!debit.modifiedCount) fail('INSUFFICIENT_BALANCE', 409);
+
+      const now = new Date();
+      // Ensure lots are reconstructed from verified entries before debiting
+      let wallet = await ensureWalletLotsReconstructed(userId, session, now);
+      if (!wallet) fail('INSUFFICIENT_BALANCE', 409);
+
+      // Deduct lots FIFO (earliest-expiring valid lots first), excluding expired
+      if (Array.isArray(wallet.lots) && wallet.lots.length > 0) {
+        let deduction;
+        try {
+          deduction = planLotDeduction(wallet.lots, gift.price, now);
+        } catch (planError) {
+          if (planError.message === 'INSUFFICIENT_BALANCE') fail('INSUFFICIENT_BALANCE', 409);
+          throw planError;
+        }
+
+        // Record any lots discovered expired in ledger
+        for (const exp of deduction.expiredLots) {
+          const expKey = `expired:${userId}:${exp.lotId}`;
+          if (!await WallEntry.exists({ key: expKey }).session(session)) {
+            await WallEntry.create([{
+              key: expKey,
+              type: 'EXPIRED',
+              userId,
+              quantity: exp.quantity,
+              lotId: exp.lotId,
+              expiresAt: exp.expiresAt,
+            }], { session });
+          }
+        }
+
+        wallet.lots = deduction.updatedLots;
+        wallet.balance = deduction.spendableAfter;
+        await wallet.save({ session });
+      } else {
+        // Fallback for unmigrated legacy wallet
+        const debit = await WallWallet.updateOne({ _id: userId, balance: { $gte: gift.price } }, { $inc: { balance: -gift.price } }, { session });
+        if (!debit.modifiedCount) fail('INSUFFICIENT_BALANCE', 409);
+      }
+
       await WallEntry.create([{ key, type: 'GIFT', userId, recipientId: post.authorId, postId, giftId: gift.id, flag, giftEmoji: gift.id === 'flag' ? [...flag].map(c => String.fromCodePoint(127397 + c.charCodeAt(0))).join('') : gift.emoji, quantity: gift.price }], { session });
       await WallWallet.updateOne({ _id: post.authorId }, { $inc: { receivedGifts: 1 } }, { upsert: true, session });
       reused = false;

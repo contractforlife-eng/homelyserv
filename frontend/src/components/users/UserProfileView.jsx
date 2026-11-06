@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   Briefcase,
   CreditCard,
+  Coins,
   MessageCircle,
   Shield,
   Loader2,
@@ -99,6 +100,14 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [premiumEndDate, setPremiumEndDate] = useState('');
   const [premiumActionLoading, setPremiumActionLoading] = useState(false);
+  // Co-Admin Dinar Wallet management state
+  const [dinarModalOpen, setDinarModalOpen] = useState(false);
+  const [dinarAction, setDinarAction] = useState('GRANT'); // 'GRANT' | 'DEDUCT'
+  const [dinarQuantity, setDinarQuantity] = useState('');
+  const [dinarReason, setDinarReason] = useState('');
+  const [dinarConfirmOpen, setDinarConfirmOpen] = useState(false);
+  const [dinarActionLoading, setDinarActionLoading] = useState(false);
+  const [dinarActionError, setDinarActionError] = useState(null);
 
   // ============================================================
   // LOAD PROFILE + STATS (read-only; never mutates auth state)
@@ -281,6 +290,62 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       setNotification({ type: 'error', text: error.response?.data?.message || t.errors?.updateStatus || 'Failed to activate premium' });
     } finally {
       setPremiumActionLoading(false);
+    }
+  };
+
+  const handleOpenDinarAdjustment = (action) => {
+    setDinarAction(action);
+    setDinarQuantity('');
+    setDinarReason('');
+    setDinarActionError(null);
+    setDinarModalOpen(true);
+  };
+
+  const handlePrepareDinarConfirm = (e) => {
+    e?.preventDefault();
+    const qty = Number(dinarQuantity);
+    if (!Number.isSafeInteger(qty) || qty <= 0) {
+      setDinarActionError(i18nT('wall.invalidQuantity'));
+      return;
+    }
+    if (!dinarReason.trim() || dinarReason.trim().length < 3) {
+      setDinarActionError(i18nT('wall.adjustmentReason') + ' (min 3 chars)');
+      return;
+    }
+    const currentBalance = profileUser?.wallWallet?.balance || 0;
+    if (dinarAction === 'DEDUCT' && qty > currentBalance) {
+      setDinarActionError(i18nT('wall.insufficientBalanceForDeduction'));
+      return;
+    }
+    setDinarActionError(null);
+    setDinarConfirmOpen(true);
+  };
+
+  const handleExecuteDinarAdjustment = async () => {
+    setDinarActionLoading(true);
+    setDinarActionError(null);
+    const idempotencyKey = 'adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    try {
+      const res = await api.post(`/api/admin/users/${userId}/wall-wallet/adjust`, {
+        action: dinarAction,
+        quantity: Number(dinarQuantity),
+        reason: dinarReason.trim(),
+        idempotencyKey,
+      }, {
+        headers: { 'Idempotency-Key': idempotencyKey }
+      });
+      if (res.data?.success) {
+        setNotification({ type: 'success', text: i18nT('wall.adjustmentSuccess') });
+        setDinarConfirmOpen(false);
+        setDinarModalOpen(false);
+        await loadUser();
+      }
+    } catch (err) {
+      console.error('Dinar adjustment error:', err);
+      const msg = err.response?.data?.message || err.message || i18nT('wall.adjustmentFailed');
+      setDinarActionError(msg);
+    } finally {
+      setDinarActionLoading(false);
     }
   };
 
@@ -756,6 +821,194 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               )}
             </div>
           </div>}
+
+          {/* CO-ADMIN DINAR WALLET MANAGEMENT */}
+          {isAdmin && authUser?.role === 'ADMIN' && (
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Coins size={18} className="text-amber-500" />
+                    {i18nT('wall.coAdminWallet')}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {i18nT('wall.walletNote')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDinarAdjustment('GRANT')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-sm transition"
+                  >
+                    + {i18nT('wall.addDinars')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDinarAdjustment('DEDUCT')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 shadow-sm transition"
+                  >
+                    − {i18nT('wall.deductDinars')}
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{i18nT('wall.balance')}</p>
+                  <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">
+                    {(profileUser?.wallWallet?.balance || 0).toLocaleString(i18n.language)} <span className="text-sm font-semibold text-amber-500">◈</span>
+                  </p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{i18nT('wall.receivedGift')}</p>
+                  <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">
+                    {(profileUser?.wallWallet?.receivedGifts || 0).toLocaleString(i18n.language)} 🎁
+                  </p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{i18nT('wall.upcomingExpiryTitle')}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-1">
+                    {profileUser?.wallWallet?.upcomingExpiring?.length > 0
+                      ? i18nT('wall.upcomingExpiryNotice', {
+                          quantity: profileUser.wallWallet.upcomingExpiring[0].remainingQuantity.toLocaleString(i18n.language),
+                          date: new Date(profileUser.wallWallet.upcomingExpiring[0].expiresAt).toLocaleDateString(i18n.language, { dateStyle: 'medium' })
+                        })
+                      : i18nT('wall.nonExpiring')}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* DINAR ADJUSTMENT MODAL */}
+          {dinarModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-md w-full p-6 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+                  <h4 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Coins size={18} className="text-amber-500" />
+                    {dinarAction === 'GRANT' ? i18nT('wall.addDinars') : i18nT('wall.deductDinars')}
+                  </h4>
+                  <button type="button" onClick={() => setDinarModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={handlePrepareDinarConfirm} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      {i18nT('wall.dinarQuantityLabel')}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000000"
+                      step="1"
+                      required
+                      value={dinarQuantity}
+                      placeholder={i18nT('wall.adjustmentQuantityPlaceholder')}
+                      onChange={(e) => setDinarQuantity(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      {i18nT('wall.adjustmentReason')}
+                    </label>
+                    <textarea
+                      rows="3"
+                      required
+                      minLength="3"
+                      maxLength="500"
+                      value={dinarReason}
+                      placeholder={i18nT('wall.adjustmentReasonPlaceholder')}
+                      onChange={(e) => setDinarReason(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  {dinarActionError && (
+                    <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800 flex items-center gap-2">
+                      <AlertTriangle size={14} className="flex-shrink-0" />
+                      <span>{dinarActionError}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => setDinarModalOpen(false)}
+                      className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                    >
+                      {i18nT('wall.cancel')}
+                    </button>
+                    <button
+                      type="submit"
+                      className={`px-4 py-1.5 text-xs font-semibold text-white rounded-lg shadow-sm transition ${
+                        dinarAction === 'GRANT'
+                          ? 'bg-emerald-600 hover:bg-emerald-700'
+                          : 'bg-rose-600 hover:bg-rose-700'
+                      }`}
+                    >
+                      {i18nT('wall.confirm')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* DINAR CONFIRMATION DIALOG */}
+          {dinarConfirmOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="alertdialog" aria-modal="true">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-w-sm w-full p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-full ${dinarAction === 'GRANT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400'}`}>
+                    <Coins size={22} />
+                  </div>
+                  <h4 className="text-base font-bold text-gray-900 dark:text-white">
+                    {i18nT('wall.confirmAdjustmentTitle')}
+                  </h4>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {i18nT('wall.confirmAdjustmentMessage', {
+                    action: dinarAction === 'GRANT' ? i18nT('wall.addDinars') : i18nT('wall.deductDinars'),
+                    quantity: Number(dinarQuantity).toLocaleString(i18n.language),
+                    name: profileUser?.fullName || profileUser?.email || i18nT('wall.member'),
+                    balance: (dinarAction === 'GRANT'
+                      ? (profileUser?.wallWallet?.balance || 0) + Number(dinarQuantity)
+                      : Math.max(0, (profileUser?.wallWallet?.balance || 0) - Number(dinarQuantity))
+                    ).toLocaleString(i18n.language)
+                  })}
+                </p>
+                {dinarActionError && (
+                  <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                    {dinarActionError}
+                  </div>
+                )}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    type="button"
+                    disabled={dinarActionLoading}
+                    onClick={() => setDinarConfirmOpen(false)}
+                    className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  >
+                    {i18nT('wall.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={dinarActionLoading}
+                    onClick={handleExecuteDinarAdjustment}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white rounded-lg shadow-sm transition disabled:opacity-50 ${
+                      dinarAction === 'GRANT'
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-rose-600 hover:bg-rose-700'
+                    }`}
+                  >
+                    {dinarActionLoading && <Loader2 size={12} className="animate-spin" />}
+                    {i18nT('wall.confirm')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* READ-ONLY PAYMENT / TRANSACTION HISTORY */}
           {isAdmin && <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">

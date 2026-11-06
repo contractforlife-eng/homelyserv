@@ -547,8 +547,11 @@ export default function Wall() {
                       </button>
                     </div>
 
-                    {/* Currency rate notice & non-cash disclaimer */}
+                    {/* Currency rate notice, 1-month validity disclosure & non-cash disclaimer */}
                     <div className="space-y-1.5 text-center">
+                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        ⏳ {t('wall.validityDisclosure')}
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                         {t('wall.rateNotice')}
                       </p>

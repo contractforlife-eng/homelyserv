@@ -37,15 +37,22 @@ test('DINAR_PURCHASE fulfillment and retry verification', async (t) => {
 
   WallWallet.updateOne = async (filter, update) => {
     const id = String(filter._id);
-    const current = wallets.get(id) || { _id: id, balance: 0, receivedGifts: 0 };
+    const current = wallets.get(id) || { _id: id, balance: 0, receivedGifts: 0, lots: [] };
     if (update.$inc?.balance) {
       current.balance += update.$inc.balance;
+    }
+    if (update.$set?.balance != null) {
+      current.balance = update.$set.balance;
+    }
+    if (update.$set?.lots) {
+      current.lots = update.$set.lots;
     }
     wallets.set(id, current);
     return { acknowledged: true, modifiedCount: 1 };
   };
 
   WallWallet.findById = (id) => ({
+    session: function() { return this; },
     lean: async () => wallets.get(String(id)) || null,
     then: (resolve) => resolve(wallets.get(String(id)) || null)
   });
@@ -195,5 +202,43 @@ test('DINAR_PURCHASE fulfillment and retry verification', async (t) => {
     assert.equal(lastPrismaUpdate.data.fulfillmentStatus, 'fulfilled');
     assert.equal(lastPrismaUpdate.data.fulfillmentError, null);
   });
+
+  await t.test('5. Delayed fulfillment uses payment completion date, preserving original expiry (regression test)', async () => {
+    const delayedPaymentId = '507f1f77bcf86cd7994390dd';
+    const delayedUserId = '507f1f77bcf86cd7994390ee';
+
+    // Payment completed at T1 = 2026-05-10T10:00:00Z
+    const t1 = new Date('2026-05-10T10:00:00.000Z');
+    // Delayed fulfillment runs at T2 = 2026-05-25T15:00:00Z (15 days later)
+    const delayedPayment = {
+      id: delayedPaymentId,
+      transactionId: 'TX-DELAYED-789',
+      purpose: 'DINAR_PURCHASE',
+      status: 'completed',
+      completedAt: t1,
+      createdAt: t1,
+      userId: delayedUserId,
+      amount: 10,
+      currency: 'EGP',
+      metadata: { dinarQuantity: 100 }
+    };
+
+    await fulfillDinarPayment(delayedPayment);
+
+    const wallet = await WallWallet.findById(delayedUserId);
+    assert.ok(wallet.lots && wallet.lots.length === 1, 'Wallet must have exactly 1 lot');
+    const lot = wallet.lots[0];
+
+    // Acquired date must match T1 exactly
+    assert.equal(lot.acquiredAt.toISOString(), '2026-05-10T10:00:00.000Z', 'Lot acquiredAt must equal T1');
+    // Expiry must be T1 + 1 month (2026-06-10T10:00:00.000Z), NOT delayed execution time + 1 month
+    assert.equal(lot.expiresAt.toISOString(), '2026-06-10T10:00:00.000Z', 'Lot expiresAt must be exactly T1 + 1 calendar month');
+
+    // Also verify the WallEntry recorded expiresAt
+    const entry = entries.get(`purchase:${delayedPaymentId}`);
+    assert.ok(entry, 'WallEntry must exist');
+    assert.equal(entry.expiresAt.toISOString(), '2026-06-10T10:00:00.000Z');
+  });
 });
+
 
