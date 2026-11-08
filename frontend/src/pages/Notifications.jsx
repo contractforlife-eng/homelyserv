@@ -15,7 +15,9 @@ import {
   Briefcase,
   Shield,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Gift,
+  MessageSquare
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import {
@@ -169,6 +171,8 @@ const Notifications = () => {
       [NOTIFICATION_TYPES.NEW_HIRE]: t('notificationsPage.types.newHire'),
       [NOTIFICATION_TYPES.HIRE_ACCEPTED]: t('notificationsPage.types.hireAccepted'),
       [NOTIFICATION_TYPES.HIRE_REJECTED]: t('notificationsPage.types.hireRejected'),
+      [NOTIFICATION_TYPES.WALL_GIFT]: t('notificationsPage.types.wallGift'),
+      [NOTIFICATION_TYPES.WALL_COMMENT]: t('notificationsPage.types.wallComment'),
       [NOTIFICATION_TYPES.SYSTEM]: t('notificationsPage.types.system')
     };
     return labels[type] || t('notificationsPage.types.other');
@@ -189,6 +193,8 @@ const Notifications = () => {
     if (type === NOTIFICATION_TYPES.NEW_MESSAGE) return MessageCircle;
     if (type?.startsWith('PAYMENT')) return CreditCard;
     if (type?.startsWith('HIRE')) return Briefcase;
+    if (type === NOTIFICATION_TYPES.WALL_GIFT) return Gift;
+    if (type === NOTIFICATION_TYPES.WALL_COMMENT) return MessageSquare;
     if (type === NOTIFICATION_TYPES.SYSTEM) return Shield;
     return Bell;
   };

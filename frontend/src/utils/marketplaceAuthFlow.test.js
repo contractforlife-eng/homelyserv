@@ -6,7 +6,7 @@ const read = (relativePath) => readFileSync(new URL(relativePath, import.meta.ur
 
 test('shared marketplace links preserve the safe destination through supported authentication flows', () => {
   assert.match(read('../App.jsx'), /storeMarketplaceReturnPath/);
-  for (const page of ['../pages/Login.jsx', '../pages/VerifyEmail.jsx', '../pages/SocialOnboarding.jsx']) {
+  for (const page of ['../pages/Login.jsx', '../pages/VerifyEmail.jsx', '../pages/SocialOnboarding.jsx', '../components/SocialLogin.jsx']) {
     assert.match(read(page), /consumeMarketplaceReturnPath/, `${page} does not resume the listing destination`);
   }
 });

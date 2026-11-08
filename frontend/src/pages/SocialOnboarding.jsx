@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Briefcase, ChevronDown, Globe2, Phone, Save, User } from 'lucide-react';
+import { BookOpen, Briefcase, ChevronDown, Globe2, GraduationCap, Phone, Save, Shield, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
@@ -138,10 +138,19 @@ const SocialOnboarding = () => {
       const returnTo = consumeMarketplaceReturnPath();
       if (returnTo) {
         navigate(returnTo, { replace: true });
-      } else if (response.data.user.role?.toUpperCase() === 'EMPLOYER') {
-        navigate('/employer-dashboard', { replace: true });
       } else {
-        navigate('/worker-dashboard', { replace: true });
+        const role = response.data.user.role?.toUpperCase();
+        if (role === 'EMPLOYER') {
+          navigate('/employer-dashboard', { replace: true });
+        } else if (role === 'DOCTOR') {
+          navigate('/doctor-dashboard', { replace: true });
+        } else if (role === 'TEACHER') {
+          navigate('/teacher-dashboard', { replace: true });
+        } else if (role === 'STUDENT') {
+          navigate('/student-dashboard', { replace: true });
+        } else {
+          navigate('/worker-dashboard', { replace: true });
+        }
       }
     } catch (error) {
       setErrors({ general: error.response?.data?.message || error.message || t('registrationFailed') });
@@ -179,16 +188,71 @@ const SocialOnboarding = () => {
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('registerAs')} *</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => updateField('role', 'EMPLOYER')} className={`rounded-xl border-2 p-3 text-center flex flex-col items-center transition ${formData.role === 'EMPLOYER' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
-                  <User size={19} className="mb-1" />
-                  <span className="text-sm font-semibold">{t('serviceSeekerTitle')}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
+              <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => updateField('role', 'WORKER')}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'WORKER'
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <Briefcase size={20} className="mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('serviceProviderTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceProviderDesc')}</span>
                 </button>
-                <button type="button" onClick={() => updateField('role', 'WORKER')} className={`rounded-xl border-2 p-3 text-center flex flex-col items-center transition ${formData.role === 'WORKER' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
-                  <Briefcase size={19} className="mb-1" />
-                  <span className="text-sm font-semibold">{t('serviceProviderTitle')}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceProviderDesc')}</span>
+                <button
+                  type="button"
+                  onClick={() => updateField('role', 'EMPLOYER')}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'EMPLOYER'
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <User size={20} className="mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('serviceSeekerTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('serviceSeekerDesc')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField('role', 'DOCTOR')}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'DOCTOR'
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <Shield size={20} className="mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('doctorTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('doctorDesc')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField('role', 'TEACHER')}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'TEACHER'
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <GraduationCap size={20} className="mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('teacherTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('teacherDesc')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField('role', 'STUDENT')}
+                  className={`w-full sm:w-[calc(50%-0.4rem)] lg:w-[calc(33.333%-0.55rem)] p-2.5 sm:p-3 rounded-xl border-2 transition text-center flex flex-col items-center justify-center min-h-[105px] ${
+                    formData.role === 'STUDENT'
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <BookOpen size={20} className="mb-1 shrink-0" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('studentTitle')}</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t('studentDesc')}</span>
                 </button>
               </div>
               {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}

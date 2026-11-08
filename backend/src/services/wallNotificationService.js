@@ -22,7 +22,8 @@ export function wallNotificationPayload(kind, item, senderName, language = 'en')
 }
 
 let running = false;
-export async function reconcileWallNotifications() {
+export async function reconcileWallNotifications(options = {}) {
+  const notify = options.createNotification || createNotification;
   if (running) return;
   running = true;
   try {
@@ -32,12 +33,15 @@ export async function reconcileWallNotifications() {
     ]);
     for (const [kind, items, model] of [['GIFT', gifts, WallEntry], ['COMMENT', comments, WallContent]]) {
       for (const item of items) {
-        const recipientId = kind === 'GIFT' ? item.recipientId : item.notificationRecipientId;
-        const actorId = kind === 'GIFT' ? item.userId : item.authorId;
+        const recipientId = kind === 'GIFT' ? (item.recipientId ? String(item.recipientId) : '') : (item.notificationRecipientId ? String(item.notificationRecipientId) : '');
+        const actorId = kind === 'GIFT' ? (item.userId ? String(item.userId) : '') : (item.authorId ? String(item.authorId) : '');
         if (!recipientId || recipientId === actorId) { await model.updateOne({ _id: item._id }, { $set: { notificationHandedOff: true } }); continue; }
         try {
-          const [sender, recipient] = await Promise.all([User.findById(actorId).select('fullName').lean(), User.findById(recipientId).select('language').lean()]);
-          const notification = await createNotification(recipientId, wallNotificationPayload(kind, item, sender?.fullName || 'HomelyServ', recipient?.language));
+          const [sender, recipient] = await Promise.all([
+            User.findById(actorId).select('fullName').lean().catch(() => null),
+            User.findById(recipientId).select('language').lean().catch(() => null)
+          ]);
+          const notification = await notify(recipientId, wallNotificationPayload(kind, item, sender?.fullName || 'HomelyServ', recipient?.language));
           if (notification) await model.updateOne({ _id: item._id }, { $set: { notificationHandedOff: true } });
         } catch (error) { console.error('Wall notification retry pending:', error.name); }
       }

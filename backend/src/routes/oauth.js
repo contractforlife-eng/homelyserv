@@ -277,7 +277,7 @@ router.post('/social-onboarding/complete', async (req, res) => {
     }
 
     const normalizedRole = typeof role === 'string' ? role.trim().toUpperCase() : '';
-    if (!['EMPLOYER', 'WORKER'].includes(normalizedRole)) {
+    if (!['WORKER', 'EMPLOYER', 'DOCTOR', 'TEACHER', 'STUDENT'].includes(normalizedRole)) {
       return res.status(400).json({ success: false, message: 'Please select a valid account role' });
     }
 

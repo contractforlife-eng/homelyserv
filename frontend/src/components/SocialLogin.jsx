@@ -7,6 +7,7 @@ import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import { useTranslation } from 'react-i18next';
 import NativeGoogleLogin from './mobile/NativeGoogleLogin';
+import { consumeMarketplaceReturnPath } from '../utils/safeReturnPath';
 
 const FACEBOOK_APP_ID = '1813816306257010';
 const FACEBOOK_LOGIN_ENABLED = false;
@@ -95,16 +96,30 @@ export default function SocialLogin({ onLoginSuccess }) {
           onLoginSuccess(data.user);
         }
         
+        const returnTo = consumeMarketplaceReturnPath();
+        if (returnTo) {
+          navigate(returnTo);
+          return;
+        }
+
         // Redirect based on role
         const role = data.user.role?.toUpperCase();
         if (role === 'EMPLOYER') {
           navigate('/employer-dashboard');
-        } else if (role === 'WORKER') {
-          navigate('/worker-dashboard');
+        } else if (role === 'DOCTOR') {
+          navigate('/doctor-dashboard');
+        } else if (role === 'TEACHER') {
+          navigate('/teacher-dashboard');
+        } else if (role === 'STUDENT') {
+          navigate('/student-dashboard');
         } else if (role === 'ADMIN') {
           navigate('/admin');
+        } else if (role === 'SUPPORT') {
+          navigate('/support-dashboard');
+        } else if (role === 'SUPPORT_HELPER') {
+          navigate('/sup-help');
         } else {
-          navigate('/employer-dashboard');
+          navigate('/worker-dashboard');
         }
       } else {
         toast.error(data.message || t('socialLoginError'));
@@ -145,15 +160,29 @@ export default function SocialLogin({ onLoginSuccess }) {
         onLoginSuccess(data.user);
       }
 
+      const returnTo = consumeMarketplaceReturnPath();
+      if (returnTo) {
+        navigate(returnTo);
+        return;
+      }
+
       const role = data.user.role?.toUpperCase();
       if (role === 'EMPLOYER') {
         navigate('/employer-dashboard');
-      } else if (role === 'WORKER') {
-        navigate('/worker-dashboard');
+      } else if (role === 'DOCTOR') {
+        navigate('/doctor-dashboard');
+      } else if (role === 'TEACHER') {
+        navigate('/teacher-dashboard');
+      } else if (role === 'STUDENT') {
+        navigate('/student-dashboard');
       } else if (role === 'ADMIN') {
         navigate('/admin');
+      } else if (role === 'SUPPORT') {
+        navigate('/support-dashboard');
+      } else if (role === 'SUPPORT_HELPER') {
+        navigate('/sup-help');
       } else {
-        navigate('/employer-dashboard');
+        navigate('/worker-dashboard');
       }
     } else {
       toast.error(data.message || t('socialLoginError'));
