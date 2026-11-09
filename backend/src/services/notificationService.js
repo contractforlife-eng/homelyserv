@@ -147,7 +147,7 @@ export const createNotification = async (userId, {
             icon: icon || defaults.icon || '🔔',
             link: link || '/',
             eventKey: cleanEventKey,
-            createdAt: new Date(),
+            createdAt: { $date: new Date().toISOString() },
           },
         },
         upsert: true,
@@ -273,22 +273,17 @@ export const markAllAsRead = async (userId) => {
 export const getNotifications = async (userId, { page = 1, limit = 50 } = {}) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
-  try {
-    const [notifications, total, unreadCount] = await Promise.all([
-      prisma.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      prisma.notification.count({ where: { userId } }),
-      prisma.notification.count({ where: { userId, isRead: false } }),
-    ]);
-    return { notifications, total, unreadCount };
-  } catch (error) {
-    console.error('❌ NotificationService: Failed to fetch notifications:', error);
-    return { notifications: [], total: 0, unreadCount: 0 };
-  }
+  const [notifications, total, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.notification.count({ where: { userId } }),
+    prisma.notification.count({ where: { userId, isRead: false } }),
+  ]);
+  return { notifications, total, unreadCount };
 };
 
 export const getUnreadCount = async (userId) => {

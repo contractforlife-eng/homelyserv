@@ -169,7 +169,19 @@ export default {
     "confirmAdjustmentMessage": "Are you sure you want to {{action}} {{quantity}} dinars for {{name}}? The resulting balance will be {{balance}} dinars.",
     "adjustmentSuccess": "Dinar adjustment completed successfully.",
     "adjustmentFailed": "Adjustment failed.",
-    "insufficientBalanceForDeduction": "Insufficient spendable dinars to deduct this amount."
+    "insufficientBalanceForDeduction": "Insufficient spendable dinars to deduct this amount.",
+    "edit": "Edit",
+    "edited": "Edited",
+    "reply": "Reply",
+    "replies": "Replies",
+    "hideReplies": "Hide replies",
+    "showReplies": "Show replies ({{count}})",
+    "replyHint": "Reply to comment…",
+    "video": "Video",
+    "videoTooLarge": "Video exceeds 50MB limit",
+    "invalidVideoFormat": "Unsupported video format. Use MP4, WebM, or MOV.",
+    "uploadingVideo": "Uploading video…",
+    "saveChanges": "Save"
   },
   "ar": {
     "nav": "مجتمع HomelyServ",
@@ -341,7 +353,19 @@ export default {
     "confirmAdjustmentMessage": "هل أنت متأكد من {{action}} {{quantity}} دينار للعضو {{name}}؟ سيكون الرصيد بعد التعديل {{balance}} دينار.",
     "adjustmentSuccess": "تم تعديل رصيد الدنانير بنجاح.",
     "adjustmentFailed": "فشلت عملية التعديل.",
-    "insufficientBalanceForDeduction": "الرصيد القابل للاستهلاك غير كافٍ لخصم هذا المبلغ."
+    "insufficientBalanceForDeduction": "الرصيد القابل للاستهلاك غير كافٍ لخصم هذا المبلغ.",
+    "edit": "تعديل",
+    "edited": "تم التعديل",
+    "reply": "رد",
+    "replies": "الردود",
+    "hideReplies": "إخفاء الردود",
+    "showReplies": "عرض الردود ({{count}})",
+    "replyHint": "اكتب ردك على التعليق…",
+    "video": "فيديو",
+    "videoTooLarge": "حجم الفيديو يتجاوز الحد الأقصى 50 ميجابايت",
+    "invalidVideoFormat": "صيغة الفيديو غير مدعومة. استخدم MP4 أو WebM أو MOV.",
+    "uploadingVideo": "جارٍ رفع الفيديو…",
+    "saveChanges": "حفظ"
   },
   "fr": {
     "nav": "Mur HomelyServ",
@@ -513,7 +537,19 @@ export default {
     "confirmAdjustmentMessage": "Voulez-vous vraiment {{action}} {{quantity}} dinars pour {{name}} ? Le nouveau solde sera de {{balance}} dinars.",
     "adjustmentSuccess": "Ajustement des dinars effectué avec succès.",
     "adjustmentFailed": "Échec de l'ajustement.",
-    "insufficientBalanceForDeduction": "Solde de dinars disponible insuffisant pour cette déduction."
+    "insufficientBalanceForDeduction": "Solde de dinars disponible insuffisant pour cette déduction.",
+    "edit": "Modifier",
+    "edited": "Modifié",
+    "reply": "Répondre",
+    "replies": "Réponses",
+    "hideReplies": "Masquer les réponses",
+    "showReplies": "Afficher les réponses ({{count}})",
+    "replyHint": "Répondre au commentaire…",
+    "video": "Vidéo",
+    "videoTooLarge": "La vidéo dépasse la limite de 50 Mo",
+    "invalidVideoFormat": "Format vidéo non pris en charge. Utilisez MP4, WebM ou MOV.",
+    "uploadingVideo": "Téléversement de la vidéo…",
+    "saveChanges": "Enregistrer"
   },
   "de": {
     "nav": "HomelyServ Pinnwand",
@@ -685,7 +721,19 @@ export default {
     "confirmAdjustmentMessage": "Sind Sie sicher, dass Sie für {{name}} {{quantity}} Dinare {{action}} möchten? Der resultierende Kontostand beträgt {{balance}} Dinare.",
     "adjustmentSuccess": "Dinar-Anpassung erfolgreich durchgeführt.",
     "adjustmentFailed": "Anpassung fehlgeschlagen.",
-    "insufficientBalanceForDeduction": "Unzureichendes verfügbares Dinar-Guthaben für diesen Abzug."
+    "insufficientBalanceForDeduction": "Unzureichendes verfügbares Dinar-Guthaben für diesen Abzug.",
+    "edit": "Bearbeiten",
+    "edited": "Bearbeitet",
+    "reply": "Antworten",
+    "replies": "Antworten",
+    "hideReplies": "Antworten ausblenden",
+    "showReplies": "Antworten anzeigen ({{count}})",
+    "replyHint": "Auf Kommentar antworten…",
+    "video": "Video",
+    "videoTooLarge": "Video überschreitet die 50-MB-Grenze",
+    "invalidVideoFormat": "Nicht unterstütztes Videoformat. Verwenden Sie MP4, WebM oder MOV.",
+    "uploadingVideo": "Video wird hochgeladen…",
+    "saveChanges": "Speichern"
   },
   "tr": {
     "nav": "HomelyServ Duvarı",
@@ -857,7 +905,19 @@ export default {
     "confirmAdjustmentMessage": "{{name}} kullanıcısı için {{quantity}} dinar {{action}} işlemini onaylıyor musunuz? Yeni bakiye {{balance}} dinar olacaktır.",
     "adjustmentSuccess": "Dinar düzenlemesi başarıyla tamamlandı.",
     "adjustmentFailed": "Düzenleme başarısız oldu.",
-    "insufficientBalanceForDeduction": "Bu kesinti için yeterli harcanabilir dinar bakiyesi yok."
+    "insufficientBalanceForDeduction": "Bu kesinti için yeterli harcanabilir dinar bakiyesi yok.",
+    "edit": "Düzenle",
+    "edited": "Düzenlendi",
+    "reply": "Yanıtla",
+    "replies": "Yanıtlar",
+    "hideReplies": "Yanıtları gizle",
+    "showReplies": "Yanıtları göster ({{count}})",
+    "replyHint": "Yoruma yanıt ver…",
+    "video": "Video",
+    "videoTooLarge": "Video 50 MB sınırını aşıyor",
+    "invalidVideoFormat": "Desteklenmeyen video formatı. MP4, WebM veya MOV kullanın.",
+    "uploadingVideo": "Video yükleniyor…",
+    "saveChanges": "Kaydet"
   },
   "ru": {
     "nav": "Стена HomelyServ",
@@ -1029,6 +1089,18 @@ export default {
     "confirmAdjustmentMessage": "Вы уверены, что хотите {{action}} {{quantity}} динаров пользователю {{name}}? Итоговый баланс составит {{balance}} динаров.",
     "adjustmentSuccess": "Корректировка баланса успешно завершена.",
     "adjustmentFailed": "Ошибка при корректировке.",
-    "insufficientBalanceForDeduction": "Недостаточно доступных динаров для списания."
+    "insufficientBalanceForDeduction": "Недостаточно доступных динаров для списания.",
+    "edit": "Редактировать",
+    "edited": "Изменено",
+    "reply": "Ответить",
+    "replies": "Ответы",
+    "hideReplies": "Скрыть ответы",
+    "showReplies": "Показать ответы ({{count}})",
+    "replyHint": "Ответить на комментарий…",
+    "video": "Видео",
+    "videoTooLarge": "Размер видео превышает 50 МБ",
+    "invalidVideoFormat": "Неподдерживаемый формат видео. Используйте MP4, WebM или MOV.",
+    "uploadingVideo": "Загрузка видео…",
+    "saveChanges": "Сохранить"
   }
 };

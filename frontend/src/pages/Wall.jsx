@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Crown, Gift, Heart, MessageCircle, ImagePlus, X, Sparkles, Coins, Smartphone, Building2, Wallet, Landmark, ArrowLeft, Check, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Crown, Gift, Heart, MessageCircle, ImagePlus, Video, Edit2, CornerDownRight, X, Sparkles, Coins, Smartphone, Building2, Wallet, Landmark, ArrowLeft, Check, CheckCircle2, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import SupportLayout from '../layouts/SupportLayout';
@@ -32,22 +32,67 @@ const button = 'rounded-xl px-4 py-2 font-medium disabled:opacity-50 focus-visib
 const card = 'rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800';
 const field = 'w-full rounded-xl border border-gray-300 bg-transparent p-3 dark:border-gray-600';
 
-function Composer({ parentId, onDone, onSubmitComment, primary, act, busy }) {
+function Composer({ parentId, isReply = false, onDone, onSubmitComment, primary, act, busy }) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
+  const [video, setVideo] = useState(null);
   const [preview, setPreview] = useState('');
-  const input = useRef(null);
+  const [videoPreview, setVideoPreview] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [localError, setLocalError] = useState('');
+  const postDraftKey = useRef(parentId ? null : 'wall_post_draft_key_' + Math.random().toString(36).slice(2));
+  const imageInput = useRef(null);
+  const videoInput = useRef(null);
+
   useEffect(() => {
     if (!image) { setPreview(''); return; }
     const url = URL.createObjectURL(image); setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [image]);
 
+  useEffect(() => {
+    if (!video) { setVideoPreview(''); return; }
+    const url = URL.createObjectURL(video); setVideoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [video]);
+
+  const handleVideoSelect = (file) => {
+    setLocalError('');
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      setLocalError(t('wall.videoTooLarge') || 'Video exceeds 50MB limit');
+      return;
+    }
+    const allowed = ['video/mp4', 'video/webm', 'video/quicktime'];
+    if (!allowed.includes(file.type) && !/\.(mp4|webm|mov)$/i.test(file.name)) {
+      setLocalError(t('wall.invalidVideoFormat') || 'Unsupported video format. Use MP4, WebM, or MOV.');
+      return;
+    }
+    setVideo(file);
+    setImage(null);
+    setPreview('');
+  };
+
+  const handleImageSelect = (file) => {
+    setLocalError('');
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setLocalError(t('wall.invalidContent'));
+      return;
+    }
+    setImage(file);
+    setVideo(null);
+    setVideoPreview('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ((!text.trim() && !image) || text.trim().split(/\s+/u).length > 500 || (parentId && text.trim() && image)) return;
-    if (image && (image.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(image.type))) return;
+    setLocalError('');
+    const hasMedia = !!(image || video);
+    if ((!text.trim() && !hasMedia) || text.trim().split(/\s+/u).length > 500) return;
+    if (parentId && text.trim() && image) return;
 
     if (parentId && typeof onSubmitComment === 'function') {
       const currentText = text;
@@ -56,30 +101,131 @@ function Composer({ parentId, onDone, onSubmitComment, primary, act, busy }) {
       setText('');
       setImage(null);
       setPreview('');
-      if (input.current) input.current.value = '';
+      if (imageInput.current) imageInput.current.value = '';
       await onSubmitComment(parentId, currentText, currentImage, currentPreview);
       return;
     }
 
-    act(async () => {
+    if (!postDraftKey.current) {
+      postDraftKey.current = 'wall_post_draft_key_' + Math.random().toString(36).slice(2);
+    }
+    const mutationId = postDraftKey.current;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    try {
       const data = new FormData();
       data.append('text', text);
       if (image) data.append('image', image);
-      await api.post('/api/wall/posts', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (video) data.append('video', video);
+      data.append('clientMutationId', mutationId);
+
+      await api.post('/api/wall/posts', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Idempotency-Key': mutationId,
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percent);
+          }
+        }
+      });
+
+      // Clear draft on success
+      postDraftKey.current = null;
       setText('');
       setImage(null);
+      setVideo(null);
       setPreview('');
-      if (input.current) input.current.value = '';
+      setVideoPreview('');
+      setUploadProgress(0);
+      if (imageInput.current) imageInput.current.value = '';
+      if (videoInput.current) videoInput.current.value = '';
       await onDone();
-    });
+    } catch (err) {
+      const code = err.response?.data?.code || err.message;
+      setLocalError(t(code === 'LIMIT_FILE_SIZE' || code === 'FILE_TOO_LARGE' ? 'wall.videoTooLarge' : code === 'INVALID_VIDEO' ? 'wall.invalidVideoFormat' : 'wall.error'));
+      // Keep draft text and media intact on failure for safe retry
+    } finally {
+      setIsUploading(false);
+    }
   };
 
+  const placeholderKey = isReply ? 'wall.replyHint' : parentId ? 'wall.commentHint' : 'wall.write';
+
   return <form className="space-y-3" onSubmit={handleSubmit}>
-    <textarea aria-label={t(parentId ? 'wall.commentHint' : 'wall.write')} placeholder={t(parentId ? 'wall.commentHint' : 'wall.write')} className={field} maxLength={15000} rows={parentId ? 2 : 3} value={text} onChange={e => setText(e.target.value)} disabled={busy || (!!parentId && !!image)} />
-    {preview && <div className="relative w-fit"><img src={preview} alt="" className="max-h-56 rounded-xl" /><button type="button" aria-label={t('wall.delete')} className="absolute end-1 top-1 rounded-full bg-white p-1 text-black" onClick={() => setImage(null)}><X size={18} /></button></div>}
+    <textarea
+      aria-label={t(placeholderKey)}
+      placeholder={t(placeholderKey)}
+      className={field}
+      maxLength={15000}
+      rows={parentId ? 2 : 3}
+      value={text}
+      onChange={e => setText(e.target.value)}
+      disabled={busy || isUploading || (!!parentId && !!image)}
+    />
+    {preview && (
+      <div className="relative w-fit">
+        <img src={preview} alt="" className="max-h-56 rounded-xl" />
+        <button type="button" aria-label={t('wall.delete')} className="absolute end-1 top-1 rounded-full bg-white p-1 text-black shadow" onClick={() => { setImage(null); if (imageInput.current) imageInput.current.value = ''; }}><X size={18} /></button>
+      </div>
+    )}
+    {videoPreview && (
+      <div className="relative w-fit max-w-full">
+        <video src={videoPreview} controls playsInline className="max-h-64 rounded-xl bg-black" />
+        <button type="button" aria-label={t('wall.delete')} className="absolute end-1 top-1 rounded-full bg-white p-1 text-black shadow" onClick={() => { setVideo(null); if (videoInput.current) videoInput.current.value = ''; }}><X size={18} /></button>
+      </div>
+    )}
+    {isUploading && (
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>{video ? t('wall.uploadingVideo') : t('wall.working')}</span>
+          <span>{uploadProgress}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700 overflow-hidden">
+          <div className="bg-teal-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+        </div>
+      </div>
+    )}
+    {localError && <p role="alert" className="text-xs text-red-600 font-medium">{localError}</p>}
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <label className={`${button} flex cursor-pointer items-center gap-2`}><ImagePlus size={20} /><span className="text-xs">{t('wall.commentHint')}</span><input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy || (!!parentId && !!text.trim())} onChange={e => setImage(e.target.files?.[0] || null)} /></label>
-      <button disabled={busy || (!text.trim() && !image)} className={`${button} ${primary}`} type="submit">{t(busy ? 'wall.working' : parentId ? 'wall.comment' : 'wall.publish')}</button>
+      <div className="flex items-center gap-2">
+        <label className={`${button} flex cursor-pointer items-center gap-2`} title={t('wall.commentHint')}>
+          <ImagePlus size={20} />
+          <span className="text-xs hidden sm:inline">{t('wall.commentHint')}</span>
+          <input
+            ref={imageInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            disabled={busy || isUploading || !!video || (!!parentId && !!text.trim())}
+            onChange={e => handleImageSelect(e.target.files?.[0] || null)}
+          />
+        </label>
+        {!parentId && (
+          <label className={`${button} flex cursor-pointer items-center gap-2`} title={t('wall.video')}>
+            <Video size={20} />
+            <span className="text-xs hidden sm:inline">{t('wall.video')}</span>
+            <input
+              ref={videoInput}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              className="sr-only"
+              disabled={busy || isUploading || !!image}
+              onChange={e => handleVideoSelect(e.target.files?.[0] || null)}
+            />
+          </label>
+        )}
+      </div>
+      <button
+        disabled={busy || isUploading || (!text.trim() && !image && !video)}
+        className={`${button} ${primary}`}
+        type="submit"
+      >
+        {t(isUploading || busy ? 'wall.working' : isReply ? 'wall.reply' : parentId ? 'wall.comment' : 'wall.publish')}
+      </button>
     </div>
   </form>;
 }
@@ -132,6 +278,14 @@ export default function Wall() {
   const [reportTarget, setReportTarget] = useState(null);
   const [reason, setReason] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editingContent, setEditingContent] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [replyingCommentId, setReplyingCommentId] = useState(null);
+  const [replies, setReplies] = useState({});
+  const [repliesLoading, setRepliesLoading] = useState({});
+  const [expandedReplies, setExpandedReplies] = useState({});
   const load = useCallback(async (before = '') => {
     const generation = ++feedGeneration.current;
     const [feed, wallet] = await Promise.all([api.get('/api/wall/posts', { params: { scope: wallView, ...(before ? { before } : {}) } }), api.get('/api/wall/store')]);
@@ -277,6 +431,131 @@ export default function Wall() {
     }
   }
 
+  async function loadReplies(commentId, after = '') {
+    setRepliesLoading(prev => ({ ...prev, [commentId]: true }));
+    try {
+      const res = await api.get(`/api/wall/comments/${commentId}/replies`, { params: after ? { after } : {} });
+      setReplies(old => {
+        const existing = old[commentId]?.replies || [];
+        const incoming = res.data.replies || [];
+        // Append incoming results to existing list while ensuring deduplication
+        const seenIds = new Set(existing.map(r => r.id));
+        const filteredIncoming = incoming.filter(r => !seenIds.has(r.id));
+        return {
+          ...old,
+          [commentId]: {
+            ...res.data,
+            replies: after ? [...existing, ...filteredIncoming] : incoming
+          }
+        };
+      });
+      setExpandedReplies(old => ({ ...old, [commentId]: true }));
+    } catch {
+      setError(t('wall.error'));
+    } finally {
+      setRepliesLoading(prev => ({ ...prev, [commentId]: false }));
+    }
+  }
+
+  async function submitReply(commentId, text, image, previewUrl) {
+    const clientMutationId = requestKey();
+    const data = new FormData();
+    if (text) data.append('text', text);
+    if (image) data.append('image', image);
+    data.append('clientMutationId', clientMutationId);
+
+    try {
+      const res = await api.post(`/api/wall/comments/${commentId}/replies`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Idempotency-Key': clientMutationId,
+        }
+      });
+      const newReply = res.data.content;
+      setReplies(prev => ({
+        ...prev,
+        [commentId]: {
+          replies: [...(prev[commentId]?.replies || []), newReply]
+        }
+      }));
+      setExpandedReplies(old => ({ ...old, [commentId]: true }));
+      setReplyingCommentId(null);
+      // Update comment repliesCount
+      setComments(prev => {
+        const next = { ...prev };
+        for (const pid of Object.keys(next)) {
+          if (next[pid]?.comments) {
+            next[pid] = {
+              ...next[pid],
+              comments: next[pid].comments.map(c => c.id === commentId ? { ...c, repliesCount: (c.repliesCount || 0) + 1 } : c)
+            };
+          }
+        }
+        return next;
+      });
+    } catch (err) {
+      setError(t('wall.error'));
+    }
+  }
+
+  function startEditing(content) {
+    setEditingContent(content);
+    setEditText(content.text || '');
+    setEditError('');
+  }
+
+  function cancelEditing() {
+    setEditingContent(null);
+    setEditText('');
+    setEditError('');
+  }
+
+  async function submitEdit(e) {
+    e.preventDefault();
+    if (!editingContent) return;
+    setEditBusy(true);
+    setEditError('');
+    try {
+      const res = await api.put(`/api/wall/content/${editingContent.id}`, { text: editText });
+      const updated = res.data.content;
+      // Update in posts
+      setPosts(prev => prev.map(p => p.id === updated.id ? { ...p, text: updated.text, isEdited: true, editedAt: updated.editedAt } : p));
+      // Update in comments
+      setComments(prev => {
+        const next = { ...prev };
+        for (const pid of Object.keys(next)) {
+          if (next[pid]?.comments) {
+            next[pid] = {
+              ...next[pid],
+              comments: next[pid].comments.map(c => c.id === updated.id ? { ...c, text: updated.text, isEdited: true, editedAt: updated.editedAt } : c)
+            };
+          }
+        }
+        return next;
+      });
+      // Update in replies
+      setReplies(prev => {
+        const next = { ...prev };
+        for (const cid of Object.keys(next)) {
+          if (next[cid]?.replies) {
+            next[cid] = {
+              ...next[cid],
+              replies: next[cid].replies.map(r => r.id === updated.id ? { ...r, text: updated.text, isEdited: true, editedAt: updated.editedAt } : r)
+            };
+          }
+        }
+        return next;
+      });
+      cancelEditing();
+      setNotice(t('wall.success'));
+    } catch (err) {
+      const code = err.response?.data?.code || err.message;
+      setEditError(t(code === 'INVALID_CONTENT' ? 'wall.invalidContent' : 'wall.error'));
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
   async function loadComments(postId, before = '') {
     setCommentsLoading(prev => ({ ...prev, [postId]: true }));
     try {
@@ -391,6 +670,7 @@ export default function Wall() {
   </span>;
   const own = content => content.author?.id === String(user?.id || user?._id);
   const actions = content => <div className="flex flex-wrap gap-2 text-xs">
+    {own(content) && <button disabled={busy} className={button} onClick={() => startEditing(content)}>{t('wall.edit')}</button>}
     {(own(content) || moderator) && <button disabled={busy} className={button} onClick={() => setConfirmDelete(content.id)}>{t('wall.delete')}</button>}
     {!own(content) && <>
       <button className={button} onClick={() => { setReportTarget(content.id); setReason(''); }}>{t('wall.report')}</button>
@@ -427,9 +707,23 @@ export default function Wall() {
       <section id="wall-feed" role="tabpanel" aria-labelledby={`wall-tab-${wallView}`} aria-busy={feedLoading} className="space-y-5">
       {!posts.length && <p className="py-8 text-center text-gray-500">{t(feedLoading ? 'wall.working' : wallView === 'mine' ? 'wall.myWallEmpty' : 'wall.empty')}</p>}
       {posts.map(post => <article id={`wall-post-${post.id}`} key={post.id} style={wallAuthorIdentityStyle(post.author?.role)} className={`${card} wall-person-card space-y-4`}>
-        <header className="wall-person-header flex flex-wrap items-start justify-between gap-2"><div>{identity(post.author)}<p className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString(i18n.language)}</p></div>{actions(post)}</header>
+        <header className="wall-person-header flex flex-wrap items-start justify-between gap-2">
+          <div>
+            {identity(post.author)}
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span>{new Date(post.createdAt).toLocaleString(i18n.language)}</span>
+              {post.isEdited && <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">({t('wall.edited')})</span>}
+            </div>
+          </div>
+          {actions(post)}
+        </header>
         {post.text && <p className="whitespace-pre-wrap break-words">{post.text}</p>}
         {post.image && <img src={post.image} alt="" loading="lazy" className="max-h-[550px] w-full rounded-xl object-contain" />}
+        {post.video && (
+          <div className="w-full overflow-hidden rounded-xl bg-black">
+            <video src={post.video} controls playsInline preload="metadata" className="max-h-[550px] w-full object-contain" />
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
           <button
             aria-pressed={post.liked}
@@ -459,7 +753,13 @@ export default function Wall() {
               className={`wall-person-card space-y-2 rounded-xl bg-gray-50 p-3 dark:bg-gray-900 transition-opacity ${c._pending ? 'opacity-70 border border-dashed border-gray-300 dark:border-gray-600' : ''} ${c.author?.isPremium ? 'wall-premium-comment' : ''}`}
             >
               <div className="wall-person-header flex flex-wrap justify-between gap-2">
-                {identity(c.author)}
+                <div>
+                  {identity(c.author)}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                    <span>{new Date(c.createdAt).toLocaleString(i18n.language)}</span>
+                    {c.isEdited && <span className="inline-flex items-center gap-1 rounded bg-gray-200/60 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">({t('wall.edited')})</span>}
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   {c._pending && <span className="text-xs text-amber-600 dark:text-amber-400 font-medium animate-pulse">{t('wall.working')}</span>}
                   {c._failed && (
@@ -480,6 +780,91 @@ export default function Wall() {
               </div>
               {c.text && <p className="whitespace-pre-wrap break-words">{c.text}</p>}
               {c.image && <img src={typeof c.image === 'string' ? c.image : c.image.url} alt="" loading="lazy" className="max-h-60 rounded-lg" />}
+
+              {/* Comment bottom actions: Reply and View Replies */}
+              {!c._pending && (
+                <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-400"
+                    onClick={() => setReplyingCommentId(replyingCommentId === c.id ? null : c.id)}
+                  >
+                    <CornerDownRight size={13} />
+                    {t('wall.reply')}
+                  </button>
+                  {((c.repliesCount || 0) > 0 || (replies[c.id]?.replies?.length || 0) > 0) && (
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 font-medium"
+                      onClick={() => {
+                        if (expandedReplies[c.id]) {
+                          setExpandedReplies(old => ({ ...old, [c.id]: false }));
+                        } else {
+                          loadReplies(c.id);
+                        }
+                      }}
+                    >
+                      {expandedReplies[c.id]
+                        ? t('wall.hideReplies')
+                        : t('wall.showReplies', { count: Math.max(c.repliesCount || 0, replies[c.id]?.replies?.length || 0) })}
+                      {repliesLoading[c.id] && <span className="inline-block ms-1 h-2.5 w-2.5 animate-spin rounded-full border border-gray-400 border-t-transparent" />}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Inline Reply Composer */}
+              {replyingCommentId === c.id && (
+                <div className="ps-4 sm:ps-6 border-s-2 border-teal-500/40 mt-2">
+                  <Composer
+                    parentId={c.id}
+                    isReply={true}
+                    primary={primary}
+                    act={act}
+                    busy={busy}
+                    onSubmitComment={submitReply}
+                    onDone={async () => {
+                      await loadReplies(c.id);
+                      setReplyingCommentId(null);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Nested Replies List */}
+              {expandedReplies[c.id] && replies[c.id]?.replies && (
+                <div className="ps-4 sm:ps-6 border-s-2 border-gray-200 dark:border-gray-700 space-y-2 mt-2">
+                  {replies[c.id].replies.map(r => (
+                    <div
+                      key={r.id}
+                      style={wallAuthorIdentityStyle(r.author?.role)}
+                      className="rounded-lg bg-white/70 dark:bg-gray-800/70 p-2.5 space-y-1.5 border border-gray-100 dark:border-gray-700/60"
+                    >
+                      <div className="flex flex-wrap justify-between gap-1 items-start">
+                        <div>
+                          {identity(r.author)}
+                          <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                            <span>{new Date(r.createdAt).toLocaleString(i18n.language)}</span>
+                            {r.isEdited && <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-1 py-0.2 text-[9px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">({t('wall.edited')})</span>}
+                          </div>
+                        </div>
+                        {actions(r)}
+                      </div>
+                      {r.text && <p className="text-xs whitespace-pre-wrap break-words">{r.text}</p>}
+                      {r.image && <img src={typeof r.image === 'string' ? r.image : r.image.url} alt="" loading="lazy" className="max-h-48 rounded-lg" />}
+                    </div>
+                  ))}
+                  {replies[c.id].next && (
+                    <button
+                      disabled={repliesLoading[c.id]}
+                      className="text-xs text-teal-600 font-medium hover:underline"
+                      onClick={() => loadReplies(c.id, replies[c.id].next)}
+                    >
+                      {t('wall.more')}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           {comments[post.id].next && <button disabled={commentsLoading[post.id]} className={button} onClick={() => loadComments(post.id, comments[post.id].next)}>{t('wall.more')}</button>}
@@ -487,10 +872,43 @@ export default function Wall() {
       </article>)}
       {next && <button disabled={busy} className={`${button} ${primary}`} onClick={() => act(() => load(next))}>{t('wall.more')}</button>}
       </section>
-      {(panel || reportTarget || confirmDelete) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={e => { if (e.target === e.currentTarget && !busy) { setPanel(null); setReportTarget(null); setConfirmDelete(null); } }}>
+      {(panel || reportTarget || confirmDelete || editingContent) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={e => { if (e.target === e.currentTarget && !busy && !editBusy) { setPanel(null); setReportTarget(null); setConfirmDelete(null); cancelEditing(); } }}>
         <section role="dialog" aria-modal="true" aria-label={panel === 'store' ? t('wall.storeTitle') : t('wall.nav')} className={`${card} max-h-[90vh] w-full ${panel === 'history' || panel === 'store' ? 'max-w-[720px]' : 'max-w-lg'} space-y-4 overflow-y-auto`}>
-          <button disabled={busy} className={`${button} float-end`} onClick={() => { setPanel(null); setReportTarget(null); setConfirmDelete(null); }} aria-label={t('wall.close')}><X /></button>
+          <button disabled={busy || editBusy} className={`${button} float-end`} onClick={() => { setPanel(null); setReportTarget(null); setConfirmDelete(null); cancelEditing(); }} aria-label={t('wall.close')}><X /></button>
           {error && <p role="alert" className="text-red-600">{error}</p>}
+          {editingContent && (
+            <form className="space-y-4" onSubmit={submitEdit}>
+              <h2 className="text-lg font-bold">{t('wall.edit')}</h2>
+              {editError && <p role="alert" className="text-xs text-red-600">{editError}</p>}
+              <textarea
+                aria-label={t('wall.edit')}
+                className={field}
+                rows={4}
+                maxLength={15000}
+                value={editText}
+                onChange={e => setEditText(e.target.value)}
+                disabled={editBusy}
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={editBusy}
+                  className={button}
+                  onClick={cancelEditing}
+                >
+                  {t('wall.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={editBusy || (!editText.trim() && !editingContent.image && !editingContent.video)}
+                  className={`${button} ${primary} inline-flex items-center gap-2`}
+                >
+                  {editBusy && <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                  {t(editBusy ? 'wall.working' : 'wall.saveChanges')}
+                </button>
+              </div>
+            </form>
+          )}
           {confirmDelete && <><h2>{t('wall.delete')}?</h2><button disabled={busy} className={`${button} ${primary}`} onClick={() => act(async () => { await api.delete(`/api/wall/content/${confirmDelete}`); setConfirmDelete(null); setComments({}); await load(); })}>{t('wall.confirm')}</button></>}
           {reportTarget && <form className="space-y-3" onSubmit={e => { e.preventDefault(); act(async () => { const result = await api.post(`/api/wall/content/${reportTarget}/report`, { reason }); setReportTarget(null); setNotice(t(result.data.pending ? 'wall.reportQueued' : 'wall.reportInComplaints')); }); }}><h2>{t('wall.report')}</h2><textarea required maxLength={1000} aria-label={t('wall.reason')} placeholder={t('wall.reason')} className={field} value={reason} onChange={e => setReason(e.target.value)} /><button disabled={busy} className={`${button} ${primary}`}>{t('wall.submit')}</button></form>}
           {panel === 'gifts' && <><h2 className="text-xl font-bold">{t('wall.gift')}</h2><p>{t('wall.balance')}: {store.balance}</p><div className="wall-gift-picker grid grid-cols-2 gap-3 sm:grid-cols-3">{store.gifts.map(g => <button key={g.id} aria-pressed={selected?.id === g.id} disabled={busy || isSendingGift} className={`rounded-xl border p-3 ${selected?.id === g.id ? 'border-amber-500 bg-amber-50 text-gray-900' : ''}`} onClick={() => { setSelected(g); giftAttempt.current = requestKey(); }}><span className="block text-4xl">{g.emoji}</span><span className="block text-sm">{t(`wall.${giftKey(g.id)}`)}</span><b>{g.price.toLocaleString(i18n.language)} ◈</b><span className="block text-xs text-gray-500">{(g.price / 10).toLocaleString(i18n.language, { style: 'currency', currency: 'EGP' })}</span></button>)}</div>

@@ -9,6 +9,8 @@ import { getSpendableBalance, getUpcomingExpiringLots, planLotDeduction, sweepEx
 import { buildWallFeedFilter } from '../utils/wallFeed.js';
 import { wallCrown, validateWallText, MIN_WALL_GIFT_PRICE, DEFAULT_WALL_GIFTS } from '../config/wall.js';
 import { marketplaceImageUpload, detectMarketplaceImageType, deleteMarketplaceImage } from '../utils/marketplaceImageUpload.js';
+import { wallMediaUpload, detectWallImageType, detectWallVideoType, uploadWallVideoStream, deleteWallMedia, acquireVideoUploadSlot, releaseVideoUploadSlot, MAX_WALL_VIDEO_SIZE } from '../utils/wallMediaUpload.js';
+import fs from 'node:fs';
 import { uploadFromBuffer } from '../utils/cloudinary.js';
 import { resolveMarketplaceSellerSummaries } from './marketplace.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
@@ -22,7 +24,13 @@ const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch
 const fail = (code, status = 400) => { throw Object.assign(new Error(code), { status }); };
 const id = value => { if (!/^[a-f\d]{24}$/i.test(String(value))) fail('INVALID_ID'); return String(value); };
 const staff = req => ['ADMIN', 'SUPPORT'].includes(req.userRole);
-const upload = (req, res, next) => marketplaceImageUpload(req, res, error => error ? res.status(400).json({ code: 'INVALID_IMAGE' }) : next());
+const upload = (req, res, next) => wallMediaUpload(req, res, error => {
+  if (!error) return next();
+  if (error.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ code: 'FILE_TOO_LARGE' });
+  if (error.code === 'INVALID_VIDEO') return res.status(400).json({ code: 'INVALID_VIDEO' });
+  if (error.code === 'UPLOAD_CONCURRENCY_LIMIT') return res.status(429).json({ code: 'TOO_MANY_CONCURRENT_UPLOADS' });
+  return res.status(400).json({ code: 'INVALID_IMAGE' });
+});
 router.use(authenticate);
 async function blockedIds(userId) {
   const blocks = await WallBlock.find({ $or: [{ userId }, { blockedId: userId }] }).lean();
@@ -32,8 +40,12 @@ async function visible(req, contentId, session = null) {
   const content = await WallContent.findOne({ _id: id(contentId), deleted: false, hidden: false }).session(session);
   if (!content || (await blockedIds(String(req.userId))).includes(content.authorId)) fail('NOT_FOUND', 404);
   if (content.postId) {
-    const parent = await WallContent.findOne({ _id: content.postId, deleted: false, hidden: false }).session(session);
-    if (!parent || (await blockedIds(String(req.userId))).includes(parent.authorId)) fail('NOT_FOUND', 404);
+    const parentPost = await WallContent.findOne({ _id: content.postId, deleted: false, hidden: false }).session(session);
+    if (!parentPost || (await blockedIds(String(req.userId))).includes(parentPost.authorId)) fail('NOT_FOUND', 404);
+  }
+  if (content.parentCommentId) {
+    const parentComment = await WallContent.findOne({ _id: content.parentCommentId, deleted: false, hidden: false }).session(session);
+    if (!parentComment || (await blockedIds(String(req.userId))).includes(parentComment.authorId)) fail('NOT_FOUND', 404);
   }
   return content;
 }
@@ -51,14 +63,23 @@ async function serialize(rows, userId) {
     WallContent.aggregate([{ $match: { postId: { $in: ids }, hidden: false, deleted: false } }, { $group: { _id: '$postId', count: { $sum: 1 } } }]),
     User.find({ _id: { $in: authorIds.filter(v => /^[a-f\d]{24}$/i.test(v)) } }).select('_id role profileImage').lean(),
   ]);
+  const repliesAgg = await WallContent.aggregate([
+    { $match: { parentCommentId: { $in: ids }, hidden: false, deleted: false } },
+    { $group: { _id: '$parentCommentId', count: { $sum: 1 } } }
+  ]);
   return rows.map(row => {
     const author = authors.get(row.authorId);
     const like = likes.find(l => String(l._id) === String(row._id));
-    return { id: String(row._id), text: row.text, image: row.image?.url || null, createdAt: row.createdAt,
+    const replyCount = repliesAgg.find(r => String(r._id) === String(row._id))?.count || 0;
+    return { id: String(row._id), text: row.text, image: row.image?.url || null, video: row.video?.url || null,
+      createdAt: row.createdAt,
+      isEdited: row.isEdited === true, editedAt: row.editedAt || null, parentCommentId: row.parentCommentId ? String(row.parentCommentId) : null,
+      postId: row.postId ? String(row.postId) : null,
       author: { ...author, role: roles.find(u => String(u._id) === row.authorId)?.role, profileImage: roles.find(u => String(u._id) === row.authorId)?.profileImage || null, crown: wallCrown(wallets.find(w => w._id === row.authorId)?.receivedGifts || 0) },
       likes: like?.count || 0, liked: !!like?.mine,
       gifts: gifts.find(g => String(g._id) === String(row._id))?.count || 0,
-      comments: comments.find(c => String(c._id) === String(row._id))?.count || 0 };
+      comments: comments.find(c => String(c._id) === String(row._id))?.count || 0,
+      repliesCount: replyCount };
   });
 }
 router.get('/store', wrap(async (req, res) => {
@@ -171,89 +192,200 @@ router.get('/posts', wrap(async (req, res) => {
 }));
 router.get('/posts/:id/comments', wrap(async (req, res) => {
   await visible(req, req.params.id);
-  const filter = { postId: id(req.params.id), deleted: false, hidden: false, authorId: { $nin: await blockedIds(String(req.userId)) } };
+  const filter = { postId: id(req.params.id), parentCommentId: null, deleted: false, hidden: false, authorId: { $nin: await blockedIds(String(req.userId)) } };
   if (req.query.before) filter._id = { $lt: new mongoose.Types.ObjectId(id(req.query.before)) };
   const rows = await WallContent.find(filter).sort({ _id: -1 }).limit(21).lean();
   res.json({ comments: await serialize(rows.slice(0, 20), String(req.userId)), next: rows.length > 20 ? String(rows[19]._id) : null });
 }));
+router.get('/comments/:id/replies', wrap(async (req, res) => {
+  const comment = await visible(req, req.params.id);
+  if (!comment.postId || comment.parentCommentId) fail('INVALID_COMMENT');
+  const filter = { parentCommentId: comment._id, deleted: false, hidden: false, authorId: { $nin: await blockedIds(String(req.userId)) } };
+  const cursor = req.query.after || req.query.before;
+  if (cursor) filter._id = { $gt: new mongoose.Types.ObjectId(id(cursor)) };
+  const rows = await WallContent.find(filter).sort({ _id: 1 }).limit(51).lean();
+  res.json({ replies: await serialize(rows.slice(0, 50), String(req.userId)), next: rows.length > 50 ? String(rows[49]._id) : null });
+}));
 async function createContent(req, res) {
-  let uploaded;
-  const parent = req.params.id ? await visible(req, req.params.id) : null;
-  if (parent?.postId) fail('INVALID_POST');
-  const text = validateWallText(req.body.text, !!req.file);
-  // A comment is either text OR one image, as specified.
-  if (parent && text && req.file) fail('TEXT_OR_IMAGE');
+  let uploadedImage;
+  let uploadedVideo;
+  let videoSlotAcquired = !!req._videoSlotAcquired;
+  const imageFile = req.files?.image?.[0] || (req.file?.fieldname === 'image' ? req.file : null);
+  const videoFile = req.files?.video?.[0] || (req.file?.fieldname === 'video' ? req.file : null);
 
-  // Compute canonical payload fingerprint
-  const incomingParentId = parent ? String(parent._id) : '';
-  const incomingImageHash = req.file ? crypto.createHash('sha256').update(req.file.buffer).digest('hex') : '';
-  const canonicalPayload = `${incomingParentId}:${String(text || '').trim()}:${incomingImageHash}`;
-  const payloadHash = crypto.createHash('sha256').update(canonicalPayload).digest('hex');
-
-  // Idempotency support for retries
-  const rawMutationId = req.get('Idempotency-Key') || req.body.clientMutationId;
-  const clientMutationId = (typeof rawMutationId === 'string' && /^[a-z\d_-]{8,100}$/i.test(rawMutationId))
-    ? rawMutationId.trim()
-    : null;
-
-  if (clientMutationId) {
-    const existing = await WallContent.findOne({ authorId: String(req.userId), clientMutationId }).lean();
-    if (existing) {
-      // Validate that mutation key reuse matches the canonical payload fingerprint
-      const existingParent = existing.postId ? String(existing.postId) : '';
-      const existingImageHash = existing.image?.hash || '';
-      const existingCanonical = `${existingParent}:${String(existing.text || '').trim()}:${existingImageHash}`;
-      const existingPayloadHash = existing.payloadHash || crypto.createHash('sha256').update(existingCanonical).digest('hex');
-
-      if (existingPayloadHash !== payloadHash) {
-        fail('MUTATION_KEY_CONFLICT', 409);
-      }
-      return res.status(200).json({
-        reused: true,
-        content: (await serialize([existing], String(req.userId)))[0]
-      });
+  const cleanupTempFiles = () => {
+    if (imageFile?.path && fs.existsSync(imageFile.path)) {
+      try { fs.unlinkSync(imageFile.path); } catch {}
     }
-  }
+    if (videoFile?.path && fs.existsSync(videoFile.path)) {
+      try { fs.unlinkSync(videoFile.path); } catch {}
+    }
+  };
 
-  if (req.file) {
-    if (detectMarketplaceImageType(req.file.buffer) !== req.file.mimetype) fail('INVALID_IMAGE');
-    try { uploaded = await uploadFromBuffer(req.file.buffer, { folder: 'homelyserv/wall', resource_type: 'image', transformation: [{ width: 1600, height: 1600, crop: 'limit' }] }); }
-    catch { fail('IMAGE_STORAGE_UNAVAILABLE', 503); }
-    if (!uploaded?.secure_url || !uploaded.public_id) fail('IMAGE_STORAGE_UNAVAILABLE', 503);
-  }
   try {
-    const item = await WallContent.create({ authorId: String(req.userId), postId: parent?._id || null, text,
-      clientMutationId,
-      payloadHash,
-      notificationRecipientId: parent && parent.authorId !== String(req.userId) ? parent.authorId : null,
-      ...(uploaded ? { image: { url: uploaded.secure_url, publicId: uploaded.public_id, hash: incomingImageHash } } : {}) });
-    if (parent) reconcileWallNotifications().catch(() => {});
-    res.status(201).json({ content: (await serialize([item.toObject()], String(req.userId)))[0] });
-  } catch (error) {
-    if (error.code === 11000 && clientMutationId) {
-      if (uploaded) await deleteMarketplaceImage(uploaded.public_id).catch(() => {});
+    const parent = req.params.id ? await visible(req, req.params.id) : null;
+    const isReply = !!(parent && parent.postId);
+    if (isReply && parent.parentCommentId) fail('MAX_REPLY_DEPTH');
+
+    // Video is only allowed on top-level posts
+    if (videoFile && parent) fail('VIDEO_NOT_ALLOWED_ON_COMMENT');
+    if (imageFile && videoFile) fail('IMAGE_AND_VIDEO_NOT_ALLOWED');
+
+    const hasMedia = !!(imageFile || videoFile);
+    const text = validateWallText(req.body.text, hasMedia);
+
+    // Top-level comment or reply is either text OR one image
+    if (parent && text && imageFile) fail('TEXT_OR_IMAGE');
+
+    // Read media buffers from disk
+    const imageBuffer = imageFile?.path ? fs.readFileSync(imageFile.path) : (imageFile?.buffer || null);
+    const videoBufferHeader = videoFile?.headerChunk || (videoFile?.path
+      ? (() => {
+          const fd = fs.openSync(videoFile.path, 'r');
+          const buf = Buffer.alloc(32);
+          const bytesRead = fs.readSync(fd, buf, 0, 32, 0);
+          fs.closeSync(fd);
+          return buf.subarray(0, bytesRead);
+        })()
+      : (videoFile?.buffer ? videoFile.buffer.subarray(0, 32) : null));
+
+    // Compute canonical payload fingerprint with incremental stream hash
+    const incomingParentId = parent ? String(parent._id) : '';
+    const incomingImageHash = imageBuffer ? crypto.createHash('sha256').update(imageBuffer).digest('hex') : '';
+    const incomingVideoHash = videoFile?.hash || (videoFile?.path
+      ? crypto.createHash('sha256').update(fs.readFileSync(videoFile.path)).digest('hex')
+      : (videoFile?.buffer ? crypto.createHash('sha256').update(videoFile.buffer).digest('hex') : ''));
+    const canonicalPayload = `${incomingParentId}:${String(text || '').trim()}:${incomingImageHash}:${incomingVideoHash}`;
+    const payloadHash = crypto.createHash('sha256').update(canonicalPayload).digest('hex');
+
+    // Idempotency support for retries
+    const rawMutationId = req.get('Idempotency-Key') || req.body.clientMutationId;
+    const clientMutationId = (typeof rawMutationId === 'string' && /^[a-z\d_-]{8,100}$/i.test(rawMutationId))
+      ? rawMutationId.trim()
+      : null;
+
+    if (clientMutationId) {
       const existing = await WallContent.findOne({ authorId: String(req.userId), clientMutationId }).lean();
       if (existing) {
-        const existingParent = existing.postId ? String(existing.postId) : '';
+        const existingParent = existing.parentCommentId ? String(existing.parentCommentId) : (existing.postId ? String(existing.postId) : '');
         const existingImageHash = existing.image?.hash || '';
-        const existingCanonical = `${existingParent}:${String(existing.text || '').trim()}:${existingImageHash}`;
+        const existingVideoHash = existing.video?.hash || '';
+        const existingCanonical = `${existingParent}:${String(existing.text || '').trim()}:${existingImageHash}:${existingVideoHash}`;
         const existingPayloadHash = existing.payloadHash || crypto.createHash('sha256').update(existingCanonical).digest('hex');
 
         if (existingPayloadHash !== payloadHash) {
           fail('MUTATION_KEY_CONFLICT', 409);
         }
+        if (videoSlotAcquired) {
+          releaseVideoUploadSlot();
+          videoSlotAcquired = false;
+          req._videoSlotAcquired = false;
+        }
+        cleanupTempFiles();
         return res.status(200).json({
           reused: true,
           content: (await serialize([existing], String(req.userId)))[0]
         });
       }
     }
-    if (uploaded) await deleteMarketplaceImage(uploaded.public_id).catch(() => {});
-    throw error;
+
+    if (imageFile) {
+      if (!imageBuffer || detectWallImageType(imageBuffer) !== imageFile.mimetype) fail('INVALID_IMAGE');
+      try {
+        uploadedImage = await uploadFromBuffer(imageBuffer, { folder: 'homelyserv/wall', resource_type: 'image', transformation: [{ width: 1600, height: 1600, crop: 'limit' }] });
+      } catch { fail('IMAGE_STORAGE_UNAVAILABLE', 503); }
+      if (!uploadedImage?.secure_url || !uploadedImage.public_id) fail('IMAGE_STORAGE_UNAVAILABLE', 503);
+    }
+
+    if (videoFile) {
+      if (!videoBufferHeader || !detectWallVideoType(videoBufferHeader)) fail('INVALID_VIDEO');
+
+      try {
+        if (videoFile.path) {
+          uploadedVideo = await uploadWallVideoStream(videoFile.path);
+        } else if (videoFile.buffer) {
+          uploadedVideo = await uploadFromBuffer(videoFile.buffer, { folder: 'homelyserv/wall/videos', resource_type: 'video', type: 'upload' });
+        }
+      } catch (err) {
+        fail('VIDEO_STORAGE_UNAVAILABLE', 503);
+      } finally {
+        if (videoSlotAcquired) {
+          releaseVideoUploadSlot();
+          videoSlotAcquired = false;
+          req._videoSlotAcquired = false;
+        }
+      }
+      if (!uploadedVideo?.secure_url || !uploadedVideo.public_id) fail('VIDEO_STORAGE_UNAVAILABLE', 503);
+    }
+
+    try {
+      const targetPostId = isReply ? parent.postId : (parent ? parent._id : null);
+      const targetParentCommentId = isReply ? parent._id : null;
+      const notificationRecipient = parent && parent.authorId !== String(req.userId) ? parent.authorId : null;
+
+      const item = await WallContent.create({
+        authorId: String(req.userId),
+        postId: targetPostId,
+        parentCommentId: targetParentCommentId,
+        text,
+        clientMutationId,
+        payloadHash,
+        notificationRecipientId: notificationRecipient,
+        ...(uploadedImage ? { image: { url: uploadedImage.secure_url, publicId: uploadedImage.public_id, hash: incomingImageHash } } : {}),
+        ...(uploadedVideo ? { video: { url: uploadedVideo.secure_url, publicId: uploadedVideo.public_id, hash: incomingVideoHash } } : {})
+      });
+      if (parent) reconcileWallNotifications().catch(() => {});
+      cleanupTempFiles();
+      res.status(201).json({ content: (await serialize([item.toObject()], String(req.userId)))[0] });
+    } catch (error) {
+      if (uploadedImage) await deleteWallMedia(uploadedImage.public_id, 'image').catch(() => {});
+      if (uploadedVideo) await deleteWallMedia(uploadedVideo.public_id, 'video').catch(() => {});
+      if (error.code === 11000 && clientMutationId) {
+        const existing = await WallContent.findOne({ authorId: String(req.userId), clientMutationId }).lean();
+        if (existing) {
+          cleanupTempFiles();
+          return res.status(200).json({
+            reused: true,
+            content: (await serialize([existing], String(req.userId)))[0]
+          });
+        }
+      }
+      cleanupTempFiles();
+      throw error;
+    }
+  } catch (err) {
+    if (videoSlotAcquired) {
+      releaseVideoUploadSlot();
+      videoSlotAcquired = false;
+      req._videoSlotAcquired = false;
+    }
+    cleanupTempFiles();
+    throw err;
   }
 }
 router.post('/posts', upload, wrap(createContent));
 router.post('/posts/:id/comments', upload, wrap(createContent));
+router.post('/comments/:id/replies', upload, wrap(createContent));
+
+router.put('/content/:id', wrap(async (req, res) => {
+  const content = await WallContent.findById(id(req.params.id));
+  if (!content || content.deleted || content.hidden) fail('NOT_FOUND', 404);
+  if (content.authorId !== String(req.userId)) fail('FORBIDDEN', 403);
+
+  const hasMedia = !!(content.image?.url || content.video?.url);
+  const isCommentOrReply = !!(content.postId);
+  if (isCommentOrReply && hasMedia && String(req.body.text || '').trim()) {
+    fail('TEXT_OR_IMAGE');
+  }
+  const newText = validateWallText(req.body.text, hasMedia);
+
+  content.text = newText;
+  content.isEdited = true;
+  content.editedAt = new Date();
+  await content.save();
+
+  res.json({ success: true, content: (await serialize([content.toObject()], String(req.userId)))[0] });
+}));
 router.put('/posts/:id/like', wrap(async (req, res) => {
   const post = await visible(req, req.params.id);
   if (post.postId) fail('INVALID_POST');
