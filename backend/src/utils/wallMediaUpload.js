@@ -77,7 +77,8 @@ class WallMediaStorage {
     }
 
     const ext = path.extname(file.originalname) || '';
-    const tempPath = path.join(os.tmpdir(), `wall_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+    const tempDir = getUploadTempDir();
+    const tempPath = path.join(tempDir, `wall_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
     const outStream = fs.createWriteStream(tempPath);
     const hash = crypto.createHash('sha256');
     let headerBuffer = Buffer.alloc(0);
@@ -179,7 +180,18 @@ export const wallMediaUpload = (req, res, next) => {
   });
 };
 
+let customTempDir = null;
 let videoStorageAdapter = null;
+
+export const setCustomTempDir = (dir) => {
+  customTempDir = dir;
+};
+
+export const resetCustomTempDir = () => {
+  customTempDir = null;
+};
+
+export const getUploadTempDir = () => customTempDir || os.tmpdir();
 
 export const setVideoStorageAdapter = (adapter) => {
   videoStorageAdapter = adapter;
