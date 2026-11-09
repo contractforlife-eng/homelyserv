@@ -179,7 +179,20 @@ export const wallMediaUpload = (req, res, next) => {
   });
 };
 
+let videoStorageAdapter = null;
+
+export const setVideoStorageAdapter = (adapter) => {
+  videoStorageAdapter = adapter;
+};
+
+export const resetVideoStorageAdapter = () => {
+  videoStorageAdapter = null;
+};
+
 export const uploadWallVideoStream = (filePath) => {
+  if (typeof videoStorageAdapter === 'function') {
+    return videoStorageAdapter(filePath);
+  }
   return new Promise((resolve, reject) => {
     try {
       if (!cloudinary.config().api_key) {
