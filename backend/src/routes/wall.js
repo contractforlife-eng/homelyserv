@@ -72,6 +72,7 @@ async function serialize(rows, userId) {
     const like = likes.find(l => String(l._id) === String(row._id));
     const replyCount = repliesAgg.find(r => String(r._id) === String(row._id))?.count || 0;
     return { id: String(row._id), text: row.text, image: row.image?.url || null, video: row.video?.url || null,
+      createdAt: row.createdAt,
       isEdited: row.isEdited === true, editedAt: row.editedAt || null, parentCommentId: row.parentCommentId ? String(row.parentCommentId) : null,
       postId: row.postId ? String(row.postId) : null,
       author: { ...author, role: roles.find(u => String(u._id) === row.authorId)?.role, profileImage: roles.find(u => String(u._id) === row.authorId)?.profileImage || null, crown: wallCrown(wallets.find(w => w._id === row.authorId)?.receivedGifts || 0) },
@@ -208,7 +209,7 @@ router.get('/comments/:id/replies', wrap(async (req, res) => {
 async function createContent(req, res) {
   let uploadedImage;
   let uploadedVideo;
-  let videoSlotAcquired = false;
+  let videoSlotAcquired = !!req._videoSlotAcquired;
   const imageFile = req.files?.image?.[0] || (req.file?.fieldname === 'image' ? req.file : null);
   const videoFile = req.files?.video?.[0] || (req.file?.fieldname === 'video' ? req.file : null);
 
@@ -238,7 +239,7 @@ async function createContent(req, res) {
 
     // Read media buffers from disk
     const imageBuffer = imageFile?.path ? fs.readFileSync(imageFile.path) : (imageFile?.buffer || null);
-    const videoBufferHeader = videoFile?.path
+    const videoBufferHeader = videoFile?.headerChunk || (videoFile?.path
       ? (() => {
           const fd = fs.openSync(videoFile.path, 'r');
           const buf = Buffer.alloc(32);
@@ -246,14 +247,14 @@ async function createContent(req, res) {
           fs.closeSync(fd);
           return buf.subarray(0, bytesRead);
         })()
-      : (videoFile?.buffer ? videoFile.buffer.subarray(0, 32) : null);
+      : (videoFile?.buffer ? videoFile.buffer.subarray(0, 32) : null));
 
-    // Compute canonical payload fingerprint
+    // Compute canonical payload fingerprint with incremental stream hash
     const incomingParentId = parent ? String(parent._id) : '';
     const incomingImageHash = imageBuffer ? crypto.createHash('sha256').update(imageBuffer).digest('hex') : '';
-    const incomingVideoHash = videoFile?.path
+    const incomingVideoHash = videoFile?.hash || (videoFile?.path
       ? crypto.createHash('sha256').update(fs.readFileSync(videoFile.path)).digest('hex')
-      : (videoFile?.buffer ? crypto.createHash('sha256').update(videoFile.buffer).digest('hex') : '');
+      : (videoFile?.buffer ? crypto.createHash('sha256').update(videoFile.buffer).digest('hex') : ''));
     const canonicalPayload = `${incomingParentId}:${String(text || '').trim()}:${incomingImageHash}:${incomingVideoHash}`;
     const payloadHash = crypto.createHash('sha256').update(canonicalPayload).digest('hex');
 
@@ -275,6 +276,11 @@ async function createContent(req, res) {
         if (existingPayloadHash !== payloadHash) {
           fail('MUTATION_KEY_CONFLICT', 409);
         }
+        if (videoSlotAcquired) {
+          releaseVideoUploadSlot();
+          videoSlotAcquired = false;
+          req._videoSlotAcquired = false;
+        }
         cleanupTempFiles();
         return res.status(200).json({
           reused: true,
@@ -293,10 +299,6 @@ async function createContent(req, res) {
 
     if (videoFile) {
       if (!videoBufferHeader || !detectWallVideoType(videoBufferHeader)) fail('INVALID_VIDEO');
-      if (!acquireVideoUploadSlot()) {
-        fail('TOO_MANY_CONCURRENT_UPLOADS', 429);
-      }
-      videoSlotAcquired = true;
 
       try {
         if (videoFile.path) {
@@ -310,6 +312,7 @@ async function createContent(req, res) {
         if (videoSlotAcquired) {
           releaseVideoUploadSlot();
           videoSlotAcquired = false;
+          req._videoSlotAcquired = false;
         }
       }
       if (!uploadedVideo?.secure_url || !uploadedVideo.public_id) fail('VIDEO_STORAGE_UNAVAILABLE', 503);
@@ -354,6 +357,7 @@ async function createContent(req, res) {
     if (videoSlotAcquired) {
       releaseVideoUploadSlot();
       videoSlotAcquired = false;
+      req._videoSlotAcquired = false;
     }
     cleanupTempFiles();
     throw err;

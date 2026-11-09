@@ -2,6 +2,7 @@ import multer from 'multer';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { cloudinary, uploadFromBuffer } from './cloudinary.js';
 
 export const MAX_WALL_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -55,19 +56,96 @@ export const detectWallVideoType = (buffer) => {
   return null;
 };
 
-// Disk-backed streaming storage for bounded memory footprint
-const diskStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, os.tmpdir());
-  },
-  filename: (_req, file, cb) => {
+/**
+ * Custom Multer storage engine that:
+ * 1. Acquires a video slot before accepting video file payload.
+ * 2. Streams video directly to disk.
+ * 3. Hashes video content incrementally on-the-fly during write stream.
+ * 4. Captures header chunk for magic-byte validation.
+ * 5. Attaches cleanup hook to req.on('close') for client abort.
+ */
+class WallMediaStorage {
+  _handleFile(req, file, cb) {
+    const isVideo = file.fieldname === 'video';
+    if (isVideo) {
+      if (!acquireVideoUploadSlot()) {
+        const err = new Error('TOO_MANY_CONCURRENT_UPLOADS');
+        err.code = 'UPLOAD_CONCURRENCY_LIMIT';
+        return cb(err);
+      }
+      req._videoSlotAcquired = true;
+    }
+
     const ext = path.extname(file.originalname) || '';
-    cb(null, `wall_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+    const tempPath = path.join(os.tmpdir(), `wall_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+    const outStream = fs.createWriteStream(tempPath);
+    const hash = crypto.createHash('sha256');
+    let headerBuffer = Buffer.alloc(0);
+    let bytesWritten = 0;
+
+    // Attach client abort / close listener
+    const cleanupOnAbort = () => {
+      if (req._videoSlotAcquired) {
+        releaseVideoUploadSlot();
+        req._videoSlotAcquired = false;
+      }
+      outStream.destroy();
+      try {
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      } catch {}
+    };
+
+    req.once('aborted', cleanupOnAbort);
+    req.once('close', () => {
+      if (!req.complete && !req._uploadFinished) {
+        cleanupOnAbort();
+      }
+    });
+
+    file.stream.on('data', (chunk) => {
+      bytesWritten += chunk.length;
+      if (headerBuffer.length < 32) {
+        headerBuffer = Buffer.concat([headerBuffer, chunk]).subarray(0, 32);
+      }
+      hash.update(chunk);
+    });
+
+    file.stream.on('error', (err) => {
+      cleanupOnAbort();
+      cb(err);
+    });
+
+    outStream.on('error', (err) => {
+      cleanupOnAbort();
+      cb(err);
+    });
+
+    outStream.on('finish', () => {
+      req._uploadFinished = true;
+      cb(null, {
+        path: tempPath,
+        size: bytesWritten,
+        hash: hash.digest('hex'),
+        headerChunk: headerBuffer,
+        isVideo
+      });
+    });
+
+    file.stream.pipe(outStream);
   }
-});
+
+  _removeFile(_req, file, cb) {
+    if (file?.path && fs.existsSync(file.path)) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch {}
+    }
+    cb(null);
+  }
+}
 
 const uploadMiddleware = multer({
-  storage: diskStorage,
+  storage: new WallMediaStorage(),
   limits: { fileSize: MAX_WALL_VIDEO_SIZE, files: 1 },
   fileFilter: (_req, file, callback) => {
     const fieldName = file.fieldname;
@@ -90,26 +168,40 @@ const uploadMiddleware = multer({
 
 export const wallMediaUpload = (req, res, next) => {
   uploadMiddleware(req, res, (err) => {
-    if (err) return next(err);
+    if (err) {
+      if (req._videoSlotAcquired) {
+        releaseVideoUploadSlot();
+        req._videoSlotAcquired = false;
+      }
+      return next(err);
+    }
     next();
   });
 };
 
 export const uploadWallVideoStream = (filePath) => {
   return new Promise((resolve, reject) => {
-    const fileStream = fs.createReadStream(filePath);
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'homelyserv/wall/videos',
-        resource_type: 'video',
-        type: 'upload'
-      },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
+    try {
+      if (!cloudinary.config().api_key) {
+        return reject(new Error('CLOUDINARY_NOT_CONFIGURED'));
       }
-    );
-    fileStream.pipe(uploadStream);
+      const fileStream = fs.createReadStream(filePath);
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'homelyserv/wall/videos',
+          resource_type: 'video',
+          type: 'upload'
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+      fileStream.on('error', reject);
+      fileStream.pipe(uploadStream);
+    } catch (e) {
+      reject(e);
+    }
   });
 };
 
