@@ -1,11 +1,11 @@
 // src/components/NotificationBell.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, X, Check, CheckCheck, Trash2, ExternalLink } from 'lucide-react';
-import { 
-  getNotifications, 
-  getUnreadCount, 
-  markAsRead, 
-  markAllAsRead, 
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
   deleteNotification,
   clearAllNotifications,
   getEntityRoute,
@@ -27,6 +27,7 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const dropdownRef = useRef(null);
   const bellRef = useRef(null);
   const loadVersion = useRef(0);
@@ -35,19 +36,21 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
   // Load notifications
   const loadNotifications = async () => {
     if (!userId) return;
-    
+
     const version = ++loadVersion.current;
     setIsLoading(true);
     try {
       const result = await getNotifications({ limit: 20 });
-      const unread = await getUnreadCount();
-      
+
       if (version !== loadVersion.current) return;
       (result.notifications || []).forEach(n => knownIds.current.add(n.id));
       setNotifications(result.notifications || []);
-      setUnreadCount(unread);
+      setUnreadCount(typeof result.unreadCount === 'number' ? result.unreadCount : 0);
+      setHasError(false);
     } catch (error) {
       console.error('Error loading notifications:', error);
+      if (version !== loadVersion.current) return;
+      setHasError(true);
     } finally {
       if (version === loadVersion.current) setIsLoading(false);
     }
@@ -77,9 +80,9 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target) &&
-        bellRef.current && 
+        bellRef.current &&
         !bellRef.current.contains(event.target)
       ) {
         setIsOpen(false);
@@ -114,10 +117,15 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
   // Handle marking as read
   const handleMarkAsRead = async (notificationId) => {
     try {
+      const target = notifications.find(n => n.id === notificationId);
+      const wasUnread = target && !target.read && !target.isRead;
       await markAsRead(notificationId);
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true, isRead: true } : n)
       );
+      if (wasUnread) {
+        setUnreadCount(count => Math.max(0, count - 1));
+      }
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -171,7 +179,7 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
     if (!notification.read) {
       markAsRead(notification.id);
     }
-    
+
     // Message notifications use the existing role-specific Messages route.
     // The page will only select a conversation returned by its authorized list.
     const isMessageNotification = notification.type === 'NEW_MESSAGE'
@@ -202,7 +210,7 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return t('sharedChrome.notifications.justNow');
     if (diff < 3600000) return t('sharedChrome.notifications.minutesAgo', { count: Math.floor(diff / 60000) });
     if (diff < 86400000) return t('sharedChrome.notifications.hoursAgo', { count: Math.floor(diff / 3600000) });
@@ -282,6 +290,18 @@ const NotificationBell = ({ userId: userIdProp, className = '', tone = 'default'
             {isLoading ? (
               <div className="flex items-center justify-center p-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+              </div>
+            ) : hasError ? (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-500 text-center">
+                <Bell size={40} className="text-red-300 mb-2" />
+                <p className="text-sm font-medium text-red-600">{t('sharedChrome.notifications.loadError')}</p>
+                <button
+                  type="button"
+                  onClick={loadNotifications}
+                  className="mt-3 px-3 py-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors border border-teal-200"
+                >
+                  {t('sharedChrome.notifications.retry')}
+                </button>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-gray-500">

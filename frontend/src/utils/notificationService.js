@@ -91,20 +91,15 @@ const mapNotification = (n) => ({
 // GET NOTIFICATIONS
 // ============================================================
 export async function getNotifications({ page = 1, limit = 50 } = {}) {
-  try {
-    const res = await api.get(`/api/notifications?page=${page}&limit=${limit}`);
-    const data = await handleResponse(res);
-    return {
-      notifications: (data.notifications || []).map(mapNotification),
-      total: data.total || 0,
-      unreadCount: data.unreadCount || 0,
-      page: data.page || page,
-      limit: data.limit || limit,
-    };
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    return { notifications: [], total: 0, unreadCount: 0, page, limit };
-  }
+  const res = await api.get(`/api/notifications?page=${page}&limit=${limit}`);
+  const data = await handleResponse(res);
+  return {
+    notifications: (data.notifications || []).map(mapNotification),
+    total: data.total || 0,
+    unreadCount: data.unreadCount || 0,
+    page: data.page || page,
+    limit: data.limit || limit,
+  };
 }
 
 // ============================================================

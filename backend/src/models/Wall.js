@@ -4,16 +4,21 @@ const model = (name, schema) => mongoose.models[name] || mongoose.model(name, sc
 const content = new Schema({
   authorId: { type: String, required: true, index: true },
   postId: { type: Schema.Types.ObjectId, default: null },
+  parentCommentId: { type: Schema.Types.ObjectId, default: null },
   clientMutationId: { type: String, default: null },
   payloadHash: { type: String, default: null },
   text: { type: String, maxlength: 15000, default: '' },
   image: { url: String, publicId: String, hash: String },
+  video: { url: String, publicId: String, hash: String },
+  isEdited: { type: Boolean, default: false },
+  editedAt: { type: Date, default: null },
   hidden: { type: Boolean, default: false },
   deleted: { type: Boolean, default: false },
   notificationRecipientId: { type: String, default: null },
   notificationHandedOff: { type: Boolean, default: false },
 }, { timestamps: true, collection: 'wall_content' });
 content.index({ postId: 1, hidden: 1, deleted: 1, _id: -1 });
+content.index({ parentCommentId: 1, hidden: 1, deleted: 1, _id: 1 });
 content.index({ notificationRecipientId: 1, notificationHandedOff: 1 });
 content.index(
   { authorId: 1, clientMutationId: 1 },

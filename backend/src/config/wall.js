@@ -40,9 +40,9 @@ export function wallCrown(count = 0) {
     gems: count >= 1000 ? Math.floor((count - 500) / 500) : 0, gifts: count };
 }
 
-export function validateWallText(value, hasImage = false) {
+export function validateWallText(value, hasMedia = false) {
   const text = String(value ?? '').trim();
-  if ((!text && !hasImage) || text.length > 15000 || (text && text.split(/\s+/u).length > 500)) {
+  if ((!text && !hasMedia) || text.length > 15000 || (text && text.split(/\s+/u).length > 500)) {
     throw Object.assign(new Error('INVALID_CONTENT'), { status: 400 });
   }
   return text;
