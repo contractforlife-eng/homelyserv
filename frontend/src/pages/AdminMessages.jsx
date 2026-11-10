@@ -581,9 +581,9 @@ const AdminMessages = () => {
 
       const conversation = {
         id: result.conversationId,
-        type: scope === 'USERS' ? 'USERS' : (conv.type || 'INTERNAL'),
+        type: scope === 'STAFF' ? 'INTERNAL' : 'USERS',
         inboxScope: scope === 'STAFF' ? 'STAFF' : 'USERS',
-        participantIds: conv.participantIds || [],
+        participantIds: conv.participantIds || [String(authUser.id), String(userId)],
         supportAgentId: conv.supportAgentId || null,
         otherStaffId: scope === 'STAFF'
           ? (conv.staffIds || []).find(id => id !== String(authUser.id)) || String(userId)
@@ -660,10 +660,13 @@ const AdminMessages = () => {
         const role = response.data?.user?.role;
         const scope = USER_TARGET_ROLES.includes(role) ? 'USERS' : 'STAFF';
         setActiveSection(scope === 'USERS' ? SECTIONS.USERS : SECTIONS.SUPPORT);
-        handleStartConversation(targetUserId, scope);
+        return handleStartConversation(targetUserId, scope);
       }).catch(() => {
-        handleStartConversation(targetUserId, 'USERS');
+        return handleStartConversation(targetUserId, 'USERS');
+      }).finally(() => {
+        navigate(location.pathname, { replace: true, state: {} });
       });
+      return;
     } else if (targetConvId) {
       // If we only have targetConvId and it wasn't in the initial lists, load its messages directly
       getAdminConversationMessages(targetConvId).then((result) => {
@@ -675,7 +678,7 @@ const AdminMessages = () => {
             id: conv.id || targetConvId,
             type: isStaff ? 'INTERNAL' : 'USERS',
             inboxScope: isStaff ? 'STAFF' : 'USERS',
-            participantIds: conv.participantIds || [],
+            participantIds: conv.participantIds || [String(authUser.id), String(otherParticipantId)].filter(Boolean),
             supportAgentId: conv.supportAgentId || null,
             otherStaffId: isStaff ? otherParticipantId : null,
             user: !isStaff && otherParticipantId ? { id: otherParticipantId, fullName: t.user, role: 'USER' } : null,
