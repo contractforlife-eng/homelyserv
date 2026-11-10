@@ -40,6 +40,22 @@
       "destination": "https://adventurous-grace-production-1b38.up.railway.app/api/marketplace/preview/:id"
     },
     {
+      "source": "/wall",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Discordbot|Slackbot|vkShare|W3C_Validator|bingbot|Googlebot|Baiduspider).*"
+        },
+        {
+          "type": "query",
+          "key": "post",
+          "value": "(?<post>[a-fA-F0-9]{24})"
+        }
+      ],
+      "destination": "https://adventurous-grace-production-1b38.up.railway.app/api/wall/preview/:post"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

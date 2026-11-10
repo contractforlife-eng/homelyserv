@@ -86,3 +86,73 @@ test('Parent comment visibility rules for replies', () => {
   // Root post author blocked
   assert.equal(checkVisibility(validComment, validPost, ['author1'], 'viewer1'), false);
 });
+
+test('Wall Post Chat action validation and access control rules', () => {
+  const getConversationId = (u1, u2) => `conv_${[String(u1), String(u2)].sort().join('_')}`;
+
+  const validateChatAccess = ({ viewerId, post, isBlocked, chatAuthAllowed }) => {
+    if (!post || post.deleted || post.hidden) {
+      return { status: 404, code: 'NOT_FOUND' };
+    }
+    if (post.postId) {
+      return { status: 400, code: 'INVALID_POST' };
+    }
+    if (String(post.authorId) === String(viewerId)) {
+      return { status: 400, code: 'CANNOT_CHAT_SELF' };
+    }
+    if (isBlocked) {
+      return { status: 403, code: 'COMMUNICATION_BLOCKED' };
+    }
+    if (!chatAuthAllowed) {
+      return { status: 403, code: 'MESSAGING_FORBIDDEN' };
+    }
+    return {
+      status: 200,
+      success: true,
+      conversationId: getConversationId(viewerId, post.authorId),
+      recipientId: post.authorId,
+    };
+  };
+
+  const authorId = '507f1f77bcf86cd799439011';
+  const viewerId = '507f1f77bcf86cd799439022';
+  const validPost = {
+    _id: '507f1f77bcf86cd799439099',
+    postId: null,
+    authorId,
+    deleted: false,
+    hidden: false,
+  };
+
+  // 1. Success case: distinct viewer and author, post active, no block, chat authorized
+  const successResult = validateChatAccess({ viewerId, post: validPost, isBlocked: false, chatAuthAllowed: true });
+  assert.equal(successResult.status, 200);
+  assert.equal(successResult.conversationId, getConversationId(viewerId, authorId));
+  assert.equal(successResult.recipientId, authorId);
+
+  // 2. Reject self-chat
+  const selfResult = validateChatAccess({ viewerId: authorId, post: validPost, isBlocked: false, chatAuthAllowed: true });
+  assert.equal(selfResult.status, 400);
+  assert.equal(selfResult.code, 'CANNOT_CHAT_SELF');
+
+  // 3. Reject comment/reply (not a top-level post)
+  const commentPost = { ...validPost, postId: '507f1f77bcf86cd799439090' };
+  const commentResult = validateChatAccess({ viewerId, post: commentPost, isBlocked: false, chatAuthAllowed: true });
+  assert.equal(commentResult.status, 400);
+  assert.equal(commentResult.code, 'INVALID_POST');
+
+  // 4. Reject deleted or hidden post
+  const deletedResult = validateChatAccess({ viewerId, post: { ...validPost, deleted: true }, isBlocked: false, chatAuthAllowed: true });
+  assert.equal(deletedResult.status, 404);
+  assert.equal(deletedResult.code, 'NOT_FOUND');
+
+  // 5. Reject communication when blocked
+  const blockedResult = validateChatAccess({ viewerId, post: validPost, isBlocked: true, chatAuthAllowed: true });
+  assert.equal(blockedResult.status, 403);
+  assert.equal(blockedResult.code, 'COMMUNICATION_BLOCKED');
+
+  // 6. Reject when role-based messaging authorization fails (e.g., student safeguarding)
+  const forbiddenResult = validateChatAccess({ viewerId, post: validPost, isBlocked: false, chatAuthAllowed: false });
+  assert.equal(forbiddenResult.status, 403);
+  assert.equal(forbiddenResult.code, 'MESSAGING_FORBIDDEN');
+});

@@ -6,6 +6,11 @@ test('allows internal marketplace listing return paths', () => {
   assert.equal(sanitizeReturnPath('/marketplace/507f1f77bcf86cd799439011?shared=1'), '/marketplace/507f1f77bcf86cd799439011?shared=1');
 });
 
+test('allows internal wall post return paths with query and hash', () => {
+  assert.equal(sanitizeReturnPath('/wall?post=507f1f77bcf86cd799439011'), '/wall?post=507f1f77bcf86cd799439011');
+  assert.equal(sanitizeReturnPath('/wall?post=507f1f77bcf86cd799439011&lang=ar#wall-post-507f1f77bcf86cd799439011'), '/wall?post=507f1f77bcf86cd799439011&lang=ar#wall-post-507f1f77bcf86cd799439011');
+});
+
 test('rejects open redirects and unrelated internal routes', () => {
   for (const value of ['https://evil.test/x', '//evil.test/x', '/\\evil.test', '/admin', 'javascript:alert(1)']) {
     assert.equal(sanitizeReturnPath(value), null);

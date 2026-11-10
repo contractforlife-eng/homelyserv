@@ -1,7 +1,7 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Crown, Gift, Heart, MessageCircle, ImagePlus, Video, Edit2, CornerDownRight, X, Sparkles, Coins, Smartphone, Building2, Wallet, Landmark, ArrowLeft, Check, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Crown, Gift, Heart, MessageCircle, ImagePlus, Video, Edit2, CornerDownRight, X, Sparkles, Coins, Smartphone, Building2, Wallet, Landmark, ArrowLeft, Check, CheckCircle2, AlertCircle, Share2, Send } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import SupportLayout from '../layouts/SupportLayout';
@@ -24,6 +24,18 @@ import WallDinarHistory from '../components/WallDinarHistory';
 import WallAvatar from '../components/WallAvatar';
 import { getStaffIdentityTitle } from '../utils/staffIdentityPolicy';
 import VerifiedBadge from '../components/verification/VerifiedBadge';
+import WallShareModal from '../components/WallShareModal';
+
+const MESSAGE_ROUTES = {
+  WORKER: '/worker-messages',
+  EMPLOYER: '/employer-messages',
+  DOCTOR: '/doctor-messages',
+  TEACHER: '/teacher-messages',
+  STUDENT: '/student-messages',
+  ADMIN: '/admin/messages',
+  SUPPORT: '/support-messages',
+  SUPPORT_HELPER: '/sup-help/messages',
+};
 
 const flagEmoji = code => [...code].map(c => String.fromCodePoint(127397 + c.charCodeAt(0))).join('');
 const giftKey = id => id === 'flag' ? 'flagGift' : id;
@@ -232,6 +244,7 @@ function Composer({ parentId, isReply = false, onDone, onSubmitComment, primary,
 
 export default function Wall() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const wallView = searchParams.get('view') === 'mine' ? 'mine' : 'public';
@@ -240,6 +253,9 @@ export default function Wall() {
   const [feedLoading, setFeedLoading] = useState(false);
   const focusedPost = searchParams.get('post');
   const focusedOnce = useRef(null);
+  const [shareModalPost, setShareModalPost] = useState(null);
+  const [chatLoading, setChatLoading] = useState({});
+  const chatInFlight = useRef(new Set());
   const role = user?.role;
   const support = ['SUPPORT', 'SUPPORT_HELPER'].includes(role);
   const moderator = ['ADMIN', 'SUPPORT'].includes(role);
@@ -290,7 +306,16 @@ export default function Wall() {
     const generation = ++feedGeneration.current;
     const [feed, wallet] = await Promise.all([api.get('/api/wall/posts', { params: { scope: wallView, ...(before ? { before } : {}) } }), api.get('/api/wall/store')]);
     if (!before && focusedPost && !feed.data.posts.some(p => p.id === focusedPost)) {
-      try { const focused = await api.get(`/api/wall/posts/${focusedPost}`); if (focused.data.post && (wallView === 'public' || String(focused.data.post.author?.id) === currentUserId)) feed.data.posts.unshift(focused.data.post); } catch {}
+      try {
+        const focused = await api.get(`/api/wall/posts/${focusedPost}`);
+        if (focused.data.post && (wallView === 'public' || String(focused.data.post.author?.id) === currentUserId)) {
+          feed.data.posts.unshift(focused.data.post);
+        }
+      } catch (err) {
+        if (err.response?.status === 404 || err.response?.data?.code === 'NOT_FOUND') {
+          setError(t('wall.postUnavailable'));
+        }
+      }
     }
     if (generation !== feedGeneration.current) return;
     setPosts(old => {
@@ -495,6 +520,43 @@ export default function Wall() {
       });
     } catch (err) {
       setError(t('wall.error'));
+    }
+  }
+
+  async function messageAuthor(post) {
+    if (!post?.id || chatInFlight.current.has(post.id)) return;
+    chatInFlight.current.add(post.id);
+    setChatLoading(prev => ({ ...prev, [post.id]: true }));
+    setError('');
+
+    try {
+      const response = await api.post(`/api/wall/posts/${post.id}/chat`);
+      const { conversationId, recipientId, authorId } = response.data;
+      const targetUserId = recipientId || authorId;
+
+      navigate(MESSAGE_ROUTES[role] || '/messages', {
+        state: {
+          conversationId,
+          recipientId: targetUserId,
+          otherUserId: targetUserId,
+        }
+      });
+    } catch (err) {
+      const code = err.response?.data?.code || err.message;
+      if (code === 'CANNOT_CHAT_SELF') {
+        setError(t('wall.cannotChatSelf'));
+      } else if (code === 'NOT_FOUND') {
+        setError(t('wall.postUnavailable'));
+      } else {
+        setError(t('wall.error'));
+      }
+    } finally {
+      chatInFlight.current.delete(post.id);
+      setChatLoading(prev => {
+        const next = { ...prev };
+        delete next[post.id];
+        return next;
+      });
     }
   }
 
@@ -743,6 +805,28 @@ export default function Wall() {
             {commentsLoading[post.id] && <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />}
           </button>
           <button data-wall-gift-post={post.id} ref={element => { if (element) giftCounters.current.set(post.id, element); else giftCounters.current.delete(post.id); }} disabled={own(post)} onAnimationEnd={() => setCounterPop(null)} className={`${button} wall-author-action inline-flex items-center gap-2 ${counterPop === post.id ? 'wall-counter-pop' : ''}`} onClick={() => { setTarget(post); setSelected(null); setPanel('gifts'); }}><Gift size={18} />{t('wall.gift')} {post.gifts}</button>
+          <button
+            type="button"
+            className={`${button} wall-author-action inline-flex items-center gap-2`}
+            onClick={() => setShareModalPost(post)}
+            title={t('wall.share')}
+          >
+            <Share2 size={18} />
+            {t('wall.share')}
+          </button>
+          {!own(post) && (
+            <button
+              type="button"
+              disabled={chatLoading[post.id]}
+              className={`${button} wall-author-action inline-flex items-center gap-2`}
+              onClick={() => messageAuthor(post)}
+              title={t('wall.messageAuthor')}
+            >
+              <Send size={18} />
+              {t('wall.messageAuthor')}
+              {chatLoading[post.id] && <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />}
+            </button>
+          )}
         </div>
         {comments[post.id] && <section className="space-y-3 border-t pt-3">
           <Composer parentId={post.id} primary={primary} act={act} busy={busy} onSubmitComment={submitComment} onDone={async () => { await loadComments(post.id); }} />
@@ -1271,6 +1355,12 @@ export default function Wall() {
           {panel === 'admin' && <><h2>{t('wall.admin')}</h2><form className="space-y-2" onSubmit={e => { e.preventDefault(); act(async () => { await api.put('/api/wall/admin/gifts', { prices }); await load(); setNotice(t('wall.success')); }); }}><h3>{t('wall.prices')}</h3><p className="text-xs">{t('wall.priceReview')}</p>{store.gifts.map(g => <label key={g.id} className="flex items-center justify-between gap-3">{g.emoji} {t(`wall.${giftKey(g.id)}`)}<input className={`${field} max-w-28`} type="number" min="100" max="1000000" step="1" required value={prices[g.id] ?? g.price} onChange={e => setPrices(old => ({ ...old, [g.id]: Number(e.target.value) }))} /></label>)}<button disabled={busy} className={`${button} ${primary}`}>{t('wall.save')}</button></form><Link to={role === 'ADMIN' ? '/admin/complaints' : '/support-complaints'} className="block rounded-xl border border-amber-200 p-3 text-sm">{t('wall.reviewComplaints')}</Link></>}
         </section>
       </div>}
+
+      <WallShareModal
+        post={shareModalPost}
+        isOpen={Boolean(shareModalPost)}
+        onClose={() => setShareModalPost(null)}
+      />
 
     </main>
   </>;

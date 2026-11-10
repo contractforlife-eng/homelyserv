@@ -18,6 +18,10 @@ import User from '../models/User.js';
 import { deliverWallReport } from '../services/wallReportService.js';
 import { emitToUser } from '../lib/socket.js';
 import { reconcileWallNotifications } from '../services/wallNotificationService.js';
+import { renderWallPreviewHtml } from '../utils/wallSocialPreview.js';
+import { getConversationId, ensureConversationMetadata } from './chat.js';
+import { getBlockRelationship } from '../services/userBlockService.js';
+import { authorizePaidChatRelationship } from '../services/paymentAuthService.js';
 
 const router = express.Router();
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -31,6 +35,14 @@ const upload = (req, res, next) => wallMediaUpload(req, res, error => {
   if (error.code === 'UPLOAD_CONCURRENCY_LIMIT') return res.status(429).json({ code: 'TOO_MANY_CONCURRENT_UPLOADS' });
   return res.status(400).json({ code: 'INVALID_IMAGE' });
 });
+
+router.get('/preview/:id', wrap(async (req, res) => {
+  const contentId = /^[a-f\d]{24}$/i.test(String(req.params.id)) ? String(req.params.id) : null;
+  const post = contentId ? await WallContent.findOne({ _id: contentId, postId: null, deleted: false, hidden: false }).lean() : null;
+  const authorSummary = post ? (await resolveMarketplaceSellerSummaries([post.authorId])).get(post.authorId) : null;
+  res.type('html').send(renderWallPreviewHtml({ post, author: authorSummary, lang: req.query.lang }));
+}));
+
 router.use(authenticate);
 async function blockedIds(userId) {
   const blocks = await WallBlock.find({ $or: [{ userId }, { blockedId: userId }] }).lean();
@@ -514,6 +526,48 @@ router.post('/posts/:id/gifts', wrap(async (req, res) => {
   const spendable = currentWallet ? getSpendableBalance(currentWallet, new Date()) : 0;
   res.json({ success: true, reused, receipt, balance: spendable });
 }));
+router.post('/posts/:id/chat', wrap(async (req, res) => {
+  const content = await visible(req, req.params.id);
+  if (content.postId) fail('INVALID_POST', 400);
+
+  const authorId = String(content.authorId);
+  const viewerId = String(req.userId);
+  if (authorId === viewerId) fail('CANNOT_CHAT_SELF', 400);
+
+  // Check user-level communication blocking
+  const blockRelationship = await getBlockRelationship(viewerId, authorId);
+  if (blockRelationship.isCommunicationBlocked) {
+    fail('COMMUNICATION_BLOCKED', 403);
+  }
+
+  // Check role-based messaging authorization (e.g. safeguarding)
+  const chatAuth = await authorizePaidChatRelationship({
+    senderId: viewerId,
+    senderRole: req.userRole,
+    recipientId: authorId,
+  });
+  if (chatAuth.required && !chatAuth.allowed) {
+    fail('MESSAGING_FORBIDDEN', 403);
+  }
+
+  const conversationId = getConversationId(viewerId, authorId);
+  await ensureConversationMetadata(conversationId, {
+    type: 'PRIVATE',
+    participantIds: [viewerId, authorId].sort(),
+  });
+
+  const authorSummaries = await resolveMarketplaceSellerSummaries([authorId]);
+  const author = authorSummaries.get(authorId) || null;
+
+  res.json({
+    success: true,
+    conversationId,
+    recipientId: authorId,
+    authorId,
+    author,
+  });
+}));
+
 router.delete('/content/:id', wrap(async (req, res) => {
   const content = await WallContent.findById(id(req.params.id));
   if (!content || (content.authorId !== String(req.userId) && !staff(req))) fail('NOT_FOUND', 404);
