@@ -301,6 +301,10 @@ const ProtectedRoute = ({ children, requiredRole }) => {
       const returnTo = storeMarketplaceReturnPath(`${protectedLocation.pathname}${protectedLocation.search}${protectedLocation.hash}`);
       return <Navigate to="/register" state={{ returnTo }} replace />;
     }
+    if (protectedLocation.pathname.startsWith('/wall')) {
+      const returnTo = storeMarketplaceReturnPath(`${protectedLocation.pathname}${protectedLocation.search}${protectedLocation.hash}`);
+      return <Navigate to="/login" state={{ returnTo }} replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 

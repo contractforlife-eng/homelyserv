@@ -181,7 +181,15 @@ export default {
     "videoTooLarge": "Video exceeds 50MB limit",
     "invalidVideoFormat": "Unsupported video format. Use MP4, WebM, or MOV.",
     "uploadingVideo": "Uploading video…",
-    "saveChanges": "Save"
+    "saveChanges": "Save",
+    "share": "Share",
+    "messageAuthor": "Message Author",
+    "sharePostTitle": "Share Post",
+    "sharePostDescription": "Share this link to this post with others.",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "cannotChatSelf": "You cannot message yourself.",
+    "postUnavailable": "This post is no longer available or has been deleted."
   },
   "ar": {
     "nav": "مجتمع HomelyServ",
@@ -365,7 +373,15 @@ export default {
     "videoTooLarge": "حجم الفيديو يتجاوز الحد الأقصى 50 ميجابايت",
     "invalidVideoFormat": "صيغة الفيديو غير مدعومة. استخدم MP4 أو WebM أو MOV.",
     "uploadingVideo": "جارٍ رفع الفيديو…",
-    "saveChanges": "حفظ"
+    "saveChanges": "حفظ",
+    "share": "مشاركة",
+    "messageAuthor": "مراسلة",
+    "sharePostTitle": "مشاركة المنشور",
+    "sharePostDescription": "شارك رابط هذا المنشور مع الآخرين.",
+    "copyLink": "نسخ الرابط",
+    "linkCopied": "تم نسخ الرابط",
+    "cannotChatSelf": "لا يمكنك مراسلة نفسك.",
+    "postUnavailable": "هذا المنشور لم يعد متاحاً أو تم حذفه."
   },
   "fr": {
     "nav": "Mur HomelyServ",
@@ -549,7 +565,15 @@ export default {
     "videoTooLarge": "La vidéo dépasse la limite de 50 Mo",
     "invalidVideoFormat": "Format vidéo non pris en charge. Utilisez MP4, WebM ou MOV.",
     "uploadingVideo": "Téléversement de la vidéo…",
-    "saveChanges": "Enregistrer"
+    "saveChanges": "Enregistrer",
+    "share": "Partager",
+    "messageAuthor": "Contacter l’auteur",
+    "sharePostTitle": "Partager la publication",
+    "sharePostDescription": "Partagez ce lien vers cette publication avec d’autres.",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié",
+    "cannotChatSelf": "Vous ne pouvez pas vous envoyer de message.",
+    "postUnavailable": "Cette publication n’est plus disponible ou a été supprimée."
   },
   "de": {
     "nav": "HomelyServ Pinnwand",
@@ -733,7 +757,15 @@ export default {
     "videoTooLarge": "Video überschreitet die 50-MB-Grenze",
     "invalidVideoFormat": "Nicht unterstütztes Videoformat. Verwenden Sie MP4, WebM oder MOV.",
     "uploadingVideo": "Video wird hochgeladen…",
-    "saveChanges": "Speichern"
+    "saveChanges": "Speichern",
+    "share": "Teilen",
+    "messageAuthor": "Autor kontaktieren",
+    "sharePostTitle": "Beitrag teilen",
+    "sharePostDescription": "Teilen Sie diesen Link zu diesem Beitrag mit anderen.",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
+    "cannotChatSelf": "Sie können sich nicht selbst eine Nachricht senden.",
+    "postUnavailable": "Dieser Beitrag ist nicht mehr verfügbar oder wurde gelöscht."
   },
   "tr": {
     "nav": "HomelyServ Duvarı",
@@ -917,7 +949,15 @@ export default {
     "videoTooLarge": "Video 50 MB sınırını aşıyor",
     "invalidVideoFormat": "Desteklenmeyen video formatı. MP4, WebM veya MOV kullanın.",
     "uploadingVideo": "Video yükleniyor…",
-    "saveChanges": "Kaydet"
+    "saveChanges": "Kaydet",
+    "share": "Paylaş",
+    "messageAuthor": "Yazara Mesaj Gönder",
+    "sharePostTitle": "Gönderiyi Paylaş",
+    "sharePostDescription": "Bu gönderinin bağlantısını başkalarıyla paylaşın.",
+    "copyLink": "Bağlantıyı kopyala",
+    "linkCopied": "Bağlantı kopyalandı",
+    "cannotChatSelf": "Kendinize mesaj gönderemezsiniz.",
+    "postUnavailable": "Bu gönderi artık mevcut değil veya silinmiş."
   },
   "ru": {
     "nav": "Стена HomelyServ",
@@ -1101,6 +1141,14 @@ export default {
     "videoTooLarge": "Размер видео превышает 50 МБ",
     "invalidVideoFormat": "Неподдерживаемый формат видео. Используйте MP4, WebM или MOV.",
     "uploadingVideo": "Загрузка видео…",
-    "saveChanges": "Сохранить"
+    "saveChanges": "Сохранить",
+    "share": "Поделиться",
+    "messageAuthor": "Написать автору",
+    "sharePostTitle": "Поделиться публикацией",
+    "sharePostDescription": "Поделитесь ссылкой на эту публикацию с другими.",
+    "copyLink": "Скопировать ссылку",
+    "linkCopied": "Ссылка скопирована",
+    "cannotChatSelf": "Вы не можете написать самому себе.",
+    "postUnavailable": "Эта публикация больше не доступна или была удалена."
   }
 };

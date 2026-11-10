@@ -1,4 +1,4 @@
-const ALLOWED_RETURN_PREFIXES = ['/marketplace'];
+const ALLOWED_RETURN_PREFIXES = ['/marketplace', '/wall'];
 
 export const sanitizeMarketplaceListReturnPath = (value) => {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null;
