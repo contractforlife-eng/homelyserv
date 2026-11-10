@@ -13,9 +13,9 @@ test('fetchAppVersionInfo returns null when on web platform', async () => {
 test('fetchAppVersionInfo returns version and build when on native platform', async () => {
   const result = await fetchAppVersionInfo({
     isNativePlatform: () => true,
-    getInfo: async () => ({ version: '1.0.47', build: '48' }),
+    getInfo: async () => ({ version: '1.0.48', build: '49' }),
   });
-  assert.deepEqual(result, { version: '1.0.47', build: '48' });
+  assert.deepEqual(result, { version: '1.0.48', build: '49' });
 });
 
 test('fetchAppVersionInfo handles retrieval errors gracefully without throwing', async () => {
