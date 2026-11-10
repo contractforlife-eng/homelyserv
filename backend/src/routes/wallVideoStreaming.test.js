@@ -207,16 +207,17 @@ test('Provision and seed isolated MongoDB database, isolated temp dir, 201/201/4
     console.log(`Results: Upload #1 status = ${res1.status}, Upload #2 status = ${res2.status}, Upload #3 status = ${res3.status}`);
 
     // Verify 201 / 201 / 429
-    assert.equal(res1.status, 201, 'Upload #1 must return 201 Created');
-    assert.equal(res2.status, 201, 'Upload #2 must return 201 Created');
-    assert.equal(res3.status, 429, 'Upload #3 must return 429 Too Many Requests');
-    assert.equal(res3.data.code, 'TOO_MANY_CONCURRENT_UPLOADS');
+    const statuses = [res1.status, res2.status, res3.status].sort();
+    assert.deepEqual(statuses, [201, 201, 429], 'Concurrent uploads must return two 201s and one 429');
+    const rejected = [res1, res2, res3].find(r => r.status === 429);
+    assert.equal(rejected.data.code, 'TOO_MANY_CONCURRENT_UPLOADS');
 
     // Both posts persist and can be fetched with valid createdAt and video URLs
-    assert.ok(res1.data.content?.id);
-    assert.ok(res2.data.content?.id);
+    const successes = [res1, res2, res3].filter(r => r.status === 201);
+    assert.ok(successes[0].data.content?.id);
+    assert.ok(successes[1].data.content?.id);
 
-    const fetch1 = await fetch(`${baseUrl}/posts/${res1.data.content.id}`, {
+    const fetch1 = await fetch(`${baseUrl}/posts/${successes[0].data.content.id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     assert.equal(fetch1.status, 200);
@@ -225,7 +226,7 @@ test('Provision and seed isolated MongoDB database, isolated temp dir, 201/201/4
     assert.ok(!isNaN(new Date(post1.createdAt).getTime()), 'Post #1 createdAt must be valid parseable date');
     assert.ok(post1.video && post1.video.startsWith('https://res.cloudinary.com'), 'Post #1 must have valid video URL');
 
-    const fetch2 = await fetch(`${baseUrl}/posts/${res2.data.content.id}`, {
+    const fetch2 = await fetch(`${baseUrl}/posts/${successes[1].data.content.id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     assert.equal(fetch2.status, 200);
