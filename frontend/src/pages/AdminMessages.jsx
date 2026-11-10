@@ -627,41 +627,81 @@ const AdminMessages = () => {
   };
 
   // ============================================================
-  // AUTO-OPEN CONVERSATION FROM NAVIGATION (e.g. Admin Hires)
+  // AUTO-OPEN CONVERSATION FROM NAVIGATION (e.g. Wall / Admin Hires)
   // ============================================================
   useEffect(() => {
     if (!authUser || !dataLoaded || autoOpenDoneRef.current) return;
 
-    const targetUserId = location.state?.targetUserId;
+    const targetUserId = location.state?.targetUserId || location.state?.recipientId || location.state?.otherUserId;
     const targetConvId = location.state?.conversationId;
 
     if (!targetUserId && !targetConvId) return;
 
     autoOpenDoneRef.current = true;
 
+    const allConversations = [...userConversations, ...supportConversations];
+
     if (targetConvId) {
-      const existing = (conversations || []).find((c) => String(c.id) === String(targetConvId));
+      const existing = allConversations.find((c) => String(c.id) === String(targetConvId));
       if (existing) {
-        setSelectedConversation(existing);
+        if (existing.type === 'INTERNAL' || existing.inboxScope === 'STAFF') {
+          setActiveSection(SECTIONS.SUPPORT);
+        } else {
+          setActiveSection(SECTIONS.USERS);
+        }
+        loadConversationMessages(existing);
+        navigate(location.pathname, { replace: true, state: {} });
         return;
       }
     }
 
-    if (!targetUserId) return;
-
-    api.get(`/api/admin/users/${targetUserId}`).then((response) => {
-      const role = response.data?.user?.role;
-      const scope = USER_TARGET_ROLES.includes(role) ? 'USERS' : 'STAFF';
-      setActiveSection(scope === 'USERS' ? SECTIONS.USERS : SECTIONS.SUPPORT);
-      handleStartConversation(targetUserId, scope);
-    }).catch(() => {
-      handleStartConversation(targetUserId, 'USERS');
-    });
+    if (targetUserId) {
+      api.get(`/api/admin/users/${targetUserId}`).then((response) => {
+        const role = response.data?.user?.role;
+        const scope = USER_TARGET_ROLES.includes(role) ? 'USERS' : 'STAFF';
+        setActiveSection(scope === 'USERS' ? SECTIONS.USERS : SECTIONS.SUPPORT);
+        handleStartConversation(targetUserId, scope);
+      }).catch(() => {
+        handleStartConversation(targetUserId, 'USERS');
+      });
+    } else if (targetConvId) {
+      // If we only have targetConvId and it wasn't in the initial lists, load its messages directly
+      getAdminConversationMessages(targetConvId).then((result) => {
+        if (result?.conversation) {
+          const conv = result.conversation;
+          const otherParticipantId = (conv.participantIds || []).find((id) => id !== String(authUser.id));
+          const isStaff = conv.type === 'INTERNAL' || conv.type === 'SUPPORT';
+          const conversationObj = {
+            id: conv.id || targetConvId,
+            type: isStaff ? 'INTERNAL' : 'USERS',
+            inboxScope: isStaff ? 'STAFF' : 'USERS',
+            participantIds: conv.participantIds || [],
+            supportAgentId: conv.supportAgentId || null,
+            otherStaffId: isStaff ? otherParticipantId : null,
+            user: !isStaff && otherParticipantId ? { id: otherParticipantId, fullName: t.user, role: 'USER' } : null,
+            otherStaff: isStaff && otherParticipantId ? { id: otherParticipantId, fullName: t.staff, role: 'SUPPORT' } : null,
+            lastMessage: t.officialConversation,
+            lastMessageTime: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          if (isStaff) {
+            setSupportConversations((prev) => [conversationObj, ...prev]);
+            setActiveSection(SECTIONS.SUPPORT);
+          } else {
+            setUserConversations((prev) => [conversationObj, ...prev]);
+            setActiveSection(SECTIONS.USERS);
+          }
+          loadConversationMessages(conversationObj);
+        }
+      }).catch((err) => {
+        console.error('Failed to auto-open target conversation:', err);
+      });
+    }
 
     // Clear the navigation state so it doesn't re-trigger on refresh/back
     navigate(location.pathname, { replace: true, state: {} });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser, dataLoaded]);
+  }, [authUser, dataLoaded, userConversations, supportConversations]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !authUser) return;
