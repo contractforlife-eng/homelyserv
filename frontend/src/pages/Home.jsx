@@ -1559,6 +1559,16 @@ export default function Home() {
                   </Link>
                 </li>
                 <li>
+                  <a href="/guides/post-a-job" lang="ar" dir="rtl" className="text-slate-400 hover:text-white transition">
+                    دليل نشر وظيفة
+                  </a>
+                </li>
+                <li>
+                  <a href="/guides/find-a-job" lang="ar" dir="rtl" className="text-slate-400 hover:text-white transition">
+                    دليل البحث عن وظيفة
+                  </a>
+                </li>
+                <li>
                   <Link to="/download" className="text-slate-400 hover:text-white transition">
                     {t('home.nav.app')}
                   </Link>
