@@ -1,0 +1,13 @@
+:root { color-scheme: light; font: 1rem/1.85 system-ui, sans-serif; color: #251a1d; background: #fff8f8; }
+body { max-width: 48rem; margin: 0 auto; padding: 1.5rem; }
+header, nav, footer { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+header { justify-content: space-between; border-bottom: 1px solid #ead9dd; padding-bottom: 1rem; }
+main { margin-block: 2rem; }
+article { background: #fff; border: 1px solid #ead9dd; border-radius: 1rem; padding: clamp(1rem, 4vw, 2rem); }
+h1, h2, h3 { color: #710c24; line-height: 1.4; }
+h1 { font-size: clamp(1.8rem, 5vw, 2.7rem); margin-top: 0; }
+a { color: #8a1530; text-underline-offset: .2em; }
+.brand { font-weight: 750; }
+.example { border-inline-start: .25rem solid #b51c35; padding-inline-start: 1rem; }
+.cta { display: inline-block; background: #a20f2b; color: #fff; padding: .55rem 1rem; border-radius: .5rem; }
+footer { border-top: 1px solid #ead9dd; padding-top: 1rem; }

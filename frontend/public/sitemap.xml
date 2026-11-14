@@ -35,4 +35,10 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://www.homelyserv.com/guides/post-a-job</loc>
+  </url>
+  <url>
+    <loc>https://www.homelyserv.com/guides/find-a-job</loc>
+  </url>
 </urlset>
