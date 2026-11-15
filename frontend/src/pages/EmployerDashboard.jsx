@@ -7,6 +7,7 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 import {
   Home,
   User,
@@ -486,6 +487,9 @@ const EmployerDashboard = () => {
               </Link>
             </div>
           </div>
+
+          {/* Amazon Egypt Card */}
+          <AmazonEgyptCard />
 
           {/* Recent Activity - REAL DATA */}
           <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700">

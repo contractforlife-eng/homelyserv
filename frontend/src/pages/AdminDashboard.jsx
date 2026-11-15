@@ -9,6 +9,7 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import StatCard from '../components/admin/StatCard';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import { getDisplayName, getRoleLabel, getRoleBadgeClasses } from '../utils/userDisplay';
 import complaintsService from '../services/complaintService';
@@ -720,6 +721,9 @@ const AdminDashboard = () => {
               })}
             </div>
           </section>
+
+          {/* Amazon Egypt Card */}
+          <AmazonEgyptCard className="mt-8" />
         </div>
       )}
     </DashboardLayout>

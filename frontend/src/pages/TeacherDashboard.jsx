@@ -7,6 +7,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { isUserPremium } from '../utils/subscriptionService';
 import api from '../utils/api';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 import {
   User,
   GraduationCap,
@@ -436,6 +437,9 @@ const TeacherDashboardContent = () => {
           })}
         </div>
       </div>
+
+      {/* Amazon Egypt Card */}
+      <AmazonEgyptCard />
     </div>
   );
 };

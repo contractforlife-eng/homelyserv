@@ -12,6 +12,7 @@ import {
   getTotalUnreadCount
 } from '../utils/chatService';
 import hireService from '../services/hireService';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 import { getWorkerEarnings } from '../services/workerEarningService';
 import { formatCurrencyAmount, formatCurrencyTotals, getAccountCurrency, groupCurrencyTotals } from '../utils/currencyPresentation';
 import {
@@ -508,6 +509,9 @@ const WorkerDashboardContent = () => {
               </Link>
             </div>
           </div>
+
+          {/* Amazon Egypt Card */}
+          <AmazonEgyptCard />
 
           {/* Recent Activity */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">

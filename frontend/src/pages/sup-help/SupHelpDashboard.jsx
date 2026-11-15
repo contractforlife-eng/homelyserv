@@ -27,6 +27,7 @@ import {
   Headphones
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
+import AmazonEgyptCard from '../../components/common/AmazonEgyptCard';
 import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupHelpDashboard = () => {
@@ -360,6 +361,9 @@ const SupHelpDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* Amazon Egypt Card */}
+            <AmazonEgyptCard />
           </div>
         )}
       </div>

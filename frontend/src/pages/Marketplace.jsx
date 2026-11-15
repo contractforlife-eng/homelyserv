@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import {
   ShoppingBag, Plus, Search, MapPin, Phone, MessageCircle, Share2,
   Flag, Pencil, Trash2, CheckCircle, AlertCircle, Crown, ChevronLeft, ChevronRight, ImageOff,
-  ArrowLeft, ArrowRight
+  ArrowLeft, ArrowRight, ExternalLink
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import SupportLayout from '../layouts/SupportLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -14,6 +15,7 @@ import api from '../utils/api';
 import { countries } from '../utils/countries';
 import { getCallingCodeByCountry } from '../utils/countryCallingCodes';
 import { sanitizeMarketplaceListReturnPath } from '../utils/safeReturnPath';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 
 const MAX_IMAGE = 5 * 1024 * 1024;
 const MESSAGE_ROUTES = {
@@ -924,6 +926,9 @@ const Marketplace = () => {
             />
           </div>
         )}
+
+        {/* Amazon Egypt Card */}
+        <AmazonEgyptCard />
 
         {/* Listings Grid */}
         {listings.length ? (

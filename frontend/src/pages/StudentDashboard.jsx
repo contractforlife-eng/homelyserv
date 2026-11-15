@@ -9,6 +9,7 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 import {
   getStudentParentRequests,
   acceptParentRequest,
@@ -735,6 +736,9 @@ const StudentDashboardContent = () => {
           })}
         </div>
       </div>
+
+      {/* Amazon Egypt Card */}
+      <AmazonEgyptCard />
     </div>
   );
 };

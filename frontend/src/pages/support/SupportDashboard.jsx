@@ -26,6 +26,7 @@ import {
   Headphones
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
+import AmazonEgyptCard from '../../components/common/AmazonEgyptCard';
 import api from '../../utils/api';
 import { UserAvatar, UserDisplayName } from '../../components/users';
 import { ensureConversationExists, getConversationId } from '../../utils/chatService';
@@ -604,6 +605,9 @@ const SupportDashboard = () => {
                 </Link>
               </div>
             </div>
+
+            {/* Amazon Egypt Card */}
+            <AmazonEgyptCard />
           </div>
         )}
       </div>

@@ -15,6 +15,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { isUserPremium } from '../utils/subscriptionService';
 import api from '../utils/api';
+import AmazonEgyptCard from '../components/common/AmazonEgyptCard';
 import {
   User, Calendar, Users, Clock, Building2, FileText, Pill, Tag,
   MessageCircle, Crown, Settings, ArrowRight, Sparkles, Loader2,
@@ -260,6 +261,9 @@ const DoctorDashboardContent = () => {
           })}
         </div>
       </div>
+
+      {/* Amazon Egypt Card */}
+      <AmazonEgyptCard />
     </div>
   );
 };
