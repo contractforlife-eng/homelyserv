@@ -39,7 +39,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import { createQrMatrix } from '../utils/qrCode';
 import markDark from '../assets/branding/homelyserv-mark-dark.png';
 import appIcon from '../assets/branding/homelyserv-app-icon.png';
-import PageMetadata from '../components/PageMetadata';
+import PageMetadata, { homepageMeta } from '../components/PageMetadata';
 
 const DOWNLOAD_URL = 'https://www.homelyserv.com/download';
 
@@ -147,10 +147,7 @@ export default function Home() {
 
   return (
     <>
-      <PageMetadata
-        title="HomelyServ - Home Services & Work Opportunities"
-        description="Connect with trusted home service professionals or discover flexible work opportunities with HomelyServ."
-      />
+      <PageMetadata {...homepageMeta} />
       <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-red-600 selection:text-white">
       {/* ========================================================= */}
       {/* 1. STICKY TOP NAVIGATION BAR */}

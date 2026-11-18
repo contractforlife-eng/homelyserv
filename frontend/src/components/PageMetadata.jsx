@@ -15,8 +15,8 @@ import { getCanonicalUrl } from '../utils/canonicalUrl';
  * Standard homepage metadata. Used as fallback when page-specific data is unavailable.
  */
 const homepageMeta = {
-  title: 'HomelyServ - Home Services & Work Opportunities',
-  description: 'Connect with trusted home service professionals or discover flexible work opportunities with HomelyServ.',
+  title: 'HomelyServ | Home Services, Doctors & Tutors in Egypt',
+  description: 'Find home service providers and flexible jobs in Egypt, book doctor appointments, and find tutors and lessons on HomelyServ.',
   noindex: false,
 };
 
