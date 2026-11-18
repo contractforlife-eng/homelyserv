@@ -473,7 +473,8 @@ const TeacherMessages = () => {
                   }`}
                 >
                   <UserAvatar
-                    user={{ profileImage: conv.avatar, fullName: conv.otherUserName }}
+                    name={conv.otherUserName}
+                    image={conv.avatar}
                     role={conv.otherUserRole}
                     size="md"
                   />
@@ -535,10 +536,8 @@ const TeacherMessages = () => {
                   <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
                 </button>
                 <UserAvatar
-                  user={{
-                    profileImage: selectedConversation.avatar,
-                    fullName: selectedConversation.otherUserName
-                  }}
+                  name={selectedConversation.otherUserName}
+                  image={selectedConversation.avatar}
                   role={selectedConversation.otherUserRole}
                   size="sm"
                 />

@@ -610,11 +610,10 @@ const StudentMessages = () => {
                         >
                           <div className="relative shrink-0">
                             <UserAvatar
-                              user={{
-                                id: conv.otherUserId,
-                                fullName: conv.otherUserName,
-                                profileImage: conv.avatar
-                              }}
+                              name={conv.otherUserName}
+                              image={conv.avatar}
+                              role={conv.otherUserRole || conv.role}
+                              isPremium={conv.isPremium}
                               size="md"
                             />
                             {conv.unread > 0 && (
@@ -691,11 +690,10 @@ const StudentMessages = () => {
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <UserAvatar
-                              user={{
-                                id: peer.id,
-                                fullName: peer.fullName,
-                                profileImage: peer.profileImage
-                              }}
+                              name={peer.fullName}
+                              image={peer.profileImage}
+                              role="STUDENT"
+                              isPremium={peer.isPremium}
                               size="md"
                             />
                             <div className="min-w-0">
@@ -759,11 +757,10 @@ const StudentMessages = () => {
                       <ArrowLeft className="w-5 h-5" />
                     </button>
                     <UserAvatar
-                      user={{
-                        id: selectedConversation.otherUserId,
-                        fullName: selectedConversation.otherUserName,
-                        profileImage: selectedConversation.avatar
-                      }}
+                      name={selectedConversation.otherUserName}
+                      image={selectedConversation.avatar}
+                      role={selectedConversation.otherUserRole || selectedConversation.role}
+                      isPremium={selectedConversation.isPremium}
                       size="sm"
                     />
                     <div className="min-w-0">
@@ -961,11 +958,9 @@ const StudentMessages = () => {
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <UserAvatar
-                            user={{
-                              id: staff.id,
-                              fullName: staff.fullName,
-                              profileImage: staff.profileImage
-                            }}
+                            name={staff.fullName}
+                            image={staff.profileImage}
+                            role={staff.role}
                             size="sm"
                           />
                           <div className="min-w-0">

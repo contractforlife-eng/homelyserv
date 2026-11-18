@@ -439,7 +439,12 @@ const DoctorMessages = () => {
                     selectedConversationId === conv.id ? 'bg-red-50 dark:bg-red-950/30' : ''
                   }`}
                 >
-                  <UserAvatar user={{ profileImage: conv.avatar, fullName: conv.otherUserName }} role={conv.otherUserRole} size="md" />
+                  <UserAvatar
+                    name={conv.otherUserName}
+                    image={conv.avatar}
+                    role={conv.otherUserRole}
+                    size="md"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <UserDisplayName
@@ -487,7 +492,12 @@ const DoctorMessages = () => {
                 >
                   <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
                 </button>
-                <UserAvatar user={{ profileImage: selectedConversation.avatar, fullName: selectedConversation.otherUserName }} role={selectedConversation.otherUserRole} size="sm" />
+                <UserAvatar
+                  name={selectedConversation.otherUserName}
+                  image={selectedConversation.avatar}
+                  role={selectedConversation.otherUserRole}
+                  size="sm"
+                />
                 <div className="min-w-0 flex-1">
                   <UserDisplayName
                     name={selectedConversation.otherUserName}
