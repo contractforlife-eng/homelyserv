@@ -97,21 +97,20 @@ const EmployerDashboard = () => {
       
       console.log('📊 Loading dashboard data for employer:', employerId);
 
-      // 1. Get hires from API
-      let allHires = [];
-      let employerOffers = [];
-      try {
-        const data = await hireService.getMyHires();
-        allHires = data.hires || data.offers || data || [];
-      } catch (error) {
-        console.error('Error loading hires:', error);
-      }
-      try {
-        const data = await hireService.getOffers();
-        employerOffers = data.offers || data || [];
-      } catch (error) {
-        console.error('Error loading offers:', error);
-      }
+      const [hiresResult, offersResult, messagesResult] = await Promise.allSettled([
+        hireService.getMyHires(),
+        hireService.getOffers(),
+        getTotalUnreadCount(employerId),
+      ]);
+      if (hiresResult.status === 'rejected') console.error('Error loading hires:', hiresResult.reason);
+      if (offersResult.status === 'rejected') console.error('Error loading offers:', offersResult.reason);
+      if (messagesResult.status === 'rejected') console.error('Error getting unread messages:', messagesResult.reason);
+
+      const hires = hiresResult.value;
+      const offers = offersResult.value;
+      const allHires = hires?.hires || hires?.offers || hires || [];
+      const employerOffers = offers?.offers || offers || [];
+      const unreadMessages = messagesResult.status === 'fulfilled' ? messagesResult.value : 0;
 
       const employerHires = allHires.filter(
         hire => hire.employerId === employerId || hire.employerEmail === employerEmail
@@ -127,14 +126,6 @@ const EmployerDashboard = () => {
         o => (o.status === 'pending' || o.status === 'new' || o.status === 'applied') &&
              (o.employerId === employerId || o.employerEmail === employerEmail)
       ).length;
-
-      // 4. Get unread messages from chat service
-      let unreadMessages = 0;
-      try {
-        unreadMessages = await getTotalUnreadCount(employerId);
-      } catch (error) {
-        console.error('Error getting unread messages:', error);
-      }
 
       // 5. Get total workers - removed localStorage dependency
       // Note: totalWorkers stat requires a backend endpoint to count all workers
