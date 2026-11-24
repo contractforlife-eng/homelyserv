@@ -208,46 +208,35 @@ export const getCommandCenter = async (req, res) => {
       }),
     ]);
 
-    const recentPremiumUserIds = await getActivePremiumUserIds(recentUsers.map((user) => user.id));
-
-    // ============================================================
-    // ENRICH RECENT PAYMENTS (safe relation resolution)
-    // ============================================================
     const validPaymentUserIds = [...new Set(recentPayments.map(p => p.userId).filter(isValidObjectId))];
-    let paymentUsers = [];
-    if (validPaymentUserIds.length > 0) {
-      paymentUsers = await prisma.user.findMany({
+    const validHireEmployerIds = [...new Set(recentHires.map(h => h.employerId).filter(isValidObjectId))];
+    const validHireWorkerIds = [...new Set(recentHires.map(h => h.workerId).filter(isValidObjectId))];
+    const validAuthorIds = [...new Set(recentActivity.map(a => a.authorId).filter(isValidObjectId))];
+
+    const [paymentUsers, hireEmployers, hireWorkerProfiles, activityAuthors] = await Promise.all([
+      validPaymentUserIds.length > 0 ? prisma.user.findMany({
         where: { id: { in: validPaymentUserIds } },
         select: { id: true, fullName: true, email: true, role: true, profileImage: true },
-      });
-    }
+      }) : [],
+      validHireEmployerIds.length > 0 ? prisma.user.findMany({
+        where: { id: { in: validHireEmployerIds } },
+        select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+      }) : [],
+      validHireWorkerIds.length > 0 ? prisma.workerProfile.findMany({
+        where: { id: { in: validHireWorkerIds } },
+        select: { id: true, userId: true },
+      }) : [],
+      validAuthorIds.length > 0 ? prisma.user.findMany({
+        where: { id: { in: validAuthorIds } },
+        select: { id: true, fullName: true, role: true, profileImage: true },
+      }) : [],
+    ]);
     const paymentUserMap = new Map(paymentUsers.map(u => [u.id, u]));
     const enrichedRecentPayments = recentPayments.map(payment => ({
       ...payment,
       User: paymentUserMap.get(payment.userId) || null,
     }));
-
-    // ============================================================
-    // ENRICH RECENT HIRES (safe relation resolution)
-    // ============================================================
-    const validHireEmployerIds = [...new Set(recentHires.map(h => h.employerId).filter(isValidObjectId))];
-    let hireEmployers = [];
-    if (validHireEmployerIds.length > 0) {
-      hireEmployers = await prisma.user.findMany({
-        where: { id: { in: validHireEmployerIds } },
-        select: { id: true, fullName: true, email: true, role: true, profileImage: true },
-      });
-    }
     const hireEmployerMap = new Map(hireEmployers.map(u => [u.id, u]));
-
-    const validHireWorkerIds = [...new Set(recentHires.map(h => h.workerId).filter(isValidObjectId))];
-    let hireWorkerProfiles = [];
-    if (validHireWorkerIds.length > 0) {
-      hireWorkerProfiles = await prisma.workerProfile.findMany({
-        where: { id: { in: validHireWorkerIds } },
-        select: { id: true, userId: true },
-      });
-    }
     const hireWorkerProfileMap = new Map(hireWorkerProfiles.map(w => [w.id, w]));
 
     const validHireWorkerUserIds = [...new Set(hireWorkerProfiles.map(w => w.userId).filter(isValidObjectId))];
@@ -285,14 +274,6 @@ export const getCommandCenter = async (req, res) => {
     });
 
     // Enrich recent activity with author images
-    const validAuthorIds = [...new Set(recentActivity.map(a => a.authorId).filter(isValidObjectId))];
-    let activityAuthors = [];
-    if (validAuthorIds.length > 0) {
-      activityAuthors = await prisma.user.findMany({
-        where: { id: { in: validAuthorIds } },
-        select: { id: true, fullName: true, role: true, profileImage: true },
-      });
-    }
     const activityAuthorMap = new Map(activityAuthors.map(u => [u.id, u]));
     const enrichedRecentActivity = recentActivity.map(activity => ({
       ...activity,
@@ -351,7 +332,7 @@ export const getCommandCenter = async (req, res) => {
       recentUsers: recentUsers.map(u => ({
         ...u,
         image: u.profileImage || null,
-        isPremium: recentPremiumUserIds.has(String(u.id)),
+        isPremium: activeDisplayPremiumIds.has(String(u.id)),
       })),
       recentPayments: enrichedRecentPayments.map(p => ({
         ...p,

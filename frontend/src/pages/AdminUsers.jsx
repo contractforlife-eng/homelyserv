@@ -310,6 +310,7 @@ const AdminUsers = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [users, setUsers] = useState([]);
+  const [usersStatus, setUsersStatus] = useState('loading');
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -365,16 +366,18 @@ const AdminUsers = () => {
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   const loadUsers = async () => {
+    setUsersStatus('loading');
     try {
       const response = await api.get('/api/admin/users');
       
-      if (response.data.success) {
-        const fetchedUsers = response.data.users || [];
-        setUsers(fetchedUsers);
-        console.log('✅ Loaded users from MongoDB:', fetchedUsers.length);
+      if (!response.data.success) {
+        throw new Error('Failed to load users');
       }
+      setUsers(response.data.users || []);
+      setUsersStatus('ready');
     } catch (error) {
       console.error('❌ Failed loading users from backend:', error);
+      setUsersStatus('error');
     }
   };
 
@@ -705,77 +708,77 @@ const AdminUsers = () => {
           <StatCard
             icon={Users}
             label={t.stats.total}
-            value={stats.total}
+            value={usersStatus === 'ready' ? stats.total : '—'}
             color="text-blue-600"
             bgColor="bg-blue-50 dark:bg-blue-900/20"
           />
           <StatCard
             icon={HardHat}
             label={t.stats.workers}
-            value={stats.workers}
+            value={usersStatus === 'ready' ? stats.workers : '—'}
             color="text-orange-600"
             bgColor="bg-orange-50 dark:bg-orange-900/20"
           />
           <StatCard
             icon={Briefcase}
             label={t.stats.employers}
-            value={stats.employers}
+            value={usersStatus === 'ready' ? stats.employers : '—'}
             color="text-green-600"
             bgColor="bg-green-50 dark:bg-green-900/20"
           />
           <StatCard
             icon={Stethoscope}
             label={t.stats.doctors}
-            value={stats.doctors}
+            value={usersStatus === 'ready' ? stats.doctors : '—'}
             color="text-cyan-600"
             bgColor="bg-cyan-50 dark:bg-cyan-900/20"
           />
           <StatCard
             icon={GraduationCap}
             label={t.stats.teachers}
-            value={stats.teachers}
+            value={usersStatus === 'ready' ? stats.teachers : '—'}
             color="text-violet-600"
             bgColor="bg-violet-50 dark:bg-violet-900/20"
           />
           <StatCard
             icon={School}
             label={t.stats.students}
-            value={stats.students}
+            value={usersStatus === 'ready' ? stats.students : '—'}
             color="text-indigo-600"
             bgColor="bg-indigo-50 dark:bg-indigo-900/20"
           />
           <StatCard
             icon={UserCheck}
             label={t.stats.support}
-            value={stats.support}
+            value={usersStatus === 'ready' ? stats.support : '—'}
             color="text-blue-600"
             bgColor="bg-blue-50 dark:bg-blue-900/20"
           />
           <StatCard
             icon={Shield}
             label={t.stats.supportHelper}
-            value={stats.supportHelper}
+            value={usersStatus === 'ready' ? stats.supportHelper : '—'}
             color="text-red-600"
             bgColor="bg-red-50 dark:bg-red-900/20"
           />
           <StatCard
             icon={Shield}
             label={t.stats.admins}
-            value={stats.admins}
+            value={usersStatus === 'ready' ? stats.admins : '—'}
             color="text-purple-600"
             bgColor="bg-purple-50 dark:bg-purple-900/20"
           />
           <StatCard
             icon={CheckCircle}
             label={t.stats.active}
-            value={stats.active}
+            value={usersStatus === 'ready' ? stats.active : '—'}
             color="text-emerald-600"
             bgColor="bg-emerald-50 dark:bg-emerald-900/20"
           />
           <StatCard
             icon={UserX}
             label={t.stats.suspended}
-            value={stats.suspended}
+            value={usersStatus === 'ready' ? stats.suspended : '—'}
             color="text-red-600"
             bgColor="bg-red-50 dark:bg-red-900/20"
           />
@@ -860,7 +863,16 @@ const AdminUsers = () => {
 
         {/* Users Section: Desktop Compact Table + Mobile Cards + Pagination */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {filteredUsers.length === 0 ? (
+          {usersStatus === 'loading' ? (
+            <PageLoader text={t.loading} />
+          ) : usersStatus === 'error' ? (
+            <div className="p-12 text-center" role="alert">
+              <p>{i18nT('adminCommand.loadFailed')}</p>
+              <button type="button" onClick={loadUsers} className="mt-4 rounded-lg bg-yellow-500 px-4 py-2 text-black">
+                {i18nT('adminCommand.retry')}
+              </button>
+            </div>
+          ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center">
               <UserIcon size={48} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
