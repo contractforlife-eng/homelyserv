@@ -311,6 +311,7 @@ const AdminUsers = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [usersStatus, setUsersStatus] = useState('loading');
+  const [initialStats, setInitialStats] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -362,7 +363,29 @@ const AdminUsers = () => {
     }
 
     setUser(authUser);
+    setInitialStats(null);
+    const request = new AbortController();
+    api.get('/api/admin/users/stats', { signal: request.signal })
+      .then(({ data }) => {
+        if (!request.signal.aborted && data?.success) {
+          setInitialStats({
+            ...data.stats,
+            workers: data.roles.WORKER ?? 0,
+            employers: data.roles.EMPLOYER ?? 0,
+            doctors: data.roles.DOCTOR ?? 0,
+            teachers: data.roles.TEACHER ?? 0,
+            students: data.roles.STUDENT ?? 0,
+            support: data.roles.SUPPORT ?? 0,
+            supportHelper: data.roles.SUPPORT_HELPER ?? 0,
+            admins: data.roles.ADMIN ?? 0,
+          });
+        }
+      })
+      .catch(() => {
+        // The full list can still supply counts if the summary is unavailable.
+      });
     loadUsers();
+    return () => request.abort();
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   const loadUsers = async () => {
@@ -640,6 +663,8 @@ const AdminUsers = () => {
     suspended: users.filter(isSuspendedAccount).length,
   };
 
+  const displayStats = usersStatus === 'ready' ? stats : initialStats;
+
   if (authLoading) {
     return <PageLoader text={t.loading} fullScreen />;
   }
@@ -708,77 +733,77 @@ const AdminUsers = () => {
           <StatCard
             icon={Users}
             label={t.stats.total}
-            value={usersStatus === 'ready' ? stats.total : '—'}
+            value={displayStats?.total ?? '—'}
             color="text-blue-600"
             bgColor="bg-blue-50 dark:bg-blue-900/20"
           />
           <StatCard
             icon={HardHat}
             label={t.stats.workers}
-            value={usersStatus === 'ready' ? stats.workers : '—'}
+            value={displayStats?.workers ?? '—'}
             color="text-orange-600"
             bgColor="bg-orange-50 dark:bg-orange-900/20"
           />
           <StatCard
             icon={Briefcase}
             label={t.stats.employers}
-            value={usersStatus === 'ready' ? stats.employers : '—'}
+            value={displayStats?.employers ?? '—'}
             color="text-green-600"
             bgColor="bg-green-50 dark:bg-green-900/20"
           />
           <StatCard
             icon={Stethoscope}
             label={t.stats.doctors}
-            value={usersStatus === 'ready' ? stats.doctors : '—'}
+            value={displayStats?.doctors ?? '—'}
             color="text-cyan-600"
             bgColor="bg-cyan-50 dark:bg-cyan-900/20"
           />
           <StatCard
             icon={GraduationCap}
             label={t.stats.teachers}
-            value={usersStatus === 'ready' ? stats.teachers : '—'}
+            value={displayStats?.teachers ?? '—'}
             color="text-violet-600"
             bgColor="bg-violet-50 dark:bg-violet-900/20"
           />
           <StatCard
             icon={School}
             label={t.stats.students}
-            value={usersStatus === 'ready' ? stats.students : '—'}
+            value={displayStats?.students ?? '—'}
             color="text-indigo-600"
             bgColor="bg-indigo-50 dark:bg-indigo-900/20"
           />
           <StatCard
             icon={UserCheck}
             label={t.stats.support}
-            value={usersStatus === 'ready' ? stats.support : '—'}
+            value={displayStats?.support ?? '—'}
             color="text-blue-600"
             bgColor="bg-blue-50 dark:bg-blue-900/20"
           />
           <StatCard
             icon={Shield}
             label={t.stats.supportHelper}
-            value={usersStatus === 'ready' ? stats.supportHelper : '—'}
+            value={displayStats?.supportHelper ?? '—'}
             color="text-red-600"
             bgColor="bg-red-50 dark:bg-red-900/20"
           />
           <StatCard
             icon={Shield}
             label={t.stats.admins}
-            value={usersStatus === 'ready' ? stats.admins : '—'}
+            value={displayStats?.admins ?? '—'}
             color="text-purple-600"
             bgColor="bg-purple-50 dark:bg-purple-900/20"
           />
           <StatCard
             icon={CheckCircle}
             label={t.stats.active}
-            value={usersStatus === 'ready' ? stats.active : '—'}
+            value={displayStats?.active ?? '—'}
             color="text-emerald-600"
             bgColor="bg-emerald-50 dark:bg-emerald-900/20"
           />
           <StatCard
             icon={UserX}
             label={t.stats.suspended}
-            value={usersStatus === 'ready' ? stats.suspended : '—'}
+            value={displayStats?.suspended ?? '—'}
             color="text-red-600"
             bgColor="bg-red-50 dark:bg-red-900/20"
           />
