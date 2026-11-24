@@ -207,7 +207,7 @@ const Download = () => {
 
   const storeStatuses = [
     ['direct', t('downloadPage.directDownload'), 'available'],
-    ['uptodown', 'Uptodown', 'underReview'],
+    ['appteka', 'Appteka', 'available', 'https://appteka.store/app/04fr342927'],
     ['huawei', 'Huawei AppGallery', 'available', 'https://appgallery.huawei.com/app/C118757611'],
     ['googlePlay', 'Google Play', 'comingSoon'],
   ];
