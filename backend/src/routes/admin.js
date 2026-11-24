@@ -99,6 +99,39 @@ router.get('/financial-center', async (req, res) => {
   }
 });
 
+router.get('/users/stats', async (req, res) => {
+  try {
+    const groups = await User.aggregate([
+      {
+        $group: {
+          _id: {
+            role: '$role',
+            suspended: {
+              $or: [
+                { $eq: ['$isSuspended', true] },
+                { $eq: [{ $toUpper: { $convert: { input: '$status', to: 'string', onError: '', onNull: '' } } }, 'SUSPENDED'] },
+              ],
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = { total: 0, active: 0, suspended: 0 };
+    const roles = Object.create(null);
+    for (const { _id, count } of groups) {
+      stats.total += count;
+      stats[_id.suspended ? 'suspended' : 'active'] += count;
+      roles[_id.role] = (roles[_id.role] || 0) + count;
+    }
+    return res.json({ success: true, stats, roles });
+  } catch (error) {
+    console.error('Get user stats error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get user statistics' });
+  }
+});
+
 // ============================================================
 // Get All Users (Admin Only) - FIXED: Shows ALL users
 // ============================================================
