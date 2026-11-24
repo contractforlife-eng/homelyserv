@@ -94,16 +94,19 @@ const WorkerDashboardContent = () => {
     try {
       if (!authUser?.email) return;
 
-       const currentUserEmail = authUser.email;
-       const currentUserId = authUser.id || authUser.email;
+      const currentUserEmail = authUser.email;
+      const currentUserId = authUser.id || authUser.email;
 
-       let allWorkerOffers = [];
-       try {
-         const offersData = await hireService.getOffers();
-         allWorkerOffers = Array.isArray(offersData) ? offersData : [];
-       } catch (error) {
-         console.error('Error loading offers:', error);
-       }
+      const [offersResult, messagesResult, earningsResult] = await Promise.allSettled([
+        hireService.getOffers(),
+        getTotalUnreadCount(currentUserId),
+        getWorkerEarnings(),
+      ]);
+      if (offersResult.status === 'rejected') console.error('Error loading offers:', offersResult.reason);
+      if (messagesResult.status === 'rejected') console.error('Error getting message count:', messagesResult.reason);
+      if (earningsResult.status === 'rejected') console.error('Error loading worker earnings:', earningsResult.reason);
+
+      const allWorkerOffers = Array.isArray(offersResult.value) ? offersResult.value : [];
 
       const pendingOffers = allWorkerOffers.filter(o => o.status === 'pending').length;
       const acceptedOffers = allWorkerOffers.filter(o => o.status === 'accepted').length;
@@ -115,32 +118,17 @@ const WorkerDashboardContent = () => {
       const savedOffers = [];
       const profileViews = 0;
 
-      let messagesCount = 0;
-      if (currentUserId) {
-        try {
-          messagesCount = await getTotalUnreadCount(currentUserId);
-        } catch (error) {
-          console.error('Error getting message count:', error);
-        }
-      }
-
-      let workerPayments = [];
-      let pendingPayments = 0;
-      let totalEarningsByCurrency = [];
-      try {
-        const earningsData = await getWorkerEarnings();
-        workerPayments = Array.isArray(earningsData?.records) ? earningsData.records : [];
-        pendingPayments = workerPayments.filter((record) => (
-          record.status === 'PENDING' || record.status === 'AWAITING_CONFIRMATION'
-        )).length;
-        totalEarningsByCurrency = groupCurrencyTotals(
-          workerPayments.filter((record) => record.status === 'EARNED' || record.status === 'PAID'),
-          (record) => record.amount,
-          (record) => record.currency
-        );
-      } catch (error) {
-        console.error('Error loading worker earnings:', error);
-      }
+      const messagesCount = messagesResult.status === 'fulfilled' ? messagesResult.value : 0;
+      const records = earningsResult.value?.records;
+      const workerPayments = Array.isArray(records) ? records : [];
+      const pendingPayments = workerPayments.filter((record) => (
+        record.status === 'PENDING' || record.status === 'AWAITING_CONFIRMATION'
+      )).length;
+      let totalEarningsByCurrency = groupCurrencyTotals(
+        workerPayments.filter((record) => record.status === 'EARNED' || record.status === 'PAID'),
+        (record) => record.amount,
+        (record) => record.currency
+      );
 
       if (totalEarningsByCurrency.length === 0) {
         totalEarningsByCurrency = [{ currency: getAccountCurrency(authUser), amount: 0 }];

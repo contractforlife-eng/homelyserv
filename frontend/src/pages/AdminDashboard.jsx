@@ -1,7 +1,5 @@
 // src/pages/AdminDashboard.jsx - ADMIN COMMAND CENTER
-// Rebuilt to consume the aggregated GET /api/admin/command-center
-// endpoint (single request). No localStorage, no fake data.
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -112,28 +110,47 @@ const AdminDashboard = () => {
   const authLoading = useAuthStore((state) => state.isLoading);
 
   const [data, setData] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [detailsStatus, setDetailsStatus] = useState('loading');
+  const requestRef = useRef(null);
 
-  // ============================================================
-  // SINGLE DATA FETCH - GET /api/admin/command-center
-  // ============================================================
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(() => {
+    requestRef.current?.abort();
+    const request = new AbortController();
+    requestRef.current = request;
+    const { signal } = request;
+
     setLoading(true);
     setError(null);
-    try {
-      const response = await api.get('/api/admin/command-center');
-      if (response.data?.success) {
-        setData(response.data);
-      } else {
-        setError(response.data?.message || 'Failed to load dashboard data');
-      }
-    } catch (err) {
-      console.error('❌ Error loading command center:', err);
-      setError(err.response?.data?.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
+    setDetailsStatus('loading');
+
+    api.get('/api/admin/command-center?section=stats', { signal })
+      .then(({ data: response }) => {
+        if (!response?.success || !response.stats) {
+          throw new Error(response?.message || 'Failed to load dashboard statistics');
+        }
+        if (!signal.aborted) setStats(response.stats);
+      })
+      .catch((err) => {
+        if (!signal.aborted) setError(err.response?.data?.message || err.message);
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
+
+    api.get('/api/admin/command-center?section=details', { signal })
+      .then(({ data: response }) => {
+        if (!response?.success) throw new Error(response?.message || 'Failed to load dashboard details');
+        if (!signal.aborted) {
+          setData(response);
+          setDetailsStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (!signal.aborted) setDetailsStatus('error');
+      });
   }, []);
 
   useEffect(() => {
@@ -147,12 +164,12 @@ const AdminDashboard = () => {
       return;
     }
     fetchData();
+    return () => requestRef.current?.abort();
   }, [authUser, isAuthenticated, authLoading, navigate, fetchData]);
 
   // ============================================================
   // DERIVED STATS (useMemo to avoid re-renders)
   // ============================================================
-  const stats = data?.stats || null;
 
   const kpiCards = useMemo(() => {
     if (!stats) return [];
@@ -621,81 +638,94 @@ const AdminDashboard = () => {
             </div>
           </section>
 
-          {/* ============================================
-              NEEDS ATTENTION + RECENT ACTIVITY
-              ============================================ */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <AlertCircle size={18} className="text-red-600" />
-                  {i18nT('adminCommand.needsAttention')}
-                </h2>
-                <Link
-                  to="/admin/complaints"
-                  className="text-sm text-yellow-500 hover:text-yellow-400 flex items-center gap-1"
-                >
-                  {i18nT('adminCommand.viewAll')}
-                  <ChevronRight size={14} />
-                </Link>
-              </div>
-              {renderNeedsAttention()}
+          {detailsStatus === 'loading' ? (
+            <p role="status" className="text-gray-500">{i18nT('adminCommand.loading')}</p>
+          ) : detailsStatus === 'error' ? (
+            <div role="alert" className="flex items-center gap-3">
+              <p>{i18nT('adminCommand.loadFailed')}</p>
+              <button type="button" onClick={fetchData} className="rounded-lg bg-yellow-500 px-4 py-2 text-black">
+                {i18nT('adminCommand.retry')}
+              </button>
             </div>
+          ) : (
+            <>
+              {/* ============================================
+                  NEEDS ATTENTION + RECENT ACTIVITY
+                  ============================================ */}
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <AlertCircle size={18} className="text-red-600" />
+                      {i18nT('adminCommand.needsAttention')}
+                    </h2>
+                    <Link
+                      to="/admin/complaints"
+                      className="text-sm text-yellow-500 hover:text-yellow-400 flex items-center gap-1"
+                    >
+                      {i18nT('adminCommand.viewAll')}
+                      <ChevronRight size={14} />
+                    </Link>
+                  </div>
+                  {renderNeedsAttention()}
+                </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <History size={18} className="text-blue-600" />
-                  {i18nT('adminCommand.recentActivity')}
-                </h2>
-              </div>
-              {renderRecentActivity()}
-            </div>
-          </section>
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <History size={18} className="text-blue-600" />
+                      {i18nT('adminCommand.recentActivity')}
+                    </h2>
+                  </div>
+                  {renderRecentActivity()}
+                </div>
+              </section>
 
-          {/* ============================================
-              RECENT USERS + RECENT PAYMENTS + RECENT HIRES
-              ============================================ */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-              <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Users size={16} className="text-blue-600" />
-                  {i18nT('adminCommand.recentUsers')}
-                </h2>
-                <Link to="/admin/users" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
-                  {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
-                </Link>
-              </div>
-              <div className="p-4">{renderRecentUsers()}</div>
-            </div>
+              {/* ============================================
+                  RECENT USERS + RECENT PAYMENTS + RECENT HIRES
+                  ============================================ */}
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
+                    <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Users size={16} className="text-blue-600" />
+                      {i18nT('adminCommand.recentUsers')}
+                    </h2>
+                    <Link to="/admin/users" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
+                      {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                  <div className="p-4">{renderRecentUsers()}</div>
+                </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-              <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <CreditCard size={16} className="text-green-600" />
-                  {i18nT('adminCommand.recentPayments')}
-                </h2>
-                <Link to="/admin/payments" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
-                  {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
-                </Link>
-              </div>
-              <div className="p-4">{renderRecentPayments()}</div>
-            </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
+                    <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <CreditCard size={16} className="text-green-600" />
+                      {i18nT('adminCommand.recentPayments')}
+                    </h2>
+                    <Link to="/admin/payments" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
+                      {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                  <div className="p-4">{renderRecentPayments()}</div>
+                </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-              <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Briefcase size={16} className="text-teal-600" />
-                  {i18nT('adminCommand.recentHires')}
-                </h2>
-                <Link to="/admin/hires" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
-                  {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
-                </Link>
-              </div>
-              <div className="p-4">{renderRecentHires()}</div>
-            </div>
-          </section>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
+                    <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Briefcase size={16} className="text-teal-600" />
+                      {i18nT('adminCommand.recentHires')}
+                    </h2>
+                    <Link to="/admin/hires" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
+                      {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                  <div className="p-4">{renderRecentHires()}</div>
+                </div>
+              </section>
+            </>
+          )}
 
           {/* ============================================
               QUICK ACTIONS
