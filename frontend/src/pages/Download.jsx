@@ -98,8 +98,6 @@ const Download = () => {
   }, []);
 
   useEffect(() => {
-    const previousTitle = document.title;
-    document.title = t('downloadPage.seoTitle');
     setMeta('name', 'description', SOCIAL_DESCRIPTION);
     setMeta('property', 'og:title', t('downloadPage.seoTitle'));
     setMeta('property', 'og:description', SOCIAL_DESCRIPTION);
@@ -120,7 +118,6 @@ const Download = () => {
     setCanonical(DOWNLOAD_PAGE_URL);
 
     return () => {
-      document.title = previousTitle;
       document.head.querySelectorAll('[data-download-page="true"]').forEach((element) => element.remove());
       document.head.querySelector('link[rel="canonical"][data-download-page="true"]')?.remove();
     };
