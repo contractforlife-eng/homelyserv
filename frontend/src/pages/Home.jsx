@@ -1556,13 +1556,13 @@ export default function Home() {
                   </Link>
                 </li>
                 <li>
-                  <a href="/guides/post-a-job" lang="ar" dir="rtl" className="text-slate-400 hover:text-white transition">
-                    دليل نشر وظيفة
+                  <a href="/guides/post-a-job" className="text-slate-400 hover:text-white transition">
+                    {t('home.footer.jobPostingGuide')}
                   </a>
                 </li>
                 <li>
-                  <a href="/guides/find-a-job" lang="ar" dir="rtl" className="text-slate-400 hover:text-white transition">
-                    دليل البحث عن وظيفة
+                  <a href="/guides/find-a-job" className="text-slate-400 hover:text-white transition">
+                    {t('home.footer.jobSearchGuide')}
                   </a>
                 </li>
                 <li>

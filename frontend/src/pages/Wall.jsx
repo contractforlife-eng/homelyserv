@@ -25,6 +25,8 @@ import WallAvatar from '../components/WallAvatar';
 import { getStaffIdentityTitle } from '../utils/staffIdentityPolicy';
 import VerifiedBadge from '../components/verification/VerifiedBadge';
 import WallShareModal from '../components/WallShareModal';
+import WallVideoPlayer from '../components/WallVideoPlayer';
+import { wallVideoCoordinator } from '../utils/wallVideoCoordinator';
 
 const MESSAGE_ROUTES = {
   WORKER: '/worker-messages',
@@ -336,8 +338,13 @@ export default function Wall() {
   useEffect(() => {
     let active = true;
     setPosts([]); setComments({}); setNext(null); setFeedLoading(true);
+    wallVideoCoordinator.stopAll();
     load().catch(() => { if (active) setError(t('wall.error')); }).finally(() => { if (active) setFeedLoading(false); });
-    return () => { active = false; feedGeneration.current++; };
+    return () => {
+      active = false;
+      feedGeneration.current++;
+      wallVideoCoordinator.stopAll();
+    };
   }, [load, t]);
   useEffect(() => {
     if (!focusedPost || focusedOnce.current === focusedPost) return;
@@ -782,9 +789,7 @@ export default function Wall() {
         {post.text && <p className="whitespace-pre-wrap break-words">{post.text}</p>}
         {post.image && <img src={post.image} alt="" loading="lazy" className="max-h-[550px] w-full rounded-xl object-contain" />}
         {post.video && (
-          <div className="w-full overflow-hidden rounded-xl bg-black">
-            <video src={post.video} controls playsInline preload="metadata" className="max-h-[550px] w-full object-contain" />
-          </div>
+          <WallVideoPlayer id={post.id} src={post.video} />
         )}
         <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
           <button
