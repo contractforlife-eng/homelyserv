@@ -90,6 +90,9 @@ const AUDIT_TYPE_BY_REVIEW_TYPE = Object.freeze({
 
 const VALID_STATUS_VALUES = Object.freeze(Object.values(VERIFICATION_STATUSES));
 
+// The immutable audit schema uses UNVERIFIED; the profile service uses NOT_VERIFIED.
+const toAuditStatus = (status) => status === VERIFICATION_STATUSES.NOT_VERIFIED ? 'UNVERIFIED' : status;
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -474,7 +477,7 @@ export const updateDoctorVerification = async (req, res) => {
     }
 
     const before = getVerificationDetails(doctor);
-    const previousStatus = resolveCurrentStatus(before, normType);
+    const previousStatus = toAuditStatus(resolveCurrentStatus(before, normType));
 
     let result;
     try {
@@ -493,7 +496,7 @@ export const updateDoctorVerification = async (req, res) => {
       doctorId: doctor._id,
       verificationType: AUDIT_TYPE_BY_REVIEW_TYPE[normType],
       previousStatus,
-      newStatus: normStatus,
+      newStatus: toAuditStatus(normStatus),
       reviewerId,
       reviewerRole,
       rejectionReason: normStatus === VERIFICATION_STATUSES.REJECTED
