@@ -349,6 +349,17 @@ function App() {
   const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
   const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
 
+  useEffect(() => {
+    document.title = 'HomelyServ';
+    const title = document.querySelector('head > title');
+    if (!title) return;
+    const observer = new MutationObserver(() => {
+      if (document.title !== 'HomelyServ') document.title = 'HomelyServ';
+    });
+    observer.observe(title, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   // Keep live references for Android hardware back button handler
   const locationRef = useRef(location);
   const authRef = useRef({ isAuthenticated, role: user?.role });
