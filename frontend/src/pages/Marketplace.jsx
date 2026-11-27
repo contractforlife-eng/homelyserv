@@ -376,7 +376,7 @@ const Marketplace = () => {
               src={item.image?.url}
               alt={item.title}
               onError={() => handleImageError(item._id)}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 text-slate-400 dark:text-slate-500">
@@ -687,7 +687,7 @@ const Marketplace = () => {
               src={listing.image?.url}
               alt={listing.title}
               onError={() => handleImageError(listing._id)}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-slate-400 dark:text-slate-500">
